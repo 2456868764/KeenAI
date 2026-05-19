@@ -9,6 +9,7 @@ export type WidgetMessagePayload = {
   id: string;
   plainText: string;
   senderType: string;
+  createdAt?: string;
 };
 
 export type ConversationRealtimeEvent = {

@@ -8,7 +8,7 @@ describe("KeenAI.boot", () => {
     vi.unstubAllGlobals();
   });
 
-  it("mounts launcher and panel chrome", () => {
+  it("mounts shadow host and launcher", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new Error("offline")) as unknown as typeof fetch,
@@ -19,8 +19,10 @@ describe("KeenAI.boot", () => {
       user: { id: "u1", userHash: "a".repeat(64) },
     });
 
-    expect(document.querySelector('[data-keenai-widget="demo"]')).toBeTruthy();
-    expect(document.querySelector("button[aria-label='Open KeenAI messenger']")).toBeTruthy();
+    const host = document.querySelector('[data-keenai-widget="demo"]') as HTMLElement | null;
+    expect(host).toBeTruthy();
+    expect(host?.shadowRoot?.querySelector(".keenai-launcher")).toBeTruthy();
+    expect(host?.shadowRoot?.querySelector(".keenai-panel")).toBeTruthy();
 
     widget.destroy();
     expect(document.querySelector('[data-keenai-widget="demo"]')).toBeNull();
