@@ -150,9 +150,10 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] DKIM 文档与配置工具
 
 #### Sprint 4（W11-W12）：Inbox 增强
-- [ ] Conversation Detail（消息流 · 虚拟滚动 · `@tanstack/react-virtual`）
+- [x] Conversation Detail（虚拟滚动 · `@tanstack/react-virtual`）
+- [x] Assign / Tag / Snooze / Close 动作（Dashboard 操作栏 + PATCH）
+- [x] 内部 Note（`isInternal` 消息 + 样式区分）
 - [ ] Tiptap 3 编辑器集成（mention / slash / image / file）
-- [ ] Assign / Tag / Snooze / Close 动作 + 乐观更新
 - [ ] 文件上传（S3 presigned URL 直传 · MinIO 本地）
 - [ ] @mention 队友 + 内部 Note
 - [ ] 通知中心（`notifications` 表 + WSS push）
