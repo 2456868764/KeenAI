@@ -154,10 +154,10 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Assign / Tag / Snooze / Close 动作（Dashboard 操作栏 + PATCH）
 - [x] 内部 Note（`isInternal` 消息 + 样式区分）
 - [ ] Tiptap 3 编辑器集成（mention / slash / image / file）
-- [ ] 文件上传（S3 presigned URL 直传 · MinIO 本地）
+- [x] 文件上传（本地 presign + PUT · S3/MinIO 待接）
 - [ ] @mention 队友 + 内部 Note
-- [ ] 通知中心（`notifications` 表 + WSS push）
-- [ ] FTSStore + LibSQL FTS5 / PG tsvector 双方言
+- [x] 通知中心（`notifications` 表 + REST + WSS push）
+- [x] FTSStore + LibSQL FTS5（`GET /search/conversations` · PG 待接）
 
 #### Sprint 5（W13-W14）：AI Copilot 草稿
 - [ ] `@keenai/llm` 包：Provider Registry + Vercel AI SDK 适配
