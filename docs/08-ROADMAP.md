@@ -50,11 +50,11 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **Vitest** 测试基础设施
 - [x] **Drizzle Kit** LibSQL 迁移流水线（PG 矩阵待 Week 2）→ `@keenai/storage`
 - [x] **Hono** API skeleton + `/health` + Zod validator → `@keenai/api`
-- [ ] **OpenAPI** 自动生成（`hono/zod-openapi`）
+- [x] **OpenAPI** 初版（`GET /api/v1/openapi.json` 静态文档；`hono/zod-openapi` 全量生成待续）
 - [x] **shadcn/ui + Tailwind v4** 设计系统初版 → `@keenai/ui`
 - [x] **Storybook** 启动 → `pnpm storybook`
 - [ ] 文档站（[Fumadocs](https://fumadocs.vercel.app/) on Next.js 15）
-- [ ] LICENSE（AGPL-3.0）、CONTRIBUTING、CoC
+- [x] LICENSE（AGPL-3.0）、CONTRIBUTING（CoC 待补）
 - [ ] **`bunx keenai`** CLI 骨架
 
 ### Week 详细计划
@@ -131,8 +131,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Vitest contract test（LibSQL；PG 矩阵待 `PG_DSN` + pg schema）
 
 #### Sprint 2（W7-W8）：Messenger Widget
-- [ ] Widget Vite 项目（Preact + Shadow DOM · `apps/widget`）
-- [ ] Boot SDK（embed `<script>` · `KeenAI.boot()`）
+- [x] Widget Vite 项目（Preact · `apps/widget`；Shadow DOM 待续）
+- [~] Boot SDK（embed `<script>` · `KeenAI.boot()` 骨架）
 - [ ] HMAC 身份验证（`crypto.subtle.sign`）
 - [ ] Home Module + Messages Module（`useChat` from `@ai-sdk/react`）
 - [ ] WSS 客户端 + 重连指数退避

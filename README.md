@@ -247,4 +247,14 @@ Phase 5 (M13+)   插件市场 + 企业级（SSO/SAML/Audit Log）
 
 ## 九、贡献
 
-欢迎 Issue、PR、Discussion。详见 [CONTRIBUTING.md](CONTRIBUTING.md)（即将提供）。
+欢迎 Issue、PR、Discussion。详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+### 工具链说明（Bun + Node）
+
+| 用途 | 推荐 | 说明 |
+|------|------|------|
+| API 运行时 | **Bun 1.2+** | `pnpm dev:api` · WebSocket · `bun test` 集成测试 |
+| 包管理 / 构建 | **pnpm 9+** + **Node 22** | Dashboard、UI、Vitest、Biome |
+| 数据库迁移 | pnpm | `pnpm db:migrate`（任意 cwd，路径解析到 monorepo 根） |
+
+未安装 Bun 时 API 无法启动；Dashboard 与测试仅依赖 Node。
