@@ -32,6 +32,8 @@ export interface AuthConfig {
   jwtSecret: string;
   accessTtlSec: number;
   refreshTtlSec: number;
+  /** Widget visitor JWT lifetime (defaults to accessTtlSec). */
+  widgetAccessTtlSec?: number;
   appUrl: string;
   smtp?: {
     host: string;

@@ -11,9 +11,11 @@ import { injectContext } from "./middleware/context.js";
 import { attachLogger } from "./middleware/logger.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
+import { optionalWidgetAuth } from "./middleware/widget-auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { openApiRoutes } from "./routes/openapi.js";
+import { widgetRoutes } from "./routes/widget.js";
 import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {
@@ -28,6 +30,7 @@ export function createApp(ctx: AppContext) {
     rateLimit({ windowMs: ctx.env.RATE_LIMIT_WINDOW_MS, max: ctx.env.RATE_LIMIT_MAX }),
   );
   app.use(`/api/${API_VERSION}/*`, optionalAuth(ctx.authConfig));
+  app.use(`/api/${API_VERSION}/widget/*`, optionalWidgetAuth(ctx.authConfig));
 
   app.get("/health", (c) =>
     c.json({
@@ -60,6 +63,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", authRoutes());
   app.route("/", openApiRoutes());
   app.route("/", conversationRoutes());
+  app.route("/", widgetRoutes());
 
   app.get(`/api/${API_VERSION}/me`, requireAuth(), async (c) => {
     const auth = c.get("auth");

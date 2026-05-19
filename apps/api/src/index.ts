@@ -17,7 +17,9 @@ const app = createApp({ store, authConfig, env, log, startedAt });
 
 if (typeof Bun !== "undefined") {
   const { registerConversationWebSocket } = await import("./routes/conversations-ws.js");
+  const { registerWidgetWebSocket } = await import("./routes/widget-ws.js");
   registerConversationWebSocket(app);
+  registerWidgetWebSocket(app);
 }
 
 log.info({ port: env.PORT, db: env.DATABASE_URL }, "keenai-api starting");

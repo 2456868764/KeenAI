@@ -45,9 +45,9 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | P1-S2-01 | `apps/widget` Vite + Preact 骨架 | [x] |
-| P1-S2-02 | `KeenAI.boot()` embed SDK | [~] |
-| P1-S2-03 | HMAC 身份验证 | [ ] |
-| P1-S2-04 | Messages 模块 + WSS 客户端 | [ ] |
+| P1-S2-02 | `KeenAI.boot()` embed SDK | [x] |
+| P1-S2-03 | HMAC 身份验证 | [x] |
+| P1-S2-04 | Messages 模块 + WSS 客户端 | [~] |
 | P1-S2-05 | 移动端响应式 + 体积预算 | [ ] |
 
 ### Sprint 3–6

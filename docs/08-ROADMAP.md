@@ -132,10 +132,10 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 #### Sprint 2（W7-W8）：Messenger Widget
 - [x] Widget Vite 项目（Preact · `apps/widget`；Shadow DOM 待续）
-- [~] Boot SDK（embed `<script>` · `KeenAI.boot()` 骨架）
-- [ ] HMAC 身份验证（`crypto.subtle.sign`）
-- [ ] Home Module + Messages Module（`useChat` from `@ai-sdk/react`）
-- [ ] WSS 客户端 + 重连指数退避
+- [x] Boot SDK（embed `<script>` · `KeenAI.boot()` + session）
+- [x] HMAC 身份验证（`POST /widget/session` · HMAC-SHA256 userHash）
+- [~] Home Module + Messages Module（Widget 基础收发 + 历史；`useChat` 待接）
+- [x] WSS 客户端 + 重连指数退避（`/widget/conversations/:id/ws`）
 - [ ] 移动端响应式
 - [ ] 体积监控（target < 5KB gzip）
 

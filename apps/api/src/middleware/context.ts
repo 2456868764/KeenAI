@@ -6,6 +6,7 @@ export function injectContext(ctx: AppContext) {
     c.set("store", ctx.store);
     c.set("authConfig", ctx.authConfig);
     c.set("env", ctx.env);
+    c.set("widgetAuth", null);
     await next();
   });
 }

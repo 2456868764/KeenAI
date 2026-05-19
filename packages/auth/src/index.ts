@@ -7,6 +7,12 @@ export {
   refreshSession,
 } from "./service.js";
 export { verifyAccessToken, parseTtlSeconds } from "./jwt.js";
+export { createWidgetUserHash, verifyWidgetUserHash } from "./widget-hmac.js";
+export {
+  signWidgetAccessToken,
+  verifyWidgetAccessToken,
+  type WidgetAccessClaims,
+} from "./widget-jwt.js";
 export { hashPassword, verifyPassword } from "./password.js";
 export { createMagicLink, consumeMagicLink, sendMagicLinkEmail } from "./magic-link.js";
 export { randomToken } from "./crypto.js";

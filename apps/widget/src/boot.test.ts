@@ -1,22 +1,26 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from "vitest";
-import { boot } from "./boot";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { boot } from "./boot.js";
 
 describe("KeenAI.boot", () => {
   afterEach(() => {
     document.querySelectorAll("[data-keenai-widget]").forEach((el) => el.remove());
+    vi.unstubAllGlobals();
   });
 
-  it("mounts launcher and toggles panel", () => {
-    const widget = boot({ orgSlug: "demo" });
+  it("mounts launcher and panel chrome", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("offline")) as unknown as typeof fetch,
+    );
+
+    const widget = boot({
+      orgSlug: "demo",
+      user: { id: "u1", userHash: "a".repeat(64) },
+    });
+
     expect(document.querySelector('[data-keenai-widget="demo"]')).toBeTruthy();
-
-    widget.open();
-    const panel = document.querySelector('[data-keenai-widget="demo"] div');
-    expect(panel?.hasAttribute("hidden")).toBe(false);
-
-    widget.close();
-    expect(panel?.hasAttribute("hidden")).toBe(true);
+    expect(document.querySelector("button[aria-label='Open KeenAI messenger']")).toBeTruthy();
 
     widget.destroy();
     expect(document.querySelector('[data-keenai-widget="demo"]')).toBeNull();

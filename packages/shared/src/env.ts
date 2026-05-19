@@ -21,6 +21,8 @@ export const apiEnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().email().optional(),
+  /** HMAC secret for Messenger widget Identity Verification */
+  WIDGET_HMAC_SECRET: z.string().min(32).optional(),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

@@ -59,6 +59,36 @@ export const openApiDocument = {
         responses: { "200": { description: "Updated" } },
       },
     },
+    [`/api/${API_VERSION}/widget/session`]: {
+      post: {
+        summary: "Widget session (HMAC Identity Verification)",
+        responses: {
+          "200": { description: "Widget JWT" },
+          "401": { description: "Invalid userHash" },
+        },
+      },
+    },
+    [`/api/${API_VERSION}/widget/conversations`]: {
+      post: {
+        summary: "Get or create visitor conversation",
+        security: [{ widgetBearer: [] }],
+        responses: { "200": { description: "Existing" }, "201": { description: "Created" } },
+      },
+    },
+    [`/api/${API_VERSION}/widget/conversations/{id}/messages`]: {
+      get: {
+        summary: "List visitor-visible messages",
+        security: [{ widgetBearer: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "200": { description: "Messages" } },
+      },
+      post: {
+        summary: "Send visitor message",
+        security: [{ widgetBearer: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "201": { description: "Message" } },
+      },
+    },
     [`/api/${API_VERSION}/conversations/{id}/messages`]: {
       get: {
         summary: "List messages",
@@ -77,6 +107,12 @@ export const openApiDocument = {
   components: {
     securitySchemes: {
       bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      widgetBearer: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Widget visitor token from POST /widget/session",
+      },
     },
   },
 } as const;

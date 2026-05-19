@@ -1,4 +1,4 @@
-import { hashPassword } from "@keenai/auth";
+import { createWidgetUserHash, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import { accounts, brands, conversations, members, organizations } from "@keenai/storage/schema";
@@ -29,6 +29,7 @@ export async function seed() {
   if (existingOrg) {
     await seedDemoConversation(db, existingOrg.id);
     console.log("[seed] demo org already exists — conversation checked");
+    logWidgetCredentials(env);
     await store.close();
     return;
   }
@@ -81,6 +82,7 @@ export async function seed() {
   console.log("[seed] created demo workspace");
   console.log(`  org:     ${DEMO.orgSlug}`);
   console.log(`  login:   ${DEMO.email} / ${DEMO.password}`);
+  logWidgetCredentials(env);
   await store.close();
 }
 
@@ -144,6 +146,14 @@ async function seedDemoConversation(
   });
 
   console.log("[seed] demo conversation created");
+}
+
+function logWidgetCredentials(env: ReturnType<typeof parseApiEnv>) {
+  const secret = env.WIDGET_HMAC_SECRET ?? env.JWT_SECRET;
+  const userId = "visitor-demo";
+  const userHash = createWidgetUserHash(secret, userId);
+  console.log(`  widget:  userId=${userId}`);
+  console.log(`           userHash=${userHash}`);
 }
 
 if (import.meta.main) {
