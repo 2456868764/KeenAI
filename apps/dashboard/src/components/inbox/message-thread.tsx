@@ -1,9 +1,11 @@
 "use client";
 
+import { ConversationActions } from "@/components/inbox/conversation-actions";
+import { VirtualMessageList } from "@/components/inbox/virtual-message-list";
 import { useConversationStream } from "@/hooks/use-conversation-stream";
 import type { Conversation, Message } from "@/lib/api";
-import { getConversation, listMessages, sendMessage, updateConversation } from "@/lib/api";
-import { Button, Input, cn } from "@keenai/ui";
+import { getConversation, listMessages, sendMessage } from "@/lib/api";
+import { Button, Input } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Send } from "lucide-react";
 import { useState } from "react";
@@ -11,6 +13,7 @@ import { useState } from "react";
 export function MessageThread({ conversationId }: { conversationId: string | null }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
+  const [isInternal, setIsInternal] = useState(false);
 
   useConversationStream(conversationId);
 
@@ -34,23 +37,12 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
     enabled: !!conversationId,
   });
 
-  const closeConv = useMutation({
-    mutationFn: () => {
-      if (!conversationId) throw new Error("no conversation");
-      return updateConversation(conversationId, { status: "closed" });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      void queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
-    },
-  });
-
   const send = useMutation({
-    mutationFn: (plainText: string) => {
+    mutationFn: (input: { plainText: string; isInternal: boolean }) => {
       if (!conversationId) throw new Error("no conversation");
-      return sendMessage(conversationId, plainText);
+      return sendMessage(conversationId, input.plainText, { isInternal: input.isInternal });
     },
-    onMutate: async (plainText) => {
+    onMutate: async (input) => {
       if (!conversationId) return {};
       await queryClient.cancelQueries({ queryKey: ["messages", conversationId] });
       const prev = queryClient.getQueryData<{ items: Message[] }>(["messages", conversationId]);
@@ -59,8 +51,8 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
         conversationId,
         senderType: "agent",
         senderId: null,
-        plainText,
-        isInternal: false,
+        plainText: input.plainText,
+        isInternal: input.isInternal,
         createdAt: new Date().toISOString(),
       };
       queryClient.setQueryData(["messages", conversationId], {
@@ -69,7 +61,7 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
       setDraft("");
       return { prev };
     },
-    onError: (_err, _text, ctx) => {
+    onError: (_err, _input, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["messages", conversationId], ctx.prev);
     },
     onSettled: () => {
@@ -91,56 +83,52 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
 
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--surface-0))]">
-      <header className="flex items-start justify-between gap-4 border-b border-[hsl(var(--border))] px-6 py-4">
-        <div>
+      <header className="border-b border-[hsl(var(--border))] px-6 py-4">
+        <div className="mb-3">
           <h2 className="text-base font-semibold">{conversation?.subject ?? "Conversation"}</h2>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            {conversation?.status} · {conversation?.channelType}
+            {conversation?.status}
+            {conversation?.snoozedUntil
+              ? ` · snoozed until ${new Date(conversation.snoozedUntil).toLocaleString()}`
+              : ""}
+            {conversation?.assigneeId ? ` · assignee ${conversation.assigneeId}` : ""}
+            {conversation?.tags?.length ? ` · ${conversation.tags.join(", ")}` : ""}
             {conversation?.unreadCount ? ` · ${conversation.unreadCount} unread` : ""}
           </p>
         </div>
-        {conversation?.status !== "closed" ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={closeConv.isPending}
-            onClick={() => closeConv.mutate()}
-          >
-            Close
-          </Button>
-        ) : null}
+        <ConversationActions conversationId={conversationId} conversation={conversation} />
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
-        {isLoading ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading messages…</p>
-        ) : null}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-      </div>
+      <VirtualMessageList messages={messages} isLoading={isLoading} />
 
       <footer className="border-t border-[hsl(var(--border))] p-4">
+        <label className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+          <input
+            type="checkbox"
+            checked={isInternal}
+            onChange={(e) => setIsInternal(e.target.checked)}
+          />
+          Internal note (not visible to customer)
+        </label>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             const text = draft.trim();
             if (!text || send.isPending) return;
-            send.mutate(text);
+            send.mutate({ plainText: text, isInternal });
           }}
         >
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Reply… (⌘Enter to send)"
+            placeholder={isInternal ? "Internal note…" : "Reply… (⌘Enter to send)"}
             className="flex-1"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 const text = draft.trim();
-                if (text && !send.isPending) send.mutate(text);
+                if (text && !send.isPending) send.mutate({ plainText: text, isInternal });
               }
             }}
           />
@@ -154,44 +142,5 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
         </form>
       </footer>
     </section>
-  );
-}
-
-function MessageBubble({ message }: { message: Message }) {
-  const isAgent = message.senderType === "agent" || message.senderType === "ai";
-  const isOptimistic = message.id.startsWith("optimistic-");
-
-  return (
-    <div className={cn("flex", isAgent ? "justify-end" : "justify-start")}>
-      <BubbleBody message={message} isAgent={isAgent} isOptimistic={isOptimistic} />
-    </div>
-  );
-}
-
-function BubbleBody({
-  message,
-  isAgent,
-  isOptimistic,
-}: {
-  message: Message;
-  isAgent: boolean;
-  isOptimistic: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "max-w-[min(32rem,85%)] rounded-lg px-3 py-2 text-sm",
-        isAgent
-          ? "bg-[hsl(var(--widget-user-bubble))] text-[hsl(var(--primary-foreground))]"
-          : "bg-[hsl(var(--widget-agent-bubble))] text-[hsl(var(--foreground))]",
-        isOptimistic && "opacity-70",
-      )}
-    >
-      <p className="whitespace-pre-wrap">{message.plainText}</p>
-      <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
-        {message.senderType}
-        {isOptimistic ? " · sending" : ""}
-      </p>
-    </div>
   );
 }

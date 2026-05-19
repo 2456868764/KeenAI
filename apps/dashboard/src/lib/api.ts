@@ -8,6 +8,10 @@ export type Conversation = {
   subject: string | null;
   status: string;
   channelType: string;
+  assigneeId?: string | null;
+  tags?: string[];
+  snoozedUntil?: string | null;
+  priority?: string | null;
   unreadCount: number;
   messageCount: number;
   lastMessageAt: string | null;
@@ -79,16 +83,24 @@ export async function listMessages(id: string): Promise<{ items: Message[] }> {
 export async function sendMessage(
   conversationId: string,
   plainText: string,
+  opts?: { isInternal?: boolean },
 ): Promise<{ message: Message }> {
   return apiFetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ plainText }),
+    body: JSON.stringify({ plainText, isInternal: opts?.isInternal ?? false }),
   });
 }
 
 export async function updateConversation(
   id: string,
-  patch: { status?: string; assigneeId?: string | null; subject?: string },
+  patch: {
+    status?: string;
+    assigneeId?: string | null;
+    subject?: string;
+    tags?: string[];
+    snoozedUntil?: string | null;
+    priority?: string;
+  },
 ): Promise<{ conversation: Conversation }> {
   return apiFetch(`/api/v1/conversations/${id}`, {
     method: "PATCH",
