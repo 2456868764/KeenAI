@@ -1,0 +1,19 @@
+{
+  "name": "@keenai/widget",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.2",
+    "preact": "^10.25.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.6"
+  }
+}
