@@ -5,16 +5,19 @@
 
 ---
 
-## 当前迭代 · Iteration 5（Sprint 4 · Inbox 增强）
+## 当前迭代 · Iteration 6（Sprint 4 续 · 通知 / 搜索 / 上传）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I5-00 | 同步路线图 Sprint 4 | [x] |
-| I5-01 | 消息流虚拟滚动（`@tanstack/react-virtual`） | [x] |
-| I5-02 | Assign / Snooze / Tags PATCH + Dashboard 操作栏 | [x] |
-| I5-03 | 内部 Note（`isInternal`）发送与样式 | [x] |
+| I6-00 | 同步路线图 Sprint 4 续 | [x] |
+| I6-01 | `notifications` 表 + Drizzle migration | [x] |
+| I6-02 | 通知 API（列表 / 已读）+ 分配时创建 + WSS | [x] |
+| I6-03 | LibSQL FTS5 `FTSStore` + 消息索引 + `GET /search` | [x] |
+| I6-04 | 文件上传（本地 presign + PUT） | [x] |
+| I6-05 | Dashboard 通知铃铛 + 会话搜索框 | [x] |
+| I6-06 | Tiptap 富文本编辑器（mention / 附件待续） | [ ] |
 
-**下一迭代（Sprint 4 续）**：Tiptap 编辑器 · 文件上传 · 通知中心 · FTS
+**下一迭代（Sprint 4 收尾 / Sprint 5）**：Tiptap · S3/MinIO 上传 · @mention · Copilot 草稿
 
 ---
 
@@ -22,6 +25,7 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I5 | Inbox 增强（虚拟滚动 / Snooze / 内部 Note） | [x] |
 | I4 | Email Channel | [x] |
 | I3 | Widget 收尾 | [x] |
 | I2 | Widget HMAC + WSS | [x] |
@@ -45,12 +49,13 @@
 | S1–S2 Inbox + Widget | [x] |
 | S3 Email（核心） | [x] |
 | S3 IMAP / BullMQ / DKIM | [ ] |
-| S4 Inbox 增强（部分） | [~] |
-| S4 Tiptap / 上传 / FTS | [ ] |
+| S4 Inbox 增强（核心） | [x] |
+| S4 通知 / FTS / 上传（MVP） | [x] |
+| S4 Tiptap 完整 | [ ] |
 | S5–S6 Copilot / Workflow | [ ] |
 
 ---
 
 ## Phase 2–4
 
-见 [08-ROADMAP.md](./08-ROADMAP.md)。
+见 [08-ROADMAP.md](./08-ROADMAP.md).
