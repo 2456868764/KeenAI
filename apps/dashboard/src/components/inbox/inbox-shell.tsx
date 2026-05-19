@@ -4,7 +4,7 @@ import { listConversations } from "@/lib/api";
 import { clearAccessToken } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConversationList } from "./conversation-list";
 import { MessageThread } from "./message-thread";
 import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
@@ -29,6 +29,29 @@ export function InboxShell() {
     }
     return list;
   }, [data?.items, view]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (items.length === 0) return;
+
+      const idx = selectedId ? items.findIndex((c) => c.id === selectedId) : -1;
+
+      if (e.key === "j") {
+        e.preventDefault();
+        const next = items[Math.min(idx < 0 ? 0 : idx + 1, items.length - 1)];
+        if (next) setSelectedId(next.id);
+      }
+      if (e.key === "k") {
+        e.preventDefault();
+        const prev = items[Math.max(idx < 0 ? 0 : idx - 1, 0)];
+        if (prev) setSelectedId(prev.id);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [items, selectedId]);
 
   return (
     <div className="flex h-screen flex-col">

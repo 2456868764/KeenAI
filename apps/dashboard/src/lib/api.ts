@@ -86,6 +86,16 @@ export async function sendMessage(
   });
 }
 
+export async function updateConversation(
+  id: string,
+  patch: { status?: string; assigneeId?: string | null; subject?: string },
+): Promise<{ conversation: Conversation }> {
+  return apiFetch(`/api/v1/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
 export function conversationStreamUrl(conversationId: string): string | null {
   const token = getAccessToken();
   if (!token) return null;

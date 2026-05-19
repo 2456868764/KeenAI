@@ -2,7 +2,7 @@
 
 import { useConversationStream } from "@/hooks/use-conversation-stream";
 import type { Conversation, Message } from "@/lib/api";
-import { getConversation, listMessages, sendMessage } from "@/lib/api";
+import { getConversation, listMessages, sendMessage, updateConversation } from "@/lib/api";
 import { Button, Input, cn } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Send } from "lucide-react";
@@ -32,6 +32,17 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
       return listMessages(conversationId);
     },
     enabled: !!conversationId,
+  });
+
+  const closeConv = useMutation({
+    mutationFn: () => {
+      if (!conversationId) throw new Error("no conversation");
+      return updateConversation(conversationId, { status: "closed" });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      void queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
+    },
   });
 
   const send = useMutation({
@@ -80,12 +91,25 @@ export function MessageThread({ conversationId }: { conversationId: string | nul
 
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--surface-0))]">
-      <header className="border-b border-[hsl(var(--border))] px-6 py-4">
-        <h2 className="text-base font-semibold">{conversation?.subject ?? "Conversation"}</h2>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          {conversation?.status} · {conversation?.channelType}
-          {conversation?.unreadCount ? ` · ${conversation.unreadCount} unread` : ""}
-        </p>
+      <header className="flex items-start justify-between gap-4 border-b border-[hsl(var(--border))] px-6 py-4">
+        <div>
+          <h2 className="text-base font-semibold">{conversation?.subject ?? "Conversation"}</h2>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            {conversation?.status} · {conversation?.channelType}
+            {conversation?.unreadCount ? ` · ${conversation.unreadCount} unread` : ""}
+          </p>
+        </div>
+        {conversation?.status !== "closed" ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={closeConv.isPending}
+            onClick={() => closeConv.mutate()}
+          >
+            Close
+          </Button>
+        ) : null}
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
