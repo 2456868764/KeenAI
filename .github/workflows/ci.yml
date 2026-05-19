@@ -34,6 +34,7 @@ jobs:
       - run: pnpm exec tsc -p packages/shared/tsconfig.json
       - run: pnpm exec tsc -p packages/storage/tsconfig.json
       - run: pnpm exec tsc -p packages/auth/tsconfig.json
+      - run: pnpm exec tsc -p packages/channels-email/tsconfig.json
       - run: pnpm exec tsc -p packages/ui/tsconfig.json
       - run: pnpm exec tsc -p apps/api/tsconfig.json
       - run: pnpm exec tsc -p apps/dashboard/tsconfig.json

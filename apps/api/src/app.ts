@@ -14,6 +14,7 @@ import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
+import { emailWebhookRoutes } from "./routes/email-webhooks.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import { widgetRoutes } from "./routes/widget.js";
 import type { AppContext, AppVariables } from "./types.js";
@@ -64,6 +65,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", openApiRoutes());
   app.route("/", conversationRoutes());
   app.route("/", widgetRoutes());
+  app.route("/", emailWebhookRoutes());
 
   app.get(`/api/${API_VERSION}/me`, requireAuth(), async (c) => {
     const auth = c.get("auth");
