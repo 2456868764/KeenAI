@@ -134,10 +134,10 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Widget Vite 项目（Preact · `apps/widget`；Shadow DOM 待续）
 - [x] Boot SDK（embed `<script>` · `KeenAI.boot()` + session）
 - [x] HMAC 身份验证（`POST /widget/session` · HMAC-SHA256 userHash）
-- [~] Home Module + Messages Module（Widget 基础收发 + 历史；`useChat` 待接）
+- [x] Messages Module（`MessagesPanel` · 去重 · 发送态 · Shadow DOM）
 - [x] WSS 客户端 + 重连指数退避（`/widget/conversations/:id/ws`）
-- [ ] 移动端响应式
-- [ ] 体积监控（target < 5KB gzip）
+- [x] 移动端响应式（`@media max-width: 480px` 全屏抽屉）
+- [x] 体积监控（`pnpm check:widget` · 预算 80KB gzip，长期目标 5KB）
 
 #### Sprint 3（W9-W10）：Email Channel
 - [ ] IMAP Worker（imapflow · Inngest cron `*/30 * * * * *`）
