@@ -18,6 +18,7 @@
     "db:migrate": "pnpm --filter @keenai/storage db:migrate",
     "seed": "pnpm --filter @keenai/api seed",
     "smoke": "bash scripts/smoke.sh",
+    "check:widget": "node scripts/check-widget-bundle.mjs",
     "storybook": "pnpm --filter @keenai/ui storybook"
   },
   "devDependencies": {
