@@ -1,0 +1,12 @@
+FROM oven/bun:1.2-alpine AS base
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json biome.json ./
+COPY apps ./apps
+COPY packages ./packages
+
+RUN bun install -g pnpm && pnpm install --filter @keenai/api...
+
+WORKDIR /app/apps/api
+EXPOSE 8090
+CMD ["bun", "run", "start"]

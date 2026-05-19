@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "@keenai/ui/styles.css";
+
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+
+@theme {
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))] antialiased;
+}

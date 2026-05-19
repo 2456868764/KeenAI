@@ -1,0 +1,31 @@
+{
+  "name": "@keenai/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@keenai/shared": "workspace:*",
+    "@keenai/storage": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "casbin": "^5.37.0",
+    "drizzle-orm": "^0.38.3",
+    "jose": "^5.9.6",
+    "nodemailer": "^6.9.16",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

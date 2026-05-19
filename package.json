@@ -1,0 +1,29 @@
+{
+  "name": "keenai",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @keenai/api --filter @keenai/dashboard -r --parallel dev",
+    "dev:api": "pnpm --filter @keenai/api dev",
+    "dev:dashboard": "pnpm --filter @keenai/dashboard dev",
+    "build": "turbo run build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @keenai/storage db:generate",
+    "db:migrate": "pnpm --filter @keenai/storage db:migrate",
+    "seed": "pnpm --filter @keenai/api seed",
+    "smoke": "bash scripts/smoke.sh",
+    "storybook": "pnpm --filter @keenai/ui storybook"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

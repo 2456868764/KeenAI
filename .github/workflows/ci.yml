@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        continue-on-error: true
+      - run: pnpm install
+
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm exec tsc -p packages/shared/tsconfig.json
+      - run: pnpm exec tsc -p packages/storage/tsconfig.json
+      - run: pnpm exec tsc -p packages/auth/tsconfig.json
+      - run: pnpm exec tsc -p packages/ui/tsconfig.json
+      - run: pnpm exec tsc -p apps/api/tsconfig.json
+      - run: pnpm exec tsc -p apps/dashboard/tsconfig.json
+      - run: pnpm --filter @keenai/auth test
