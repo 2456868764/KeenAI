@@ -11,6 +11,7 @@ export {
   listConversationsSchema,
   listMessagesSchema,
   messageContentSchema,
+  updateConversationSchema,
   senderTypeSchema,
   type ChannelType,
   type ConversationPriority,

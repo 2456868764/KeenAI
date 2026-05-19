@@ -113,6 +113,15 @@ describe("conversations integration", () => {
     const listBody = (await inbox.json()) as { items: unknown[] };
     expect(listBody.items.length).toBeGreaterThanOrEqual(1);
 
+    const closed = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "closed" }),
+    });
+    expect(closed.status).toBe(200);
+    const closedBody = (await closed.json()) as { conversation: { status: string } };
+    expect(closedBody.conversation.status).toBe("closed");
+
     await store.close();
   });
 });

@@ -58,3 +58,13 @@ export const listMessagesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   before: z.string().optional(),
 });
+
+export const updateConversationSchema = z
+  .object({
+    status: conversationStatusSchema.optional(),
+    assigneeId: z.string().min(1).nullable().optional(),
+    subject: z.string().max(500).optional(),
+  })
+  .refine((v) => v.status !== undefined || v.assigneeId !== undefined || v.subject !== undefined, {
+    message: "at least one field required",
+  });

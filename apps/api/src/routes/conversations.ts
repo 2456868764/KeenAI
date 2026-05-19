@@ -5,12 +5,13 @@ import {
   createMessageSchema,
   listConversationsSchema,
   listMessagesSchema,
+  updateConversationSchema,
 } from "@keenai/shared";
 import { conversations, messages } from "@keenai/storage/schema";
 import { and, desc, eq, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
-import { subscribeConversation } from "../lib/conversation-bus.js";
+import { publishConversation, subscribeConversation } from "../lib/conversation-bus.js";
 import {
   assertBrandInOrg,
   buildMessageContent,
@@ -142,6 +143,68 @@ export function conversationRoutes() {
 
     return c.json({ conversation: serializeConversation(conversation) });
   });
+
+  r.patch(
+    `${prefix}/:id`,
+    requireAuth(),
+    zValidator("json", updateConversationSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      if (!conversation) return c.json({ error: "not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const body = c.req.valid("json");
+      const now = new Date();
+
+      const [updated] = await c
+        .get("store")
+        .db.update(conversations)
+        .set({
+          updatedAt: now,
+          ...(body.status !== undefined
+            ? {
+                status: body.status,
+                closedAt:
+                  body.status === "closed" ? now : body.status === "open" ? null : undefined,
+              }
+            : {}),
+          ...(body.assigneeId !== undefined ? { assigneeId: body.assigneeId } : {}),
+          ...(body.subject !== undefined ? { subject: body.subject } : {}),
+        })
+        .where(eq(conversations.id, conversation.id))
+        .returning();
+
+      if (!updated) return c.json({ error: "update_failed" }, 500);
+
+      const serialized = serializeConversation(updated);
+
+      await recordConversationEvent(c.get("store").db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        eventType: "conversation.updated",
+        actorType: "agent",
+        actorId: auth.memberId,
+        payload: body,
+      });
+
+      publishConversation({
+        type: "conversation.updated",
+        conversationId: conversation.id,
+        conversation: serialized,
+      });
+
+      return c.json({ conversation: serialized });
+    },
+  );
 
   r.get(
     `${prefix}/:id/messages`,
