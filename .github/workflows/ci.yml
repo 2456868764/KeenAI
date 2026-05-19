@@ -29,6 +29,7 @@ jobs:
       - run: pnpm install
 
       - run: pnpm lint
+      - run: pnpm db:migrate
       - run: pnpm test
       - run: pnpm exec tsc -p packages/shared/tsconfig.json
       - run: pnpm exec tsc -p packages/storage/tsconfig.json
