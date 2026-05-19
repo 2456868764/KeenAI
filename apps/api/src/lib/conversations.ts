@@ -70,6 +70,7 @@ export function serializeConversation(row: typeof conversations.$inferSelect) {
     teamId: row.teamId,
     subject: row.subject,
     tags: row.tags,
+    snoozedUntil: row.snoozedUntil?.toISOString() ?? null,
     unreadCount: row.unreadCount,
     messageCount: row.messageCount,
     lastMessageAt: row.lastMessageAt?.toISOString() ?? null,

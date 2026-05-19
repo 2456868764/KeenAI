@@ -64,7 +64,17 @@ export const updateConversationSchema = z
     status: conversationStatusSchema.optional(),
     assigneeId: z.string().min(1).nullable().optional(),
     subject: z.string().max(500).optional(),
+    tags: z.array(z.string().min(1).max(64)).max(32).optional(),
+    snoozedUntil: z.string().datetime().nullable().optional(),
+    priority: conversationPrioritySchema.optional(),
   })
-  .refine((v) => v.status !== undefined || v.assigneeId !== undefined || v.subject !== undefined, {
-    message: "at least one field required",
-  });
+  .refine(
+    (v) =>
+      v.status !== undefined ||
+      v.assigneeId !== undefined ||
+      v.subject !== undefined ||
+      v.tags !== undefined ||
+      v.snoozedUntil !== undefined ||
+      v.priority !== undefined,
+    { message: "at least one field required" },
+  );

@@ -113,6 +113,28 @@ describe("conversations integration", () => {
     const listBody = (await inbox.json()) as { items: unknown[] };
     expect(listBody.items.length).toBeGreaterThanOrEqual(1);
 
+    const snoozed = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        snoozedUntil: new Date(Date.now() + 3_600_000).toISOString(),
+        tags: ["billing", "vip"],
+      }),
+    });
+    expect(snoozed.status).toBe(200);
+    const snoozedBody = (await snoozed.json()) as {
+      conversation: { status: string; tags: string[] };
+    };
+    expect(snoozedBody.conversation.status).toBe("snoozed");
+    expect(snoozedBody.conversation.tags).toEqual(["billing", "vip"]);
+
+    const note = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ plainText: "Internal note", isInternal: true }),
+    });
+    expect(note.status).toBe(201);
+
     const closed = await app.request(`/api/v1/conversations/${conversation.id}`, {
       method: "PATCH",
       headers: { ...auth, "Content-Type": "application/json" },

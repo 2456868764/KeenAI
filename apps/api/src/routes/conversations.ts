@@ -165,21 +165,31 @@ export function conversationRoutes() {
       const body = c.req.valid("json");
       const now = new Date();
 
+      const patch: Record<string, unknown> = { updatedAt: now };
+
+      if (body.status !== undefined) {
+        patch.status = body.status;
+        patch.closedAt = body.status === "closed" ? now : body.status === "open" ? null : undefined;
+      }
+      if (body.assigneeId !== undefined) patch.assigneeId = body.assigneeId;
+      if (body.subject !== undefined) patch.subject = body.subject;
+      if (body.tags !== undefined) patch.tags = body.tags;
+      if (body.priority !== undefined) patch.priority = body.priority;
+
+      if (body.snoozedUntil !== undefined) {
+        const until = body.snoozedUntil ? new Date(body.snoozedUntil) : null;
+        patch.snoozedUntil = until;
+        if (until && until.getTime() > now.getTime()) {
+          patch.status = "snoozed";
+        } else if (until === null && conversation.status === "snoozed") {
+          patch.status = "open";
+        }
+      }
+
       const [updated] = await c
         .get("store")
         .db.update(conversations)
-        .set({
-          updatedAt: now,
-          ...(body.status !== undefined
-            ? {
-                status: body.status,
-                closedAt:
-                  body.status === "closed" ? now : body.status === "open" ? null : undefined,
-              }
-            : {}),
-          ...(body.assigneeId !== undefined ? { assigneeId: body.assigneeId } : {}),
-          ...(body.subject !== undefined ? { subject: body.subject } : {}),
-        })
+        .set(patch)
         .where(eq(conversations.id, conversation.id))
         .returning();
 
