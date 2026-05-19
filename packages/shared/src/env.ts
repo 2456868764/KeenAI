@@ -5,6 +5,7 @@ export const apiEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(8090),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  LOG_FORMAT: z.enum(["pretty", "json"]).default("pretty"),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32).default("dev-only-change-me-in-production-keenai-32"),
   JWT_ACCESS_TTL: z.string().default("15m"),
