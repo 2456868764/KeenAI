@@ -140,13 +140,14 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 体积监控（`pnpm check:widget` · 预算 80KB gzip，长期目标 5KB）
 
 #### Sprint 3（W9-W10）：Email Channel
+- [x] `@keenai/channels-email`（parse · threading · outbound · webhooks）
+- [x] MIME 解析（mailparser）
+- [x] 邮件 Threading 算法（In-Reply-To / References / Subject normalize）
+- [x] SMTP 出站 + 基础文本/HTML 模板（React Email 待接）
+- [x] Inbound webhook 适配器 + `POST /api/v1/webhooks/email/*` ingest
 - [ ] IMAP Worker（imapflow · Inngest cron `*/30 * * * * *`）
-- [ ] MIME 解析（mailparser）
-- [ ] 邮件 Threading 算法（In-Reply-To / References / Subject normalize）
-- [ ] SMTP 出站 + React Email 模板（`@react-email/components`）
 - [ ] BullMQ 队列 `email:send`（重试 3 次 + DLQ）
 - [ ] DKIM 文档与配置工具
-- [ ] Inbound webhook 适配器（SES / SendGrid / Mailgun）
 
 #### Sprint 4（W11-W12）：Inbox 增强
 - [ ] Conversation Detail（消息流 · 虚拟滚动 · `@tanstack/react-virtual`）

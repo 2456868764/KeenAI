@@ -5,17 +5,26 @@
 
 ---
 
-## 当前迭代 · Iteration 3（Sprint 2 收尾 + P0 日志）
+## 当前迭代 · Iteration 4（Sprint 3 · Email Channel）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I3-00 | 同步本文件与路线图已完成项 | [x] |
-| I3-01 | **P1-S2-04** Messages 模块（Panel 组件 + 发送态） | [x] |
-| I3-02 | **P1-S2-05** Widget 移动端响应式 + Shadow DOM | [x] |
-| I3-03 | **P1-S2-05** 构建体积检查脚本 | [x] |
-| I3-04 | **P0-09** API `LOG_FORMAT=json` 生产日志 | [x] |
+| I4-00 | 同步路线图 Sprint 3 条目 | [x] |
+| I4-01 | `@keenai/channels-email` 包骨架 | [x] |
+| I4-02 | MIME 解析（mailparser） | [x] |
+| I4-03 | 邮件 Threading 算法 | [x] |
+| I4-04 | SMTP 出站 + 基础模板 | [x] |
+| I4-05 | Inbound webhook（SES / SendGrid / Mailgun + raw MIME） | [x] |
 
-**下一迭代（Sprint 3 预告）**：Email Channel · IMAP Worker · SMTP（见 `08-ROADMAP.md` § Sprint 3）
+**下一迭代（Sprint 4 预告）**：Inbox 增强 · Tiptap · 虚拟滚动 · 文件上传
+
+---
+
+## 历史 · Iteration 3（已完成）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I3-00 … I3-04 | Widget 收尾 + JSON 日志 | [x] |
 
 ---
 
@@ -29,42 +38,38 @@
 | P0-04 | `@keenai/ui` + Storybook | [x] |
 | P0-05 | Auth schema + JWT + magic link + seed | [x] |
 | P0-06 | CI：lint + test + typecheck + `db:migrate` | [x] |
-| P0-07 | OpenAPI：`GET /api/v1/openapi.json` | [x] |
+| P0-07 | OpenAPI | [x] |
 | P0-08 | LICENSE + CONTRIBUTING | [x] |
-| P0-09 | pino 结构化日志（JSON 模式） | [x] |
-| P0-10 | `apps/dashboard` + `apps/widget` | [x] |
+| P0-09 | pino JSON 日志 | [x] |
+| P0-10 | dashboard + widget | [x] |
 | P0-11 | OTel 完整导出 | [ ] |
-| P0-12 | Bun + Node 双工具链说明 | [x] |
-| P0-13 | commitlint（可选） | [ ] |
-| P0-14 | Fumadocs / `bunx keenai` CLI | [ ] |
+| P0-12 | Bun + Node 说明 | [x] |
+| P0-13 | commitlint | [ ] |
+| P0-14 | Fumadocs / CLI | [ ] |
 
 ---
 
 ## Phase 1 · MVP
 
-### Sprint 1（W5–W6）
+### Sprint 1–2
+
+| Sprint | 状态 |
+|--------|------|
+| S1 Conversation + Inbox | [x] |
+| S2 Messenger Widget | [x] |
+
+### Sprint 3（W9–W10）Email Channel
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| P1-S1-01 | Conversation schema + migration 0002 | [x] |
-| P1-S1-02 | Conversations REST + SSE + WS | [x] |
-| P1-S1-03 | Dashboard Inbox | [x] |
-| P1-S1-04 | SSE 实时 + 乐观发送 | [x] |
-| P1-S1-05 | LibSQL contract test | [x] |
-| P1-S1-06 | PATCH 会话生命周期（close/status） | [x] |
-| P1-S1-07 | Dashboard 关闭 + J/K | [x] |
+| P1-S3-01 | `@keenai/channels-email` + MIME + threading | [x] |
+| P1-S3-02 | SMTP 出站 + 模板 | [x] |
+| P1-S3-03 | Inbound webhooks + ingest API | [x] |
+| P1-S3-04 | IMAP Worker（imapflow · Inngest） | [ ] |
+| P1-S3-05 | BullMQ `email:send` 队列 | [ ] |
+| P1-S3-06 | DKIM 文档与配置 | [ ] |
 
-### Sprint 2（W7–W8）Messenger Widget
-
-| ID | 项 | 状态 |
-|----|-----|------|
-| P1-S2-01 | `apps/widget` Vite + Preact 骨架 | [x] |
-| P1-S2-02 | `KeenAI.boot()` embed SDK | [x] |
-| P1-S2-03 | HMAC 身份验证 | [x] |
-| P1-S2-04 | Messages 模块 + WSS | [x] |
-| P1-S2-05 | 移动端响应式 + 体积预算 | [x] |
-
-### Sprint 3–6
+### Sprint 4–6
 
 见 [08-ROADMAP.md](./08-ROADMAP.md) §三。
 
