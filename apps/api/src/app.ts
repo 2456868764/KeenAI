@@ -13,6 +13,7 @@ import { rateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
+import { openApiRoutes } from "./routes/openapi.js";
 import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {
@@ -57,6 +58,7 @@ export function createApp(ctx: AppContext) {
   });
 
   app.route("/", authRoutes());
+  app.route("/", openApiRoutes());
   app.route("/", conversationRoutes());
 
   app.get(`/api/${API_VERSION}/me`, requireAuth(), async (c) => {
