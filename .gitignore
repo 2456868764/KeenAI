@@ -25,4 +25,5 @@ integrations/hermes/__pycache__/
 hermes-agent/
 agentmemory/
 fbapp/
+.next/
 
