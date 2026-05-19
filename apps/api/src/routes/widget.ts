@@ -7,7 +7,6 @@ import {
   widgetSessionSchema,
 } from "@keenai/shared";
 import { Hono } from "hono";
-import { publishConversation } from "../lib/conversation-bus.js";
 import {
   buildMessageContent,
   getConversationForOrg,
@@ -168,12 +167,6 @@ export function widgetRoutes() {
         actorType: "user",
         actorId: auth.sub,
         payload: { messageId: message.id },
-      });
-
-      publishConversation({
-        type: "message.created",
-        conversationId: conversation.id,
-        message,
       });
 
       return c.json({ message }, 201);

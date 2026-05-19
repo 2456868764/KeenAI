@@ -2,7 +2,6 @@ import type { WidgetAccessClaims } from "@keenai/auth";
 import { brands, conversations, messages, organizations } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
-import { publishConversation } from "./conversation-bus.js";
 import {
   buildMessageContent,
   type getConversationForOrg,
@@ -124,11 +123,6 @@ export async function createWidgetConversation(
       isAgentReply: false,
     });
     firstMessage = serializeMessage(result.message);
-    publishConversation({
-      type: "message.created",
-      conversationId: conversation.id,
-      message: firstMessage,
-    });
   }
 
   return { conversation: serializeConversation(conversation), message: firstMessage };

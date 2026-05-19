@@ -84,8 +84,13 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
   let accessToken = "";
   let conversationId = "";
   let disconnectWs: (() => void) | undefined;
+  const seenMessageIds = new Set<string>();
 
-  const appendMessage = (text: string, senderType: string) => {
+  const appendMessage = (text: string, senderType: string, messageId?: string) => {
+    if (messageId) {
+      if (seenMessageIds.has(messageId)) return;
+      seenMessageIds.add(messageId);
+    }
     const bubble = document.createElement("div");
     const isUser = senderType === "user";
     bubble.style.cssText = isUser
@@ -96,14 +101,15 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   };
 
-  const renderMessages = (items: { plainText: string; senderType: string }[]) => {
+  const renderMessages = (items: { id: string; plainText: string; senderType: string }[]) => {
     messagesEl.replaceChildren();
-    for (const m of items) appendMessage(m.plainText, m.senderType);
+    seenMessageIds.clear();
+    for (const m of items) appendMessage(m.plainText, m.senderType, m.id);
   };
 
   const onRealtime = (event: ConversationRealtimeEvent) => {
     if (event.type === "message.created" && event.message) {
-      appendMessage(event.message.plainText, event.message.senderType);
+      appendMessage(event.message.plainText, event.message.senderType, event.message.id);
     }
   };
 
@@ -146,7 +152,6 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
     const text = input.value.trim();
     if (!text || !accessToken || !conversationId) return;
     input.value = "";
-    appendMessage(text, "user");
 
     const res = await fetch(
       `${apiUrl.replace(/\/$/, "")}/api/v1/widget/conversations/${conversationId}/messages`,
@@ -159,7 +164,14 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
         body: JSON.stringify({ plainText: text }),
       },
     );
-    if (!res.ok) statusEl.textContent = "Send failed";
+    if (!res.ok) {
+      statusEl.textContent = "Send failed";
+      return;
+    }
+    const body = (await res.json()) as {
+      message: { id: string; plainText: string; senderType: string };
+    };
+    appendMessage(body.message.plainText, body.message.senderType, body.message.id);
   });
 
   const toggle = () => {

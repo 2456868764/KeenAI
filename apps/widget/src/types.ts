@@ -5,9 +5,15 @@ export type WidgetUser = {
   name?: string;
 };
 
+export type WidgetMessagePayload = {
+  id: string;
+  plainText: string;
+  senderType: string;
+};
+
 export type ConversationRealtimeEvent = {
   type: string;
   conversationId?: string;
-  message?: { id: string; plainText: string; senderType: string };
+  message?: WidgetMessagePayload;
   conversation?: unknown;
 };
