@@ -1,4 +1,4 @@
-import { createLibsqlStore } from "@keenai/storage";
+import { createLibsqlFtsStore, createLibsqlStore, ensureFtsSchema } from "@keenai/storage";
 import { websocket } from "hono/bun";
 import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
@@ -9,16 +9,20 @@ const env = loadEnv();
 const startedAt = new Date();
 const log = createLogger(env);
 const store = createLibsqlStore({ url: env.DATABASE_URL });
+await ensureFtsSchema(store.client);
+const fts = createLibsqlFtsStore(store.client);
 const authConfig = toAuthConfig(env);
 
 initOtel(env, log);
 
-const app = createApp({ store, authConfig, env, log, startedAt });
+const app = createApp({ store, fts, authConfig, env, log, startedAt });
 
 if (typeof Bun !== "undefined") {
   const { registerConversationWebSocket } = await import("./routes/conversations-ws.js");
+  const { registerNotificationsWebSocket } = await import("./routes/notifications-ws.js");
   const { registerWidgetWebSocket } = await import("./routes/widget-ws.js");
   registerConversationWebSocket(app);
+  registerNotificationsWebSocket(app);
   registerWidgetWebSocket(app);
 }
 

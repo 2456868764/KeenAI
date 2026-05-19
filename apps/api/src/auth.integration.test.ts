@@ -49,6 +49,7 @@ describe("auth integration", () => {
     const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
     const app = createApp({
       store,
+      fts: null,
       authConfig,
       env,
       log: createLogger(env),

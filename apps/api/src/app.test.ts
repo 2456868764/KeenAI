@@ -11,6 +11,7 @@ describe("API health", () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const app = createApp({
       store,
+      fts: null,
       authConfig: toAuthConfig(env),
       env,
       log: createLogger(env),
@@ -30,6 +31,7 @@ describe("API health", () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const app = createApp({
       store,
+      fts: null,
       authConfig: toAuthConfig(env),
       env,
       log: createLogger(env),

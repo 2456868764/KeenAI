@@ -23,6 +23,7 @@ describe("widget integration", () => {
 
     const app = createApp({
       store,
+      fts: null,
       authConfig: toAuthConfig(env),
       env,
       log: createLogger(env),

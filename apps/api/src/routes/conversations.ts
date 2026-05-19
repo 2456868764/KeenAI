@@ -24,10 +24,12 @@ import {
   serializeConversation,
   serializeMessage,
 } from "../lib/conversations.js";
+import { indexConversationForSearch } from "../lib/fts-index.js";
+import { notifyAssignee } from "../lib/notifications.js";
 import { requireAuth } from "../middleware/auth.js";
-import type { AppVariables } from "../types.js";
+import type { AppContext, AppVariables } from "../types.js";
 
-export function conversationRoutes() {
+export function conversationRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/conversations`;
 
@@ -119,6 +121,9 @@ export function conversationRoutes() {
         isAgentReply: false,
       });
       firstMessage = serializeMessage(result.message);
+      if (ctx.fts) {
+        await indexConversationForSearch(ctx.fts, db, conversation.id);
+      }
     }
 
     return c.json(
@@ -211,6 +216,24 @@ export function conversationRoutes() {
         conversationId: conversation.id,
         conversation: serialized,
       });
+
+      if (
+        body.assigneeId !== undefined &&
+        body.assigneeId &&
+        body.assigneeId !== conversation.assigneeId
+      ) {
+        await notifyAssignee(c.get("store").db, {
+          orgId: auth.orgId,
+          assigneeMemberId: body.assigneeId,
+          conversationId: conversation.id,
+          subject: updated.subject,
+          actorMemberId: auth.memberId,
+        });
+      }
+
+      if (ctx.fts) {
+        await indexConversationForSearch(ctx.fts, c.get("store").db, conversation.id);
+      }
 
       return c.json({ conversation: serialized });
     },
@@ -306,6 +329,10 @@ export function conversationRoutes() {
         actorId: auth.memberId,
         payload: { messageId: result.message.id },
       });
+
+      if (ctx.fts) {
+        await indexConversationForSearch(ctx.fts, c.get("store").db, conversation.id);
+      }
 
       return c.json({ message: serializeMessage(result.message) }, 201);
     },
