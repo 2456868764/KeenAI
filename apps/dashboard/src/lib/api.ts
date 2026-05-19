@@ -113,3 +113,35 @@ export function conversationStreamUrl(conversationId: string): string | null {
   if (!token) return null;
   return `${API_URL}/api/v1/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
 }
+
+export type Notification = {
+  id: string;
+  eventType: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export async function listNotifications(): Promise<{
+  items: Notification[];
+  unreadCount: number;
+}> {
+  return apiFetch("/api/v1/notifications?unreadOnly=false&limit=30");
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await apiFetch(`/api/v1/notifications/${id}/read`, { method: "PATCH" });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await apiFetch("/api/v1/notifications/read-all", { method: "POST" });
+}
+
+export async function searchConversations(
+  q: string,
+): Promise<{ items: (Conversation & { snippet?: string })[] }> {
+  const qs = new URLSearchParams({ q });
+  return apiFetch(`/api/v1/search/conversations?${qs}`);
+}

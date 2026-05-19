@@ -1,6 +1,7 @@
 "use client";
 
-import { listConversations } from "@/lib/api";
+import { listConversations, searchConversations } from "@/lib/api";
+import { NotificationBell } from "./notification-bell";
 import { clearAccessToken } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -13,13 +14,18 @@ export function InboxShell() {
   const router = useRouter();
   const [view, setView] = useState<InboxView>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const status = viewToStatusFilter(view);
+  const trimmedSearch = searchQuery.trim();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["conversations", status, view],
-    queryFn: () => listConversations(status ? { status } : undefined),
-    refetchInterval: 30_000,
+    queryKey: ["conversations", status, view, trimmedSearch],
+    queryFn: () =>
+      trimmedSearch
+        ? searchConversations(trimmedSearch)
+        : listConversations(status ? { status } : undefined),
+    refetchInterval: trimmedSearch ? false : 30_000,
   });
 
   const items = useMemo(() => {
@@ -56,6 +62,8 @@ export function InboxShell() {
   return (
     <div className="flex h-screen flex-col">
       <TopBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         onLogout={() => {
           clearAccessToken();
           router.replace("/login");
@@ -75,9 +83,17 @@ export function InboxShell() {
   );
 }
 
-function TopBar({ onLogout }: { onLogout: () => void }) {
+function TopBar({
+  searchQuery,
+  onSearchChange,
+  onLogout,
+}: {
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  onLogout: () => void;
+}) {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4">
+    <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4">
       <div className="flex items-center gap-2">
         <span className="inline-flex size-6 items-center justify-center rounded bg-[hsl(var(--primary))] text-[10px] font-bold text-[hsl(var(--primary-foreground))]">
           K
@@ -85,13 +101,23 @@ function TopBar({ onLogout }: { onLogout: () => void }) {
         <span className="text-sm font-medium text-[hsl(var(--foreground))]">Inbox</span>
         <span className="text-xs text-[hsl(var(--muted-foreground))]">Demo Workspace</span>
       </div>
-      <button
-        type="button"
-        onClick={onLogout}
-        className="rounded-md px-2 py-1 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-      >
-        Sign out
-      </button>
+      <input
+        type="search"
+        placeholder="Search conversations…"
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="h-8 max-w-xs flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
+      />
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+        <button
+          type="button"
+          onClick={onLogout}
+          className="rounded-md px-2 py-1 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+        >
+          Sign out
+        </button>
+      </div>
     </header>
   );
 }
