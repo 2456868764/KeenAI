@@ -24,6 +24,9 @@ export const apiEnvSchema = z.object({
   SMTP_FROM: z.string().email().optional(),
   /** HMAC secret for Messenger widget Identity Verification */
   WIDGET_HMAC_SECRET: z.string().min(32).optional(),
+  /** Local upload directory (default: `<repo>/data/uploads`) */
+  UPLOAD_DIR: z.string().optional(),
+  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

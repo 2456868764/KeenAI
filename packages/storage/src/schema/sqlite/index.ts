@@ -14,3 +14,4 @@ export {
   messages,
   reactions,
 } from "./conversation";
+export { notifications } from "./notification";

@@ -10,7 +10,11 @@ export interface LibsqlStoreOptions {
 
 type Listener = (payload: unknown) => void | Promise<void>;
 
-export function createLibsqlStore(options: LibsqlStoreOptions): Store {
+export interface LibsqlStore extends Store {
+  readonly client: Client;
+}
+
+export function createLibsqlStore(options: LibsqlStoreOptions): LibsqlStore {
   const client: Client = createClient({
     url: options.url,
     authToken: options.authToken,
@@ -20,6 +24,7 @@ export function createLibsqlStore(options: LibsqlStoreOptions): Store {
 
   return {
     dialect: "libsql",
+    client,
     db,
 
     async ping() {

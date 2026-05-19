@@ -27,6 +27,11 @@ export {
   type WidgetUser,
 } from "./widget.js";
 export { apiEnvSchema, parseApiEnv, type ApiEnv } from "./env.js";
+export {
+  listNotificationsSchema,
+  presignUploadSchema,
+  searchConversationsSchema,
+} from "./notification.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
