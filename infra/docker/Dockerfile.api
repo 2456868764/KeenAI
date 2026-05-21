@@ -1,12 +1,15 @@
 FROM oven/bun:1.2-alpine AS base
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json biome.json ./
+RUN apk add --no-cache wget
+
+COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json biome.json pnpm-lock.yaml ./
 COPY apps ./apps
 COPY packages ./packages
+COPY infra/docker/api-entrypoint.sh /entrypoint.sh
 
-RUN bun install -g pnpm && pnpm install --filter @keenai/api...
+RUN chmod +x /entrypoint.sh && bun install -g pnpm && pnpm install --filter @keenai/api...
 
 WORKDIR /app/apps/api
 EXPOSE 8090
-CMD ["bun", "run", "start"]
+ENTRYPOINT ["/entrypoint.sh"]

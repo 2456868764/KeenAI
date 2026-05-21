@@ -1,4 +1,4 @@
-# KeenAI — P0 dev profiles (see docs/08-ROADMAP.md)
+# KeenAI — deployment profiles (see docs/08-ROADMAP.md · docs/ALPHA.md)
 services:
   api:
     profiles: ["lite"]
@@ -8,10 +8,48 @@ services:
     ports:
       - "8090:8090"
     environment:
-      DATABASE_URL: file:/data/keenai.db
+      NODE_ENV: production
       PORT: "8090"
+      DATABASE_URL: file:/data/keenai.db
+      JWT_SECRET: change-me-in-production-min-32-chars-long-please
+      APP_URL: http://localhost:3000
+      LOG_FORMAT: json
+      KEENAI_AUTO_SEED: "1"
+      WORKFLOW_SCAN_INTERVAL_MINUTES: "5"
     volumes:
       - keenai-data:/data
+      - keenai-uploads:/app/data/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  dashboard:
+    profiles: ["lite"]
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.dashboard
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8090
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_healthy
+
+  inngest:
+    profiles: ["inngest"]
+    image: inngest/inngest:latest
+    command: inngest dev -u http://api:8090/api/inngest
+    ports:
+      - "8288:8288"
+    depends_on:
+      api:
+        condition: service_healthy
 
   postgres:
     profiles: ["standard", "full"]
@@ -44,4 +82,5 @@ services:
 
 volumes:
   keenai-data:
+  keenai-uploads:
   pg-data:
