@@ -81,7 +81,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", macroRoutes());
   app.route("/", copilotRoutes(ctx));
   app.route("/", workflowRoutes());
-  app.route("/", inngestRoutes());
+  app.route("/", inngestRoutes(ctx));
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
 

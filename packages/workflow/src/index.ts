@@ -33,4 +33,9 @@ export {
   type WorkflowDispatchContext,
   type UnresponsiveScanSummary,
 } from "./adapter/index.js";
-export { createWorkflowInngestFunctions, createInngestClient } from "./inngest/functions.js";
+export {
+  createWorkflowInngestFunctions,
+  createInngestClient,
+  WORKFLOW_SCAN_CRON_DEFAULT,
+  type WorkflowInngestOptions,
+} from "./inngest/functions.js";

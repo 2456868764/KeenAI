@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
 import { createLogger } from "./logger.js";
 import { initOtel } from "./otel.js";
+import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 
 const env = loadEnv();
 const startedAt = new Date();
@@ -16,6 +17,14 @@ const authConfig = toAuthConfig(env);
 initOtel(env, log);
 
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
+
+if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.WORKFLOW_SCAN_INTERVAL_MINUTES > 0) {
+  startWorkflowScanScheduler({ store, log }, env.WORKFLOW_SCAN_INTERVAL_MINUTES);
+  log.info(
+    { intervalMinutes: env.WORKFLOW_SCAN_INTERVAL_MINUTES },
+    "workflow unresponsive scan scheduler started",
+  );
+}
 
 if (typeof Bun !== "undefined") {
   const { registerConversationWebSocket } = await import("./routes/conversations-ws.js");

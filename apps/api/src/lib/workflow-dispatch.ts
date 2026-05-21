@@ -45,9 +45,9 @@ export function getWorkflowDispatch(): WorkflowDispatchAdapter {
   return adapter;
 }
 
-export function getInngestWorkflowServeHandler() {
+export function getInngestWorkflowServeHandler(scanCron?: string) {
   if (!inngestClient || !inngestHandlers) return null;
-  return createWorkflowInngestFunctions(inngestClient, inngestHandlers);
+  return createWorkflowInngestFunctions(inngestClient, inngestHandlers, { scanCron });
 }
 
 export function getInngestClient() {

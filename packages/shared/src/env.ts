@@ -47,6 +47,10 @@ export const apiEnvSchema = z.object({
   /** Inngest event key — when set, workflow triggers are queued via Inngest */
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_APP_ID: z.string().default("keenai"),
+  /** Inngest cron for customer_unresponsive scan (default every 5 minutes) */
+  INNGEST_SCAN_CRON: z.string().default("*/5 * * * *"),
+  /** Sync-mode background scan interval in minutes (0 = disabled; ignored when Inngest is enabled) */
+  WORKFLOW_SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
