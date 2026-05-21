@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v0.0.1)"
+        required: true
+        default: "v0.0.1"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Load release notes
+        id: notes
+        env:
+          TAG: ${{ steps.tag.outputs.name }}
+        run: |
+          ver="${TAG#v}"
+          file="docs/releases/${ver}.md"
+          if [ -f "$file" ]; then
+            {
+              echo "file<<EOF"
+              cat "$file"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "file=Release ${TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: ${{ steps.tag.outputs.name }} (Alpha)
+          body: ${{ steps.notes.outputs.file }}
+          draft: false
+          prerelease: true
+          generate_release_notes: false
