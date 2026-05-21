@@ -5,22 +5,15 @@
 
 ---
 
-## 当前迭代 · Iteration 8（Sprint 5 收尾 + Sprint 6 Workflow MVP）
+## 当前迭代 · Iteration 9（Alpha 发布）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I8-00 | 热修：上传目录 `findRepoRoot` 路径 | [x] |
-| I8-01 | Anthropic + Ollama LLM Provider | [x] |
-| I8-02 | `@keenai/workflow` 包：Zod DSL + 同步 Executor | [x] |
-| I8-03 | Workflow DB（workflows / workflow_runs）+ REST API | [x] |
-| I8-04 | Trigger：`first_message` 自动执行 + 集成测试 | [x] |
-| I8-05 | Block：`send_message` / `assign` / `close` | [x] |
-| I8-06 | Dashboard Workflow 列表 + 线性编辑器 | [x] |
-| I8-07 | Trigger：`customer_unresponsive`（定时扫描 stub） | [x] |
-| I8-08 | Inngest 适配层（sync fallback + `/api/inngest`） | [x] |
-| I8-09 | React Flow 可视化 Builder | [x] |
+| I9-01 | Docker lite profile（API + Dashboard + migrate/seed） | [x] |
+| I9-02 | Inngest cron + sync 定时扫描 | [x] |
+| I9-03 | Alpha 发布文档 + README 状态更新 | [x] |
 
-**下一迭代**：Docker lite profile · Inngest cron · Alpha 发布
+**下一迭代**：`bun build --compile` · PostgreSQL 矩阵 · Phase 2 Tickets
 
 ---
 
@@ -28,6 +21,7 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I8 | Workflow MVP + Inngest + React Flow | [x] |
 | I7 | Copilot MVP + Tiptap + Macros DB + 图片上传 | [x] |
 | I6 | 通知 / FTS / 上传 | [x] |
 | I5 | Inbox 增强 | [x] |
@@ -43,6 +37,7 @@
 | S4 Tiptap + mention + slash macros | [x] |
 | S5 Copilot 草稿 + 多 Provider | [x] |
 | S6 Workflow MVP | [x] |
+| **Alpha 发布** | [x] |
 
 ---
 
@@ -54,4 +49,4 @@
 
 ---
 
-见 [08-ROADMAP.md](./08-ROADMAP.md).
+见 [08-ROADMAP.md](./08-ROADMAP.md) · [ALPHA.md](./ALPHA.md).
