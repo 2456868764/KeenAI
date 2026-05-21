@@ -16,11 +16,11 @@
 | I8-04 | Trigger：`first_message` 自动执行 + 集成测试 | [x] |
 | I8-05 | Block：`send_message` / `assign` / `close` | [x] |
 | I8-06 | Dashboard Workflow 列表 + 线性编辑器 | [x] |
-| I8-07 | Trigger：`customer_unresponsive`（定时扫描 stub） | [ ] |
-| I8-08 | Inngest 适配层（可选 · 替换同步 Executor） | [ ] |
-| I8-09 | React Flow 可视化 Builder | [ ] |
+| I8-07 | Trigger：`customer_unresponsive`（定时扫描 stub） | [x] |
+| I8-08 | Inngest 适配层（sync fallback + `/api/inngest`） | [x] |
+| I8-09 | React Flow 可视化 Builder | [x] |
 
-**下一迭代**：React Flow Builder · Docker lite profile · Alpha 发布
+**下一迭代**：Docker lite profile · Inngest cron · Alpha 发布
 
 ---
 
@@ -42,7 +42,7 @@
 |--------|------|
 | S4 Tiptap + mention + slash macros | [x] |
 | S5 Copilot 草稿 + 多 Provider | [x] |
-| S6 Workflow MVP | [~] |
+| S6 Workflow MVP | [x] |
 
 ---
 

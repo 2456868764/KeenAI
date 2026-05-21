@@ -318,6 +318,7 @@ export type WorkflowBlock =
 
 export type WorkflowDefinition = {
   trigger: "first_message" | "customer_unresponsive";
+  inactivityMinutes?: number;
   blocks: WorkflowBlock[];
 };
 

@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { WorkflowFlowCanvas } from "./workflow-flow-canvas";
 
 function newBlockId() {
   return `block-${Date.now().toString(36)}`;
@@ -27,6 +28,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
+  const [view, setView] = useState<"list" | "flow">("flow");
 
   useEffect(() => {
     if (data?.workflow) {
@@ -90,7 +92,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         </Button>
       </AppHeader>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto p-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-6">
         {isLoading || !definition ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
         ) : error ? (
@@ -119,15 +121,63 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               </select>
             </section>
 
+            {definition.trigger === "customer_unresponsive" ? (
+              <section className="space-y-2">
+                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  Inactivity (minutes after agent reply)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={definition.inactivityMinutes ?? 30}
+                  onChange={(e) =>
+                    setDefinition({
+                      ...definition,
+                      inactivityMinutes: Number.parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                />
+              </section>
+            ) : null}
+
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium">Blocks</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-medium">Blocks</h2>
+                  <div className="flex rounded-md border border-[hsl(var(--border))] p-0.5 text-xs">
+                    <button
+                      type="button"
+                      className={
+                        view === "flow"
+                          ? "rounded px-2 py-0.5 bg-[hsl(var(--surface-2))] font-medium"
+                          : "rounded px-2 py-0.5 text-[hsl(var(--muted-foreground))]"
+                      }
+                      onClick={() => setView("flow")}
+                    >
+                      Flow
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        view === "list"
+                          ? "rounded px-2 py-0.5 bg-[hsl(var(--surface-2))] font-medium"
+                          : "rounded px-2 py-0.5 text-[hsl(var(--muted-foreground))]"
+                      }
+                      onClick={() => setView("list")}
+                    >
+                      List
+                    </button>
+                  </div>
+                </div>
                 <BlockAddMenu
                   onAdd={(block) =>
                     setDefinition({ ...definition, blocks: [...definition.blocks, block] })
                   }
                 />
               </div>
+              {view === "flow" ? (
+                <WorkflowFlowCanvas definition={definition} onDefinitionChange={setDefinition} />
+              ) : (
               <ol className="space-y-3">
                 {definition.blocks.map((block, index) => (
                   <li
@@ -153,6 +203,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                   </li>
                 ))}
               </ol>
+              )}
             </section>
 
             {workflow ? (
