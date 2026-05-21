@@ -1,10 +1,11 @@
 import { createDeepseekDraftProvider } from "./providers/deepseek.js";
+import { createGeminiDraftProvider } from "./providers/gemini.js";
 import { createKimiDraftProvider } from "./providers/kimi.js";
 import { createOpenaiDraftProvider } from "./providers/openai.js";
 import { stubDraftProvider } from "./providers/stub.js";
 import type { DraftProvider, LlmConfig, LlmProviderId } from "./types.js";
 
-const REMOTE_PROVIDER_ORDER: LlmProviderId[] = ["openai", "deepseek", "kimi"];
+const REMOTE_PROVIDER_ORDER: LlmProviderId[] = ["openai", "gemini", "deepseek", "kimi"];
 
 function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
   const providers: DraftProvider[] = [];
@@ -32,6 +33,15 @@ function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
       createKimiDraftProvider({
         apiKey: config.kimiApiKey,
         model: config.kimiModel,
+      }),
+    );
+  }
+
+  if (config.geminiApiKey) {
+    providers.push(
+      createGeminiDraftProvider({
+        apiKey: config.geminiApiKey,
+        model: config.geminiModel,
       }),
     );
   }

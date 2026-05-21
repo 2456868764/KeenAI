@@ -20,6 +20,8 @@ export function copilotRoutes(ctx: AppContext) {
     deepseekModel: ctx.env.DEEPSEEK_MODEL,
     kimiApiKey: ctx.env.KIMI_API_KEY,
     kimiModel: ctx.env.KIMI_MODEL,
+    geminiApiKey: ctx.env.GEMINI_API_KEY,
+    geminiModel: ctx.env.GEMINI_MODEL,
   });
 
   r.post(`${prefix}/draft`, requireAuth(), zValidator("json", copilotDraftBodySchema), async (c) => {

@@ -6,6 +6,10 @@ export {
   DEEPSEEK_BASE_URL,
   DEEPSEEK_DEFAULT_MODEL,
 } from "./providers/deepseek.js";
+export {
+  createGeminiDraftProvider,
+  GEMINI_DEFAULT_MODEL,
+} from "./providers/gemini.js";
 export { createKimiDraftProvider, KIMI_BASE_URL, KIMI_DEFAULT_MODEL } from "./providers/kimi.js";
 export { createOpenAiCompatibleDraftProvider } from "./providers/openai-compatible.js";
 export {
