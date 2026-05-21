@@ -1,6 +1,6 @@
 import { createOpenAiCompatibleDraftProvider } from "./openai-compatible.js";
 
-export const DEEPSEEK_DEFAULT_MODEL = "deepseek-chat";
+export const DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-flash";
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 
 export function createDeepseekDraftProvider(config: { apiKey: string; model?: string }) {

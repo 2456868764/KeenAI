@@ -110,6 +110,66 @@ export async function listMacros(): Promise<{ items: Macro[] }> {
   return apiFetch("/api/v1/macros");
 }
 
+export async function createMacro(input: {
+  slug: string;
+  name: string;
+  body: string;
+}): Promise<{ macro: Macro }> {
+  return apiFetch("/api/v1/macros", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function presignUpload(input: {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+}): Promise<{
+  uploadId: string;
+  uploadUrl: string;
+  storageKey: string;
+}> {
+  return apiFetch("/api/v1/uploads/presign", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function uploadFile(file: File): Promise<{ storageKey: string; contentType: string }> {
+  const token = getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const presigned = await presignUpload({
+    fileName: file.name,
+    contentType: file.type || "application/octet-stream",
+    sizeBytes: file.size,
+  });
+
+  const putRes = await fetch(presigned.uploadUrl, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+
+  if (!putRes.ok) {
+    const body = await putRes.text();
+    throw new Error(parseApiError(body, `Upload failed (${putRes.status})`));
+  }
+
+  const result = (await putRes.json()) as { storageKey: string; contentType: string };
+  return { storageKey: result.storageKey, contentType: result.contentType };
+}
+
+export function uploadFileUrl(storageKey: string): string | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  return `${API_URL}/api/v1/uploads/file/${encodeURIComponent(storageKey)}?access_token=${encodeURIComponent(token)}`;
+}
+
 export async function recordCopilotEvent(input: {
   conversationId: string;
   action: "accept" | "edit" | "discard";
@@ -160,7 +220,7 @@ export async function streamCopilotDraft(
     throw new Error(parseApiError(body, `Copilot failed (${res.status})`));
   }
 
-  let providerId = "stub";
+  let resolvedProviderId = providerId ?? "stub";
   const reader = res.body?.getReader();
   if (!reader) throw new Error("No response body");
 
@@ -185,7 +245,7 @@ export async function streamCopilotDraft(
       }
       if (event === "meta") {
         const meta = JSON.parse(data) as { providerId: string };
-        providerId = meta.providerId;
+        resolvedProviderId = meta.providerId;
       } else if (data && event !== "done") {
         const payload = JSON.parse(data) as { text?: string };
         if (payload.text) onChunk(payload.text);
@@ -193,7 +253,7 @@ export async function streamCopilotDraft(
     }
   }
 
-  return { providerId };
+  return { providerId: resolvedProviderId };
 }
 
 export async function updateConversation(
