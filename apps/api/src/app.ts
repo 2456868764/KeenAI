@@ -14,7 +14,10 @@ import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
+import { copilotRoutes } from "./routes/copilot.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
+import { macroRoutes } from "./routes/macros.js";
+import { memberRoutes } from "./routes/members.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import { searchRoutes } from "./routes/search.js";
@@ -70,6 +73,9 @@ export function createApp(ctx: AppContext) {
   app.route("/", widgetRoutes());
   app.route("/", emailWebhookRoutes());
   app.route("/", notificationRoutes());
+  app.route("/", memberRoutes());
+  app.route("/", macroRoutes());
+  app.route("/", copilotRoutes(ctx));
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
 
