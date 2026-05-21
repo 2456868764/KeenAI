@@ -4,6 +4,7 @@ import { createLibsqlStore } from "@keenai/storage";
 import { accounts, brands, conversations, members, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { buildMessageContent, insertMessage } from "./lib/conversations.js";
+import { ensureBuiltinMacros } from "./lib/macros-store.js";
 
 const DEMO = {
   orgSlug: "demo",
@@ -27,6 +28,7 @@ export async function seed() {
     .limit(1);
 
   if (existingOrg) {
+    await ensureBuiltinMacros(db, existingOrg.id);
     await seedDemoConversation(db, existingOrg.id);
     console.log("[seed] demo org already exists — conversation checked");
     logWidgetCredentials(env);
@@ -76,6 +78,7 @@ export async function seed() {
     .returning();
 
   if (brand) {
+    await ensureBuiltinMacros(db, org.id);
     await seedDemoConversation(db, org.id, brand.id, member?.id);
   }
 

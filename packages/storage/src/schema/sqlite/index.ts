@@ -16,3 +16,4 @@ export {
 } from "./conversation";
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
+export { macros } from "./macros";
