@@ -6,6 +6,7 @@ import { clearAccessToken } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { CopilotCommand } from "./copilot-command";
 import { ConversationList } from "./conversation-list";
 import { MessageThread } from "./message-thread";
 import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
@@ -15,6 +16,11 @@ export function InboxShell() {
   const [view, setView] = useState<InboxView>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotDraft, setCopilotDraft] = useState<{
+    text: string;
+    providerId: string;
+  } | null>(null);
 
   const status = viewToStatusFilter(view);
   const trimmedSearch = searchQuery.trim();
@@ -38,6 +44,12 @@ export function InboxShell() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCopilotOpen(true);
+        return;
+      }
+
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (items.length === 0) return;
 
@@ -77,8 +89,18 @@ export function InboxShell() {
           onSelect={setSelectedId}
           loading={isLoading}
         />
-        <MessageThread conversationId={selectedId} />
+        <MessageThread
+          conversationId={selectedId}
+          copilotDraft={copilotDraft}
+          onCopilotDraftApplied={() => setCopilotDraft(null)}
+        />
       </div>
+      <CopilotCommand
+        open={copilotOpen}
+        onOpenChange={setCopilotOpen}
+        conversationId={selectedId}
+        onDraft={(text, meta) => setCopilotDraft({ text, providerId: meta.providerId })}
+      />
     </div>
   );
 }

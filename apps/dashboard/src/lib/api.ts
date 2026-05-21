@@ -83,12 +83,102 @@ export async function listMessages(id: string): Promise<{ items: Message[] }> {
 export async function sendMessage(
   conversationId: string,
   plainText: string,
-  opts?: { isInternal?: boolean },
+  opts?: {
+    isInternal?: boolean;
+    content?: { type: "tiptap"; doc: Record<string, unknown> };
+  },
 ): Promise<{ message: Message }> {
   return apiFetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ plainText, isInternal: opts?.isInternal ?? false }),
+    body: JSON.stringify({
+      plainText,
+      isInternal: opts?.isInternal ?? false,
+      content: opts?.content ? { type: "tiptap", doc: opts.content.doc } : undefined,
+    }),
   });
+}
+
+export type Member = { id: string; name: string; email: string; role: string };
+
+export async function listMembers(): Promise<{ items: Member[] }> {
+  return apiFetch("/api/v1/members");
+}
+
+export type Macro = { slug: string; name: string; body: string };
+
+export async function listMacros(): Promise<{ items: Macro[] }> {
+  return apiFetch("/api/v1/macros");
+}
+
+export async function recordCopilotEvent(input: {
+  conversationId: string;
+  action: "accept" | "edit" | "discard";
+  draftLength?: number;
+  providerId?: string;
+}): Promise<void> {
+  await apiFetch("/api/v1/copilot/events", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/** Stream copilot draft via SSE; calls onChunk for each text delta. */
+export async function streamCopilotDraft(
+  conversationId: string,
+  instruction: string | undefined,
+  onChunk: (text: string) => void,
+): Promise<{ providerId: string }> {
+  const token = getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const res = await fetch(`${API_URL}/api/v1/copilot/draft`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ conversationId, instruction }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(parseApiError(body, `Copilot failed (${res.status})`));
+  }
+
+  let providerId = "stub";
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() ?? "";
+
+    for (const part of parts) {
+      const lines = part.split("\n");
+      let event = "message";
+      let data = "";
+      for (const line of lines) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        if (line.startsWith("data:")) data += line.slice(5).trim();
+      }
+      if (event === "meta") {
+        const meta = JSON.parse(data) as { providerId: string };
+        providerId = meta.providerId;
+      } else if (data && event !== "done") {
+        const payload = JSON.parse(data) as { text?: string };
+        if (payload.text) onChunk(payload.text);
+      }
+    }
+  }
+
+  return { providerId };
 }
 
 export async function updateConversation(
