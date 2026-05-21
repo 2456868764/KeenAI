@@ -63,7 +63,7 @@ export function uploadRoutes(ctx: AppContext) {
     const buf = await readUploadFile(ctx.env, storageKey);
     if (!buf) return c.json({ error: "not_found" }, 404);
 
-    return new Response(buf, {
+    return new Response(buf as unknown as BodyInit, {
       headers: {
         "Content-Type": guessContentType(storageKey),
         "Cache-Control": "private, max-age=3600",

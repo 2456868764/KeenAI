@@ -10,13 +10,10 @@ import { ingestInboundEmail } from "../lib/email-ingest.js";
 import { resolveBrandBySlug, resolveOrgBySlug } from "../lib/widget.js";
 import type { AppVariables } from "../types.js";
 
-function verifyWebhookSecret(c: {
-  req: { header: (n: string) => string | undefined };
-  env: AppVariables["env"];
-}) {
+function verifyWebhookSecret(req: { header: (n: string) => string | undefined }) {
   const expected = process.env.WEBHOOK_EMAIL_SECRET;
   if (!expected) return true;
-  const got = c.req.header("x-keenai-webhook-secret");
+  const got = req.header("x-keenai-webhook-secret");
   return got === expected;
 }
 
@@ -37,7 +34,7 @@ export function emailWebhookRoutes() {
   const prefix = `/api/${API_VERSION}/webhooks/email`;
 
   r.post(`${prefix}/inbound`, async (c) => {
-    if (!verifyWebhookSecret(c)) return c.json({ error: "forbidden" }, 403);
+    if (!verifyWebhookSecret(c.req)) return c.json({ error: "forbidden" }, 403);
 
     const orgSlug = c.req.query("org");
     const brandSlug = c.req.query("brand") ?? "default";
@@ -58,7 +55,7 @@ export function emailWebhookRoutes() {
   });
 
   r.post(`${prefix}/ses`, async (c) => {
-    if (!verifyWebhookSecret(c)) return c.json({ error: "forbidden" }, 403);
+    if (!verifyWebhookSecret(c.req)) return c.json({ error: "forbidden" }, 403);
 
     const orgSlug = c.req.query("org");
     const brandSlug = c.req.query("brand") ?? "default";
@@ -79,7 +76,7 @@ export function emailWebhookRoutes() {
   });
 
   r.post(`${prefix}/sendgrid`, async (c) => {
-    if (!verifyWebhookSecret(c)) return c.json({ error: "forbidden" }, 403);
+    if (!verifyWebhookSecret(c.req)) return c.json({ error: "forbidden" }, 403);
 
     const orgSlug = c.req.query("org");
     const brandSlug = c.req.query("brand") ?? "default";
@@ -100,7 +97,7 @@ export function emailWebhookRoutes() {
   });
 
   r.post(`${prefix}/mailgun`, async (c) => {
-    if (!verifyWebhookSecret(c)) return c.json({ error: "forbidden" }, 403);
+    if (!verifyWebhookSecret(c.req)) return c.json({ error: "forbidden" }, 403);
 
     const orgSlug = c.req.query("org");
     const brandSlug = c.req.query("brand") ?? "default";

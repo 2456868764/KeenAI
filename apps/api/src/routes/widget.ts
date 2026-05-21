@@ -105,7 +105,7 @@ export function widgetRoutes() {
       auth.orgId,
     );
     const denied = assertWidgetConversation(conversation, auth);
-    if (denied === "not_found") return c.json({ error: "not_found" }, 404);
+    if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
     if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
     return c.json({ conversation: serializeConversation(conversation) });
@@ -121,7 +121,7 @@ export function widgetRoutes() {
       auth.orgId,
     );
     const denied = assertWidgetConversation(conversation, auth);
-    if (denied === "not_found") return c.json({ error: "not_found" }, 404);
+    if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
     if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
     const items = await listWidgetMessages(c.get("store").db, conversation.id, auth.orgId, 100);
@@ -142,7 +142,7 @@ export function widgetRoutes() {
         auth.orgId,
       );
       const denied = assertWidgetConversation(conversation, auth);
-      if (denied === "not_found") return c.json({ error: "not_found" }, 404);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
       if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
       const body = c.req.valid("json");

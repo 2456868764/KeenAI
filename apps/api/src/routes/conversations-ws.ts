@@ -25,16 +25,20 @@ export function registerConversationWebSocket(app: Hono<{ Variables: AppVariable
         return { onOpen: (_e, ws) => ws.close(4401, "invalid token") };
       }
 
+      const conversationId = c.req.param("id");
+      if (!conversationId) {
+        return { onOpen: (_e, ws) => ws.close(4400, "missing conversation id") };
+      }
+
       const conversation = await getConversationForOrg(
         c.get("store").db,
-        c.req.param("id"),
+        conversationId,
         auth.orgId,
       );
       if (!conversation || !canAccessBrand(auth, conversation.brandId)) {
         return { onOpen: (_e, ws) => ws.close(4403, "forbidden") };
       }
 
-      const conversationId = conversation.id;
       let unsubscribe: (() => void) | undefined;
 
       return {

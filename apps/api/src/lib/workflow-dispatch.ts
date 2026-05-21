@@ -16,7 +16,9 @@ let inngestHandlers: WorkflowDispatchHandlers | null = null;
 
 export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
   const handlers: WorkflowDispatchHandlers = {
-    dispatchFirstMessage: (input) => dispatchFirstMessageWorkflows(ctx.store.db, input),
+    dispatchFirstMessage: async (input) => {
+      await dispatchFirstMessageWorkflows(ctx.store.db, input);
+    },
     scanCustomerUnresponsive: (orgId) =>
       scanCustomerUnresponsiveWorkflows(ctx.store.db, { orgId }).then((result) => ({
         scanned: result.scanned,
@@ -28,8 +30,11 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
   inngestHandlers = handlers;
 
   if (ctx.env.INNGEST_EVENT_KEY) {
-    inngestClient = new Inngest({ id: ctx.env.INNGEST_APP_ID });
-    adapter = createInngestWorkflowDispatch((payload) => inngestClient?.send(payload), handlers);
+    const client = new Inngest({ id: ctx.env.INNGEST_APP_ID });
+    inngestClient = client;
+    adapter = createInngestWorkflowDispatch(async (payload) => {
+      await client.send(payload);
+    }, handlers);
     return adapter;
   }
 

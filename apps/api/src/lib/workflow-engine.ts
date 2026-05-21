@@ -26,7 +26,6 @@ export async function executeWorkflow(
         orgId: workflow.orgId,
         conversationId,
         senderType: "agent",
-        senderId: null,
         plainText,
         content: buildMessageContent(plainText),
         isInternal: false,

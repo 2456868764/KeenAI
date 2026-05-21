@@ -26,25 +26,30 @@ export function registerWidgetWebSocket(app: Hono<{ Variables: AppVariables }>) 
         return { onOpen: (_e, ws) => ws.close(4401, "invalid token") };
       }
 
+      const conversationId = c.req.param("id");
+      if (!conversationId) {
+        return { onOpen: (_e, ws) => ws.close(4400, "missing conversation id") };
+      }
+
       const conversation = await getConversationForOrg(
         c.get("store").db,
-        c.req.param("id"),
+        conversationId,
         auth.orgId,
       );
       const denied = assertWidgetConversation(conversation, auth);
-      if (denied) {
-        const code = denied === "not_found" ? 4404 : 4403;
-        const reason = denied === "not_found" ? "not_found" : "forbidden";
+      if (denied || !conversation) {
+        const code = denied === "not_found" || !conversation ? 4404 : 4403;
+        const reason = denied === "not_found" || !conversation ? "not_found" : "forbidden";
         return { onOpen: (_e, ws) => ws.close(code, reason) };
       }
 
-      const conversationId = conversation.id;
+      const activeConversationId = conversation.id;
       let unsubscribe: (() => void) | undefined;
 
       return {
         onOpen: (_e, ws) => {
-          ws.send(JSON.stringify({ type: "connected", conversationId }));
-          unsubscribe = subscribeConversation(conversationId, (event) => {
+          ws.send(JSON.stringify({ type: "connected", conversationId: activeConversationId }));
+          unsubscribe = subscribeConversation(activeConversationId, (event) => {
             if (
               event.type === "message.created" &&
               (event.message as { isInternal?: boolean })?.isInternal

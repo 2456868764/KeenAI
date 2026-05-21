@@ -8,6 +8,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { createLogger } from "./logger.js";
+import { requireRow } from "./test-helpers.js";
 
 const authConfig: AuthConfig = {
   jwtSecret: "test-secret-at-least-32-characters-long!!",
@@ -38,12 +39,17 @@ describe("notifications and search integration", () => {
 
     const fts = createLibsqlFtsStore(store.client);
 
-    const [org] = await db.insert(organizations).values({ slug: "acme", name: "Acme" }).returning();
-    const [brand] = await db
-      .insert(brands)
-      .values({ orgId: org?.id, slug: "default", name: "Default" })
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
       .returning();
-    const [owner] = await db
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [ownerRow] = await db
       .insert(accounts)
       .values({
         email: "owner@acme.test",
@@ -51,7 +57,8 @@ describe("notifications and search integration", () => {
         passwordHash: await hashPassword("password12345"),
       })
       .returning();
-    const [agent] = await db
+    const owner = requireRow(ownerRow, "owner");
+    const [agentRow] = await db
       .insert(accounts)
       .values({
         email: "agent@acme.test",
@@ -59,14 +66,16 @@ describe("notifications and search integration", () => {
         passwordHash: await hashPassword("password12345"),
       })
       .returning();
+    const agent = requireRow(agentRow, "agent");
 
     await db
       .insert(members)
-      .values({ orgId: org?.id, accountId: owner?.id, role: "admin", status: "active" });
-    const [agentMember] = await db
+      .values({ orgId: org.id, accountId: owner.id, role: "admin", status: "active" });
+    const [agentMemberRow] = await db
       .insert(members)
-      .values({ orgId: org?.id, accountId: agent?.id, role: "agent", status: "active" })
+      .values({ orgId: org.id, accountId: agent.id, role: "agent", status: "active" })
       .returning();
+    const agentMember = requireRow(agentMemberRow, "agentMember");
 
     const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
     const app = createApp({
@@ -88,7 +97,7 @@ describe("notifications and search integration", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        brandId: brand?.id,
+        brandId: brand.id,
         channelType: "messenger",
         channelId: "widget-1",
         subject: "Refund request",
@@ -104,7 +113,7 @@ describe("notifications and search integration", () => {
         Authorization: `Bearer ${ownerToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ assigneeId: agentMember?.id }),
+      body: JSON.stringify({ assigneeId: agentMember.id }),
     });
     expect(assigned.status).toBe(200);
 

@@ -18,6 +18,7 @@ export function createWorkflowDispatch(config: WorkflowDispatchConfig): Workflow
 export type {
   WorkflowDispatchAdapter,
   WorkflowDispatchContext,
+  WorkflowDispatchHandlers,
   UnresponsiveScanSummary,
 } from "./types.js";
 export { createSyncWorkflowDispatch } from "./sync.js";

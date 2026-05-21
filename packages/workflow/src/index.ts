@@ -31,6 +31,7 @@ export {
   WORKFLOW_INNGEST_EVENTS,
   type WorkflowDispatchAdapter,
   type WorkflowDispatchContext,
+  type WorkflowDispatchHandlers,
   type UnresponsiveScanSummary,
 } from "./adapter/index.js";
 export {

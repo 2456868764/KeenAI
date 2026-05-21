@@ -16,6 +16,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { createLogger } from "./logger.js";
+import { requireRow } from "./test-helpers.js";
 
 const authConfig: AuthConfig = {
   jwtSecret: "test-secret-at-least-32-characters-long!!",
@@ -48,12 +49,17 @@ describe("customer unresponsive workflow", () => {
     );
     await migrate(db, { migrationsFolder });
 
-    const [org] = await db.insert(organizations).values({ slug: "acme", name: "Acme" }).returning();
-    const [brand] = await db
-      .insert(brands)
-      .values({ orgId: org?.id, slug: "default", name: "Default" })
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
       .returning();
-    const [account] = await db
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
       .insert(accounts)
       .values({
         email: "agent@acme.test",
@@ -61,9 +67,10 @@ describe("customer unresponsive workflow", () => {
         passwordHash: await hashPassword("password12345"),
       })
       .returning();
+    const account = requireRow(accountRow, "account");
     await db.insert(members).values({
-      orgId: org?.id,
-      accountId: account?.id,
+      orgId: org.id,
+      accountId: account.id,
       role: "admin",
       status: "active",
     });
@@ -86,7 +93,7 @@ describe("customer unresponsive workflow", () => {
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Nudge",
-        brandId: brand?.id,
+        brandId: brand.id,
         definition: {
           trigger: "customer_unresponsive",
           inactivityMinutes: 0,
@@ -112,7 +119,7 @@ describe("customer unresponsive workflow", () => {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
-        brandId: brand?.id,
+        brandId: brand.id,
         channelType: "messenger",
         channelId: "w1",
         subject: "Unresponsive test",
