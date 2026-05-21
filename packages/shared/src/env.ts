@@ -27,6 +27,8 @@ export const apiEnvSchema = z.object({
   /** Local upload directory (default: `<repo>/data/uploads`) */
   UPLOAD_DIR: z.string().optional(),
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

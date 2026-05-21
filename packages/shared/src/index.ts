@@ -32,6 +32,12 @@ export {
   presignUploadSchema,
   searchConversationsSchema,
 } from "./notification.js";
+export {
+  copilotDraftBodySchema,
+  copilotEventBodySchema,
+  COPILOT_EVENT_ACTIONS,
+  type CopilotEventAction,
+} from "./copilot.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
