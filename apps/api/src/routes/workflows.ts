@@ -120,5 +120,18 @@ export function workflowRoutes() {
     return c.json({ workflow: serializeWorkflow(row) });
   });
 
+  r.post(`${prefix}/jobs/scan-unresponsive`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const { scanCustomerUnresponsiveWorkflows } = await import(
+      "../lib/workflow-unresponsive-scan.js"
+    );
+    const result = await scanCustomerUnresponsiveWorkflows(c.get("store").db, {
+      orgId: auth.orgId,
+    });
+    return c.json(result);
+  });
+
   return r;
 }

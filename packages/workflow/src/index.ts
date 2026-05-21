@@ -20,3 +20,7 @@ export {
   type WorkflowTrigger,
 } from "./schema.js";
 export { runWorkflow } from "./executor.js";
+export {
+  DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES,
+  resolveInactivityMs,
+} from "./triggers.js";

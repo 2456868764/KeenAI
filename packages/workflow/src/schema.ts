@@ -34,6 +34,8 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
 
 export const workflowDefinitionSchema = z.object({
   trigger: z.enum(WORKFLOW_TRIGGERS),
+  /** Minutes of customer silence after agent reply (customer_unresponsive only). */
+  inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
   blocks: z.array(workflowBlockSchema).min(1).max(32),
 });
 
