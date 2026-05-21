@@ -46,6 +46,16 @@ describe("createLlmRegistry", () => {
     expect(resolveDraftProvider().id).toBe("deepseek");
   });
 
+  it("lists provider summaries with labels", () => {
+    const { listProviderSummaries } = createLlmRegistry({
+      geminiApiKey: "gemini-key",
+      geminiModel: "gemini-2.0-flash",
+    });
+    const items = listProviderSummaries();
+    expect(items.find((p) => p.id === "gemini")?.label).toBe("Google Gemini");
+    expect(items.find((p) => p.id === "gemini")?.isDefault).toBe(true);
+  });
+
   it("falls back to stub when no remote keys", () => {
     const { resolveDraftProvider } = createLlmRegistry({});
     expect(resolveDraftProvider().id).toBe("stub");

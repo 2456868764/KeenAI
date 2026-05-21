@@ -1,3 +1,4 @@
+import { buildProviderSummaries } from "./provider-meta.js";
 import { createDeepseekDraftProvider } from "./providers/deepseek.js";
 import { createGeminiDraftProvider } from "./providers/gemini.js";
 import { createKimiDraftProvider } from "./providers/kimi.js";
@@ -73,5 +74,20 @@ export function createLlmRegistry(config: LlmConfig = {}) {
     return providers.map((p) => p.id);
   }
 
-  return { resolveDraftProvider, providers, listConfiguredProviderIds };
+  function getProvider(id: LlmProviderId): DraftProvider | undefined {
+    return providers.find((p) => p.id === id);
+  }
+
+  function listProviderSummaries() {
+    const defaultId = resolveDraftProvider().id;
+    return buildProviderSummaries(config, listConfiguredProviderIds(), defaultId);
+  }
+
+  return {
+    resolveDraftProvider,
+    getProvider,
+    providers,
+    listConfiguredProviderIds,
+    listProviderSummaries,
+  };
 }

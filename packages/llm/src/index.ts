@@ -1,4 +1,5 @@
 export { createLlmRegistry } from "./registry.js";
+export { PROVIDER_LABELS, type CopilotProviderSummary } from "./provider-meta.js";
 export { stubDraftProvider } from "./providers/stub.js";
 export { createOpenaiDraftProvider } from "./providers/openai.js";
 export {

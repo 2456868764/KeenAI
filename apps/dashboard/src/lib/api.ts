@@ -122,11 +122,26 @@ export async function recordCopilotEvent(input: {
   });
 }
 
+export type CopilotProvider = {
+  id: string;
+  label: string;
+  model?: string;
+  isDefault: boolean;
+};
+
+export async function listCopilotProviders(): Promise<{
+  defaultProviderId: string;
+  items: CopilotProvider[];
+}> {
+  return apiFetch("/api/v1/copilot/providers");
+}
+
 /** Stream copilot draft via SSE; calls onChunk for each text delta. */
 export async function streamCopilotDraft(
   conversationId: string,
   instruction: string | undefined,
   onChunk: (text: string) => void,
+  providerId?: string,
 ): Promise<{ providerId: string }> {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
@@ -137,7 +152,7 @@ export async function streamCopilotDraft(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ conversationId, instruction }),
+    body: JSON.stringify({ conversationId, instruction, providerId }),
   });
 
   if (!res.ok) {

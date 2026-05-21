@@ -64,7 +64,10 @@ export function copilotRoutes(ctx: AppContext) {
       draftMessages.push({ role: "user", plainText: conversation.subject ?? "Hello" });
     }
 
-    const provider = llm.resolveDraftProvider();
+    const provider =
+      body.providerId != null
+        ? (llm.getProvider(body.providerId) ?? llm.resolveDraftProvider())
+        : llm.resolveDraftProvider();
 
     return streamSSE(c, async (stream) => {
       stream.writeSSE({
@@ -118,6 +121,16 @@ export function copilotRoutes(ctx: AppContext) {
       return c.json({ event: { id: row?.id, action: body.action } }, 201);
     },
   );
+
+  r.get(`${prefix}/providers`, requireAuth(), (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    return c.json({
+      defaultProviderId: llm.resolveDraftProvider().id,
+      items: llm.listProviderSummaries(),
+    });
+  });
 
   return r;
 }

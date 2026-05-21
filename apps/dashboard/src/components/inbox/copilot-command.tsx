@@ -1,5 +1,6 @@
 "use client";
 
+import { listCopilotProviders, type CopilotProvider } from "@/lib/api";
 import {
   Command,
   CommandEmpty,
@@ -8,6 +9,7 @@ import {
   CommandItem,
   CommandList,
 } from "@keenai/ui";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 export function CopilotCommand({
@@ -23,10 +25,23 @@ export function CopilotCommand({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<string>("stub");
+
+  const { data: providersData } = useQuery({
+    queryKey: ["copilot-providers"],
+    queryFn: listCopilotProviders,
+    enabled: open,
+  });
 
   useEffect(() => {
     if (!open) setError(null);
   }, [open]);
+
+  useEffect(() => {
+    if (providersData?.defaultProviderId) {
+      setProviderId(providersData.defaultProviderId);
+    }
+  }, [providersData?.defaultProviderId, open]);
 
   async function runDraft(instruction?: string) {
     if (!conversationId || loading) return;
@@ -35,9 +50,14 @@ export function CopilotCommand({
     try {
       const { streamCopilotDraft } = await import("@/lib/api");
       let text = "";
-      const meta = await streamCopilotDraft(conversationId, instruction, (chunk) => {
-        text += chunk;
-      });
+      const meta = await streamCopilotDraft(
+        conversationId,
+        instruction,
+        (chunk) => {
+          text += chunk;
+        },
+        providerId,
+      );
       onDraft(text.trim(), meta);
       onOpenChange(false);
     } catch (e) {
@@ -48,6 +68,8 @@ export function CopilotCommand({
   }
 
   if (!open) return null;
+
+  const providers: CopilotProvider[] = providersData?.items ?? [];
 
   return (
     <div
@@ -64,6 +86,29 @@ export function CopilotCommand({
         aria-label="Copilot"
       >
         <Command>
+          <div className="border-b border-[hsl(var(--border))] px-3 py-2">
+            <label
+              htmlFor="copilot-provider"
+              className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]"
+            >
+              Model provider
+            </label>
+            <select
+              id="copilot-provider"
+              value={providerId}
+              disabled={loading || providers.length === 0}
+              onChange={(e) => setProviderId(e.target.value)}
+              className="h-8 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs text-[hsl(var(--foreground))]"
+            >
+              {providers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                  {p.model ? ` · ${p.model}` : ""}
+                  {p.isDefault ? " (default)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
           <CommandInput placeholder="Copilot — draft reply, or type an instruction…" />
           <CommandList>
             <CommandEmpty>{loading ? "Generating draft…" : "No results"}</CommandEmpty>

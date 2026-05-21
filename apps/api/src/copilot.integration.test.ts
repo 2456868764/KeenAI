@@ -113,6 +113,15 @@ describe("copilot integration", () => {
     const macroBody = (await macros.json()) as { items: { slug: string }[] };
     expect(macroBody.items.some((m) => m.slug === "refund")).toBe(true);
 
+    const providerList = await app.request("/api/v1/copilot/providers", { headers: auth });
+    expect(providerList.status).toBe(200);
+    const providerBody = (await providerList.json()) as {
+      defaultProviderId: string;
+      items: { id: string; label: string }[];
+    };
+    expect(providerBody.defaultProviderId).toBe("stub");
+    expect(providerBody.items.some((p) => p.id === "stub")).toBe(true);
+
     await store.close();
   });
 });

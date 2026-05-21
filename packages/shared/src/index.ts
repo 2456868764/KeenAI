@@ -35,6 +35,7 @@ export {
 export {
   copilotDraftBodySchema,
   copilotEventBodySchema,
+  copilotProviderIdSchema,
   COPILOT_EVENT_ACTIONS,
   type CopilotEventAction,
 } from "./copilot.js";
