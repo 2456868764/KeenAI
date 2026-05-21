@@ -15,7 +15,7 @@
 | I7-03 | Tiptap 编辑器（@mention · `/` macro） | [x] |
 | I7-04 | Dashboard Cmd+K Copilot + 采纳率埋点 | [x] |
 | I7-05 | DeepSeek / Kimi Provider + `LLM_PROVIDER` 选择 | [x] |
-| I7-06 | Macros DB 持久化 + 图片/附件插入 | [ ] |
+| I7-06 | Macros DB 持久化 + 图片/附件插入 | [x] |
 
 **下一迭代**：Workflow MVP · S3 上传 · 多 Provider
 
@@ -37,8 +37,8 @@
 | Sprint | 状态 |
 |--------|------|
 | S4 Tiptap + mention + slash macros | [x] |
-| S5 Copilot 草稿（MVP） | [~] |
-| S5 多 Provider / Macros DB | [ ] |
+| S5 Copilot 草稿（MVP） | [x] |
+| S5 多 Provider / Macros DB | [~] |
 | S6 Workflow MVP | [ ] |
 
 ---

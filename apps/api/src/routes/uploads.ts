@@ -5,6 +5,8 @@ import {
   consumePresignedUpload,
   createPresignedUpload,
   fileChecksum,
+  guessContentType,
+  readUploadFile,
   saveUploadFile,
 } from "../lib/uploads.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -50,6 +52,22 @@ export function uploadRoutes(ctx: AppContext) {
       contentType: entry.contentType,
       sizeBytes: buf.byteLength,
       checksum: fileChecksum(buf),
+    });
+  });
+
+  r.get(`${prefix}/file/:storageKey`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const storageKey = c.req.param("storageKey");
+    const buf = await readUploadFile(ctx.env, storageKey);
+    if (!buf) return c.json({ error: "not_found" }, 404);
+
+    return new Response(buf, {
+      headers: {
+        "Content-Type": guessContentType(storageKey),
+        "Cache-Control": "private, max-age=3600",
+      },
     });
   });
 

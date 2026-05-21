@@ -1,7 +1,7 @@
 "use client";
 
 import type { Macro } from "@/lib/api";
-import type { MentionOptions } from "@tiptap/extension-mention";
+import type { Editor } from "@tiptap/react";
 import { ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
@@ -12,7 +12,7 @@ type Member = { id: string; name: string };
 function buildSuggestion<T extends { id: string; label: string }>(
   char: string,
   items: (query: string) => T[],
-  onSelectExtra?: (item: T, editor: MentionOptions["editor"]) => void,
+  onSelectExtra?: (item: T, editor: Editor) => void,
 ): Omit<SuggestionOptions<T>, "editor"> {
   return {
     char,

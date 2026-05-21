@@ -1,6 +1,6 @@
 "use client";
 
-import { listConversations, searchConversations } from "@/lib/api";
+import { listConversations, searchConversations, type Conversation } from "@/lib/api";
 import { NotificationBell } from "./notification-bell";
 import { clearAccessToken } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
@@ -27,17 +27,20 @@ export function InboxShell() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversations", status, view, trimmedSearch],
-    queryFn: () =>
-      trimmedSearch
-        ? searchConversations(trimmedSearch)
-        : listConversations(status ? { status } : undefined),
+    queryFn: async () => {
+      if (trimmedSearch) {
+        const result = await searchConversations(trimmedSearch);
+        return { items: result.items, nextCursor: null as string | null };
+      }
+      return listConversations(status ? { status } : undefined);
+    },
     refetchInterval: trimmedSearch ? false : 30_000,
   });
 
   const items = useMemo(() => {
     const list = data?.items ?? [];
     if (view === "unassigned") {
-      return list.filter((c) => !c.status || c.status === "open");
+      return list.filter((c: Conversation) => !c.status || c.status === "open");
     }
     return list;
   }, [data?.items, view]);

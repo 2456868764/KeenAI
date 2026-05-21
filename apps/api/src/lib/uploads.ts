@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ApiEnv } from "@keenai/shared";
 import { findRepoRoot } from "@keenai/shared";
@@ -68,4 +68,44 @@ export async function saveUploadFile(
 
 export function fileChecksum(body: Uint8Array): string {
   return createHash("sha256").update(body).digest("hex");
+}
+
+const STORAGE_KEY_RE = /^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,32})?$/;
+
+export function isValidStorageKey(storageKey: string): boolean {
+  return STORAGE_KEY_RE.test(storageKey);
+}
+
+export function resolveUploadFilePath(env: ApiEnv, storageKey: string): string {
+  if (!isValidStorageKey(storageKey)) {
+    throw new Error("invalid_storage_key");
+  }
+  return path.join(resolveUploadDir(env), storageKey);
+}
+
+export async function readUploadFile(env: ApiEnv, storageKey: string): Promise<Uint8Array | null> {
+  try {
+    return await readFile(resolveUploadFilePath(env, storageKey));
+  } catch {
+    return null;
+  }
+}
+
+export function guessContentType(storageKey: string): string {
+  const ext = path.extname(storageKey).toLowerCase();
+  switch (ext) {
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    case ".svg":
+      return "image/svg+xml";
+    default:
+      return "application/octet-stream";
+  }
 }
