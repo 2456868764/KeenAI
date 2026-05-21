@@ -16,12 +16,16 @@ export function copilotRoutes(ctx: AppContext) {
     provider: ctx.env.LLM_PROVIDER,
     openaiApiKey: ctx.env.OPENAI_API_KEY,
     openaiModel: ctx.env.OPENAI_MODEL,
+    anthropicApiKey: ctx.env.ANTHROPIC_API_KEY,
+    anthropicModel: ctx.env.ANTHROPIC_MODEL,
     deepseekApiKey: ctx.env.DEEPSEEK_API_KEY,
     deepseekModel: ctx.env.DEEPSEEK_MODEL,
     kimiApiKey: ctx.env.KIMI_API_KEY,
     kimiModel: ctx.env.KIMI_MODEL,
     geminiApiKey: ctx.env.GEMINI_API_KEY,
     geminiModel: ctx.env.GEMINI_MODEL,
+    ollamaBaseUrl: ctx.env.OLLAMA_BASE_URL,
+    ollamaModel: ctx.env.OLLAMA_MODEL,
   });
 
   r.post(`${prefix}/draft`, requireAuth(), zValidator("json", copilotDraftBodySchema), async (c) => {

@@ -1,12 +1,21 @@
 import { buildProviderSummaries } from "./provider-meta.js";
+import { createAnthropicDraftProvider } from "./providers/anthropic.js";
 import { createDeepseekDraftProvider } from "./providers/deepseek.js";
 import { createGeminiDraftProvider } from "./providers/gemini.js";
 import { createKimiDraftProvider } from "./providers/kimi.js";
+import { createOllamaDraftProvider } from "./providers/ollama.js";
 import { createOpenaiDraftProvider } from "./providers/openai.js";
 import { stubDraftProvider } from "./providers/stub.js";
 import type { DraftProvider, LlmConfig, LlmProviderId } from "./types.js";
 
-const REMOTE_PROVIDER_ORDER: LlmProviderId[] = ["openai", "gemini", "deepseek", "kimi"];
+const REMOTE_PROVIDER_ORDER: LlmProviderId[] = [
+  "openai",
+  "anthropic",
+  "gemini",
+  "deepseek",
+  "kimi",
+  "ollama",
+];
 
 function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
   const providers: DraftProvider[] = [];
@@ -16,6 +25,15 @@ function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
       createOpenaiDraftProvider({
         apiKey: config.openaiApiKey,
         model: config.openaiModel,
+      }),
+    );
+  }
+
+  if (config.anthropicApiKey) {
+    providers.push(
+      createAnthropicDraftProvider({
+        apiKey: config.anthropicApiKey,
+        model: config.anthropicModel,
       }),
     );
   }
@@ -43,6 +61,15 @@ function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
       createGeminiDraftProvider({
         apiKey: config.geminiApiKey,
         model: config.geminiModel,
+      }),
+    );
+  }
+
+  if (config.ollamaBaseUrl) {
+    providers.push(
+      createOllamaDraftProvider({
+        baseUrl: config.ollamaBaseUrl,
+        model: config.ollamaModel,
       }),
     );
   }

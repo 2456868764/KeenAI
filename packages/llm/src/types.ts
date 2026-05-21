@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const LLM_PROVIDER_IDS = ["stub", "openai", "deepseek", "kimi", "gemini"] as const;
+export const LLM_PROVIDER_IDS = [
+  "stub",
+  "openai",
+  "anthropic",
+  "gemini",
+  "deepseek",
+  "kimi",
+  "ollama",
+] as const;
 export type LlmProviderId = (typeof LLM_PROVIDER_IDS)[number];
 
 export const llmProviderIdSchema = z.enum(LLM_PROVIDER_IDS);
@@ -31,10 +39,14 @@ export type LlmConfig = {
   provider?: LlmProviderId;
   openaiApiKey?: string;
   openaiModel?: string;
+  anthropicApiKey?: string;
+  anthropicModel?: string;
   deepseekApiKey?: string;
   deepseekModel?: string;
   kimiApiKey?: string;
   kimiModel?: string;
   geminiApiKey?: string;
   geminiModel?: string;
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
 };

@@ -1,8 +1,8 @@
 import { buildDraftPrompt } from "../prompts.js";
-import type { DraftProvider, DraftRequest, DraftStreamChunk } from "../types.js";
+import type { DraftProvider, DraftRequest, DraftStreamChunk, LlmProviderId } from "../types.js";
 
 export type OpenAiCompatibleProviderConfig = {
-  id: string;
+  id: LlmProviderId;
   apiKey: string;
   model: string;
   baseURL: string;

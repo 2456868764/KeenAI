@@ -56,6 +56,22 @@ describe("createLlmRegistry", () => {
     expect(items.find((p) => p.id === "gemini")?.isDefault).toBe(true);
   });
 
+  it("registers anthropic and ollama when configured", () => {
+    const { listConfiguredProviderIds } = createLlmRegistry({
+      anthropicApiKey: "ant-key",
+      ollamaBaseUrl: "http://localhost:11434/v1",
+    });
+    expect(listConfiguredProviderIds()).toEqual(["stub", "anthropic", "ollama"]);
+  });
+
+  it("auto-selects anthropic after openai", () => {
+    const { resolveDraftProvider } = createLlmRegistry({
+      anthropicApiKey: "ant-key",
+      geminiApiKey: "gemini-key",
+    });
+    expect(resolveDraftProvider().id).toBe("anthropic");
+  });
+
   it("falls back to stub when no remote keys", () => {
     const { resolveDraftProvider } = createLlmRegistry({});
     expect(resolveDraftProvider().id).toBe("stub");

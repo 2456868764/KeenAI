@@ -29,14 +29,21 @@ export const apiEnvSchema = z.object({
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
-  /** Copilot provider: stub | openai | deepseek | kimi | gemini (auto if unset) */
-  LLM_PROVIDER: z.enum(["stub", "openai", "deepseek", "kimi", "gemini"]).optional(),
+  /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */
+  LLM_PROVIDER: z
+    .enum(["stub", "openai", "anthropic", "deepseek", "kimi", "gemini", "ollama"])
+    .optional(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),
   KIMI_MODEL: z.string().default("moonshot-v1-8k"),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
+  /** Local Ollama OpenAI-compatible API (register provider when set) */
+  OLLAMA_BASE_URL: z.string().url().optional(),
+  OLLAMA_MODEL: z.string().default("llama3.2"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
