@@ -15,9 +15,10 @@
 | I8-03 | Workflow DB（workflows / workflow_runs）+ REST API | [x] |
 | I8-04 | Trigger：`first_message` 自动执行 + 集成测试 | [x] |
 | I8-05 | Block：`send_message` / `assign` / `close` | [x] |
-| I8-06 | Dashboard Workflow 列表页（React Flow Builder 下一批） | [ ] |
+| I8-06 | Dashboard Workflow 列表 + 线性编辑器 | [x] |
 | I8-07 | Trigger：`customer_unresponsive`（定时扫描 stub） | [ ] |
 | I8-08 | Inngest 适配层（可选 · 替换同步 Executor） | [ ] |
+| I8-09 | React Flow 可视化 Builder | [ ] |
 
 **下一迭代**：React Flow Builder · Docker lite profile · Alpha 发布
 

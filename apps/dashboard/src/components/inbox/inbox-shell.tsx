@@ -2,9 +2,8 @@
 
 import { listConversations, searchConversations, type Conversation } from "@/lib/api";
 import { NotificationBell } from "./notification-bell";
-import { clearAccessToken } from "@/lib/auth-store";
+import { AppHeader } from "@/components/layout/app-header";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CopilotCommand } from "./copilot-command";
 import { ConversationList } from "./conversation-list";
@@ -12,7 +11,6 @@ import { MessageThread } from "./message-thread";
 import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
 
 export function InboxShell() {
-  const router = useRouter();
   const [view, setView] = useState<InboxView>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,10 +77,6 @@ export function InboxShell() {
       <TopBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onLogout={() => {
-          clearAccessToken();
-          router.replace("/login");
-        }}
       />
       <div className="flex min-h-0 flex-1">
         <ViewsSidebar active={view} onChange={setView} />
@@ -111,21 +105,12 @@ export function InboxShell() {
 function TopBar({
   searchQuery,
   onSearchChange,
-  onLogout,
 }: {
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  onLogout: () => void;
 }) {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex size-6 items-center justify-center rounded bg-[hsl(var(--primary))] text-[10px] font-bold text-[hsl(var(--primary-foreground))]">
-          K
-        </span>
-        <span className="text-sm font-medium text-[hsl(var(--foreground))]">Inbox</span>
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">Demo Workspace</span>
-      </div>
+    <AppHeader title="Inbox">
       <input
         type="search"
         placeholder="Search conversations…"
@@ -133,16 +118,7 @@ function TopBar({
         onChange={(e) => onSearchChange(e.target.value)}
         className="h-8 max-w-xs flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
       />
-      <div className="flex items-center gap-2">
-        <NotificationBell />
-        <button
-          type="button"
-          onClick={onLogout}
-          className="rounded-md px-2 py-1 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-        >
-          Sign out
-        </button>
-      </div>
-    </header>
+      <NotificationBell />
+    </AppHeader>
   );
 }

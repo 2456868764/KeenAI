@@ -310,3 +310,58 @@ export async function searchConversations(
   const qs = new URLSearchParams({ q });
   return apiFetch(`/api/v1/search/conversations?${qs}`);
 }
+
+export type WorkflowBlock =
+  | { id: string; type: "send_message"; plainText: string }
+  | { id: string; type: "assign"; assigneeId?: string | null }
+  | { id: string; type: "close" };
+
+export type WorkflowDefinition = {
+  trigger: "first_message" | "customer_unresponsive";
+  blocks: WorkflowBlock[];
+};
+
+export type Workflow = {
+  id: string;
+  orgId: string;
+  brandId: string | null;
+  name: string;
+  trigger: string;
+  definition: WorkflowDefinition;
+  status: "draft" | "published";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listWorkflows(): Promise<{ items: Workflow[] }> {
+  return apiFetch("/api/v1/workflows");
+}
+
+export async function getWorkflow(id: string): Promise<{ workflow: Workflow }> {
+  return apiFetch(`/api/v1/workflows/${id}`);
+}
+
+export async function createWorkflow(input: {
+  name: string;
+  brandId?: string;
+  definition: WorkflowDefinition;
+}): Promise<{ workflow: Workflow }> {
+  return apiFetch("/api/v1/workflows", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateWorkflow(
+  id: string,
+  input: { name?: string; definition?: WorkflowDefinition },
+): Promise<{ workflow: Workflow }> {
+  return apiFetch(`/api/v1/workflows/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function publishWorkflow(id: string): Promise<{ workflow: Workflow }> {
+  return apiFetch(`/api/v1/workflows/${id}/publish`, { method: "POST" });
+}
