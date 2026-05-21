@@ -24,3 +24,13 @@ export {
   DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES,
   resolveInactivityMs,
 } from "./triggers.js";
+export {
+  createWorkflowDispatch,
+  createSyncWorkflowDispatch,
+  createInngestWorkflowDispatch,
+  WORKFLOW_INNGEST_EVENTS,
+  type WorkflowDispatchAdapter,
+  type WorkflowDispatchContext,
+  type UnresponsiveScanSummary,
+} from "./adapter/index.js";
+export { createWorkflowInngestFunctions, createInngestClient } from "./inngest/functions.js";

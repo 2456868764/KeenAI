@@ -195,8 +195,8 @@ export async function insertMessage(
   }
 
   if (input.senderType === "user" && !input.isInternal && triggerFirstMessage) {
-    const { dispatchFirstMessageWorkflows } = await import("./workflow-engine.js");
-    await dispatchFirstMessageWorkflows(db, {
+    const { getWorkflowDispatch } = await import("./workflow-dispatch.js");
+    await getWorkflowDispatch().dispatchFirstMessage({
       orgId: input.orgId,
       brandId: current.brandId,
       conversationId: input.conversationId,

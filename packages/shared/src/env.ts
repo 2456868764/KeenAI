@@ -44,6 +44,9 @@ export const apiEnvSchema = z.object({
   /** Local Ollama OpenAI-compatible API (register provider when set) */
   OLLAMA_BASE_URL: z.string().url().optional(),
   OLLAMA_MODEL: z.string().default("llama3.2"),
+  /** Inngest event key — when set, workflow triggers are queued via Inngest */
+  INNGEST_EVENT_KEY: z.string().min(1).optional(),
+  INNGEST_APP_ID: z.string().default("keenai"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

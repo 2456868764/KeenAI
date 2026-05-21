@@ -124,13 +124,9 @@ export function workflowRoutes() {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
-    const { scanCustomerUnresponsiveWorkflows } = await import(
-      "../lib/workflow-unresponsive-scan.js"
-    );
-    const result = await scanCustomerUnresponsiveWorkflows(c.get("store").db, {
-      orgId: auth.orgId,
-    });
-    return c.json(result);
+    const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+    const result = await getWorkflowDispatch().scanCustomerUnresponsive(auth.orgId);
+    return c.json({ mode: getWorkflowDispatch().mode, ...result });
   });
 
   return r;

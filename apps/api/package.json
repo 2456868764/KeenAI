@@ -21,6 +21,7 @@
     "@keenai/workflow": "workspace:*",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.16",
+    "inngest": "^3.27.0",
     "pino": "^9.6.0",
     "zod": "^3.24.1"
   },

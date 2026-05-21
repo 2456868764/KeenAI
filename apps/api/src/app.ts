@@ -24,9 +24,12 @@ import { searchRoutes } from "./routes/search.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { widgetRoutes } from "./routes/widget.js";
 import { workflowRoutes } from "./routes/workflows.js";
+import { inngestRoutes } from "./routes/inngest.js";
+import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {
+  initWorkflowDispatch(ctx);
   const app = new Hono<{ Variables: AppVariables }>();
 
   app.use("*", cors());
@@ -78,6 +81,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", macroRoutes());
   app.route("/", copilotRoutes(ctx));
   app.route("/", workflowRoutes());
+  app.route("/", inngestRoutes());
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
 

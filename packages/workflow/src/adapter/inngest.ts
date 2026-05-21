@@ -7,7 +7,7 @@ export type InngestSendFn = (payload: { name: string; data: Record<string, unkno
 
 export function createInngestWorkflowDispatch(
   send: InngestSendFn,
-  handlers: import("./types.js").WorkflowDispatchHandlers,
+  _handlers: import("./types.js").WorkflowDispatchHandlers,
 ): import("./types.js").WorkflowDispatchAdapter {
   return {
     mode: "inngest",
@@ -21,7 +21,5 @@ export function createInngestWorkflowDispatch(
       });
       return { triggered: 0, queued: true };
     },
-    // Handlers used by Inngest functions registered in the API process.
-    ...handlers,
   };
 }
