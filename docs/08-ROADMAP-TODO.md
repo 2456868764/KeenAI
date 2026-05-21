@@ -5,19 +5,19 @@
 
 ---
 
-## 当前迭代 · Iteration 6（Sprint 4 续 · 通知 / 搜索 / 上传）
+## 当前迭代 · Iteration 7（Sprint 4 收尾 + Sprint 5 Copilot MVP）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I6-00 | 同步路线图 Sprint 4 续 | [x] |
-| I6-01 | `notifications` 表 + Drizzle migration | [x] |
-| I6-02 | 通知 API（列表 / 已读）+ 分配时创建 + WSS | [x] |
-| I6-03 | LibSQL FTS5 `FTSStore` + 消息索引 + `GET /search` | [x] |
-| I6-04 | 文件上传（本地 presign + PUT） | [x] |
-| I6-05 | Dashboard 通知铃铛 + 会话搜索框 | [x] |
-| I6-06 | Tiptap 富文本编辑器（mention / 附件待续） | [ ] |
+| I7-00 | 同步路线图 Sprint 4/5 | [x] |
+| I7-01 | `@keenai/llm` Provider Registry + stub / OpenAI | [x] |
+| I7-02 | `POST /copilot/draft` SSE + `copilot_events` + Macros API | [x] |
+| I7-03 | Tiptap 编辑器（@mention · `/` macro） | [x] |
+| I7-04 | Dashboard Cmd+K Copilot + 采纳率埋点 | [x] |
+| I7-05 | OpenAI / Anthropic / Ollama 全量适配 | [ ] |
+| I7-06 | Macros DB 持久化 + 图片/附件插入 | [ ] |
 
-**下一迭代（Sprint 4 收尾 / Sprint 5）**：Tiptap · S3/MinIO 上传 · @mention · Copilot 草稿
+**下一迭代**：Workflow MVP · S3 上传 · 多 Provider
 
 ---
 
@@ -25,11 +25,21 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
-| I5 | Inbox 增强（虚拟滚动 / Snooze / 内部 Note） | [x] |
+| I6 | 通知 / FTS / 上传 | [x] |
+| I5 | Inbox 增强 | [x] |
 | I4 | Email Channel | [x] |
 | I3 | Widget 收尾 | [x] |
-| I2 | Widget HMAC + WSS | [x] |
-| I1 | Inbox + API 基建 | [x] |
+
+---
+
+## Phase 1 · MVP
+
+| Sprint | 状态 |
+|--------|------|
+| S4 Tiptap + mention + slash macros | [x] |
+| S5 Copilot 草稿（MVP） | [~] |
+| S5 多 Provider / Macros DB | [ ] |
+| S6 Workflow MVP | [ ] |
 
 ---
 
@@ -38,24 +48,7 @@
 | P0-11 OTel | [ ] |
 | P0-13 commitlint | [ ] |
 | P0-14 Fumadocs / CLI | [ ] |
-| 其余 P0 | [x] |
 
 ---
-
-## Phase 1 · MVP
-
-| Sprint | 状态 |
-|--------|------|
-| S1–S2 Inbox + Widget | [x] |
-| S3 Email（核心） | [x] |
-| S3 IMAP / BullMQ / DKIM | [ ] |
-| S4 Inbox 增强（核心） | [x] |
-| S4 通知 / FTS / 上传（MVP） | [x] |
-| S4 Tiptap 完整 | [ ] |
-| S5–S6 Copilot / Workflow | [ ] |
-
----
-
-## Phase 2–4
 
 见 [08-ROADMAP.md](./08-ROADMAP.md).
