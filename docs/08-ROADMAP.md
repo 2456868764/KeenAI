@@ -153,19 +153,19 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Conversation Detail（虚拟滚动 · `@tanstack/react-virtual`）
 - [x] Assign / Tag / Snooze / Close 动作（Dashboard 操作栏 + PATCH）
 - [x] 内部 Note（`isInternal` 消息 + 样式区分）
-- [ ] Tiptap 3 编辑器集成（mention / slash / image / file）
+- [x] Tiptap 编辑器集成（StarterKit · @mention · `/` macro · 富文本发送）
 - [x] 文件上传（本地 presign + PUT · S3/MinIO 待接）
-- [ ] @mention 队友 + 内部 Note
+- [x] @mention 队友（`/api/v1/members` + Tiptap Mention）
 - [x] 通知中心（`notifications` 表 + REST + WSS push）
 - [x] FTSStore + LibSQL FTS5（`GET /search/conversations` · PG 待接）
 
 #### Sprint 5（W13-W14）：AI Copilot 草稿
-- [ ] `@keenai/llm` 包：Provider Registry + Vercel AI SDK 适配
+- [x] `@keenai/llm` 包：Provider Registry + stub / OpenAI（Vercel AI SDK）
 - [ ] OpenAI / Anthropic / Ollama 三家 Provider 适配
-- [ ] `POST /copilot/draft` 端点（streamText → SSE）
-- [ ] Cmd+K 集成（cmdk）
-- [ ] Macros 系统（数据 + Slash `/refund`）
-- [ ] 采纳率埋点（accept / edit / discard 三态）
+- [x] `POST /copilot/draft` 端点（streamText → SSE）
+- [x] Cmd+K 集成（cmdk）
+- [x] Macros 系统（内置 `/refund` 等 + `GET /macros`）
+- [x] 采纳率埋点（accept / edit / discard · `copilot_events`）
 
 #### Sprint 6（W15-W16）：Workflow MVP + 发布
 - [ ] `@keenai/workflow` 包：Zod DSL + Inngest function 模板
