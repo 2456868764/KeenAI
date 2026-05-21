@@ -2,33 +2,31 @@ import { type ParsedMail, simpleParser } from "mailparser";
 import type { ParsedInboundEmail } from "./types.js";
 import { parsedInboundEmailSchema } from "./types.js";
 
+function mailAddressEntry(entry: unknown): { address: string; name?: string } | null {
+  if (!entry || typeof entry !== "object" || !("address" in entry)) return null;
+  const address = entry.address;
+  if (typeof address !== "string" || !address) return null;
+  const name = "name" in entry && typeof entry.name === "string" ? entry.name : undefined;
+  return { address, name };
+}
+
 function firstAddress(value: ParsedMail["from"]): { address: string; name?: string } | null {
   if (!value) return null;
   if (Array.isArray(value)) {
-    const v = value[0];
-    if (v && "address" in v && v.address) return { address: v.address, name: v.name };
-    return null;
+    return mailAddressEntry(value[0]);
   }
-  if ("value" in value && Array.isArray(value.value) && value.value[0]?.address) {
-    return { address: value.value[0].address, name: value.value[0].name };
+  if ("value" in value && Array.isArray(value.value)) {
+    return mailAddressEntry(value.value[0]);
   }
-  if ("address" in value && value.address) {
-    return { address: value.address, name: "name" in value ? value.name : undefined };
-  }
-  return null;
+  return mailAddressEntry(value);
 }
 
 function listAddresses(value: ParsedMail["to"]): ParsedInboundEmail["to"] {
   if (!value) return [];
   const entries = Array.isArray(value) ? value : "value" in value ? value.value : [value];
   return entries
-    .map((e) => {
-      if (e && typeof e === "object" && "address" in e && e.address) {
-        return { address: e.address, name: "name" in e ? e.name : undefined };
-      }
-      return null;
-    })
-    .filter((e): e is NonNullable<typeof e> => e !== null);
+    .map((entry) => mailAddressEntry(entry))
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 }
 
 function collectReferences(mail: ParsedMail): string[] {
@@ -49,14 +47,17 @@ export async function parseMimeSource(source: Buffer | string): Promise<ParsedIn
   const from = firstAddress(mail.from);
   if (!from) throw new Error("missing_from");
 
-  const plainText = (mail.text ?? "").trim() || stripHtml(mail.html ?? "") || "(empty)";
+  const plainText =
+    (mail.text ?? "").trim() ||
+    stripHtml(typeof mail.html === "string" ? mail.html : "") ||
+    "(empty)";
   const parsed: ParsedInboundEmail = {
     messageId: mail.messageId ?? `generated-${Date.now()}@keenai.local`,
     from,
     to: listAddresses(mail.to),
     subject: mail.subject ?? "(no subject)",
     plainText,
-    html: mail.html ? String(mail.html) : undefined,
+    html: typeof mail.html === "string" ? mail.html : undefined,
     inReplyTo: mail.inReplyTo ?? undefined,
     references: collectReferences(mail),
     date: mail.date?.toISOString(),
