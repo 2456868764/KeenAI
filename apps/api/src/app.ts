@@ -23,6 +23,7 @@ import { openApiRoutes } from "./routes/openapi.js";
 import { searchRoutes } from "./routes/search.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { widgetRoutes } from "./routes/widget.js";
+import { workflowRoutes } from "./routes/workflows.js";
 import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {
@@ -76,6 +77,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", memberRoutes());
   app.route("/", macroRoutes());
   app.route("/", copilotRoutes(ctx));
+  app.route("/", workflowRoutes());
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
 

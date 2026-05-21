@@ -18,6 +18,7 @@
     "@keenai/llm": "workspace:*",
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
+    "@keenai/workflow": "workspace:*",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.16",
     "pino": "^9.6.0",

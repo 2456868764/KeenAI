@@ -112,6 +112,33 @@ export async function insertMessage(
   },
 ) {
   const now = new Date();
+
+  const [current] = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, input.conversationId))
+    .limit(1);
+
+  if (!current) throw new Error("conversation not found");
+
+  const [existingUserMessage] =
+    input.senderType === "user" && !input.isInternal
+      ? await db
+          .select({ id: messages.id })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, input.conversationId),
+              eq(messages.senderType, "user"),
+              eq(messages.isInternal, false),
+            ),
+          )
+          .limit(1)
+      : [];
+
+  const triggerFirstMessage =
+    input.senderType === "user" && !input.isInternal && !existingUserMessage;
+
   const [message] = await db
     .insert(messages)
     .values({
@@ -130,14 +157,6 @@ export async function insertMessage(
     .returning();
 
   if (!message) throw new Error("message insert failed");
-
-  const [current] = await db
-    .select()
-    .from(conversations)
-    .where(eq(conversations.id, input.conversationId))
-    .limit(1);
-
-  if (!current) throw new Error("conversation not found");
 
   let unreadCount = current.unreadCount;
   let firstResponseAt = current.firstResponseAt;
@@ -172,6 +191,15 @@ export async function insertMessage(
       type: "conversation.updated",
       conversationId: input.conversationId,
       conversation: serializeConversation(updated),
+    });
+  }
+
+  if (input.senderType === "user" && !input.isInternal && triggerFirstMessage) {
+    const { dispatchFirstMessageWorkflows } = await import("./workflow-engine.js");
+    await dispatchFirstMessageWorkflows(db, {
+      orgId: input.orgId,
+      brandId: current.brandId,
+      conversationId: input.conversationId,
     });
   }
 

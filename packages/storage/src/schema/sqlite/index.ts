@@ -17,3 +17,4 @@ export {
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
 export { macros } from "./macros";
+export { workflowRuns, workflows } from "./workflow";
