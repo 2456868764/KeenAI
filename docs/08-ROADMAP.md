@@ -160,8 +160,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] FTSStore + LibSQL FTS5（`GET /search/conversations` · PG 待接）
 
 #### Sprint 5（W13-W14）：AI Copilot 草稿
-- [x] `@keenai/llm` 包：Provider Registry + stub / OpenAI（Vercel AI SDK）
-- [ ] OpenAI / Anthropic / Ollama 三家 Provider 适配
+- [x] `@keenai/llm` 包：Provider Registry + stub / OpenAI / **DeepSeek / Kimi**（OpenAI-compatible）
+- [ ] Anthropic / Ollama Provider 适配
 - [x] `POST /copilot/draft` 端点（streamText → SSE）
 - [x] Cmd+K 集成（cmdk）
 - [x] Macros 系统（内置 `/refund` 等 + `GET /macros`）

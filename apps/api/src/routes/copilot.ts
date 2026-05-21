@@ -13,8 +13,13 @@ export function copilotRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/copilot`;
   const llm = createLlmRegistry({
+    provider: ctx.env.LLM_PROVIDER,
     openaiApiKey: ctx.env.OPENAI_API_KEY,
     openaiModel: ctx.env.OPENAI_MODEL,
+    deepseekApiKey: ctx.env.DEEPSEEK_API_KEY,
+    deepseekModel: ctx.env.DEEPSEEK_MODEL,
+    kimiApiKey: ctx.env.KIMI_API_KEY,
+    kimiModel: ctx.env.KIMI_MODEL,
   });
 
   r.post(`${prefix}/draft`, requireAuth(), zValidator("json", copilotDraftBodySchema), async (c) => {

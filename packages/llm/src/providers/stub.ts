@@ -16,7 +16,7 @@ function buildStubDraft(req: DraftRequest): string {
 }
 
 export const stubDraftProvider: DraftProvider = {
-  id: "stub",
+  id: "stub" as const,
 
   async *streamDraft(req: DraftRequest): AsyncIterable<DraftStreamChunk> {
     const text = buildStubDraft(req);

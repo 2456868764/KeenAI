@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const LLM_PROVIDER_IDS = ["stub", "openai", "deepseek", "kimi"] as const;
+export type LlmProviderId = (typeof LLM_PROVIDER_IDS)[number];
+
+export const llmProviderIdSchema = z.enum(LLM_PROVIDER_IDS);
+
 export const draftMessageSchema = z.object({
   role: z.enum(["user", "agent", "system"]),
   plainText: z.string(),
@@ -17,13 +22,17 @@ export type DraftMessage = z.infer<typeof draftMessageSchema>;
 export type DraftStreamChunk = { type: "text-delta"; text: string } | { type: "done" };
 
 export interface DraftProvider {
-  readonly id: string;
+  readonly id: LlmProviderId;
   streamDraft(req: DraftRequest): AsyncIterable<DraftStreamChunk>;
 }
 
 export type LlmConfig = {
+  /** Explicit provider; falls back to first configured remote provider, then stub. */
+  provider?: LlmProviderId;
   openaiApiKey?: string;
   openaiModel?: string;
-  /** Prefer OpenAI when key is set; otherwise stub. */
-  preferOpenai?: boolean;
+  deepseekApiKey?: string;
+  deepseekModel?: string;
+  kimiApiKey?: string;
+  kimiModel?: string;
 };

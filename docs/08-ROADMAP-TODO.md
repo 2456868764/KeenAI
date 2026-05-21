@@ -14,7 +14,7 @@
 | I7-02 | `POST /copilot/draft` SSE + `copilot_events` + Macros API | [x] |
 | I7-03 | Tiptap 编辑器（@mention · `/` macro） | [x] |
 | I7-04 | Dashboard Cmd+K Copilot + 采纳率埋点 | [x] |
-| I7-05 | OpenAI / Anthropic / Ollama 全量适配 | [ ] |
+| I7-05 | DeepSeek / Kimi Provider + `LLM_PROVIDER` 选择 | [x] |
 | I7-06 | Macros DB 持久化 + 图片/附件插入 | [ ] |
 
 **下一迭代**：Workflow MVP · S3 上传 · 多 Provider
