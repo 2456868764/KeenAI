@@ -15,3 +15,4 @@ export {
   reactions,
 } from "./conversation";
 export { notifications } from "./notification";
+export { copilotEvents } from "./copilot";

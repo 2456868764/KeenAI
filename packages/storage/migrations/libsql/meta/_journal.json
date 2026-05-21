@@ -36,6 +36,13 @@
       "when": 1779199400000,
       "tag": "0004_fts_conversations",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1779202738854,
+      "tag": "0005_boring_black_crow",
+      "breakpoints": true
     }
   ]
 }
