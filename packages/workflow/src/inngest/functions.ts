@@ -1,4 +1,4 @@
-import type { Inngest } from "inngest";
+import { Inngest } from "inngest";
 import { WORKFLOW_INNGEST_EVENTS } from "../adapter/inngest.js";
 import type { WorkflowDispatchHandlers } from "../adapter/types.js";
 

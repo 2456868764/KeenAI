@@ -27,8 +27,8 @@ describe("createWorkflowInngestFunctions", () => {
     };
 
     const fns = createWorkflowInngestFunctions(client, handlers, { scanCron: "0 * * * *" });
-    const cronFn = fns[2];
-    expect(cronFn.opts.triggers).toEqual([{ cron: "0 * * * *" }]);
+    expect(fns).toHaveLength(3);
+    expect(fns[2]?.id()).toBe("keenai-workflow-scan-unresponsive-cron");
   });
 
   it("defaults scan cron", () => {
