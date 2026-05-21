@@ -1,8 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ApiEnv } from "@keenai/shared";
 import { findRepoRoot } from "@keenai/shared";
+
+const uploadsModuleDir = path.dirname(fileURLToPath(import.meta.url));
 
 const pending = new Map<
   string,
@@ -11,7 +14,7 @@ const pending = new Map<
 
 export function resolveUploadDir(env: ApiEnv): string {
   if (env.UPLOAD_DIR) return path.resolve(env.UPLOAD_DIR);
-  return path.join(findRepoRoot(), "data", "uploads");
+  return path.join(findRepoRoot(uploadsModuleDir), "data", "uploads");
 }
 
 export function createPresignedUpload(
@@ -59,6 +62,9 @@ export async function saveUploadFile(
   storageKey: string,
   body: Uint8Array,
 ): Promise<string> {
+  if (!isValidStorageKey(storageKey)) {
+    throw new Error("invalid_storage_key");
+  }
   const dir = resolveUploadDir(env);
   await mkdir(dir, { recursive: true });
   const filePath = path.join(dir, storageKey);
