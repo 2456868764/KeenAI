@@ -28,70 +28,73 @@ export function copilotRoutes(ctx: AppContext) {
     ollamaModel: ctx.env.OLLAMA_MODEL,
   });
 
-  r.post(`${prefix}/draft`, requireAuth(), zValidator("json", copilotDraftBodySchema), async (c) => {
-    const auth = c.get("auth");
-    if (!auth) return c.json({ error: "unauthorized" }, 401);
+  r.post(
+    `${prefix}/draft`,
+    requireAuth(),
+    zValidator("json", copilotDraftBodySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
 
-    const body = c.req.valid("json");
-    const conversation = await getConversationForOrg(
-      c.get("store").db,
-      body.conversationId,
-      auth.orgId,
-    );
-    if (!conversation) return c.json({ error: "not_found" }, 404);
-    if (!canAccessBrand(auth, conversation.brandId)) {
-      return c.json({ error: "forbidden" }, 403);
-    }
-
-    const rows = await c
-      .get("store")
-      .db.select({
-        senderType: messages.senderType,
-        plainText: messages.plainText,
-        isInternal: messages.isInternal,
-      })
-      .from(messages)
-      .where(
-        and(eq(messages.conversationId, conversation.id), eq(messages.orgId, auth.orgId)),
-      )
-      .orderBy(asc(messages.createdAt))
-      .limit(50);
-
-    const draftMessages = rows
-      .filter((m) => !m.isInternal)
-      .map((m) => ({
-        role: (m.senderType === "user" ? "user" : "agent") as "user" | "agent",
-        plainText: m.plainText,
-      }));
-
-    if (draftMessages.length === 0) {
-      draftMessages.push({ role: "user", plainText: conversation.subject ?? "Hello" });
-    }
-
-    const provider =
-      body.providerId != null
-        ? (llm.getProvider(body.providerId) ?? llm.resolveDraftProvider())
-        : llm.resolveDraftProvider();
-
-    return streamSSE(c, async (stream) => {
-      stream.writeSSE({
-        event: "meta",
-        data: JSON.stringify({ providerId: provider.id }),
-      });
-
-      for await (const chunk of provider.streamDraft({
-        messages: draftMessages,
-        instruction: body.instruction,
-        subject: conversation.subject ?? undefined,
-      })) {
-        if (chunk.type === "text-delta") {
-          stream.writeSSE({ data: JSON.stringify({ text: chunk.text }) });
-        }
+      const body = c.req.valid("json");
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        body.conversationId,
+        auth.orgId,
+      );
+      if (!conversation) return c.json({ error: "not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
       }
 
-      stream.writeSSE({ event: "done", data: "{}" });
-    });
-  });
+      const rows = await c
+        .get("store")
+        .db.select({
+          senderType: messages.senderType,
+          plainText: messages.plainText,
+          isInternal: messages.isInternal,
+        })
+        .from(messages)
+        .where(and(eq(messages.conversationId, conversation.id), eq(messages.orgId, auth.orgId)))
+        .orderBy(asc(messages.createdAt))
+        .limit(50);
+
+      const draftMessages = rows
+        .filter((m) => !m.isInternal)
+        .map((m) => ({
+          role: (m.senderType === "user" ? "user" : "agent") as "user" | "agent",
+          plainText: m.plainText,
+        }));
+
+      if (draftMessages.length === 0) {
+        draftMessages.push({ role: "user", plainText: conversation.subject ?? "Hello" });
+      }
+
+      const provider =
+        body.providerId != null
+          ? (llm.getProvider(body.providerId) ?? llm.resolveDraftProvider())
+          : llm.resolveDraftProvider();
+
+      return streamSSE(c, async (stream) => {
+        stream.writeSSE({
+          event: "meta",
+          data: JSON.stringify({ providerId: provider.id }),
+        });
+
+        for await (const chunk of provider.streamDraft({
+          messages: draftMessages,
+          instruction: body.instruction,
+          subject: conversation.subject ?? undefined,
+        })) {
+          if (chunk.type === "text-delta") {
+            stream.writeSSE({ data: JSON.stringify({ text: chunk.text }) });
+          }
+        }
+
+        stream.writeSSE({ event: "done", data: "{}" });
+      });
+    },
+  );
 
   r.post(
     `${prefix}/events`,

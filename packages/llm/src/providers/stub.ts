@@ -8,11 +8,7 @@ function buildStubDraft(req: DraftRequest): string {
     ? `Following your note (${instruction}), `
     : "Thank you for reaching out. ";
 
-  return (
-    `${intro}Regarding "${snippet}", we're reviewing this and will follow up shortly.\n\n` +
-    `If you have any other details to share, please reply here.\n\n` +
-    `Best regards,\nSupport Team`
-  );
+  return `${intro}Regarding "${snippet}", we're reviewing this and will follow up shortly.\n\nIf you have any other details to share, please reply here.\n\nBest regards,\nSupport Team`;
 }
 
 export const stubDraftProvider: DraftProvider = {

@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { BUILTIN_MACROS } from "./macros.js";
-import { ensureBuiltinMacros, listOrgMacros } from "./macros-store.js";
-import { createLibsqlStore } from "@keenai/storage";
-import { organizations } from "@keenai/storage/schema";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createLibsqlStore } from "@keenai/storage";
+import { organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
+import { describe, expect, it } from "vitest";
+import { ensureBuiltinMacros, listOrgMacros } from "./macros-store.js";
+import { BUILTIN_MACROS } from "./macros.js";
 
 async function testDb() {
   const store = createLibsqlStore({ url: ":memory:" });
@@ -15,7 +15,7 @@ async function testDb() {
   );
   await migrate(store.db, { migrationsFolder });
   const [org] = await store.db.insert(organizations).values({ slug: "t", name: "T" }).returning();
-  return { store, orgId: org!.id };
+  return { store, orgId: org?.id };
 }
 
 describe("macros-store", () => {

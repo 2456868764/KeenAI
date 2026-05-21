@@ -1,5 +1,5 @@
 import type { Client } from "@libsql/client";
-import type { FtsHit, FtsQuery, FTSStore } from "../core/fts-store.js";
+import type { FTSStore, FtsHit, FtsQuery } from "../core/fts-store.js";
 
 function escapeFtsQuery(q: string): string {
   const cleaned = q
@@ -15,7 +15,7 @@ export function createLibsqlFtsStore(client: Client): FTSStore {
   return {
     async index(doc) {
       await client.execute({
-        sql: `DELETE FROM fts_conversations WHERE conversation_id = ?`,
+        sql: "DELETE FROM fts_conversations WHERE conversation_id = ?",
         args: [doc.id],
       });
       await client.execute({
@@ -56,7 +56,7 @@ export function createLibsqlFtsStore(client: Client): FTSStore {
     async deleteByIds(ids) {
       for (const id of ids) {
         await client.execute({
-          sql: `DELETE FROM fts_conversations WHERE conversation_id = ?`,
+          sql: "DELETE FROM fts_conversations WHERE conversation_id = ?",
           args: [id],
         });
       }

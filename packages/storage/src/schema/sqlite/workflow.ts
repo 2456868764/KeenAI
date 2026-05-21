@@ -1,9 +1,9 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { WorkflowDefinition } from "@keenai/workflow";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
-import { brands, organizations } from "./core";
 import { conversations } from "./conversation";
+import { brands, organizations } from "./core";
 
 export const workflows = sqliteTable(
   "workflows",

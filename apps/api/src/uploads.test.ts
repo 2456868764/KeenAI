@@ -21,7 +21,11 @@ describe("uploads", () => {
     expect(() =>
       createPresignedUpload(
         env,
-        { fileName: "big.bin", contentType: "application/octet-stream", sizeBytes: env.UPLOAD_MAX_BYTES + 1 },
+        {
+          fileName: "big.bin",
+          contentType: "application/octet-stream",
+          sizeBytes: env.UPLOAD_MAX_BYTES + 1,
+        },
         "http://localhost:8090",
       ),
     ).toThrow("file_too_large");

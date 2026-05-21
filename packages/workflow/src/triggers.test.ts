@@ -9,14 +9,12 @@ describe("resolveInactivityMs", () => {
   });
 
   it("uses explicit inactivityMinutes", () => {
-    expect(
-      resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 5 }),
-    ).toBe(5 * 60_000);
+    expect(resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 5 })).toBe(
+      5 * 60_000,
+    );
   });
 
   it("allows zero for immediate scan eligibility", () => {
-    expect(
-      resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 0 }),
-    ).toBe(0);
+    expect(resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 0 })).toBe(0);
   });
 });

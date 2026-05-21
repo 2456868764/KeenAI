@@ -2,9 +2,9 @@ import { createLibsqlFtsStore, createLibsqlStore, ensureFtsSchema } from "@keena
 import { websocket } from "hono/bun";
 import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
+import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 import { createLogger } from "./logger.js";
 import { initOtel } from "./otel.js";
-import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 
 const env = loadEnv();
 const startedAt = new Date();

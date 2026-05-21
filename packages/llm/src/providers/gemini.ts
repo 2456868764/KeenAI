@@ -3,7 +3,10 @@ import type { DraftProvider, DraftRequest, DraftStreamChunk } from "../types.js"
 
 export const GEMINI_DEFAULT_MODEL = "gemini-2.0-flash";
 
-export function createGeminiDraftProvider(config: { apiKey: string; model?: string }): DraftProvider {
+export function createGeminiDraftProvider(config: {
+  apiKey: string;
+  model?: string;
+}): DraftProvider {
   const model = config.model ?? GEMINI_DEFAULT_MODEL;
 
   return {

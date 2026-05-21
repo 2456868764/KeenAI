@@ -1,12 +1,6 @@
 import { z } from "zod";
 
-export const copilotProviderIdSchema = z.enum([
-  "stub",
-  "openai",
-  "deepseek",
-  "kimi",
-  "gemini",
-]);
+export const copilotProviderIdSchema = z.enum(["stub", "openai", "deepseek", "kimi", "gemini"]);
 
 export const copilotDraftBodySchema = z.object({
   conversationId: z.string().min(1),

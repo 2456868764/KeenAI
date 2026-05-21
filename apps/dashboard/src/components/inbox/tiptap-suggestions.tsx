@@ -87,7 +87,11 @@ export function createMentionSuggestion(members: Member[]) {
 export function createSlashSuggestion(macros: Macro[]) {
   const items = (query: string) =>
     macros
-      .filter((m) => m.slug.includes(query.toLowerCase()) || m.name.toLowerCase().includes(query.toLowerCase()))
+      .filter(
+        (m) =>
+          m.slug.includes(query.toLowerCase()) ||
+          m.name.toLowerCase().includes(query.toLowerCase()),
+      )
       .slice(0, 8)
       .map((m) => ({ id: m.slug, label: `/${m.slug}`, body: m.body }));
 

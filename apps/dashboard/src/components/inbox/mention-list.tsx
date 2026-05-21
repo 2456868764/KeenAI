@@ -14,7 +14,10 @@ export const MentionList = forwardRef<
 >(function MentionList({ items, command }, ref) {
   const [selected, setSelected] = useState(0);
 
-  useEffect(() => setSelected(0), [items]);
+  const itemKey = items.map((item) => item.id).join("\0");
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset highlight when the suggestion list changes
+  useEffect(() => setSelected(0), [itemKey]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }) => {

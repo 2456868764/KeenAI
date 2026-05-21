@@ -1,6 +1,6 @@
+import type { createLibsqlStore } from "@keenai/storage";
 import { macros } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
-import type { createLibsqlStore } from "@keenai/storage";
 import { BUILTIN_MACROS, type Macro } from "./macros.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];

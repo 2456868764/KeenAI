@@ -100,8 +100,7 @@ export function MessageThread({
     onSuccess: (_data, _input, ctx) => {
       if (!conversationId || !ctx?.input) return;
       if (copilotMeta && ctx.input.plainText) {
-        const edited =
-          copilotMeta.length > 0 && ctx.input.plainText.length !== copilotMeta.length;
+        const edited = copilotMeta.length > 0 && ctx.input.plainText.length !== copilotMeta.length;
         void recordCopilotEvent({
           conversationId,
           action: edited ? "edit" : "accept",

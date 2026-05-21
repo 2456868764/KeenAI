@@ -1,6 +1,6 @@
 "use client";
 
-import { listCopilotProviders, type CopilotProvider } from "@/lib/api";
+import { type CopilotProvider, listCopilotProviders } from "@/lib/api";
 import {
   Command,
   CommandEmpty,
@@ -41,7 +41,7 @@ export function CopilotCommand({
     if (providersData?.defaultProviderId) {
       setProviderId(providersData.defaultProviderId);
     }
-  }, [providersData?.defaultProviderId, open]);
+  }, [providersData?.defaultProviderId]);
 
   async function runDraft(instruction?: string) {
     if (!conversationId || loading) return;
@@ -78,11 +78,11 @@ export function CopilotCommand({
       onKeyDown={(e) => e.key === "Escape" && onOpenChange(false)}
       role="presentation"
     >
-      <div
-        className="w-full max-w-lg shadow-xl"
+      <dialog
+        open
+        className="w-full max-w-lg border-0 bg-transparent p-0 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
-        role="dialog"
         aria-label="Copilot"
       >
         <Command>
@@ -113,10 +113,7 @@ export function CopilotCommand({
           <CommandList>
             <CommandEmpty>{loading ? "Generating draft…" : "No results"}</CommandEmpty>
             <CommandGroup heading="AI Copilot">
-              <CommandItem
-                disabled={!conversationId || loading}
-                onSelect={() => void runDraft()}
-              >
+              <CommandItem disabled={!conversationId || loading} onSelect={() => void runDraft()}>
                 Draft reply
               </CommandItem>
               <CommandItem
@@ -126,9 +123,7 @@ export function CopilotCommand({
                 Draft — empathetic & concise
               </CommandItem>
             </CommandGroup>
-            {error ? (
-              <p className="px-3 py-2 text-xs text-red-500">{error}</p>
-            ) : null}
+            {error ? <p className="px-3 py-2 text-xs text-red-500">{error}</p> : null}
             {!conversationId ? (
               <p className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
                 Select a conversation first
@@ -136,7 +131,7 @@ export function CopilotCommand({
             ) : null}
           </CommandList>
         </Command>
-      </div>
+      </dialog>
     </div>
   );
 }

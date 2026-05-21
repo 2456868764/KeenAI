@@ -3,7 +3,14 @@ import { fileURLToPath } from "node:url";
 import { type AuthConfig, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, conversations, members, messages, organizations } from "@keenai/storage/schema";
+import {
+  accounts,
+  brands,
+  conversations,
+  members,
+  messages,
+  organizations,
+} from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -44,7 +51,7 @@ describe("customer unresponsive workflow", () => {
     const [org] = await db.insert(organizations).values({ slug: "acme", name: "Acme" }).returning();
     const [brand] = await db
       .insert(brands)
-      .values({ orgId: org!.id, slug: "default", name: "Default" })
+      .values({ orgId: org?.id, slug: "default", name: "Default" })
       .returning();
     const [account] = await db
       .insert(accounts)
@@ -55,8 +62,8 @@ describe("customer unresponsive workflow", () => {
       })
       .returning();
     await db.insert(members).values({
-      orgId: org!.id,
-      accountId: account!.id,
+      orgId: org?.id,
+      accountId: account?.id,
       role: "admin",
       status: "active",
     });
@@ -79,7 +86,7 @@ describe("customer unresponsive workflow", () => {
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Nudge",
-        brandId: brand!.id,
+        brandId: brand?.id,
         definition: {
           trigger: "customer_unresponsive",
           inactivityMinutes: 0,
@@ -105,7 +112,7 @@ describe("customer unresponsive workflow", () => {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
-        brandId: brand!.id,
+        brandId: brand?.id,
         channelType: "messenger",
         channelId: "w1",
         subject: "Unresponsive test",
@@ -142,9 +149,7 @@ describe("customer unresponsive workflow", () => {
       headers: auth,
     });
     const body = (await messagesRes.json()) as { items: { plainText: string }[] };
-    expect(
-      body.items.some((m) => m.plainText.includes("Still there? Happy to help")),
-    ).toBe(true);
+    expect(body.items.some((m) => m.plainText.includes("Still there? Happy to help"))).toBe(true);
 
     await store.close();
   });

@@ -41,7 +41,7 @@ describe("notifications and search integration", () => {
     const [org] = await db.insert(organizations).values({ slug: "acme", name: "Acme" }).returning();
     const [brand] = await db
       .insert(brands)
-      .values({ orgId: org!.id, slug: "default", name: "Default" })
+      .values({ orgId: org?.id, slug: "default", name: "Default" })
       .returning();
     const [owner] = await db
       .insert(accounts)
@@ -62,10 +62,10 @@ describe("notifications and search integration", () => {
 
     await db
       .insert(members)
-      .values({ orgId: org!.id, accountId: owner!.id, role: "admin", status: "active" });
+      .values({ orgId: org?.id, accountId: owner?.id, role: "admin", status: "active" });
     const [agentMember] = await db
       .insert(members)
-      .values({ orgId: org!.id, accountId: agent!.id, role: "agent", status: "active" })
+      .values({ orgId: org?.id, accountId: agent?.id, role: "agent", status: "active" })
       .returning();
 
     const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
@@ -88,7 +88,7 @@ describe("notifications and search integration", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        brandId: brand!.id,
+        brandId: brand?.id,
         channelType: "messenger",
         channelId: "widget-1",
         subject: "Refund request",
@@ -104,7 +104,7 @@ describe("notifications and search integration", () => {
         Authorization: `Bearer ${ownerToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ assigneeId: agentMember!.id }),
+      body: JSON.stringify({ assigneeId: agentMember?.id }),
     });
     expect(assigned.status).toBe(200);
 

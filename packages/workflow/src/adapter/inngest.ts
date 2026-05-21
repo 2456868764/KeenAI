@@ -3,7 +3,10 @@ export const WORKFLOW_INNGEST_EVENTS = {
   SCAN_UNRESPONSIVE: "keenai/workflow.scan_unresponsive",
 } as const;
 
-export type InngestSendFn = (payload: { name: string; data: Record<string, unknown> }) => Promise<void>;
+export type InngestSendFn = (payload: {
+  name: string;
+  data: Record<string, unknown>;
+}) => Promise<void>;
 
 export function createInngestWorkflowDispatch(
   send: InngestSendFn,

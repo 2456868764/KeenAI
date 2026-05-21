@@ -1,9 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
 import { Inngest } from "inngest";
-import {
-  WORKFLOW_SCAN_CRON_DEFAULT,
-  createWorkflowInngestFunctions,
-} from "./functions.js";
+import { describe, expect, it, vi } from "vitest";
+import { WORKFLOW_SCAN_CRON_DEFAULT, createWorkflowInngestFunctions } from "./functions.js";
 
 describe("createWorkflowInngestFunctions", () => {
   it("registers event handlers and cron scan", () => {

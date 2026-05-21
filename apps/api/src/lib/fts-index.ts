@@ -19,9 +19,7 @@ export async function indexConversationForSearch(
   const recent = await db
     .select({ plainText: messages.plainText, isInternal: messages.isInternal })
     .from(messages)
-    .where(
-      and(eq(messages.conversationId, conversationId), eq(messages.orgId, conversation.orgId)),
-    )
+    .where(and(eq(messages.conversationId, conversationId), eq(messages.orgId, conversation.orgId)))
     .orderBy(desc(messages.createdAt))
     .limit(32);
 

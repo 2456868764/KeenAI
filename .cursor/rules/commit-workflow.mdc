@@ -1,0 +1,14 @@
+---
+description: Run lint before every git commit in this repo
+alwaysApply: true
+---
+
+# Commit workflow
+
+Before creating any git commit in KeenAI:
+
+1. Run `pnpm lint` and fix all errors (use `pnpm lint:fix` when safe).
+2. Only commit if lint passes with exit code 0.
+3. Do not skip hooks (`--no-verify`) unless the user explicitly requests it.
+
+The repo also installs a **pre-commit hook** (`.githooks/pre-commit`) via `pnpm install` that runs `pnpm lint` automatically for local commits.

@@ -1,14 +1,14 @@
 import {
+  type WorkflowDispatchAdapter,
+  type WorkflowDispatchHandlers,
   createInngestWorkflowDispatch,
   createSyncWorkflowDispatch,
   createWorkflowInngestFunctions,
-  type WorkflowDispatchAdapter,
-  type WorkflowDispatchHandlers,
 } from "@keenai/workflow";
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
-import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 import { dispatchFirstMessageWorkflows } from "./workflow-engine.js";
+import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
 let adapter: WorkflowDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
@@ -29,10 +29,7 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
 
   if (ctx.env.INNGEST_EVENT_KEY) {
     inngestClient = new Inngest({ id: ctx.env.INNGEST_APP_ID });
-    adapter = createInngestWorkflowDispatch(
-      (payload) => inngestClient!.send(payload),
-      handlers,
-    );
+    adapter = createInngestWorkflowDispatch((payload) => inngestClient?.send(payload), handlers);
     return adapter;
   }
 

@@ -1,5 +1,5 @@
-import type { Logger } from "pino";
 import type { createLibsqlStore } from "@keenai/storage";
+import type { Logger } from "pino";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
 type Store = ReturnType<typeof createLibsqlStore>;

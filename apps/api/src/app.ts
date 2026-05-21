@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import { optionalAuth, requireAuth } from "./middleware/auth.js";
 import { injectContext } from "./middleware/context.js";
 import { attachLogger } from "./middleware/logger.js";
@@ -16,6 +17,7 @@ import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
+import { inngestRoutes } from "./routes/inngest.js";
 import { macroRoutes } from "./routes/macros.js";
 import { memberRoutes } from "./routes/members.js";
 import { notificationRoutes } from "./routes/notifications.js";
@@ -24,8 +26,6 @@ import { searchRoutes } from "./routes/search.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { widgetRoutes } from "./routes/widget.js";
 import { workflowRoutes } from "./routes/workflows.js";
-import { inngestRoutes } from "./routes/inngest.js";
-import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {

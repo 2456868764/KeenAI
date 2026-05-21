@@ -43,7 +43,7 @@ describe("workflow integration", () => {
     const [org] = await db.insert(organizations).values({ slug: "acme", name: "Acme" }).returning();
     const [brand] = await db
       .insert(brands)
-      .values({ orgId: org!.id, slug: "default", name: "Default" })
+      .values({ orgId: org?.id, slug: "default", name: "Default" })
       .returning();
     const [account] = await db
       .insert(accounts)
@@ -54,8 +54,8 @@ describe("workflow integration", () => {
       })
       .returning();
     await db.insert(members).values({
-      orgId: org!.id,
-      accountId: account!.id,
+      orgId: org?.id,
+      accountId: account?.id,
       role: "admin",
       status: "active",
     });
@@ -78,7 +78,7 @@ describe("workflow integration", () => {
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Welcome auto-reply",
-        brandId: brand!.id,
+        brandId: brand?.id,
         definition: {
           trigger: "first_message",
           blocks: [{ id: "reply", type: "send_message", plainText: "Hello from workflow!" }],
@@ -98,7 +98,7 @@ describe("workflow integration", () => {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
-        brandId: brand!.id,
+        brandId: brand?.id,
         channelType: "messenger",
         channelId: "w1",
         subject: "Workflow test",

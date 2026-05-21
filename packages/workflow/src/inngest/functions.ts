@@ -20,11 +20,13 @@ export function createWorkflowInngestFunctions(
     { id: "keenai-workflow-first-message" },
     { event: WORKFLOW_INNGEST_EVENTS.FIRST_MESSAGE },
     async ({ event }) => {
-      await handlers.dispatchFirstMessage(event.data as {
-        orgId: string;
-        brandId: string;
-        conversationId: string;
-      });
+      await handlers.dispatchFirstMessage(
+        event.data as {
+          orgId: string;
+          brandId: string;
+          conversationId: string;
+        },
+      );
     },
   );
 

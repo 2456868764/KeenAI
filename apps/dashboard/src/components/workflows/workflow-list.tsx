@@ -1,7 +1,7 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { createWorkflow, listWorkflows, publishWorkflow, type Workflow } from "@/lib/api";
+import { type Workflow, createWorkflow, listWorkflows, publishWorkflow } from "@/lib/api";
 import { Button } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
@@ -100,9 +100,7 @@ function WorkflowRow({
   publishing: boolean;
   onPublish: () => void;
 }) {
-  const blockSummary = workflow.definition.blocks
-    .map((b) => b.type.replace("_", " "))
-    .join(" → ");
+  const blockSummary = workflow.definition.blocks.map((b) => b.type.replace("_", " ")).join(" → ");
 
   return (
     <li className="flex items-center justify-between gap-4 px-4 py-3">
@@ -120,7 +118,13 @@ function WorkflowRow({
       <div className="flex shrink-0 items-center gap-2">
         <StatusBadge status={workflow.status} />
         {workflow.status === "draft" ? (
-          <Button type="button" size="sm" variant="outline" disabled={publishing} onClick={onPublish}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={publishing}
+            onClick={onPublish}
+          >
             {publishing ? <Loader2 className="size-4 animate-spin" /> : "Publish"}
           </Button>
         ) : null}

@@ -1,7 +1,7 @@
-import { resolveInactivityMs, type WorkflowDefinition } from "@keenai/workflow";
-import { conversations, messages, workflowRuns, workflows } from "@keenai/storage/schema";
-import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import type { createLibsqlStore } from "@keenai/storage";
+import { conversations, messages, workflowRuns, workflows } from "@keenai/storage/schema";
+import { type WorkflowDefinition, resolveInactivityMs } from "@keenai/workflow";
+import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { executeWorkflow } from "./workflow-engine.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
@@ -87,8 +87,7 @@ export async function scanCustomerUnresponsiveWorkflows(
 
     const matching = published.filter(
       (wf) =>
-        wf.orgId === conversation.orgId &&
-        (!wf.brandId || wf.brandId === conversation.brandId),
+        wf.orgId === conversation.orgId && (!wf.brandId || wf.brandId === conversation.brandId),
     );
 
     for (const workflow of matching) {

@@ -21,7 +21,8 @@
     "smoke": "bash scripts/smoke.sh",
     "docker:lite": "docker compose --profile lite up --build",
     "check:widget": "node scripts/check-widget-bundle.mjs",
-    "storybook": "pnpm --filter @keenai/ui storybook"
+    "storybook": "pnpm --filter @keenai/ui storybook",
+    "prepare": "node scripts/install-githooks.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

@@ -9,6 +9,12 @@ Thank you for your interest in contributing.
 3. Copy `.env.example` to `.env` and run `pnpm db:migrate && pnpm seed`.
 4. Start the stack with `pnpm dev` (API on port 8090, dashboard on 3000).
 
+Git hooks are installed automatically on `pnpm install`. The pre-commit hook runs `pnpm lint` before each commit. To reinstall manually:
+
+```bash
+node scripts/install-githooks.mjs
+```
+
 ## Commands
 
 | Command | Purpose |

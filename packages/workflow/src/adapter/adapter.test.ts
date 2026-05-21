@@ -5,7 +5,11 @@ import { createSyncWorkflowDispatch } from "./sync.js";
 describe("workflow dispatch adapters", () => {
   it("sync adapter runs handlers inline", async () => {
     const dispatchFirstMessage = vi.fn(async () => {});
-    const scanCustomerUnresponsive = vi.fn(async () => ({ scanned: 1, triggered: 2, runs: ["r1"] }));
+    const scanCustomerUnresponsive = vi.fn(async () => ({
+      scanned: 1,
+      triggered: 2,
+      runs: ["r1"],
+    }));
 
     const adapter = createSyncWorkflowDispatch({
       dispatchFirstMessage,

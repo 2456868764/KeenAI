@@ -17,10 +17,7 @@ export function notificationRoutes() {
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
     const { unreadOnly, limit } = c.req.valid("query");
-    const filters = [
-      eq(notifications.accountId, auth.sub),
-      eq(notifications.orgId, auth.orgId),
-    ];
+    const filters = [eq(notifications.accountId, auth.sub), eq(notifications.orgId, auth.orgId)];
     if (unreadOnly) filters.push(isNull(notifications.readAt));
 
     const rows = await c

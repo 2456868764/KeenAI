@@ -1,13 +1,13 @@
 "use client";
 
-import { listConversations, searchConversations, type Conversation } from "@/lib/api";
-import { NotificationBell } from "./notification-bell";
 import { AppHeader } from "@/components/layout/app-header";
+import { type Conversation, listConversations, searchConversations } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CopilotCommand } from "./copilot-command";
 import { ConversationList } from "./conversation-list";
+import { CopilotCommand } from "./copilot-command";
 import { MessageThread } from "./message-thread";
+import { NotificationBell } from "./notification-bell";
 import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
 
 export function InboxShell() {
@@ -74,10 +74,7 @@ export function InboxShell() {
 
   return (
     <div className="flex h-screen flex-col">
-      <TopBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <div className="flex min-h-0 flex-1">
         <ViewsSidebar active={view} onChange={setView} />
         <ConversationList

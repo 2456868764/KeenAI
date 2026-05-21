@@ -1,7 +1,7 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { newUlid } from "../_shared/ulid";
-import { members, organizations } from "./core";
 import { conversations } from "./conversation";
+import { members, organizations } from "./core";
 
 export const copilotEvents = sqliteTable(
   "copilot_events",

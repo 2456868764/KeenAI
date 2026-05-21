@@ -2,11 +2,11 @@
 
 import { AppHeader } from "@/components/layout/app-header";
 import {
+  type WorkflowBlock,
+  type WorkflowDefinition,
   getWorkflow,
   publishWorkflow,
   updateWorkflow,
-  type WorkflowBlock,
-  type WorkflowDefinition,
 } from "@/lib/api";
 import { Button, Input } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -100,13 +100,24 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         ) : (
           <div className="space-y-6">
             <section className="space-y-2">
-              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Name</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <label
+                htmlFor="workflow-name"
+                className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+              >
+                Name
+              </label>
+              <Input id="workflow-name" value={name} onChange={(e) => setName(e.target.value)} />
             </section>
 
             <section className="space-y-2">
-              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Trigger</label>
+              <label
+                htmlFor="workflow-trigger"
+                className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+              >
+                Trigger
+              </label>
               <select
+                id="workflow-trigger"
                 value={definition.trigger}
                 onChange={(e) =>
                   setDefinition({
@@ -123,10 +134,14 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
             {definition.trigger === "customer_unresponsive" ? (
               <section className="space-y-2">
-                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <label
+                  htmlFor="workflow-inactivity"
+                  className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+                >
                   Inactivity (minutes after agent reply)
                 </label>
                 <Input
+                  id="workflow-inactivity"
                   type="number"
                   min={0}
                   value={definition.inactivityMinutes ?? 30}
@@ -178,31 +193,31 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               {view === "flow" ? (
                 <WorkflowFlowCanvas definition={definition} onDefinitionChange={setDefinition} />
               ) : (
-              <ol className="space-y-3">
-                {definition.blocks.map((block, index) => (
-                  <li
-                    key={block.id}
-                    className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4"
-                  >
-                    <BlockEditor
-                      block={block}
-                      index={index}
-                      onChange={(next) => {
-                        const blocks = [...definition.blocks];
-                        blocks[index] = next;
-                        setDefinition({ ...definition, blocks });
-                      }}
-                      onRemove={() => {
-                        if (definition.blocks.length <= 1) return;
-                        setDefinition({
-                          ...definition,
-                          blocks: definition.blocks.filter((_, i) => i !== index),
-                        });
-                      }}
-                    />
-                  </li>
-                ))}
-              </ol>
+                <ol className="space-y-3">
+                  {definition.blocks.map((block, index) => (
+                    <li
+                      key={block.id}
+                      className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4"
+                    >
+                      <BlockEditor
+                        block={block}
+                        index={index}
+                        onChange={(next) => {
+                          const blocks = [...definition.blocks];
+                          blocks[index] = next;
+                          setDefinition({ ...definition, blocks });
+                        }}
+                        onRemove={() => {
+                          if (definition.blocks.length <= 1) return;
+                          setDefinition({
+                            ...definition,
+                            blocks: definition.blocks.filter((_, i) => i !== index),
+                          });
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ol>
               )}
             </section>
 
@@ -286,9 +301,7 @@ function BlockEditor({
         <Input
           placeholder="Assignee member ID (optional)"
           value={block.assigneeId ?? ""}
-          onChange={(e) =>
-            onChange({ ...block, assigneeId: e.target.value.trim() || null })
-          }
+          onChange={(e) => onChange({ ...block, assigneeId: e.target.value.trim() || null })}
         />
       ) : null}
 

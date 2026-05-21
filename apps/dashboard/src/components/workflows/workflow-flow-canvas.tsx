@@ -4,17 +4,17 @@ import type { WorkflowBlock, WorkflowDefinition } from "@/lib/api";
 import {
   Background,
   Controls,
+  type Edge,
   Handle,
+  type Node,
+  type NodeProps,
   Position,
   ReactFlow,
   useEdgesState,
   useNodesState,
-  type Edge,
-  type Node,
-  type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 type BlockNodeData = {
   block: WorkflowBlock;
@@ -71,7 +71,7 @@ function blocksToFlow(
   }));
 
   const edges: Edge[] = definition.blocks.slice(1).map((block, index) => {
-    const source = definition.blocks[index]!.id;
+    const source = definition.blocks[index]?.id;
     return {
       id: `e-${source}-${block.id}`,
       source,
@@ -84,9 +84,7 @@ function blocksToFlow(
 }
 
 function flowToBlocks(nodes: Node<BlockNodeData>[]): WorkflowBlock[] {
-  return [...nodes]
-    .sort((a, b) => a.position.x - b.position.x)
-    .map((node) => node.data.block);
+  return [...nodes].sort((a, b) => a.position.x - b.position.x).map((node) => node.data.block);
 }
 
 export function WorkflowFlowCanvas({
@@ -96,12 +94,15 @@ export function WorkflowFlowCanvas({
   definition: WorkflowDefinition;
   onDefinitionChange: (definition: WorkflowDefinition) => void;
 }) {
-  const onBlockChange = (id: string, block: WorkflowBlock) => {
-    onDefinitionChange({
-      ...definition,
-      blocks: definition.blocks.map((b) => (b.id === id ? block : b)),
-    });
-  };
+  const onBlockChange = useCallback(
+    (id: string, block: WorkflowBlock) => {
+      onDefinitionChange({
+        ...definition,
+        blocks: definition.blocks.map((b) => (b.id === id ? block : b)),
+      });
+    },
+    [definition, onDefinitionChange],
+  );
 
   const initial = blocksToFlow(definition, onBlockChange);
   const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
@@ -111,7 +112,7 @@ export function WorkflowFlowCanvas({
     const next = blocksToFlow(definition, onBlockChange);
     setNodes(next.nodes);
     setEdges(next.edges);
-  }, [definition, setNodes, setEdges]);
+  }, [definition, onBlockChange, setNodes, setEdges]);
 
   return (
     <div className="h-[420px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">

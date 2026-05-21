@@ -2,15 +2,15 @@
 
 import type { Macro } from "@/lib/api";
 import { uploadFile, uploadFileUrl } from "@/lib/api";
-import type { Editor } from "@tiptap/react";
+import { Button } from "@keenai/ui";
 import Image from "@tiptap/extension-image";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
+import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Loader2, Paperclip, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@keenai/ui";
 import { createMentionSuggestion, createSlashSuggestion } from "./tiptap-suggestions";
 
 export type RichTextPayload = {
@@ -156,7 +156,11 @@ export function RichTextComposer({
             className="rounded p-1 text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-1))] hover:text-[hsl(var(--foreground))] disabled:opacity-50"
             title="Attach image"
           >
-            {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
+            {uploading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Paperclip className="size-4" />
+            )}
           </button>
         </div>
       </div>

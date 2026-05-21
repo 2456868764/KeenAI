@@ -1,7 +1,7 @@
-import { serve } from "inngest/hono";
 import { Hono } from "hono";
-import type { AppContext } from "../types.js";
+import { serve } from "inngest/hono";
 import { getInngestClient, getInngestWorkflowServeHandler } from "../lib/workflow-dispatch.js";
+import type { AppContext } from "../types.js";
 
 export function inngestRoutes(ctx: AppContext) {
   const r = new Hono();
