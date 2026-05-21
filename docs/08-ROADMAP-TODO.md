@@ -5,19 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 7（Sprint 4 收尾 + Sprint 5 Copilot MVP）
+## 当前迭代 · Iteration 8（Sprint 5 收尾 + Sprint 6 Workflow MVP）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I7-00 | 同步路线图 Sprint 4/5 | [x] |
-| I7-01 | `@keenai/llm` Provider Registry + stub / OpenAI | [x] |
-| I7-02 | `POST /copilot/draft` SSE + `copilot_events` + Macros API | [x] |
-| I7-03 | Tiptap 编辑器（@mention · `/` macro） | [x] |
-| I7-04 | Dashboard Cmd+K Copilot + 采纳率埋点 | [x] |
-| I7-05 | DeepSeek / Kimi Provider + `LLM_PROVIDER` 选择 | [x] |
-| I7-06 | Macros DB 持久化 + 图片/附件插入 | [x] |
+| I8-00 | 热修：上传目录 `findRepoRoot` 路径 | [x] |
+| I8-01 | Anthropic + Ollama LLM Provider | [x] |
+| I8-02 | `@keenai/workflow` 包：Zod DSL + 同步 Executor | [x] |
+| I8-03 | Workflow DB（workflows / workflow_runs）+ REST API | [x] |
+| I8-04 | Trigger：`first_message` 自动执行 + 集成测试 | [x] |
+| I8-05 | Block：`send_message` / `assign` / `close` | [x] |
+| I8-06 | Dashboard Workflow 列表页（React Flow Builder 下一批） | [ ] |
+| I8-07 | Trigger：`customer_unresponsive`（定时扫描 stub） | [ ] |
+| I8-08 | Inngest 适配层（可选 · 替换同步 Executor） | [ ] |
 
-**下一迭代**：Workflow MVP · S3 上传 · 多 Provider
+**下一迭代**：React Flow Builder · Docker lite profile · Alpha 发布
 
 ---
 
@@ -25,6 +27,7 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I7 | Copilot MVP + Tiptap + Macros DB + 图片上传 | [x] |
 | I6 | 通知 / FTS / 上传 | [x] |
 | I5 | Inbox 增强 | [x] |
 | I4 | Email Channel | [x] |
@@ -37,9 +40,8 @@
 | Sprint | 状态 |
 |--------|------|
 | S4 Tiptap + mention + slash macros | [x] |
-| S5 Copilot 草稿（MVP） | [x] |
-| S5 多 Provider / Macros DB | [~] |
-| S6 Workflow MVP | [ ] |
+| S5 Copilot 草稿 + 多 Provider | [x] |
+| S6 Workflow MVP | [~] |
 
 ---
 
