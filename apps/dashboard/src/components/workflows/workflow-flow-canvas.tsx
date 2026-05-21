@@ -70,14 +70,17 @@ function blocksToFlow(
     },
   }));
 
-  const edges: Edge[] = definition.blocks.slice(1).map((block, index) => {
+  const edges: Edge[] = definition.blocks.slice(1).flatMap((block, index) => {
     const source = definition.blocks[index]?.id;
-    return {
-      id: `e-${source}-${block.id}`,
-      source,
-      target: block.id,
-      animated: true,
-    };
+    if (!source) return [];
+    return [
+      {
+        id: `e-${source}-${block.id}`,
+        source,
+        target: block.id,
+        animated: true,
+      },
+    ];
   });
 
   return { nodes, edges };
