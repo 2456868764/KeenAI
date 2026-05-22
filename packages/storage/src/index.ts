@@ -6,4 +6,9 @@ export {
   ensureFtsSchema,
 } from "./libsql/fts-store.js";
 export { createLibsqlStore, type LibsqlStore, type LibsqlStoreOptions } from "./libsql/store.js";
+export {
+  createPostgresStore,
+  type PostgresStore,
+  type PostgresStoreOptions,
+} from "./postgres/store.js";
 export * as schema from "./schema/sqlite/index.js";
