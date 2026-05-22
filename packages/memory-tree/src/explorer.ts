@@ -1,4 +1,5 @@
-import type { FTSStore, KeenaiDb } from "@keenai/storage";
+import type { FTSStore, KeenaiDb, VectorStore } from "@keenai/storage";
+import { rrfFuse } from "@keenai/storage";
 import {
   memoryChunks,
   memoryHotness,
@@ -8,6 +9,7 @@ import {
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
 import { isChannelScopedTreeType } from "./channel-config.js";
+import type { MemoryChunkEmbedder } from "./chunk-vector-index.js";
 import { DEFAULT_HOTNESS_THRESHOLD } from "./hotness-config.js";
 import {
   conversationIdFromScopeKey,
@@ -37,6 +39,10 @@ export type SearchMemoryChunksInput = {
   limit?: number;
   /** LibSQL fts_memory_chunks store (KM-03). Falls back to SQL LIKE when omitted. */
   chunkFts?: Pick<FTSStore, "search"> | null;
+  /** LibSQL memory_chunk_vectors store (KM-04). Enables hybrid RRF when paired with queryEmbedder. */
+  chunkVector?: Pick<VectorStore, "query"> | null;
+  /** Query embedder for vector leg of hybrid search (KM-05). */
+  queryEmbedder?: Pick<MemoryChunkEmbedder, "embed"> | null;
 };
 
 export type MemorySearchHit = {
@@ -49,6 +55,9 @@ export type MemorySearchHit = {
   lifecycle: string;
   fastScore: number | null;
   ftsScore: number | null;
+  vectorScore: number | null;
+  fusedScore: number | null;
+  sources: Array<"fts" | "vector">;
   snippet: string | null;
   createdAt: string;
 };
@@ -188,7 +197,11 @@ function inferHitScope(metadata: Record<string, unknown>): MemorySearchHit["scop
 
 function rowToSearchHit(
   row: typeof memoryChunks.$inferSelect,
-  fts?: { score: number; snippet?: string },
+  scores?: {
+    fts?: { score: number; snippet?: string };
+    vector?: { score: number };
+    fused?: { score: number; sources: Array<"fts" | "vector"> };
+  },
 ): MemorySearchHit {
   const metadata = row.metadata ?? {};
   const conversationId =
@@ -207,8 +220,11 @@ function rowToSearchHit(
     body: extractBodyFromCanonicalMd(row.bodyMd),
     lifecycle: row.lifecycle,
     fastScore: row.fastScore ?? null,
-    ftsScore: fts?.score ?? null,
-    snippet: fts?.snippet ?? null,
+    ftsScore: scores?.fts?.score ?? null,
+    vectorScore: scores?.vector?.score ?? null,
+    fusedScore: scores?.fused?.score ?? null,
+    sources: scores?.fused?.sources ?? [],
+    snippet: scores?.fts?.snippet ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -295,7 +311,106 @@ async function searchMemoryChunksWithFts(
 
     const ftsHit = ftsMap.get(id);
     hits.push(
-      rowToSearchHit(row, ftsHit ? { score: ftsHit.score, snippet: ftsHit.snippet } : undefined),
+      rowToSearchHit(
+        row,
+        ftsHit ? { fts: { score: ftsHit.score, snippet: ftsHit.snippet } } : undefined,
+      ),
+    );
+  }
+
+  return { q, scope, hits };
+}
+
+async function searchMemoryChunksWithHybrid(
+  db: KeenaiDb,
+  input: SearchMemoryChunksInput & {
+    chunkFts: Pick<FTSStore, "search">;
+    chunkVector: Pick<VectorStore, "query">;
+    queryEmbedder: Pick<MemoryChunkEmbedder, "embed">;
+  },
+): Promise<SearchMemoryChunksResult> {
+  const q = input.q.trim();
+  const scope = input.scope ?? "all";
+  const limit = input.limit ?? 20;
+
+  const scopeIds = await scopeRestrictedChunkIds(db, input, scope);
+  if (scopeIds && scopeIds.size === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const fetchLimit = Math.min(Math.max(limit * 10, limit), 100);
+  const embedding = await input.queryEmbedder.embed(q);
+
+  const [ftsHits, vectorHits] = await Promise.all([
+    input.chunkFts.search({
+      orgId: input.orgId,
+      brandId: input.brandId,
+      q,
+      limit: fetchLimit,
+    }),
+    input.chunkVector.query({
+      orgId: input.orgId,
+      brandId: input.brandId,
+      embedding,
+      limit: fetchLimit,
+    }),
+  ]);
+
+  const fused = rrfFuse(
+    [
+      ftsHits.map((hit) => ({ id: hit.id, score: hit.score })),
+      vectorHits.map((hit) => ({ id: hit.id, score: hit.score })),
+    ],
+    { topK: fetchLimit },
+  );
+
+  if (fused.length === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const orderedIds = fused.filter((hit) => !scopeIds || scopeIds.has(hit.id)).map((hit) => hit.id);
+
+  if (orderedIds.length === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const rows = await db
+    .select()
+    .from(memoryChunks)
+    .where(
+      and(
+        eq(memoryChunks.orgId, input.orgId),
+        eq(memoryChunks.brandId, input.brandId),
+        inArray(memoryChunks.id, orderedIds),
+      ),
+    );
+
+  const rowMap = new Map(rows.map((row) => [row.id, row]));
+  const ftsMap = new Map(ftsHits.map((hit) => [hit.id, hit]));
+  const vectorMap = new Map(vectorHits.map((hit) => [hit.id, hit]));
+  const fusedMap = new Map(fused.map((hit) => [hit.id, hit]));
+
+  const hits: MemorySearchHit[] = [];
+  for (const id of orderedIds) {
+    if (hits.length >= limit) break;
+    const row = rowMap.get(id);
+    if (!row) continue;
+
+    const metadata = row.metadata ?? {};
+    if (scope === "conversation" && typeof metadata.conversationId !== "string") {
+      continue;
+    }
+
+    const ftsHit = ftsMap.get(id);
+    const vectorHit = vectorMap.get(id);
+    const fusedHit = fusedMap.get(id);
+
+    hits.push(
+      rowToSearchHit(row, {
+        fts: ftsHit ? { score: ftsHit.score, snippet: ftsHit.snippet } : undefined,
+        vector: vectorHit ? { score: vectorHit.score } : undefined,
+        fused: fusedHit ? { score: fusedHit.score, sources: fusedHit.sources } : undefined,
+      }),
     );
   }
 
@@ -313,6 +428,15 @@ export async function searchMemoryChunks(
 
   if (q.length === 0) {
     return { q, scope, hits: [] };
+  }
+
+  if (input.chunkFts && input.chunkVector && input.queryEmbedder) {
+    return searchMemoryChunksWithHybrid(db, {
+      ...input,
+      chunkFts: input.chunkFts,
+      chunkVector: input.chunkVector,
+      queryEmbedder: input.queryEmbedder,
+    });
   }
 
   if (input.chunkFts) {

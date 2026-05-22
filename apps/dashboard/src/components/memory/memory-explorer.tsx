@@ -293,7 +293,9 @@ function SearchHitRow({ hit }: { hit: MemorySearchHit }) {
         <span className="rounded bg-[hsl(var(--surface-0))] px-1.5 py-0.5">{hit.scope}</span>
         <span>{hit.lifecycle}</span>
         {hit.fastScore != null ? <span>fast {hit.fastScore.toFixed(2)}</span> : null}
+        {hit.fusedScore != null ? <span>fused {hit.fusedScore.toFixed(4)}</span> : null}
         {hit.ftsScore != null ? <span>fts {hit.ftsScore.toFixed(2)}</span> : null}
+        {hit.vectorScore != null ? <span>vec {hit.vectorScore.toFixed(2)}</span> : null}
         <span>{new Date(hit.createdAt).toLocaleString()}</span>
       </div>
       <p className="line-clamp-2 text-[hsl(var(--foreground))]">{hit.snippet ?? hit.body}</p>

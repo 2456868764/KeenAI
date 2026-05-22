@@ -562,6 +562,9 @@ export type MemorySearchHit = {
   lifecycle: string;
   fastScore: number | null;
   ftsScore: number | null;
+  vectorScore: number | null;
+  fusedScore: number | null;
+  sources: Array<"fts" | "vector">;
   snippet: string | null;
   createdAt: string;
 };

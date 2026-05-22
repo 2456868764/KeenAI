@@ -5,15 +5,25 @@
 
 ---
 
-## 当前迭代 · Iteration 37（Keeni Memory KM-05 · hybrid recall）
+## 当前迭代 · Iteration 38（Keeni Memory KM-06 · summaries FTS）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I37-01 | `searchMemoryChunks` 接入 FTS + Vector RRF | [ ] |
-| I37-02 | Explorer/API 返回 fused score | [ ] |
-| I37-03 | tests · roadmap · commit · push | [ ] |
+| I38-01 | `fts_memory_summaries` 虚拟表 + migration | [ ] |
+| I38-02 | 搜索覆盖 seal 摘要与日 digest | [ ] |
+| I38-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-06 · summaries FTS
+**下一迭代**：KM-07 · memory_facts + memory_slots
+
+---
+
+## Iteration 37（Keeni Memory KM-05 · hybrid recall）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I37-01 | `searchMemoryChunks` 接入 FTS + Vector RRF | [x] |
+| I37-02 | Explorer/API 返回 fused score | [x] |
+| I37-03 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -70,7 +80,7 @@
 | **KM-02** | I34 | `fts_memory_chunks` 虚拟表 + migration；ingest 时 FTS index | [x] |
 | **KM-03** | I35 | `searchMemoryChunks` 改 FTS（替换 SQL LIKE）+ API/集成测试 | [x] |
 | **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（stub / OpenAI env） | [x] |
-| **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [ ] |
+| **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [x] |
 | **KM-06** | I38 | `fts_memory_summaries` + 搜索覆盖 seal 摘要与日 digest | [ ] |
 | **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [ ] |
 | **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [ ] |
@@ -269,7 +279,7 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-02 | fts_memory_chunks + ingest index | [x] |
 | KM-03 | FTS memory search | [x] |
 | KM-04 | chunk vectors + embed | [x] |
-| KM-05 | hybrid FTS+Vector recall | [ ] |
+| KM-05 | hybrid FTS+Vector recall | [x] |
 | KM-06 | summaries FTS search | [ ] |
 | KM-07 | memory_facts + memory_slots | [ ] |
 | KM-08 | L3 context API | [ ] |

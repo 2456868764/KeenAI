@@ -2,13 +2,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   applyFastScoreToChunk,
+  createStubMemoryChunkEmbedder,
   ingestConversationMessage,
   processAdmittedChunk,
   queryMemoryExplorerStats,
   refreshCustomerHotness,
   searchMemoryChunks,
 } from "@keenai/memory-tree";
-import { createLibsqlMemoryChunkFtsStore, createLibsqlStore } from "@keenai/storage";
+import {
+  createLibsqlMemoryChunkFtsStore,
+  createLibsqlMemoryChunkVectorStore,
+  createLibsqlStore,
+} from "@keenai/storage";
 import { brands, conversations, messages, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -103,6 +108,96 @@ describe("memory-tree explorer", () => {
     expect(search.hits.length).toBeGreaterThan(0);
     expect(search.hits[0]?.conversationId).toBe(conv.id);
     expect(search.hits[0]?.ftsScore).not.toBeNull();
+
+    await store.close();
+  });
+
+  it("fuses FTS and vector rankings with RRF when hybrid inputs are provided", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+    const chunkFts = createLibsqlMemoryChunkFtsStore(store.client);
+    const chunkVector = createLibsqlMemoryChunkVectorStore(store.client);
+    const embedder = createStubMemoryChunkEmbedder(32);
+
+    const orgRow = await db.insert(organizations).values({ slug: "hyb", name: "Hyb" }).returning();
+    const org = requireRow(orgRow[0], "org");
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    const convRow = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "hyb",
+        status: "open",
+      })
+      .returning();
+    const conv = requireRow(convRow[0], "conversation");
+
+    const texts = [
+      "Enterprise billing question for hybrid search.",
+      "Refund follow-up on invoice payment.",
+    ];
+    for (const text of texts) {
+      const msgRow = await db
+        .insert(messages)
+        .values({
+          orgId: org.id,
+          conversationId: conv.id,
+          senderType: "user",
+          plainText: text,
+          content: { type: "text", text },
+        })
+        .returning();
+      const msg = requireRow(msgRow[0], "message");
+      const ingest = await ingestConversationMessage(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        conversationId: conv.id,
+        messageId: msg.id,
+        senderType: "user",
+        sentAt: new Date("2026-05-28T10:00:00.000Z"),
+        plainText: text,
+        isInternal: false,
+        ftsIndexer: chunkFts,
+        chunkEmbedder: embedder,
+        chunkVectorStore: chunkVector,
+      });
+      await applyFastScoreToChunk(db, {
+        chunkId: ingest.id,
+        plainText: text,
+        source: "conversation_message",
+        senderType: "user",
+      });
+      await processAdmittedChunk(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        chunkId: ingest.id,
+      });
+    }
+
+    const search = await searchMemoryChunks(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      q: "billing invoice",
+      scope: "conversation",
+      chunkFts,
+      chunkVector,
+      queryEmbedder: embedder,
+    });
+
+    expect(search.hits.length).toBeGreaterThan(0);
+    expect(search.hits[0]?.fusedScore).not.toBeNull();
+    expect(search.hits[0]?.sources.length).toBeGreaterThan(0);
 
     await store.close();
   });

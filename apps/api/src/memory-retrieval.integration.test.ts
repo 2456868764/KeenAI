@@ -61,6 +61,7 @@ async function setupMemoryApiTest() {
   const env = parseApiEnv({
     NODE_ENV: "test",
     DATABASE_URL: ":memory:",
+    MEMORY_TREE_EMBED_ENABLED: "true",
   });
 
   const app = createApp({
@@ -421,11 +422,20 @@ describe("memory retrieval integration", () => {
     );
     expect(searchRes.status).toBe(200);
     const searchBody = (await searchRes.json()) as {
-      results: { hits: Array<{ body: string; ftsScore: number | null }> };
+      results: {
+        hits: Array<{
+          body: string;
+          ftsScore: number | null;
+          fusedScore: number | null;
+          sources: Array<"fts" | "vector">;
+        }>;
+      };
     };
     expect(searchBody.results.hits.length).toBeGreaterThan(0);
     expect(searchBody.results.hits[0]?.body.toLowerCase()).toContain("billing");
     expect(searchBody.results.hits[0]?.ftsScore).not.toBeNull();
+    expect(searchBody.results.hits[0]?.fusedScore).not.toBeNull();
+    expect(searchBody.results.hits[0]?.sources.length).toBeGreaterThan(0);
 
     await store.close();
   });
