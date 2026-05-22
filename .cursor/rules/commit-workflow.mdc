@@ -10,5 +10,6 @@ Before creating any git commit in KeenAI:
 1. Run `pnpm lint` and fix all errors (use `pnpm lint:fix` when safe).
 2. Only commit if lint passes with exit code 0.
 3. Do not skip hooks (`--no-verify`) unless the user explicitly requests it.
+4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.) — enforced by the commit-msg hook.
 
 The repo also installs a **pre-commit hook** (`.githooks/pre-commit`) via `pnpm install` that runs `pnpm lint` automatically for local commits.
