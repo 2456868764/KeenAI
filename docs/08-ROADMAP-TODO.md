@@ -5,15 +5,17 @@
 
 ---
 
-## 当前迭代 · Iteration 9（Alpha 发布）
+## 当前迭代 · Iteration 10（工程强化 + Phase 2 起步）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I9-01 | Docker lite profile（API + Dashboard + migrate/seed） | [x] |
-| I9-02 | Inngest cron + sync 定时扫描 | [x] |
-| I9-03 | Alpha 发布文档 + README 状态更新 | [x] |
+| I10-01 | CI 统一 `pnpm typecheck`（替代分散 tsc） | [ ] |
+| I10-02 | API `bun build --compile` 单二进制脚本 | [ ] |
+| I10-03 | commitlint + commit-msg hook | [ ] |
+| I10-04 | PostgreSQL CI 矩阵骨架（service + skip 测试） | [ ] |
+| I10-05 | Tickets Drizzle schema + migration `0008` | [ ] |
 
-**下一迭代**：`bun build --compile` · PostgreSQL 矩阵 · Phase 2 Tickets
+**下一迭代**：Tickets REST API · IMAP Worker · Fumadocs 文档站
 
 ---
 
@@ -21,6 +23,7 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I9 | Alpha 发布 + Docker lite + Inngest cron | [x] |
 | I8 | Workflow MVP + Inngest + React Flow | [x] |
 | I7 | Copilot MVP + Tiptap + Macros DB + 图片上传 | [x] |
 | I6 | 通知 / FTS / 上传 | [x] |
@@ -34,10 +37,7 @@
 
 | Sprint | 状态 |
 |--------|------|
-| S4 Tiptap + mention + slash macros | [x] |
-| S5 Copilot 草稿 + 多 Provider | [x] |
-| S6 Workflow MVP | [x] |
-| **Alpha 发布** | [x] |
+| S4–S6 + Alpha | [x] |
 
 ---
 
