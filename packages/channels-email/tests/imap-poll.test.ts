@@ -9,11 +9,15 @@ describe("pollImapMailboxes", () => {
     expect(result.polled).toBe(0);
   });
 
-  it("returns unseen count from imap client", async () => {
+  it("fetches unseen messages and calls onMessage", async () => {
+    const source = Buffer.from("raw mime");
     const createClient = vi.fn(async () => ({
-      pollUnseen: vi.fn(async () => ({ polled: 3 })),
+      fetchUnseen: vi.fn(async () => [{ uid: 42, source }]),
+      markSeen: vi.fn(async () => {}),
       close: vi.fn(async () => {}),
     }));
+
+    const onMessage = vi.fn(async () => {});
 
     const result = await pollImapMailboxes(
       {
@@ -23,20 +27,44 @@ describe("pollImapMailboxes", () => {
         mailbox: "INBOX",
       },
       { createClient },
+      { onMessage },
     );
 
     expect(result.skipped).toBe(false);
-    expect(result.polled).toBe(3);
-    expect(result.ingested).toBe(0);
+    expect(result.polled).toBe(1);
+    expect(result.ingested).toBe(1);
+    expect(onMessage).toHaveBeenCalledWith({ uid: 42, source });
     expect(createClient).toHaveBeenCalledOnce();
   });
 
-  it("closes client when poll throws", async () => {
+  it("does not mark seen when onMessage fails", async () => {
+    const markSeen = vi.fn(async () => {});
+    const createClient = vi.fn(async () => ({
+      fetchUnseen: vi.fn(async () => [{ uid: 7, source: Buffer.from("x") }]),
+      markSeen,
+      close: vi.fn(async () => {}),
+    }));
+
+    await pollImapMailboxes(
+      { host: "imap.example.com", user: "support@example.com" },
+      { createClient },
+      {
+        onMessage: vi.fn(async () => {
+          throw new Error("ingest failed");
+        }),
+      },
+    );
+
+    expect(markSeen).not.toHaveBeenCalled();
+  });
+
+  it("closes client when fetch throws", async () => {
     const close = vi.fn(async () => {});
     const createClient = vi.fn(async () => ({
-      pollUnseen: vi.fn(async () => {
+      fetchUnseen: vi.fn(async () => {
         throw new Error("network");
       }),
+      markSeen: vi.fn(async () => {}),
       close,
     }));
 

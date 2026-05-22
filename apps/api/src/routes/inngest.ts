@@ -11,7 +11,7 @@ export function inngestRoutes(ctx: AppContext) {
 
   if (!client) return r;
 
-  const functions = [...(workflowFunctions ?? []), ...createEmailInngestFunctions(client, ctx.env)];
+  const functions = [...(workflowFunctions ?? []), ...createEmailInngestFunctions(client, ctx)];
 
   const handler = serve({ client, functions: [...functions] });
   r.on(["GET", "POST", "PUT"], "/api/inngest", handler);

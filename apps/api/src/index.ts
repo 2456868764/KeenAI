@@ -28,7 +28,10 @@ if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.WORKFLOW_SCAN_INTER
 }
 
 if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.EMAIL_IMAP_POLL_INTERVAL_MINUTES > 0) {
-  startEmailImapPollScheduler({ log, env }, env.EMAIL_IMAP_POLL_INTERVAL_MINUTES);
+  startEmailImapPollScheduler(
+    { store, fts, authConfig, env, log, startedAt },
+    env.EMAIL_IMAP_POLL_INTERVAL_MINUTES,
+  );
   log.info(
     { intervalMinutes: env.EMAIL_IMAP_POLL_INTERVAL_MINUTES },
     "email imap poll scheduler started",

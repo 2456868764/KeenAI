@@ -11,7 +11,7 @@ export function emailJobRoutes(ctx: AppContext) {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
-    const result = await runEmailImapPoll(ctx.env);
+    const result = await runEmailImapPoll(ctx);
     return c.json({ orgId: auth.orgId, ...result });
   });
 

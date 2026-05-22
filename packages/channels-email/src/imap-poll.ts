@@ -16,8 +16,14 @@ export type ImapPollResult = {
   reason?: string;
 };
 
+export type ImapUnseenMessage = {
+  uid: number;
+  source: Buffer;
+};
+
 export type ImapPollClient = {
-  pollUnseen(mailbox: string): Promise<{ polled: number }>;
+  fetchUnseen(mailbox: string): Promise<ImapUnseenMessage[]>;
+  markSeen(uids: number[]): Promise<void>;
   close(): Promise<void>;
 };
 
@@ -38,15 +44,28 @@ export async function createImapPollClient(
   await client.connect();
 
   return {
-    async pollUnseen(mailbox: string) {
+    async fetchUnseen(mailbox: string) {
       const lock = await client.getMailboxLock(mailbox);
       try {
         const uids = await client.search({ seen: false }, { uid: true });
-        const polled = Array.isArray(uids) ? uids.length : uids ? 1 : 0;
-        return { polled };
+        if (!uids) return [];
+        const uidList = Array.isArray(uids) ? uids : [uids];
+        if (uidList.length === 0) return [];
+
+        const messages: ImapUnseenMessage[] = [];
+        for await (const msg of client.fetch(uidList, { source: true, uid: true }, { uid: true })) {
+          if (msg.source && msg.uid) {
+            messages.push({ uid: msg.uid, source: Buffer.from(msg.source) });
+          }
+        }
+        return messages;
       } finally {
         lock.release();
       }
+    },
+    async markSeen(uids: number[]) {
+      if (uids.length === 0) return;
+      await client.messageFlagsAdd(uids, ["\\Seen"], { uid: true });
     },
     async close() {
       await client.logout();
@@ -60,12 +79,19 @@ export type ImapPollDeps = {
   ) => Promise<ImapPollClient>;
 };
 
+export type ImapPollHandlers = {
+  onMessage?: (message: ImapUnseenMessage) => Promise<void>;
+  /** Mark messages seen after successful onMessage (default true). */
+  markSeen?: boolean;
+};
+
 /**
- * Poll IMAP mailboxes for unseen messages. Ingestion into conversations is not wired yet.
+ * Poll IMAP mailboxes for unseen messages and optionally ingest each via onMessage.
  */
 export async function pollImapMailboxes(
   config: ImapPollConfig = {},
   deps?: ImapPollDeps,
+  handlers?: ImapPollHandlers,
 ): Promise<ImapPollResult> {
   if (!config.host || !config.user) {
     return {
@@ -83,9 +109,29 @@ export async function pollImapMailboxes(
     user: config.user,
   });
 
+  const markSeenAfterIngest = handlers?.markSeen !== false;
+  const seenUids: number[] = [];
+  let ingested = 0;
+
   try {
-    const { polled } = await client.pollUnseen(config.mailbox ?? "INBOX");
-    return { polled, ingested: 0, skipped: false };
+    const messages = await client.fetchUnseen(config.mailbox ?? "INBOX");
+
+    for (const message of messages) {
+      if (!handlers?.onMessage) continue;
+      try {
+        await handlers.onMessage(message);
+        ingested += 1;
+        if (markSeenAfterIngest) seenUids.push(message.uid);
+      } catch {
+        // Leave unseen so a later poll can retry.
+      }
+    }
+
+    if (markSeenAfterIngest && seenUids.length > 0) {
+      await client.markSeen(seenUids);
+    }
+
+    return { polled: messages.length, ingested, skipped: false };
   } finally {
     await client.close();
   }

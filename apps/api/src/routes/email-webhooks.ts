@@ -7,7 +7,7 @@ import {
 import { API_VERSION } from "@keenai/shared";
 import { Hono } from "hono";
 import { ingestInboundEmail } from "../lib/email-ingest.js";
-import { resolveBrandBySlug, resolveOrgBySlug } from "../lib/widget.js";
+import { resolveOrgBrandBySlug } from "../lib/org-brand.js";
 import type { AppVariables } from "../types.js";
 
 function verifyWebhookSecret(req: { header: (n: string) => string | undefined }) {
@@ -15,18 +15,6 @@ function verifyWebhookSecret(req: { header: (n: string) => string | undefined })
   if (!expected) return true;
   const got = req.header("x-keenai-webhook-secret");
   return got === expected;
-}
-
-async function resolveOrgBrand(
-  db: AppVariables["store"]["db"],
-  orgSlug: string,
-  brandSlug: string,
-) {
-  const org = await resolveOrgBySlug(db, orgSlug);
-  if (!org) return { error: "org_not_found" as const };
-  const brand = await resolveBrandBySlug(db, org.id, brandSlug);
-  if (!brand) return { error: "brand_not_found" as const };
-  return { org, brand };
 }
 
 export function emailWebhookRoutes() {
@@ -40,7 +28,7 @@ export function emailWebhookRoutes() {
     const brandSlug = c.req.query("brand") ?? "default";
     if (!orgSlug) return c.json({ error: "missing_org_query" }, 400);
 
-    const resolved = await resolveOrgBrand(c.get("store").db, orgSlug, brandSlug);
+    const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
     const raw = Buffer.from(await c.req.arrayBuffer());
@@ -61,7 +49,7 @@ export function emailWebhookRoutes() {
     const brandSlug = c.req.query("brand") ?? "default";
     if (!orgSlug) return c.json({ error: "missing_org_query" }, 400);
 
-    const resolved = await resolveOrgBrand(c.get("store").db, orgSlug, brandSlug);
+    const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
     const body = await c.req.json();
@@ -82,7 +70,7 @@ export function emailWebhookRoutes() {
     const brandSlug = c.req.query("brand") ?? "default";
     if (!orgSlug) return c.json({ error: "missing_org_query" }, 400);
 
-    const resolved = await resolveOrgBrand(c.get("store").db, orgSlug, brandSlug);
+    const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
     const form = await c.req.parseBody();
@@ -103,7 +91,7 @@ export function emailWebhookRoutes() {
     const brandSlug = c.req.query("brand") ?? "default";
     if (!orgSlug) return c.json({ error: "missing_org_query" }, 400);
 
-    const resolved = await resolveOrgBrand(c.get("store").db, orgSlug, brandSlug);
+    const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
     const form = await c.req.parseBody();

@@ -61,6 +61,11 @@ export const apiEnvSchema = z.object({
   EMAIL_IMAP_POLL_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   /** Inngest cron for IMAP poll (default every 5 minutes) */
   INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
+  /** Org/brand slugs for IMAP ingest target */
+  EMAIL_IMAP_ORG_SLUG: z.string().optional(),
+  EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),
+  /** Allow unauthenticated portal ticket reads (set true in dev via .env) */
+  PORTAL_PUBLIC_READ: z.coerce.boolean().default(false),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
@@ -72,5 +77,9 @@ export function parseApiEnv(
   const merged = { ...env };
   merged.DATABASE_URL = resolveDatabaseUrl(merged.DATABASE_URL, opts?.fromModuleUrl);
   ensureDatabaseDirectory(merged.DATABASE_URL);
-  return apiEnvSchema.parse(merged);
+  const parsed = apiEnvSchema.parse(merged);
+  if (merged.PORTAL_PUBLIC_READ === undefined && parsed.NODE_ENV !== "production") {
+    return { ...parsed, PORTAL_PUBLIC_READ: true };
+  }
+  return parsed;
 }
