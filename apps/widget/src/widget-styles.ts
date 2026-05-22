@@ -93,6 +93,12 @@ export const WIDGET_CSS = `
   object-fit: contain;
 }
 
+.keenai-bubble__audio {
+  max-width: 100%;
+  min-width: 200px;
+  height: 32px;
+}
+
 .keenai-bubble__text--muted { opacity: 0.85; font-size: 12px; }
 
 .keenai-bubble {

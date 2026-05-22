@@ -83,6 +83,12 @@ export function isValidStorageKey(storageKey: string): boolean {
   return STORAGE_KEY_RE.test(storageKey);
 }
 
+export function generateStorageKey(extension: string): string {
+  const uploadId = randomBytes(16).toString("hex");
+  const ext = extension.startsWith(".") ? extension.slice(0, 33) : `.${extension}`.slice(0, 33);
+  return `${uploadId}${ext}`;
+}
+
 export function resolveUploadFilePath(env: ApiEnv, storageKey: string): string {
   if (!isValidStorageKey(storageKey)) {
     throw new Error("invalid_storage_key");
@@ -112,6 +118,16 @@ export function guessContentType(storageKey: string): string {
       return "image/webp";
     case ".svg":
       return "image/svg+xml";
+    case ".mp3":
+      return "audio/mpeg";
+    case ".wav":
+      return "audio/wav";
+    case ".ogg":
+      return "audio/ogg";
+    case ".webm":
+      return "audio/webm";
+    case ".m4a":
+      return "audio/mp4";
     default:
       return "application/octet-stream";
   }

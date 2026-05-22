@@ -40,6 +40,7 @@ export {
   type CopilotEventAction,
 } from "./copilot.js";
 export { createMacroSchema } from "./macro.js";
+export { textToSpeechSchema, type TextToSpeechInput } from "./tools.js";
 export {
   TICKET_PRIORITIES,
   createTicketFromConversationBodySchema,

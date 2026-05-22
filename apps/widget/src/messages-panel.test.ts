@@ -38,4 +38,40 @@ describe("MessagesPanel", () => {
     expect(onSend).toHaveBeenCalledWith({ plainText: "hello" });
     expect(input.disabled).toBe(false);
   });
+
+  it("renders audio attachments with a player", () => {
+    const container = document.createElement("div");
+    const fetchAttachmentBlob = vi.fn(async () => "blob:audio");
+
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob,
+    });
+
+    panel.renderHistory([
+      {
+        id: "m-voice",
+        plainText: "[Voice message]",
+        senderType: "ai",
+        messageKind: "voice",
+        attachments: [
+          {
+            id: "att-voice",
+            fileName: "speech.wav",
+            contentType: "audio/wav",
+            sizeBytes: 1024,
+          },
+        ],
+      },
+    ]);
+
+    const audio = container.querySelector(".keenai-bubble__audio") as HTMLAudioElement;
+    expect(audio).toBeTruthy();
+    expect(audio.controls).toBe(true);
+    expect(fetchAttachmentBlob).toHaveBeenCalledWith("att-voice");
+  });
 });

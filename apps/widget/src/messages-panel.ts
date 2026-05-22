@@ -92,7 +92,11 @@ export class MessagesPanel {
       ? "keenai-bubble keenai-bubble--user"
       : "keenai-bubble keenai-bubble--agent";
 
-    if (msg.plainText && !msg.plainText.startsWith("[Image:")) {
+    if (
+      msg.plainText &&
+      !msg.plainText.startsWith("[Image:") &&
+      !msg.plainText.startsWith("[Voice")
+    ) {
       const text = document.createElement("p");
       text.className = "keenai-bubble__text";
       text.textContent = msg.plainText;
@@ -105,14 +109,28 @@ export class MessagesPanel {
     }
 
     for (const att of msg.attachments ?? []) {
-      if (!att.contentType?.startsWith("image/")) continue;
-      const img = document.createElement("img");
-      img.className = "keenai-bubble__image";
-      img.alt = att.fileName ?? "image";
-      void this.opts.fetchAttachmentBlob(att.id).then((url) => {
-        img.src = url;
-      });
-      row.append(img);
+      const mime = att.contentType?.toLowerCase() ?? "";
+      if (mime.startsWith("image/")) {
+        const img = document.createElement("img");
+        img.className = "keenai-bubble__image";
+        img.alt = att.fileName ?? "image";
+        void this.opts.fetchAttachmentBlob(att.id).then((url) => {
+          img.src = url;
+        });
+        row.append(img);
+        continue;
+      }
+      if (mime.startsWith("audio/")) {
+        const audio = document.createElement("audio");
+        audio.className = "keenai-bubble__audio";
+        audio.controls = true;
+        audio.preload = "none";
+        audio.setAttribute("aria-label", "Voice message");
+        void this.opts.fetchAttachmentBlob(att.id).then((url) => {
+          audio.src = url;
+        });
+        row.append(audio);
+      }
     }
 
     if (msg.createdAt) {

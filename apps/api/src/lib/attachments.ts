@@ -45,6 +45,7 @@ export async function insertAttachment(
     contentType?: string;
     sizeBytes?: number;
     messageId?: string;
+    metadata?: Record<string, unknown>;
   },
 ): Promise<AttachmentRow> {
   const [row] = await db
@@ -56,6 +57,7 @@ export async function insertAttachment(
       fileName: input.fileName,
       contentType: input.contentType,
       sizeBytes: input.sizeBytes,
+      metadata: input.metadata ?? {},
     })
     .returning();
   if (!row) throw new Error("attachment_insert_failed");
