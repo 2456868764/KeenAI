@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { messagePartSchema } from "./message-parts.js";
 
 export const CONVERSATION_STATUSES = ["open", "snoozed", "pending", "closed"] as const;
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
@@ -46,13 +47,22 @@ export const listConversationsSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export const createMessageSchema = z.object({
-  plainText: z.string().min(1).max(50_000),
-  content: messageContentSchema.optional(),
-  isInternal: z.boolean().default(false),
-  senderType: senderTypeSchema.optional(),
-  inReplyTo: z.string().optional(),
-});
+export const createMessageSchema = z
+  .object({
+    plainText: z.string().max(50_000).optional(),
+    attachmentIds: z.array(z.string().min(1)).max(10).optional(),
+    parts: z.array(messagePartSchema).optional(),
+    content: messageContentSchema.optional(),
+    isInternal: z.boolean().default(false),
+    senderType: senderTypeSchema.optional(),
+    inReplyTo: z.string().optional(),
+  })
+  .refine(
+    (v) =>
+      (typeof v.plainText === "string" && v.plainText.trim().length > 0) ||
+      (v.attachmentIds !== undefined && v.attachmentIds.length > 0),
+    { message: "plainText or attachmentIds required" },
+  );
 
 export const listMessagesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),

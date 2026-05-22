@@ -56,6 +56,18 @@ export {
 } from "./ticket.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
+  MESSAGE_KINDS,
+  attachmentPlaceholder,
+  buildPlainTextFromParts,
+  inferMessageKind,
+  messageKindSchema,
+  messagePartSchema,
+  serializedAttachmentSchema,
+  type MessageKind,
+  type MessagePart,
+  type SerializedAttachment,
+} from "./message-parts.js";
+export {
   listPortalTicketsSchema,
   portalMagicLinkRequestSchema,
   portalMagicLinkVerifySchema,
