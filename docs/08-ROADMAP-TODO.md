@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-04（memory.digest_daily global node）
+**下一迭代**：Memory Tree MT-05（检索 API drill_down + brand_daily）
+
+---
+
+## Iteration 26（Memory Tree MT-04）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I26-01 | brandDailyScopeKey + stubDailyDigest | [x] |
+| I26-02 | digestDailyForBrand + runDigestDaily | [x] |
+| I26-03 | Inngest digest_daily cron + event | [x] |
+| I26-04 | tests · roadmap · commits | [x] |
 
 ---
 
@@ -89,7 +100,7 @@
 | MT-01 | memory_chunks + canonicalize + deterministic id | [x] |
 | MT-02 | fast-score + extract_chunk + admitted/dropped | [x] |
 | MT-03 | source tree conv:* buffer + seal → episodes | [x] |
-| MT-04 | memory.digest_daily global node | [ ] |
+| MT-04 | memory.digest_daily global node | [x] |
 | MT-05 | 检索 API drill_down + brand_daily | [ ] |
 | MT-06 | Agent scope 路由（09 附录 B） | [ ] |
 | MT-07 | topic tree + hotness | [ ] |

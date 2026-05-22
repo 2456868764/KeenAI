@@ -77,6 +77,8 @@ export const apiEnvSchema = z.object({
   EMAIL_IMAP_POLL_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   /** Inngest cron for IMAP poll (default every 5 minutes) */
   INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
+  /** Inngest cron for memory digest_daily (default midnight UTC) */
+  INNGEST_MEMORY_DIGEST_CRON: z.string().default("0 0 * * *"),
   /** Org/brand slugs for IMAP ingest target */
   EMAIL_IMAP_ORG_SLUG: z.string().optional(),
   EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),

@@ -1,5 +1,6 @@
 export const MEMORY_INNGEST_EVENTS = {
   EXTRACT_CHUNK: "keenai/memory.extract_chunk",
+  DIGEST_DAILY: "keenai/memory.digest_daily",
 } as const;
 
 export type MemoryExtractChunkPayload = {
