@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-03（source tree buffer + seal → episodes）
+**下一迭代**：Memory Tree MT-04（memory.digest_daily global node）
+
+---
+
+## Iteration 25（Memory Tree MT-03）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I25-01 | memory_tree_buffers + memory_summaries + memory_episodes schema | [x] |
+| I25-02 | appendBuffer + sealBuffer + stub seal | [x] |
+| I25-03 | processAdmittedChunk pipeline + dispatch wiring | [x] |
+| I25-04 | buffer/seal tests · roadmap · commits | [x] |
 
 ---
 
@@ -56,7 +67,7 @@
 | I21-00 | [15-MEMORY-TREE.md](./15-MEMORY-TREE.md) + 关联 doc/roadmap 更新 | [x] |
 | I21-01 | `memory_chunks` schema + canonicalize（MT-01） | [x] |
 | I21-02 | fast-score + admitted/dropped（MT-02） | [x] |
-| I21-03 | source tree seal → episodes（MT-03） | [ ] |
+| I21-03 | source tree seal → episodes（MT-03） | [x] |
 
 ---
 
@@ -77,7 +88,7 @@
 |-------|-----|------|
 | MT-01 | memory_chunks + canonicalize + deterministic id | [x] |
 | MT-02 | fast-score + extract_chunk + admitted/dropped | [x] |
-| MT-03 | source tree conv:* buffer + seal → episodes | [ ] |
+| MT-03 | source tree conv:* buffer + seal → episodes | [x] |
 | MT-04 | memory.digest_daily global node | [ ] |
 | MT-05 | 检索 API drill_down + brand_daily | [ ] |
 | MT-06 | Agent scope 路由（09 附录 B） | [ ] |

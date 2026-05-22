@@ -1,4 +1,4 @@
-import { extractChunk } from "@keenai/memory-tree";
+import { processAdmittedChunk } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
@@ -13,7 +13,7 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
         brandId: string;
         chunkId: string;
       };
-      return extractChunk(ctx.store.db, data.chunkId);
+      return processAdmittedChunk(ctx.store.db, data);
     },
   );
 

@@ -1,4 +1,4 @@
-import { extractChunk } from "@keenai/memory-tree";
+import { processAdmittedChunk } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import { Inngest as InngestClient } from "inngest";
 import type { AppContext } from "../types.js";
@@ -14,8 +14,8 @@ let inngestClient: Inngest | null = null;
 export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
   const handlers = {
     extractChunk: async (payload: { orgId: string; brandId: string; chunkId: string }) => {
-      const result = await extractChunk(ctx.store.db, payload.chunkId);
-      return { processed: result.processed };
+      const result = await processAdmittedChunk(ctx.store.db, payload);
+      return { processed: result.extracted };
     },
   };
 

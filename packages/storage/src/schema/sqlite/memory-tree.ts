@@ -1,4 +1,6 @@
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTimestamps } from "../_shared/timestamps";
+import { newUlid } from "../_shared/ulid";
 import { brands, organizations } from "./core";
 
 export const memoryChunks = sqliteTable(
@@ -32,3 +34,93 @@ export const memoryChunks = sqliteTable(
 );
 
 export type MemoryChunkRow = typeof memoryChunks.$inferSelect;
+
+export const memoryTreeBuffers = sqliteTable(
+  "memory_tree_buffers",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    scopeKey: text("scope_key").notNull(),
+    level: integer("level").notNull().default(0),
+    leafIds: text("leaf_ids", { mode: "json" }).$type<string[]>().notNull().default([]),
+    tokenCount: integer("token_count").notNull().default(0),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    uqScope: uniqueIndex("uq_mem_tree_buffer_scope").on(t.orgId, t.brandId, t.scopeKey, t.level),
+    idxOrgBrand: index("idx_mem_tree_buffer_org_brand").on(t.orgId, t.brandId, t.updatedAt),
+  }),
+);
+
+export type MemoryTreeBufferRow = typeof memoryTreeBuffers.$inferSelect;
+
+export type MemorySummaryProvenance = {
+  chunkIds: string[];
+  messageIds: string[];
+  keyEvents?: string[];
+};
+
+export const memorySummaries = sqliteTable(
+  "memory_summaries",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    scopeKey: text("scope_key").notNull(),
+    level: integer("level").notNull(),
+    parentId: text("parent_id"),
+    title: text("title"),
+    summary: text("summary").notNull(),
+    provenance: text("provenance", { mode: "json" }).$type<MemorySummaryProvenance>().notNull(),
+    sealedAt: integer("sealed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    idxScope: index("idx_mem_summary_scope").on(t.orgId, t.brandId, t.scopeKey, t.level),
+  }),
+);
+
+export type MemorySummaryRow = typeof memorySummaries.$inferSelect;
+
+export const memoryEpisodes = sqliteTable(
+  "memory_episodes",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull(),
+    threadId: text("thread_id"),
+    summary: text("summary").notNull(),
+    topic: text("topic"),
+    outcome: text("outcome"),
+    sentiment: text("sentiment"),
+    startsAt: integer("starts_at", { mode: "timestamp_ms" }),
+    endsAt: integer("ends_at", { mode: "timestamp_ms" }),
+    metadata: text("metadata", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    idxScope: index("idx_mem_ep_scope").on(t.scope, t.scopeId, t.endsAt),
+    idxOrgBrand: index("idx_mem_ep_org_brand").on(t.orgId, t.brandId, t.createdAt),
+  }),
+);
+
+export type MemoryEpisodeRow = typeof memoryEpisodes.$inferSelect;

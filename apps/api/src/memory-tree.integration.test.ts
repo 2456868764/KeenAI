@@ -1,11 +1,18 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashPassword } from "@keenai/auth";
-import { conversationMessageSourceRef } from "@keenai/memory-tree";
+import { conversationMessageSourceRef, conversationScopeKey } from "@keenai/memory-tree";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, members, memoryChunks, organizations } from "@keenai/storage/schema";
-import { eq } from "drizzle-orm";
+import {
+  accounts,
+  brands,
+  members,
+  memoryChunks,
+  memoryTreeBuffers,
+  organizations,
+} from "@keenai/storage/schema";
+import { and, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -105,13 +112,24 @@ describe("memory tree integration", () => {
       .from(memoryChunks)
       .where(eq(memoryChunks.sourceRef, conversationMessageSourceRef(msgBody.message.id)));
     expect(chunk).toBeTruthy();
-    expect(chunk?.lifecycle).toBe("admitted");
+    expect(chunk?.lifecycle).toBe("buffered");
     expect(chunk?.fastScore).toBeGreaterThanOrEqual(0.5);
     expect(chunk?.bodyMd).toContain("I need help upgrading my plan.");
     expect(chunk?.id).toMatch(/^[a-f0-9]{64}$/);
     expect(chunk?.metadata).toMatchObject({
       extractChunkStatus: "stub",
     });
+
+    const [buffer] = await db
+      .select()
+      .from(memoryTreeBuffers)
+      .where(
+        and(
+          eq(memoryTreeBuffers.orgId, org.id),
+          eq(memoryTreeBuffers.scopeKey, conversationScopeKey(conversation.id)),
+        ),
+      );
+    expect(buffer?.leafIds).toContain(chunk?.id);
 
     await store.close();
   });
