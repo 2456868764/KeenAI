@@ -2,6 +2,14 @@ export type { Dialect, KeenaiDb, KeenaiTx, Store, TxOptions, Unsubscribe } from 
 export type { VectorQuery, VectorStore } from "./core/vector-store.js";
 export type { FtsHit, FtsQuery, FTSStore } from "./core/fts-store.js";
 export {
+  hybridSearch,
+  rrfFuse,
+  type HybridFusedHit,
+  type HybridSearchInput,
+  type RankedHit,
+  type RrfFuseOptions,
+} from "./hybrid.js";
+export {
   createLibsqlFtsStore,
   ensureFtsSchema,
 } from "./libsql/fts-store.js";

@@ -11,5 +11,6 @@ Before creating any git commit in KeenAI:
 2. Only commit if lint passes with exit code 0.
 3. Do not skip hooks (`--no-verify`) unless the user explicitly requests it.
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.) — enforced by the commit-msg hook.
+5. For Phase 4 memory iterations ([08-ROADMAP-TODO.md](../docs/08-ROADMAP-TODO.md) KM-*): also run `pnpm typecheck` and `pnpm test` before commit; push with `git push` after each iteration unless the user says otherwise.
 
 The repo also installs a **pre-commit hook** (`.githooks/pre-commit`) via `pnpm install` that runs `pnpm lint` automatically for local commits.

@@ -1,20 +1,75 @@
 # KeenAI 阶段执行 TODO（跟踪 `08-ROADMAP.md`）
 
-> 每完成一项：**实现 → `pnpm test` / `pnpm lint` → `git commit`**。  
-> 状态：`[ ]` 待办 · `[~]` 进行中 · `[x]` 完成
+> **迭代闭环**（Phase 4 起）：`实现 → pnpm lint → pnpm typecheck → pnpm test → git commit → git push`  
+> 状态：`[ ]` 待办 · `[~]` 进行中 · `[x]` 完成 · `[-]` 取消
 
 ---
 
-## 当前迭代 · Iteration 20（TTS Tool + Audio Outbound）
+## 当前迭代 · Iteration 34（Keeni Memory KM-02 · FTS memory chunks）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I20-01 | synthesizeSpeech + TTS env | [x] |
-| I20-02 | POST /tools/text-to-speech + agent outbound | [x] |
-| I20-03 | Widget audio player + tests | [x] |
-| I20-04 | roadmap · commits | [x] |
+| I34-01 | `fts_memory_chunks` 虚拟表 + migration | [ ] |
+| I34-02 | ingest 时 FTS index + ensure schema | [ ] |
+| I34-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：Phase 3 Memory Tree 后续增强项（export CLI 等）
+**下一迭代**：KM-03 · `searchMemoryChunks` 改 FTS
+
+---
+
+## Iteration 33（Keeni Memory KM-01 · Hybrid RRF 基础）✓
+
+> **目标**：KeenAI **内置** agentmemory 对应能力（LibSQL + `@keenai/memory-tree`），不依赖外部 daemon。  
+> 设计对照：[10-AGENT-MEMORY.md](./10-AGENT-MEMORY.md) · [12-STORAGE-ABSTRACTION.md](./12-STORAGE-ABSTRACTION.md) §5.5
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I33-01 | `packages/storage`：`rrfFuse` + `hybridSearch` 纯函数 + 单元测试 | [x] |
+| I33-02 | 导出 `@keenai/storage` hybrid API | [x] |
+| I33-03 | roadmap · lint/typecheck/test · commit · push | [x] |
+
+---
+
+## Phase 4 · Keeni Memory 原生（KM-01～KM-11）
+
+对标 [agentmemory](https://github.com/rohitg00/agentmemory) **能力**，全部落在 KeenAI 自有存储与 Inngest 管线。
+
+| KM | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KM-01** | I33 | `rrfFuse` + `hybridSearch`（storage 层，FTS/Vector 结果融合） | [x] |
+| **KM-02** | I34 | `fts_memory_chunks` 虚拟表 + migration；ingest 时 FTS index | [ ] |
+| **KM-03** | I35 | `searchMemoryChunks` 改 FTS（替换 SQL LIKE）+ API/集成测试 | [ ] |
+| **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（`@xenova/transformers` 可选 env） | [ ] |
+| **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [ ] |
+| **KM-06** | I38 | `fts_memory_summaries` + 搜索覆盖 seal 摘要与日 digest | [ ] |
+| **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [ ] |
+| **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [ ] |
+| **KM-09** | I41 | ingest privacy filter（PII 脱敏 processor） | [ ] |
+| **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [ ] |
+| **KM-11** | I43 | consolidation/decay Inngest cron + eviction 分数 | [ ] |
+| **KM-12** | I44 | `@keenai/memory` facade：`store` / `recall` / `get` / `forget` 统一 API | [ ] |
+| **KM-13** | I45 | `keenai memory export --vault` CLI → Markdown vault | [ ] |
+
+### 依赖关系（简图）
+
+```
+KM-01 RRF ──► KM-02 FTS index ──► KM-03 search 升级
+                      │
+KM-04 vectors ──► KM-05 hybrid recall ──► KM-06 summaries FTS
+KM-07 facts/slots ──► KM-08 Agent L3 context
+KM-09 privacy ──► KM-10 flush + entities ──► KM-11 consolidation
+KM-12 memory package ──► KM-13 export CLI
+```
+
+### 与 Memory Tree 已完成项的关系
+
+| 已有（MT-01～09） | Phase 4 增强 |
+|-------------------|-------------|
+| `memory_chunks` ingest + fast-score | + FTS/Vector 索引 |
+| seal → `memory_summaries` / episodes | + 摘要可检索 + fact 抽取 |
+| `assembleMemoryContext` scope 路由 | + L3 facts/slots + hybrid recall |
+| Explorer `LIKE` 搜索 | → FTS → hybrid RRF |
+| ~~MT-10 外部 daemon~~ | **取消**；能力由 KM-* 原生实现 |
 
 ---
 
@@ -174,7 +229,25 @@
 | MT-07 | topic tree + hotness | [x] |
 | MT-08 | Memory Explorer Dashboard MVP | [x] |
 | MT-09 | channel-scoped source tree | [x] |
-| MT-10 | agentmemory backend 兼容层（可选） | [-] 已移除 |
+| MT-10 | ~~agentmemory daemon~~ | [-] 已移除；见 Phase 4 KM-* |
+
+## Phase 4 · Keeni Memory 原生（[10-AGENT-MEMORY.md](./10-AGENT-MEMORY.md)）
+
+| KM ID | 项 | 状态 |
+|-------|-----|------|
+| KM-01 | hybrid RRF（storage） | [x] |
+| KM-02 | fts_memory_chunks + ingest index | [ ] |
+| KM-03 | FTS memory search | [ ] |
+| KM-04 | chunk vectors + embed | [ ] |
+| KM-05 | hybrid FTS+Vector recall | [ ] |
+| KM-06 | summaries FTS search | [ ] |
+| KM-07 | memory_facts + memory_slots | [ ] |
+| KM-08 | L3 context API | [ ] |
+| KM-09 | privacy filter ingest | [ ] |
+| KM-10 | flush_stale + entities | [ ] |
+| KM-11 | consolidation + decay | [ ] |
+| KM-12 | @keenai/memory facade | [ ] |
+| KM-13 | export CLI | [ ] |
 
 ---
 

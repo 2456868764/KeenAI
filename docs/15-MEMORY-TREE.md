@@ -353,7 +353,19 @@ GET /api/v1/memory/digest?brandId=...&date=2026-05-21
 | MT-07 | topic tree + hotness |
 | MT-08 | Memory Explorer Dashboard MVP |
 | MT-09 | channel-scoped source tree（Slack） |
-| MT-10 | ~~agentmemory backend 兼容层~~（已移除，不集成外部 daemon） |
+| MT-10 | ~~agentmemory daemon 兼容~~ | [-] 已移除 |
+
+### Phase 4 · Sprint 15+（Keeni Memory 原生 · KM-01～13）
+
+> 在 LibSQL 内实现 [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md) 对标 agentmemory 的能力；跟踪 [08-ROADMAP-TODO.md](08-ROADMAP-TODO.md)。
+
+| ID | 交付 |
+|----|------|
+| KM-01～03 | storage RRF + `fts_memory_chunks` + FTS search |
+| KM-04～06 | Vector embed + hybrid recall + summaries 检索 |
+| KM-07～08 | L3 facts/slots + Agent context |
+| KM-09～11 | privacy · entities · consolidation/decay |
+| KM-12～13 | `@keenai/memory` API + export CLI |
 
 ---
 
