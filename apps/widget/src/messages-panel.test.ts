@@ -12,7 +12,14 @@ describe("MessagesPanel", () => {
         }),
     );
 
-    const panel = new MessagesPanel({ container, onSend });
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend,
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
     panel.renderHistory([{ id: "m1", plainText: "hi", senderType: "user" }]);
     panel.handleRealtime({
       type: "message.created",
@@ -22,13 +29,13 @@ describe("MessagesPanel", () => {
     expect(container.querySelectorAll(".keenai-bubble")).toHaveLength(1);
 
     const form = container.querySelector("form") as HTMLFormElement;
-    const input = container.querySelector("input") as HTMLInputElement;
+    const input = container.querySelector(".keenai-input") as HTMLInputElement;
     input.value = "hello";
     form.requestSubmit();
 
     expect(input.disabled).toBe(true);
     await new Promise((r) => setTimeout(r, 60));
-    expect(onSend).toHaveBeenCalledWith("hello");
+    expect(onSend).toHaveBeenCalledWith({ plainText: "hello" });
     expect(input.disabled).toBe(false);
   });
 });

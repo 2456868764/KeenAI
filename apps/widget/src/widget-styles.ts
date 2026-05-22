@@ -75,6 +75,26 @@ export const WIDGET_CSS = `
 
 .keenai-send:disabled { opacity: 0.6; cursor: wait; }
 
+.keenai-attach {
+  border: none;
+  border-radius: 8px;
+  background: #27272a;
+  color: #f4f4f5;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.keenai-bubble__image {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.keenai-bubble__text--muted { opacity: 0.85; font-size: 12px; }
+
 .keenai-bubble {
   max-width: 85%;
   padding: 8px 10px;

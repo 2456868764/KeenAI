@@ -1,8 +1,11 @@
 import { MessagesPanel } from "./messages-panel.js";
 import {
   createWidgetSession,
+  fetchWidgetAttachmentBlob,
   fetchWidgetMessages,
   getOrCreateWidgetConversation,
+  postWidgetMessage,
+  uploadWidgetImage,
 } from "./session.js";
 import { createShadowHost } from "./shadow-host.js";
 import type { WidgetUser } from "./types.js";
@@ -66,23 +69,23 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
 
   const messages = new MessagesPanel({
     container: messagesMount,
-    onSend: async (plainText) => {
-      const res = await fetch(
-        `${apiUrl.replace(/\/$/, "")}/api/v1/widget/conversations/${conversationId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ plainText }),
-        },
-      );
-      if (!res.ok) throw new Error("send_failed");
-      const body = (await res.json()) as {
-        message: { id: string; plainText: string; senderType: string; createdAt?: string };
-      };
-      messages.handleRealtime({ type: "message.created", message: body.message });
+    apiUrl,
+    accessToken: "",
+    onUploadImage: async (file) => {
+      const result = await uploadWidgetImage({ apiUrl, accessToken, file });
+      return result.attachmentId;
+    },
+    fetchAttachmentBlob: (attachmentId) =>
+      fetchWidgetAttachmentBlob({ apiUrl, accessToken, attachmentId }),
+    onSend: async (input) => {
+      const message = await postWidgetMessage({
+        apiUrl,
+        accessToken,
+        conversationId,
+        plainText: input.plainText,
+        attachmentIds: input.attachmentIds,
+      });
+      messages.handleRealtime({ type: "message.created", message });
     },
   });
 

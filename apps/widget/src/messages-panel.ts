@@ -1,10 +1,18 @@
-import type { ConversationRealtimeEvent, WidgetMessagePayload } from "./types.js";
+import type {
+  ConversationRealtimeEvent,
+  SendWidgetMessageInput,
+  WidgetMessagePayload,
+} from "./types.js";
 
 export type MessageRow = WidgetMessagePayload & { createdAt?: string };
 
 export type MessagesPanelOptions = {
   container: HTMLElement;
-  onSend: (plainText: string) => Promise<void>;
+  apiUrl: string;
+  accessToken: string;
+  onSend: (input: SendWidgetMessageInput) => Promise<void>;
+  onUploadImage: (file: File) => Promise<string>;
+  fetchAttachmentBlob: (attachmentId: string) => Promise<string>;
 };
 
 export class MessagesPanel {
@@ -12,6 +20,7 @@ export class MessagesPanel {
   readonly #listEl: HTMLElement;
   readonly #form: HTMLFormElement;
   readonly #input: HTMLInputElement;
+  readonly #fileInput: HTMLInputElement;
   readonly #sendBtn: HTMLButtonElement;
   #sending = false;
 
@@ -30,15 +39,28 @@ export class MessagesPanel {
     this.#input.placeholder = "Type a message…";
     this.#input.setAttribute("aria-label", "Message");
 
+    this.#fileInput = document.createElement("input");
+    this.#fileInput.type = "file";
+    this.#fileInput.accept = "image/*";
+    this.#fileInput.hidden = true;
+
+    const attachBtn = document.createElement("button");
+    attachBtn.type = "button";
+    attachBtn.className = "keenai-attach";
+    attachBtn.textContent = "📷";
+    attachBtn.setAttribute("aria-label", "Attach image");
+    attachBtn.addEventListener("click", () => this.#fileInput.click());
+
     this.#sendBtn = document.createElement("button");
     this.#sendBtn.type = "submit";
     this.#sendBtn.className = "keenai-send";
     this.#sendBtn.textContent = "Send";
 
-    this.#form.append(this.#input, this.#sendBtn);
-    this.opts.container.append(this.#listEl, this.#form);
+    this.#form.append(attachBtn, this.#input, this.#sendBtn);
+    this.opts.container.append(this.#listEl, this.#form, this.#fileInput);
 
     this.#form.addEventListener("submit", (e) => void this.#onSubmit(e));
+    this.#fileInput.addEventListener("change", () => void this.#onFileSelected());
   }
 
   renderHistory(items: MessageRow[]) {
@@ -70,11 +92,29 @@ export class MessagesPanel {
       ? "keenai-bubble keenai-bubble--user"
       : "keenai-bubble keenai-bubble--agent";
 
-    const text = document.createElement("p");
-    text.className = "keenai-bubble__text";
-    text.textContent = msg.plainText;
+    if (msg.plainText && !msg.plainText.startsWith("[Image:")) {
+      const text = document.createElement("p");
+      text.className = "keenai-bubble__text";
+      text.textContent = msg.plainText;
+      row.append(text);
+    } else if (msg.plainText) {
+      const text = document.createElement("p");
+      text.className = "keenai-bubble__text keenai-bubble__text--muted";
+      text.textContent = msg.plainText;
+      row.append(text);
+    }
 
-    row.append(text);
+    for (const att of msg.attachments ?? []) {
+      if (!att.contentType?.startsWith("image/")) continue;
+      const img = document.createElement("img");
+      img.className = "keenai-bubble__image";
+      img.alt = att.fileName ?? "image";
+      void this.opts.fetchAttachmentBlob(att.id).then((url) => {
+        img.src = url;
+      });
+      row.append(img);
+    }
+
     if (msg.createdAt) {
       const time = document.createElement("time");
       time.className = "keenai-bubble__time";
@@ -94,10 +134,23 @@ export class MessagesPanel {
     this.#input.value = "";
     this.setSending(true);
     try {
-      await this.opts.onSend(text);
+      await this.opts.onSend({ plainText: text });
     } finally {
       this.setSending(false);
       this.#input.focus();
+    }
+  }
+
+  async #onFileSelected() {
+    const file = this.#fileInput.files?.[0];
+    this.#fileInput.value = "";
+    if (!file || this.#sending) return;
+    this.setSending(true);
+    try {
+      const attachmentId = await this.opts.onUploadImage(file);
+      await this.opts.onSend({ attachmentIds: [attachmentId] });
+    } finally {
+      this.setSending(false);
     }
   }
 }
