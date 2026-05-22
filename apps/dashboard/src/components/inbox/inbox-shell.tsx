@@ -3,6 +3,7 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { type Conversation, listConversations, searchConversations } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ConversationList } from "./conversation-list";
 import { CopilotCommand } from "./copilot-command";
@@ -11,8 +12,11 @@ import { NotificationBell } from "./notification-bell";
 import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
 
 export function InboxShell() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState<InboxView>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    searchParams.get("conversation"),
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotDraft, setCopilotDraft] = useState<{
@@ -42,6 +46,11 @@ export function InboxShell() {
     }
     return list;
   }, [data?.items, view]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("conversation");
+    if (fromUrl) setSelectedId(fromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

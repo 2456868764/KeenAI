@@ -505,6 +505,81 @@ export async function listTicketEvents(id: string): Promise<{ items: TicketEvent
   return apiFetch(`/api/v1/tickets/${id}/events`);
 }
 
+export type MeResponse = {
+  brandIds: string[];
+  organization: { id: string; slug: string; name: string } | null;
+};
+
+export async function fetchMe(): Promise<MeResponse> {
+  return apiFetch("/api/v1/me");
+}
+
+export type MemoryExplorerStats = {
+  brandId: string;
+  chunkCount: number;
+  sourceCount: number;
+  topicCount: number;
+  hotTopicCount: number;
+  storageBytes: number;
+};
+
+export type MemoryHotTopic = {
+  userId: string;
+  score: number;
+  messageCount7d: number;
+  openTicketCount: number;
+};
+
+export async function getMemoryStats(
+  brandId: string,
+): Promise<{ stats: MemoryExplorerStats; hotTopics: MemoryHotTopic[] }> {
+  const qs = new URLSearchParams({ brandId });
+  return apiFetch(`/api/v1/memory/stats?${qs}`);
+}
+
+export type MemoryDigest = {
+  dateUtc: string;
+  title: string | null;
+  summary: string;
+  keyEvents: string[];
+};
+
+export async function getMemoryDigest(
+  brandId: string,
+  date: string,
+): Promise<{ digest: MemoryDigest }> {
+  const qs = new URLSearchParams({ brandId, date });
+  return apiFetch(`/api/v1/memory/digest?${qs}`);
+}
+
+export type MemorySearchHit = {
+  chunkId: string;
+  scope: "conversation" | "customer" | "unknown";
+  conversationId: string | null;
+  messageId: string | null;
+  userId: string | null;
+  body: string;
+  lifecycle: string;
+  fastScore: number | null;
+  createdAt: string;
+};
+
+export async function searchMemory(input: {
+  brandId: string;
+  q: string;
+  scope?: "all" | "conversation" | "customer";
+}): Promise<{ hits: MemorySearchHit[] }> {
+  const qs = new URLSearchParams({
+    brandId: input.brandId,
+    q: input.q,
+    scope: input.scope ?? "all",
+  });
+  const res = await apiFetch<{ results: { hits: MemorySearchHit[] } }>(
+    `/api/v1/memory/search?${qs}`,
+  );
+  return { hits: res.results.hits };
+}
+
 export async function transitionTicketStatus(
   id: string,
   statusId: string,

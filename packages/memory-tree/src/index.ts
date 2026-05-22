@@ -26,6 +26,18 @@ export {
   conversationMessageSourceRef,
 } from "./canonicalize.js";
 export { extractChunk, type ExtractChunkResult } from "./extract-chunk.js";
+export {
+  listHotTopics,
+  queryMemoryExplorerStats,
+  scopeKeyLabel,
+  searchMemoryChunks,
+  type MemoryExplorerHotTopic,
+  type MemoryExplorerStats,
+  type MemorySearchHit,
+  type QueryMemoryExplorerStatsInput,
+  type SearchMemoryChunksInput,
+  type SearchMemoryChunksResult,
+} from "./explorer.js";
 export { computeFastScore, type FastScoreInput, type FastScoreResult } from "./fast-score.js";
 export { ingestConversationMessage, type IngestConversationMessageInput } from "./ingest.js";
 export { getMemoryChunkBySourceRef, persistMemoryChunk } from "./persist.js";

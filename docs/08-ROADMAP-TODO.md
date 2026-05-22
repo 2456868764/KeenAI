@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-08（Memory Explorer Dashboard MVP）
+**下一迭代**：Memory Tree MT-09（channel-scoped source tree）
+
+---
+
+## Iteration 30（Memory Tree MT-08）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I30-01 | queryMemoryExplorerStats + searchMemoryChunks API | [x] |
+| I30-02 | GET /memory/stats + GET /memory/search | [x] |
+| I30-03 | Dashboard Memory Explorer page | [x] |
+| I30-04 | tests · roadmap · commits | [x] |
 
 ---
 
@@ -137,7 +148,7 @@
 | MT-05 | 检索 API drill_down + brand_daily | [x] |
 | MT-06 | Agent scope 路由（09 附录 B） | [x] |
 | MT-07 | topic tree + hotness | [x] |
-| MT-08 | Memory Explorer Dashboard MVP | [ ] |
+| MT-08 | Memory Explorer Dashboard MVP | [x] |
 | MT-09 | channel-scoped source tree | [ ] |
 | MT-10 | agentmemory backend 兼容层（可选） | [ ] |
 

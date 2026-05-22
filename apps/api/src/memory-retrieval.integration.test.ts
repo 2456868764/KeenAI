@@ -371,4 +371,61 @@ describe("memory retrieval integration", () => {
 
     await store.close();
   });
+
+  it("returns explorer stats and search hits", async () => {
+    const { app, store, db, org, brand, auth } = await setupMemoryApiTest();
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "explorer-api",
+        subject: "Explorer",
+      }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        senderType: "user",
+        plainText: "Unique billing keyword explorer-test.",
+      }),
+    });
+
+    const chunkRows = await db.select().from(memoryChunks);
+    for (const chunk of chunkRows) {
+      await processAdmittedChunk(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        chunkId: chunk.id,
+      });
+    }
+
+    const statsRes = await app.request(`/api/v1/memory/stats?brandId=${brand.id}`, {
+      headers: auth,
+    });
+    expect(statsRes.status).toBe(200);
+    const statsBody = (await statsRes.json()) as {
+      stats: { chunkCount: number };
+      hotTopics: unknown[];
+    };
+    expect(statsBody.stats.chunkCount).toBeGreaterThan(0);
+
+    const searchRes = await app.request(
+      `/api/v1/memory/search?brandId=${brand.id}&q=billing&scope=conversation`,
+      { headers: auth },
+    );
+    expect(searchRes.status).toBe(200);
+    const searchBody = (await searchRes.json()) as {
+      results: { hits: Array<{ body: string }> };
+    };
+    expect(searchBody.results.hits.length).toBeGreaterThan(0);
+    expect(searchBody.results.hits[0]?.body.toLowerCase()).toContain("billing");
+
+    await store.close();
+  });
 });

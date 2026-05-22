@@ -93,9 +93,13 @@ export {
 export {
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
+  memorySearchQuerySchema,
+  memoryStatsQuerySchema,
   memoryTreeQuerySchema,
   type MemoryContextQuery,
   type MemoryDigestQuery,
+  type MemorySearchQuery,
+  type MemoryStatsQuery,
   type MemoryTreeQuery,
 } from "./memory.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";

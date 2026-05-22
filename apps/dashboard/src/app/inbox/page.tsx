@@ -3,7 +3,7 @@
 import { InboxShell } from "@/components/inbox/inbox-shell";
 import { getAccessToken } from "@/lib/auth-store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 export default function InboxPage() {
   const router = useRouter();
@@ -12,5 +12,9 @@ export default function InboxPage() {
     if (!getAccessToken()) router.replace("/login");
   }, [router]);
 
-  return <InboxShell />;
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading inbox…</div>}>
+      <InboxShell />
+    </Suspense>
+  );
 }

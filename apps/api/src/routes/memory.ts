@@ -1,14 +1,19 @@
 import { zValidator } from "@hono/zod-validator";
 import {
   assembleMemoryContext,
+  listHotTopics,
   queryBrandDailyDigest,
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
+  queryMemoryExplorerStats,
+  searchMemoryChunks,
 } from "@keenai/memory-tree";
 import {
   API_VERSION,
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
+  memorySearchQuerySchema,
+  memoryStatsQuerySchema,
   memoryTreeQuerySchema,
 } from "@keenai/shared";
 import { Hono } from "hono";
@@ -111,6 +116,57 @@ export function memoryRoutes(_ctx: AppContext) {
       });
 
       return c.json({ context });
+    },
+  );
+
+  r.get(
+    `${prefix}/stats`,
+    requireAuth(),
+    zValidator("query", memoryStatsQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const { brandId } = c.req.valid("query");
+      if (!canAccessBrand(auth, brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const stats = await queryMemoryExplorerStats(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId,
+      });
+      const hotTopics = await listHotTopics(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId,
+      });
+
+      return c.json({ stats, hotTopics });
+    },
+  );
+
+  r.get(
+    `${prefix}/search`,
+    requireAuth(),
+    zValidator("query", memorySearchQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const results = await searchMemoryChunks(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        q: query.q,
+        scope: query.scope,
+        limit: query.limit,
+      });
+
+      return c.json({ results });
     },
   );
 
