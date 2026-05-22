@@ -24,6 +24,19 @@ export { computeFastScore, type FastScoreInput, type FastScoreResult } from "./f
 export { ingestConversationMessage, type IngestConversationMessageInput } from "./ingest.js";
 export { getMemoryChunkBySourceRef, persistMemoryChunk } from "./persist.js";
 export {
+  queryBrandDailyDigest,
+  queryConversationMemoryTree,
+  type BrandDailyDigestResult,
+  type ConversationMemoryTreeResult,
+  type MemoryTreeEpisodeNode,
+  type MemoryTreeLeafNode,
+  type MemoryTreeLevel,
+  type MemoryTreeNode,
+  type MemoryTreeSummaryNode,
+  type QueryBrandDailyDigestInput,
+  type QueryConversationMemoryTreeInput,
+} from "./query.js";
+export {
   processAdmittedChunk,
   type ProcessAdmittedChunkInput,
   type ProcessAdmittedChunkResult,

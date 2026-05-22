@@ -26,6 +26,7 @@ import { imWebhookRoutes } from "./routes/im-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
 import { macroRoutes } from "./routes/macros.js";
 import { memberRoutes } from "./routes/members.js";
+import { memoryRoutes } from "./routes/memory.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import { portalRoutes } from "./routes/portal.js";
@@ -100,6 +101,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", emailJobRoutes(ctx));
   app.route("/", inngestRoutes(ctx));
   app.route("/", searchRoutes(ctx));
+  app.route("/", memoryRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
   app.route("/", toolRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));

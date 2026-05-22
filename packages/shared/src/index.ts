@@ -90,6 +90,12 @@ export {
   portalMagicLinkRequestSchema,
   portalMagicLinkVerifySchema,
 } from "./portal.js";
+export {
+  memoryDigestQuerySchema,
+  memoryTreeQuerySchema,
+  type MemoryDigestQuery,
+  type MemoryTreeQuery,
+} from "./memory.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
   defaultDatabaseFilePath,

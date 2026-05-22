@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-05（检索 API drill_down + brand_daily）
+**下一迭代**：Memory Tree MT-06（Agent scope 路由）
+
+---
+
+## Iteration 27（Memory Tree MT-05）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I27-01 | queryConversationMemoryTree + queryBrandDailyDigest | [x] |
+| I27-02 | GET /memory/tree + GET /memory/digest routes | [x] |
+| I27-03 | shared query schemas + integration tests | [x] |
+| I27-04 | roadmap · commits | [x] |
 
 ---
 
@@ -101,7 +112,7 @@
 | MT-02 | fast-score + extract_chunk + admitted/dropped | [x] |
 | MT-03 | source tree conv:* buffer + seal → episodes | [x] |
 | MT-04 | memory.digest_daily global node | [x] |
-| MT-05 | 检索 API drill_down + brand_daily | [ ] |
+| MT-05 | 检索 API drill_down + brand_daily | [x] |
 | MT-06 | Agent scope 路由（09 附录 B） | [ ] |
 | MT-07 | topic tree + hotness | [ ] |
 | MT-08 | Memory Explorer Dashboard MVP | [ ] |
