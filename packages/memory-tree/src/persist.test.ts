@@ -1,7 +1,15 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { conversationMessageSourceRef, ingestConversationMessage } from "@keenai/memory-tree";
-import { createLibsqlMemoryChunkFtsStore, createLibsqlStore } from "@keenai/storage";
+import {
+  conversationMessageSourceRef,
+  createStubMemoryChunkEmbedder,
+  ingestConversationMessage,
+} from "@keenai/memory-tree";
+import {
+  createLibsqlMemoryChunkFtsStore,
+  createLibsqlMemoryChunkVectorStore,
+  createLibsqlStore,
+} from "@keenai/storage";
 import {
   brands,
   conversations,
@@ -150,6 +158,78 @@ describe("memory-tree persist", () => {
     });
     expect(hits).toHaveLength(1);
     expect(hits[0]?.id).toBe(result.id);
+
+    await store.close();
+  });
+
+  it("embeds admitted chunks into memory_chunk_vectors when embedder is provided", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const vectors = createLibsqlMemoryChunkVectorStore(store.client);
+    const embedder = createStubMemoryChunkEmbedder(16);
+
+    const orgRow = await db.insert(organizations).values({ slug: "vec", name: "Vec" }).returning();
+    const org = requireRow(orgRow[0], "org");
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    const convRow = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "vec-tree",
+        status: "open",
+      })
+      .returning();
+    const conv = requireRow(convRow[0], "conversation");
+    const msgRow = await db
+      .insert(messages)
+      .values({
+        orgId: org.id,
+        conversationId: conv.id,
+        senderType: "user",
+        plainText: "Track shipment order number 12345",
+        content: { type: "text", text: "Track shipment order number 12345" },
+      })
+      .returning();
+    const msg = requireRow(msgRow[0], "message");
+
+    const result = await ingestConversationMessage(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      conversationId: conv.id,
+      messageId: msg.id,
+      senderType: "user",
+      sentAt: new Date("2026-05-21T10:00:00.000Z"),
+      plainText: "Track shipment order number 12345",
+      isInternal: false,
+      chunkEmbedder: embedder,
+      chunkVectorStore: vectors,
+    });
+
+    expect(result.created).toBe(true);
+    expect(result.lifecycle).toBe("admitted");
+
+    const hits = await vectors.query({
+      orgId: org.id,
+      brandId: brand.id,
+      embedding: await embedder.embed("shipment order"),
+      limit: 5,
+    });
+
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.id).toBe(result.id);
+    expect(hits[0]?.score).toBeGreaterThan(0);
 
     await store.close();
   });

@@ -7,7 +7,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { initMediaDispatch } from "./lib/media-dispatch-init.js";
+import {
+  resolveMemoryChunkEmbedder,
+  setMemoryChunkEmbedder,
+} from "./lib/memory-chunk-embed-init.js";
 import { initMemoryChunkFtsFromStore } from "./lib/memory-chunk-fts-init.js";
+import { initMemoryChunkVectorFromStore } from "./lib/memory-chunk-vector-init.js";
 import { initMemoryDispatch } from "./lib/memory-dispatch-init.js";
 import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import { optionalAuth, requireAuth } from "./middleware/auth.js";
@@ -45,6 +50,8 @@ export function createApp(ctx: AppContext) {
   initMemoryDispatch(ctx);
   if (ctx.store.dialect === "libsql") {
     initMemoryChunkFtsFromStore(ctx.store);
+    initMemoryChunkVectorFromStore(ctx.store);
+    setMemoryChunkEmbedder(resolveMemoryChunkEmbedder(ctx.env));
   }
   const app = new Hono<{ Variables: AppVariables }>();
 

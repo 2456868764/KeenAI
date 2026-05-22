@@ -5,15 +5,25 @@
 
 ---
 
-## 当前迭代 · Iteration 36（Keeni Memory KM-04 · chunk vectors）
+## 当前迭代 · Iteration 37（Keeni Memory KM-05 · hybrid recall）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I36-01 | `memory_chunk_vectors` 表 + migration | [ ] |
-| I36-02 | admit 后 embed pipeline（可选 env） | [ ] |
-| I36-03 | tests · roadmap · commit · push | [ ] |
+| I37-01 | `searchMemoryChunks` 接入 FTS + Vector RRF | [ ] |
+| I37-02 | Explorer/API 返回 fused score | [ ] |
+| I37-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-05 · FTS + Vector RRF hybrid recall
+**下一迭代**：KM-06 · summaries FTS
+
+---
+
+## Iteration 36（Keeni Memory KM-04 · chunk vectors）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I36-01 | `memory_chunk_vectors` 表 + migration | [x] |
+| I36-02 | admit 后 embed pipeline（stub / OpenAI env） | [x] |
+| I36-03 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -59,7 +69,7 @@
 | **KM-01** | I33 | `rrfFuse` + `hybridSearch`（storage 层，FTS/Vector 结果融合） | [x] |
 | **KM-02** | I34 | `fts_memory_chunks` 虚拟表 + migration；ingest 时 FTS index | [x] |
 | **KM-03** | I35 | `searchMemoryChunks` 改 FTS（替换 SQL LIKE）+ API/集成测试 | [x] |
-| **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（`@xenova/transformers` 可选 env） | [ ] |
+| **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（stub / OpenAI env） | [x] |
 | **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [ ] |
 | **KM-06** | I38 | `fts_memory_summaries` + 搜索覆盖 seal 摘要与日 digest | [ ] |
 | **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [ ] |
@@ -258,7 +268,7 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-01 | hybrid RRF（storage） | [x] |
 | KM-02 | fts_memory_chunks + ingest index | [x] |
 | KM-03 | FTS memory search | [x] |
-| KM-04 | chunk vectors + embed | [ ] |
+| KM-04 | chunk vectors + embed | [x] |
 | KM-05 | hybrid FTS+Vector recall | [ ] |
 | KM-06 | summaries FTS search | [ ] |
 | KM-07 | memory_facts + memory_slots | [ ] |

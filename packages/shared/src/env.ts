@@ -79,6 +79,11 @@ export const apiEnvSchema = z.object({
   INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
   /** Inngest cron for memory digest_daily (default midnight UTC) */
   INNGEST_MEMORY_DIGEST_CRON: z.string().default("0 0 * * *"),
+  /** Embed admitted memory chunks into memory_chunk_vectors */
+  MEMORY_TREE_EMBED_ENABLED: z.coerce.boolean().default(false),
+  MEMORY_TREE_EMBED_PROVIDER: z.enum(["stub", "openai"]).default("stub"),
+  MEMORY_TREE_EMBED_MODEL: z.string().default("text-embedding-3-small"),
+  MEMORY_TREE_EMBED_DIMENSIONS: z.coerce.number().int().positive().default(384),
   /** Org/brand slugs for IMAP ingest target */
   EMAIL_IMAP_ORG_SLUG: z.string().optional(),
   EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),

@@ -17,6 +17,10 @@ export {
   createLibsqlMemoryChunkFtsStore,
   ensureMemoryChunkFtsSchema,
 } from "./libsql/memory-chunk-fts.js";
+export {
+  createLibsqlMemoryChunkVectorStore,
+  ensureMemoryChunkVectorSchema,
+} from "./libsql/memory-chunk-vectors.js";
 export { createLibsqlStore, type LibsqlStore, type LibsqlStoreOptions } from "./libsql/store.js";
 export {
   createPostgresStore,

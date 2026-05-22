@@ -169,3 +169,29 @@ export const memoryHotness = sqliteTable(
 );
 
 export type MemoryHotnessRow = typeof memoryHotness.$inferSelect;
+
+export const memoryChunkVectors = sqliteTable(
+  "memory_chunk_vectors",
+  {
+    chunkId: text("chunk_id")
+      .primaryKey()
+      .references(() => memoryChunks.id),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    model: text("model").notNull(),
+    dimensions: integer("dimensions").notNull(),
+    embeddingJson: text("embedding_json").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    idxOrgBrand: index("idx_mem_chunk_vec_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type MemoryChunkVectorRow = typeof memoryChunkVectors.$inferSelect;

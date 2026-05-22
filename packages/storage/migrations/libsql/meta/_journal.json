@@ -106,6 +106,13 @@
       "when": 1779452800000,
       "tag": "0014_fts_memory_chunks",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1779456400000,
+      "tag": "0015_memory_chunk_vectors",
+      "breakpoints": true
     }
   ]
 }

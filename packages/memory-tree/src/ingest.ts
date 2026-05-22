@@ -1,9 +1,11 @@
 import type { KeenaiDb } from "@keenai/storage";
+import type { VectorStore } from "@keenai/storage";
 import { attachments } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { applyFastScoreToChunk } from "./apply-fast-score.js";
 import { canonicalizeConversationMessage, conversationMessageSourceRef } from "./canonicalize.js";
 import { type MemoryChunkFtsIndexer, indexMemoryChunkInFts } from "./chunk-fts-index.js";
+import { type MemoryChunkEmbedder, embedAdmittedMemoryChunk } from "./chunk-vector-index.js";
 import { persistMemoryChunk } from "./persist.js";
 import type { MemoryChunkSource, PersistMemoryChunkResult } from "./types.js";
 
@@ -19,6 +21,8 @@ export type IngestConversationMessageInput = {
   channelType?: string;
   channelId?: string;
   ftsIndexer?: MemoryChunkFtsIndexer | null;
+  chunkEmbedder?: MemoryChunkEmbedder | null;
+  chunkVectorStore?: VectorStore | null;
 };
 
 /** Canonicalize a conversation message and persist a content-addressed memory chunk. */
@@ -80,6 +84,15 @@ export async function ingestConversationMessage(
     source,
     senderType: input.senderType,
     hasAttachments,
+  });
+
+  await embedAdmittedMemoryChunk(input.chunkEmbedder, input.chunkVectorStore, {
+    chunkId: result.id,
+    orgId: input.orgId,
+    brandId: input.brandId,
+    bodyMd: doc.bodyMd,
+    lifecycle: scored.lifecycle,
+    created: true,
   });
 
   return {

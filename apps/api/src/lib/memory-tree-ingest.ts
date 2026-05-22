@@ -1,6 +1,8 @@
 import { ingestConversationMessage } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
+import { getMemoryChunkEmbedder } from "./memory-chunk-embed-init.js";
 import { getMemoryChunkFtsIndexer } from "./memory-chunk-fts-init.js";
+import { getMemoryChunkVectorStore } from "./memory-chunk-vector-init.js";
 
 export async function ingestMemoryTreeForMessage(
   db: KeenaiDb,
@@ -16,6 +18,10 @@ export async function ingestMemoryTreeForMessage(
     channelType?: string;
     channelId?: string;
   },
+  opts?: {
+    chunkEmbedder?: ReturnType<typeof getMemoryChunkEmbedder>;
+    chunkVectorStore?: ReturnType<typeof getMemoryChunkVectorStore>;
+  },
 ) {
   const result = await ingestConversationMessage(db, {
     orgId: input.orgId,
@@ -29,6 +35,8 @@ export async function ingestMemoryTreeForMessage(
     channelType: input.channelType,
     channelId: input.channelId,
     ftsIndexer: getMemoryChunkFtsIndexer(),
+    chunkEmbedder: opts?.chunkEmbedder ?? getMemoryChunkEmbedder(),
+    chunkVectorStore: opts?.chunkVectorStore ?? getMemoryChunkVectorStore(),
   });
 
   if (result.created && result.lifecycle === "admitted") {

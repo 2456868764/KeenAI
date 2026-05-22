@@ -27,6 +27,12 @@ export {
   type MemoryChunkFtsIndexer,
 } from "./chunk-fts-index.js";
 export {
+  embedAdmittedMemoryChunk,
+  type MemoryChunkEmbedder,
+} from "./chunk-vector-index.js";
+export { createOpenAiMemoryChunkEmbedder } from "./embed/openai-embedder.js";
+export { createStubMemoryChunkEmbedder } from "./embed/stub-embedder.js";
+export {
   canonicalizeConversationMessage,
   conversationMessageSourceRef,
 } from "./canonicalize.js";
