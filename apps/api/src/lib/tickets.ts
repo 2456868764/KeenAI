@@ -11,6 +11,31 @@ import { and, desc, eq, lt, or } from "drizzle-orm";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
 
+const DEFAULT_STATUSES = [
+  { name: "Open", category: "active", isDefault: true, sortOrder: 0 },
+  { name: "In progress", category: "active", isDefault: false, sortOrder: 1 },
+  { name: "Waiting on customer", category: "waiting", isDefault: false, sortOrder: 2 },
+  { name: "Done", category: "done", isDefault: false, sortOrder: 3 },
+] as const;
+
+export type SerializedTicketStatus = {
+  id: string;
+  name: string;
+  category: string;
+  color: string | null;
+  isDefault: boolean;
+  sortOrder: number | null;
+};
+
+export type SerializedTicketEvent = {
+  id: string;
+  ticketId: string;
+  eventType: string;
+  actorId: string | null;
+  payload: unknown;
+  createdAt: string;
+};
+
 export type SerializedTicket = {
   id: string;
   orgId: string;
@@ -120,26 +145,29 @@ export async function ensureOrgTicketDefaults(
 
   if (!typeRow) throw new Error("ticket type insert failed");
 
-  const [statusRow] = await db
+  const statusRows = await db
     .insert(ticketStatuses)
-    .values({
-      orgId,
-      name: "Open",
-      category: "active",
-      isDefault: true,
-      ticketTypeIds: [typeRow.id],
-      sortOrder: 0,
-    })
+    .values(
+      DEFAULT_STATUSES.map((s) => ({
+        orgId,
+        name: s.name,
+        category: s.category,
+        isDefault: s.isDefault,
+        ticketTypeIds: [typeRow.id],
+        sortOrder: s.sortOrder,
+      })),
+    )
     .returning();
 
-  if (!statusRow) throw new Error("ticket status insert failed");
+  const defaultStatus = statusRows.find((s) => s.isDefault) ?? statusRows[0];
+  if (!defaultStatus) throw new Error("ticket status insert failed");
 
   await db
     .update(ticketTypes)
-    .set({ statusIds: [statusRow.id], updatedAt: new Date() })
+    .set({ statusIds: statusRows.map((s) => s.id), updatedAt: new Date() })
     .where(eq(ticketTypes.id, typeRow.id));
 
-  return { typeId: typeRow.id, statusId: statusRow.id };
+  return { typeId: typeRow.id, statusId: defaultStatus.id };
 }
 
 export function ticketCursorWhere(cursor: string | undefined) {
@@ -289,4 +317,107 @@ export async function listTicketsForOrg(
   const nextCursor = hasMore && last ? encodeTicketCursor(last.updatedAt, last.id) : null;
 
   return { items, nextCursor };
+}
+
+export function serializeTicketStatus(
+  row: typeof ticketStatuses.$inferSelect,
+): SerializedTicketStatus {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    color: row.color ?? null,
+    isDefault: row.isDefault ?? false,
+    sortOrder: row.sortOrder ?? null,
+  };
+}
+
+export async function listTicketStatusesForOrg(db: Db, orgId: string) {
+  const rows = await db
+    .select()
+    .from(ticketStatuses)
+    .where(eq(ticketStatuses.orgId, orgId))
+    .orderBy(ticketStatuses.sortOrder, ticketStatuses.name);
+  return rows.map(serializeTicketStatus);
+}
+
+export function serializeTicketEvent(row: typeof ticketEvents.$inferSelect): SerializedTicketEvent {
+  return {
+    id: row.id,
+    ticketId: row.ticketId,
+    eventType: row.eventType,
+    actorId: row.actorId ?? null,
+    payload: row.payload ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function listTicketEventsForTicket(
+  db: Db,
+  ticketId: string,
+  orgId: string,
+  limit: number,
+) {
+  const ticket = await getTicketForOrg(db, ticketId, orgId);
+  if (!ticket) return null;
+
+  const rows = await db
+    .select()
+    .from(ticketEvents)
+    .where(eq(ticketEvents.ticketId, ticketId))
+    .orderBy(desc(ticketEvents.createdAt))
+    .limit(limit);
+
+  return rows.map(serializeTicketEvent);
+}
+
+export async function getTicketStatusForOrg(db: Db, statusId: string, orgId: string) {
+  const [row] = await db
+    .select()
+    .from(ticketStatuses)
+    .where(and(eq(ticketStatuses.id, statusId), eq(ticketStatuses.orgId, orgId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function transitionTicketStatus(
+  db: Db,
+  input: { ticketId: string; orgId: string; statusId: string; actorId?: string },
+): Promise<SerializedTicket | null> {
+  const existing = await getTicketForOrg(db, input.ticketId, input.orgId);
+  if (!existing) return null;
+
+  const nextStatus = await getTicketStatusForOrg(db, input.statusId, input.orgId);
+  if (!nextStatus) throw new Error("status_not_found");
+
+  if (existing.statusId === input.statusId) {
+    return loadTicketMeta(db, existing);
+  }
+
+  const closedAt = nextStatus.category === "done" ? new Date() : null;
+
+  const [row] = await db
+    .update(tickets)
+    .set({
+      statusId: input.statusId,
+      closedAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(tickets.id, existing.id))
+    .returning();
+
+  if (!row) throw new Error("update_failed");
+
+  await db.insert(ticketEvents).values({
+    ticketId: row.id,
+    eventType: "status_changed",
+    actorId: input.actorId ?? null,
+    payload: {
+      fromStatusId: existing.statusId,
+      toStatusId: input.statusId,
+      toCategory: nextStatus.category,
+    },
+  });
+
+  return loadTicketMeta(db, row);
 }

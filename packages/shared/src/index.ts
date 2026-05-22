@@ -46,9 +46,13 @@ export {
   createTicketFromConversationSchema,
   createTicketSchema,
   listTicketsSchema,
+  listTicketEventsSchema,
   ticketPrioritySchema,
+  transitionTicketStatusSchema,
   updateTicketSchema,
+  TICKET_STATUS_CATEGORIES,
   type TicketPriority,
+  type TicketStatusCategory,
 } from "./ticket.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";

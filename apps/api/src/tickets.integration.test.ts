@@ -154,6 +154,34 @@ describe("tickets integration", () => {
     const { ticket: sameTicket } = (await duplicate.json()) as { ticket: { id: string } };
     expect(sameTicket.id).toBe(linked.id);
 
+    const statuses = await app.request("/api/v1/tickets/meta/statuses", { headers: auth });
+    expect(statuses.status).toBe(200);
+    const statusBody = (await statuses.json()) as {
+      items: { id: string; name: string; category: string }[];
+    };
+    expect(statusBody.items.length).toBeGreaterThanOrEqual(4);
+    const doneStatus = statusBody.items.find((s) => s.name === "Done");
+    expect(doneStatus).toBeTruthy();
+
+    const transitioned = await app.request(`/api/v1/tickets/${createdTicket.id}/status`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ statusId: doneStatus?.id }),
+    });
+    expect(transitioned.status).toBe(200);
+    const { ticket: doneTicket } = (await transitioned.json()) as {
+      ticket: { statusName: string | null; closedAt: string | null };
+    };
+    expect(doneTicket.statusName).toBe("Done");
+    expect(doneTicket.closedAt).toBeTruthy();
+
+    const events = await app.request(`/api/v1/tickets/${createdTicket.id}/events`, {
+      headers: auth,
+    });
+    expect(events.status).toBe(200);
+    const eventsBody = (await events.json()) as { items: { eventType: string }[] };
+    expect(eventsBody.items.some((e) => e.eventType === "status_changed")).toBe(true);
+
     await store.close();
   });
 });

@@ -47,3 +47,14 @@ export const createTicketFromConversationSchema = z.object({
 export const createTicketFromConversationBodySchema = createTicketFromConversationSchema.extend({
   conversationId: z.string().min(1),
 });
+
+export const TICKET_STATUS_CATEGORIES = ["under_review", "active", "waiting", "done"] as const;
+export type TicketStatusCategory = (typeof TICKET_STATUS_CATEGORIES)[number];
+
+export const transitionTicketStatusSchema = z.object({
+  statusId: z.string().min(1),
+});
+
+export const listTicketEventsSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
