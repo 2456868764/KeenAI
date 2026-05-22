@@ -1,6 +1,15 @@
 import { zValidator } from "@hono/zod-validator";
-import { queryBrandDailyDigest, queryConversationMemoryTree } from "@keenai/memory-tree";
-import { API_VERSION, memoryDigestQuerySchema, memoryTreeQuerySchema } from "@keenai/shared";
+import {
+  assembleMemoryContext,
+  queryBrandDailyDigest,
+  queryConversationMemoryTree,
+} from "@keenai/memory-tree";
+import {
+  API_VERSION,
+  memoryContextQuerySchema,
+  memoryDigestQuerySchema,
+  memoryTreeQuerySchema,
+} from "@keenai/shared";
 import { Hono } from "hono";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -58,6 +67,35 @@ export function memoryRoutes(_ctx: AppContext) {
 
       if (!digest) return c.json({ error: "digest_not_found" }, 404);
       return c.json({ digest });
+    },
+  );
+
+  r.get(
+    `${prefix}/context`,
+    requireAuth(),
+    zValidator("query", memoryContextQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      const db = c.get("store").db;
+      const conversation = await getConversationForOrg(db, query.conversationId, auth.orgId);
+      if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const context = await assembleMemoryContext(db, {
+        orgId: auth.orgId,
+        brandId: conversation.brandId,
+        conversationId: conversation.id,
+        userId: conversation.userId,
+        instruction: query.instruction,
+        dateUtc: query.date,
+      });
+
+      return c.json({ context });
     },
   );
 

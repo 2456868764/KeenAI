@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-06（Agent scope 路由）
+**下一迭代**：Memory Tree MT-07（topic tree + hotness）
+
+---
+
+## Iteration 28（Memory Tree MT-06）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I28-01 | resolveMemoryScope + assembleMemoryContext | [x] |
+| I28-02 | Copilot draft memoryContext + memoryScope meta | [x] |
+| I28-03 | GET /memory/context + tests | [x] |
+| I28-04 | roadmap · commits | [x] |
 
 ---
 
@@ -113,7 +124,7 @@
 | MT-03 | source tree conv:* buffer + seal → episodes | [x] |
 | MT-04 | memory.digest_daily global node | [x] |
 | MT-05 | 检索 API drill_down + brand_daily | [x] |
-| MT-06 | Agent scope 路由（09 附录 B） | [ ] |
+| MT-06 | Agent scope 路由（09 附录 B） | [x] |
 | MT-07 | topic tree + hotness | [ ] |
 | MT-08 | Memory Explorer Dashboard MVP | [ ] |
 | MT-09 | channel-scoped source tree | [ ] |

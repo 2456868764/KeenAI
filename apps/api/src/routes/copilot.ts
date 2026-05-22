@@ -47,12 +47,18 @@ export function copilotRoutes(ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const draftRequest = await buildCopilotDraftRequest(c.get("store").db, ctx.env, {
-        conversationId: conversation.id,
-        orgId: auth.orgId,
-        subject: conversation.subject ?? undefined,
-        instruction: body.instruction,
-      });
+      const { request: draftRequest, memoryScope } = await buildCopilotDraftRequest(
+        c.get("store").db,
+        ctx.env,
+        {
+          conversationId: conversation.id,
+          orgId: auth.orgId,
+          brandId: conversation.brandId,
+          userId: conversation.userId,
+          subject: conversation.subject ?? undefined,
+          instruction: body.instruction,
+        },
+      );
 
       const provider =
         body.providerId != null
@@ -62,7 +68,7 @@ export function copilotRoutes(ctx: AppContext) {
       return streamSSE(c, async (stream) => {
         stream.writeSSE({
           event: "meta",
-          data: JSON.stringify({ providerId: provider.id }),
+          data: JSON.stringify({ providerId: provider.id, memoryScope }),
         });
 
         for await (const chunk of provider.streamDraft(draftRequest)) {

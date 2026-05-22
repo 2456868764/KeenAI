@@ -12,5 +12,15 @@ export const memoryDigestQuerySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+export const memoryContextQuerySchema = z.object({
+  conversationId: z.string().min(1),
+  instruction: z.string().max(2_000).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
 export type MemoryTreeQuery = z.infer<typeof memoryTreeQuerySchema>;
 export type MemoryDigestQuery = z.infer<typeof memoryDigestQuerySchema>;
+export type MemoryContextQuery = z.infer<typeof memoryContextQuerySchema>;

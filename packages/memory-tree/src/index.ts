@@ -1,4 +1,10 @@
 export {
+  assembleMemoryContext,
+  type AssembleMemoryContextInput,
+  type AssembleMemoryContextResult,
+  type MemoryContextSection,
+} from "./assemble-context.js";
+export {
   digestDailyForBrand,
   runDigestDaily,
   type DigestDailyForBrandInput,
@@ -48,6 +54,14 @@ export {
   conversationScopeKey,
   parseBrandDailyScopeKey,
 } from "./scope-key.js";
+export {
+  MEMORY_SCOPES,
+  type MemoryScope,
+  resolveDigestDateFromInstruction,
+  resolveMemoryScope,
+  type ResolveMemoryScopeInput,
+  type ResolveMemoryScopeResult,
+} from "./scope-router.js";
 export { stubDailyDigest, type StubDigestInput, type StubDigestOutput } from "./stub-digest.js";
 export { stubSealSummary, type StubSealInput, type StubSealOutput } from "./stub-seal.js";
 export { defaultDigestDateUtc, formatUtcDate, utcDayRange } from "./utc-date.js";

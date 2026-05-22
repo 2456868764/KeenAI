@@ -108,6 +108,7 @@ describe("copilot integration", () => {
     expect(draftRes.status).toBe(200);
     const body = await draftRes.text();
     expect(body).toContain('"providerId":"stub"');
+    expect(body).toContain('"memoryScope":"conversation"');
     expect(body).toContain("reaching o");
 
     const eventRes = await app.request("/api/v1/copilot/events", {

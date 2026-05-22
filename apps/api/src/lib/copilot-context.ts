@@ -1,4 +1,6 @@
 import type { DraftMessage, DraftRequest } from "@keenai/llm";
+import type { MemoryScope } from "@keenai/memory-tree";
+import { assembleMemoryContext } from "@keenai/memory-tree";
 import type { ApiEnv } from "@keenai/shared";
 import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -30,10 +32,12 @@ export async function buildCopilotDraftRequest(
   input: {
     conversationId: string;
     orgId: string;
+    brandId: string;
+    userId?: string | null;
     subject?: string;
     instruction?: string;
   },
-): Promise<DraftRequest> {
+): Promise<{ request: DraftRequest; memoryScope: MemoryScope }> {
   const rows = await db
     .select({
       id: messages.id,
@@ -85,9 +89,21 @@ export async function buildCopilotDraftRequest(
     draftMessages.push({ role: "user", plainText: input.subject ?? "Hello" });
   }
 
-  return {
-    messages: draftMessages,
+  const memory = await assembleMemoryContext(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    conversationId: input.conversationId,
+    userId: input.userId,
     instruction: input.instruction,
-    subject: input.subject,
+  });
+
+  return {
+    memoryScope: memory.scope,
+    request: {
+      messages: draftMessages,
+      instruction: input.instruction,
+      subject: input.subject,
+      ...(memory.text ? { memoryContext: memory.text } : {}),
+    },
   };
 }

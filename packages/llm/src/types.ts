@@ -28,6 +28,7 @@ export const draftRequestSchema = z.object({
   instruction: z.string().max(2_000).optional(),
   messages: z.array(draftMessageSchema).min(1).max(50),
   subject: z.string().max(500).optional(),
+  memoryContext: z.string().max(8_000).optional(),
 });
 
 export type DraftRequest = z.infer<typeof draftRequestSchema>;

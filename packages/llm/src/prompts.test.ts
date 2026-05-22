@@ -7,12 +7,14 @@ describe("buildDraftStreamInput", () => {
     const req: DraftRequest = {
       messages: [{ role: "user", plainText: "Hello" }],
       subject: "Support",
+      memoryContext: "[Memory Tree · scope=conversation]\n## Buffer\n- billing issue",
     };
     const input = buildDraftStreamInput(req);
     expect(input.mode).toBe("prompt");
     if (input.mode === "prompt") {
       expect(input.prompt).toContain("Hello");
       expect(input.system).toContain("customer support");
+      expect(input.system).toContain("billing issue");
     }
     expect(draftRequestHasImages(req)).toBe(false);
   });

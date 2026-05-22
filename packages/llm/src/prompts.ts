@@ -5,6 +5,7 @@ export function buildDraftPrompt(req: DraftRequest): { system: string; prompt: s
     "You are a helpful customer support agent drafting a reply.",
     "Be concise, professional, and empathetic.",
     "Output only the reply body — no subject line.",
+    req.memoryContext ? `Relevant memory:\n${req.memoryContext}` : "",
     req.instruction ? `Agent instruction: ${req.instruction}` : "",
   ]
     .filter(Boolean)

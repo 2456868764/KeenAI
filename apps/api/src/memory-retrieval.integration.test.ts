@@ -253,4 +253,62 @@ describe("memory retrieval integration", () => {
 
     await store.close();
   });
+
+  it("returns assembled agent memory context by scope", async () => {
+    const { app, store, db, org, brand, auth } = await setupMemoryApiTest();
+    const dateUtc = "2026-05-26";
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "ctx-api",
+        subject: "Context API",
+      }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        senderType: "user",
+        plainText: "Enterprise pricing question.",
+      }),
+    });
+
+    const convCtxRes = await app.request(
+      `/api/v1/memory/context?conversationId=${conversation.id}`,
+      { headers: auth },
+    );
+    expect(convCtxRes.status).toBe(200);
+    const convCtx = (await convCtxRes.json()) as { context: { scope: string; applied: boolean } };
+    expect(convCtx.context.scope).toBe("conversation");
+
+    const chunkRows = await db.select().from(memoryChunks).where(eq(memoryChunks.orgId, org.id));
+    const chunk = requireRow(chunkRows[0], "memory chunk");
+    await db
+      .update(memoryChunks)
+      .set({
+        lifecycle: "admitted",
+        createdAt: new Date(`${dateUtc}T10:00:00.000Z`),
+      })
+      .where(eq(memoryChunks.id, chunk.id));
+    await digestDailyForBrand(db, { orgId: org.id, brandId: brand.id, dateUtc });
+
+    const dailyCtxRes = await app.request(
+      `/api/v1/memory/context?conversationId=${conversation.id}&instruction=${encodeURIComponent("今天 support 概况")}&date=${dateUtc}`,
+      { headers: auth },
+    );
+    expect(dailyCtxRes.status).toBe(200);
+    const dailyCtx = (await dailyCtxRes.json()) as {
+      context: { scope: string; text: string };
+    };
+    expect(dailyCtx.context.scope).toBe("brand_daily");
+    expect(dailyCtx.context.text).toContain("Brand daily digest");
+
+    await store.close();
+  });
 });
