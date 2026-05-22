@@ -380,6 +380,34 @@ export async function getTicketStatusForOrg(db: Db, statusId: string, orgId: str
   return row ?? null;
 }
 
+export async function listTicketsForCustomer(
+  db: Db,
+  orgId: string,
+  customerId: string,
+  limit = 50,
+) {
+  const rows = await db
+    .select()
+    .from(tickets)
+    .where(and(eq(tickets.orgId, orgId), eq(tickets.customerId, customerId)))
+    .orderBy(desc(tickets.updatedAt))
+    .limit(limit);
+
+  return Promise.all(rows.map((row) => loadTicketMeta(db, row)));
+}
+
+export function serializePortalTicket(ticket: SerializedTicket) {
+  return {
+    id: ticket.id,
+    title: ticket.title,
+    statusName: ticket.statusName,
+    priority: ticket.priority,
+    createdAt: ticket.createdAt,
+    updatedAt: ticket.updatedAt,
+    closedAt: ticket.closedAt,
+  };
+}
+
 export async function transitionTicketStatus(
   db: Db,
   input: { ticketId: string; orgId: string; statusId: string; actorId?: string },

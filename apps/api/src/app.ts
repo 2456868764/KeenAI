@@ -23,6 +23,7 @@ import { macroRoutes } from "./routes/macros.js";
 import { memberRoutes } from "./routes/members.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { openApiRoutes } from "./routes/openapi.js";
+import { portalRoutes } from "./routes/portal.js";
 import { searchRoutes } from "./routes/search.js";
 import { ticketRoutes } from "./routes/tickets.js";
 import { uploadRoutes } from "./routes/uploads.js";
@@ -75,6 +76,7 @@ export function createApp(ctx: AppContext) {
 
   app.route("/", authRoutes());
   app.route("/", openApiRoutes());
+  app.route("/", portalRoutes(ctx));
   app.route("/", conversationRoutes(ctx));
   app.route("/", widgetRoutes());
   app.route("/", emailWebhookRoutes());
