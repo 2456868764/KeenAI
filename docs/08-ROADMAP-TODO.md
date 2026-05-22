@@ -14,7 +14,17 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：MM-14 generate_image tool · Memory Tree 设计文档（I21-00）
+**下一迭代**：Memory Tree MT-01（`memory_chunks` schema）
+
+---
+
+## Iteration 22（Telegram/Slack IM 多模态 · MM-15）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I22-01 | @keenai/channels-im inbound/outbound adapters | [x] |
+| I22-02 | IM webhooks + ingest + outbound plan API | [x] |
+| I22-03 | integration tests · commits | [x] |
 
 ---
 
@@ -37,8 +47,8 @@
 | MM-11 | video thumbnail + 播放 | [x] |
 | MM-12 | parseAgentResponse + Keeni outbound 图 | [x] |
 | MM-13 | TTS tool + audio 出站 | [x] |
-| MM-14 | generate_image tool | [ ] |
-| MM-15 | Telegram/Slack IM 多模态 | [ ] |
+| MM-14 | generate_image tool | [x] |
+| MM-15 | Telegram/Slack IM 多模态 | [x] |
 
 ## Phase 3 · Memory Tree（[15-MEMORY-TREE.md](./15-MEMORY-TREE.md)）
 

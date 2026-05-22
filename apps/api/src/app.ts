@@ -21,6 +21,7 @@ import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { emailJobRoutes } from "./routes/email-jobs.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
+import { imWebhookRoutes } from "./routes/im-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
 import { macroRoutes } from "./routes/macros.js";
 import { memberRoutes } from "./routes/members.js";
@@ -87,6 +88,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", conversationRoutes(ctx));
   app.route("/", widgetRoutes());
   app.route("/", emailWebhookRoutes());
+  app.route("/", imWebhookRoutes());
   app.route("/", notificationRoutes());
   app.route("/", memberRoutes());
   app.route("/", macroRoutes());

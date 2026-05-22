@@ -39,6 +39,10 @@ export const apiEnvSchema = z.object({
   /** Image generation provider: stub | openai (auto: openai when OPENAI_API_KEY set, else stub) */
   IMAGE_GEN_PROVIDER: z.enum(["stub", "openai"]).optional(),
   OPENAI_IMAGE_MODEL: z.string().default("dall-e-3"),
+  /** Telegram Bot API token for IM webhooks and media download */
+  TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+  /** Slack Bot token for IM webhooks and media download */
+  SLACK_BOT_TOKEN: z.string().min(1).optional(),
   /** Video/image thumbnail provider: stub | ffmpeg */
   THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */

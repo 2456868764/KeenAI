@@ -28,6 +28,7 @@ import {
   serializeMessagesWithAttachments,
 } from "../lib/conversations.js";
 import { indexConversationForSearch } from "../lib/fts-index.js";
+import { planConversationImOutbound } from "../lib/im-outbound.js";
 import { notifyAssignee } from "../lib/notifications.js";
 import { createTicketFromConversation } from "../lib/tickets.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -362,6 +363,38 @@ export function conversationRoutes(ctx: AppContext) {
       return c.json({ message: result.serialized }, 201);
     },
   );
+
+  r.get(`${prefix}/:id/messages/:messageId/im-outbound`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const conversation = await getConversationForOrg(
+      c.get("store").db,
+      c.req.param("id"),
+      auth.orgId,
+    );
+    if (!conversation) return c.json({ error: "not_found" }, 404);
+    if (!canAccessBrand(auth, conversation.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+
+    const apiBaseUrl = new URL(c.req.url).origin;
+    try {
+      const plan = await planConversationImOutbound(c.get("store").db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        messageId: c.req.param("messageId"),
+        apiBaseUrl,
+      });
+      if (!plan) return c.json({ error: "not_im_channel" }, 400);
+      return c.json(plan);
+    } catch (e) {
+      if (e instanceof Error && e.message === "message not found") {
+        return c.json({ error: "not_found" }, 404);
+      }
+      throw e;
+    }
+  });
 
   r.post(
     `${prefix}/:id/ticket`,

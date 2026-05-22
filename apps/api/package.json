@@ -17,6 +17,7 @@
     "@keenai/auth": "workspace:*",
     "@keenai/channels-core": "workspace:*",
     "@keenai/channels-email": "workspace:*",
+    "@keenai/channels-im": "workspace:*",
     "@keenai/llm": "workspace:*",
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
