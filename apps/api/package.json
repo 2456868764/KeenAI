@@ -19,6 +19,7 @@
     "@keenai/channels-email": "workspace:*",
     "@keenai/channels-im": "workspace:*",
     "@keenai/llm": "workspace:*",
+    "@keenai/memory-tree": "workspace:*",
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
     "@keenai/workflow": "workspace:*",

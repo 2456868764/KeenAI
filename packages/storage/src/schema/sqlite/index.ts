@@ -17,6 +17,7 @@ export {
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
 export { macros } from "./macros";
+export { memoryChunks, type MemoryChunkRow } from "./memory-tree";
 export {
   ticketConversations,
   ticketEvents,

@@ -14,7 +14,17 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-01（`memory_chunks` schema）
+**下一迭代**：Memory Tree MT-02（fast-score + admitted/dropped）
+
+---
+
+## Iteration 23（Memory Tree MT-01）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I23-01 | memory_chunks schema + migration | [x] |
+| I23-02 | @keenai/memory-tree canonicalize + persist | [x] |
+| I23-03 | message ingest hook + integration tests | [x] |
 
 ---
 
@@ -33,7 +43,7 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | I21-00 | [15-MEMORY-TREE.md](./15-MEMORY-TREE.md) + 关联 doc/roadmap 更新 | [x] |
-| I21-01 | `memory_chunks` schema + canonicalize（MT-01） | [ ] |
+| I21-01 | `memory_chunks` schema + canonicalize（MT-01） | [x] |
 | I21-02 | fast-score + admitted/dropped（MT-02） | [ ] |
 | I21-03 | source tree seal → episodes（MT-03） | [ ] |
 
@@ -54,7 +64,7 @@
 
 | MT ID | 项 | 状态 |
 |-------|-----|------|
-| MT-01 | memory_chunks + canonicalize + deterministic id | [ ] |
+| MT-01 | memory_chunks + canonicalize + deterministic id | [x] |
 | MT-02 | fast-score + extract_chunk + admitted/dropped | [ ] |
 | MT-03 | source tree conv:* buffer + seal → episodes | [ ] |
 | MT-04 | memory.digest_daily global node | [ ] |

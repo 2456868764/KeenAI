@@ -301,6 +301,18 @@ export async function insertMessage(
     if (refreshed) serialized = refreshed;
   }
 
+  const { ingestMemoryTreeForMessage } = await import("./memory-tree-ingest.js");
+  await ingestMemoryTreeForMessage(db, {
+    orgId: input.orgId,
+    brandId: current.brandId,
+    conversationId: input.conversationId,
+    messageId: message.id,
+    senderType: input.senderType,
+    plainText: prepared.plainText,
+    isInternal: input.isInternal,
+    createdAt: message.createdAt,
+  });
+
   publishConversation({
     type: "message.created",
     conversationId: input.conversationId,
