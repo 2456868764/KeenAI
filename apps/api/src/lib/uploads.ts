@@ -7,7 +7,10 @@ import { findRepoRoot } from "@keenai/shared";
 
 const uploadsModuleDir = path.dirname(fileURLToPath(import.meta.url));
 
-const pending = new Map<string, { storageKey: string; contentType: string; expiresAt: number }>();
+const pending = new Map<
+  string,
+  { storageKey: string; contentType: string; fileName: string; expiresAt: number }
+>();
 
 export function resolveUploadDir(env: ApiEnv): string {
   if (env.UPLOAD_DIR) return path.resolve(env.UPLOAD_DIR);
@@ -31,6 +34,7 @@ export function createPresignedUpload(
   pending.set(uploadId, {
     storageKey,
     contentType: input.contentType,
+    fileName: input.fileName,
     expiresAt,
   });
 

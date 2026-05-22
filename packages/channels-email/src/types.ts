@@ -14,6 +14,17 @@ export const parsedInboundEmailSchema = z.object({
 
 export type ParsedInboundEmail = z.infer<typeof parsedInboundEmailSchema>;
 
+export type ParsedEmailAttachment = {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  content: Buffer;
+};
+
+export type ParsedInboundEmailWithAttachments = ParsedInboundEmail & {
+  attachments: ParsedEmailAttachment[];
+};
+
 export type SmtpTransportConfig = {
   host: string;
   port: number;

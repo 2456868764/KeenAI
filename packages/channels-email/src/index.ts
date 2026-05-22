@@ -1,6 +1,8 @@
 export type {
   OutboundEmailInput,
+  ParsedEmailAttachment,
   ParsedInboundEmail,
+  ParsedInboundEmailWithAttachments,
   SmtpTransportConfig,
   ThreadCandidate,
 } from "./types.js";

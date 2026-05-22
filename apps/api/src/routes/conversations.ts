@@ -24,6 +24,7 @@ import {
   recordConversationEvent,
   serializeConversation,
   serializeMessage,
+  serializeMessagesWithAttachments,
 } from "../lib/conversations.js";
 import { indexConversationForSearch } from "../lib/fts-index.js";
 import { notifyAssignee } from "../lib/notifications.js";
@@ -282,9 +283,8 @@ export function conversationRoutes(ctx: AppContext) {
         .orderBy(desc(messages.createdAt))
         .limit(limit);
 
-      return c.json({
-        items: rows.reverse().map(serializeMessage),
-      });
+      const items = await serializeMessagesWithAttachments(db, rows.reverse());
+      return c.json({ items });
     },
   );
 
@@ -316,7 +316,9 @@ export function conversationRoutes(ctx: AppContext) {
         senderType,
         senderId: auth.memberId,
         plainText: body.plainText,
-        content: buildMessageContent(body.plainText, body.content),
+        content: buildMessageContent(body.plainText ?? "", body.content),
+        attachmentIds: body.attachmentIds,
+        parts: body.parts,
         isInternal: body.isInternal,
         inReplyTo: body.inReplyTo,
         sentVia: "web",
@@ -336,7 +338,7 @@ export function conversationRoutes(ctx: AppContext) {
         await indexConversationForSearch(ctx.fts, c.get("store").db, conversation.id);
       }
 
-      return c.json({ message: serializeMessage(result.message) }, 201);
+      return c.json({ message: result.serialized }, 201);
     },
   );
 

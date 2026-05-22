@@ -1,5 +1,9 @@
 import { type ParsedMail, simpleParser } from "mailparser";
-import type { ParsedInboundEmail } from "./types.js";
+import type {
+  ParsedEmailAttachment,
+  ParsedInboundEmail,
+  ParsedInboundEmailWithAttachments,
+} from "./types.js";
 import { parsedInboundEmailSchema } from "./types.js";
 
 function mailAddressEntry(entry: unknown): { address: string; name?: string } | null {
@@ -42,7 +46,9 @@ function collectReferences(mail: ParsedMail): string[] {
 }
 
 /** Parse raw RFC822 / MIME source into a normalized inbound email. */
-export async function parseMimeSource(source: Buffer | string): Promise<ParsedInboundEmail> {
+export async function parseMimeSource(
+  source: Buffer | string,
+): Promise<ParsedInboundEmailWithAttachments> {
   const mail = await simpleParser(source);
   const from = firstAddress(mail.from);
   if (!from) throw new Error("missing_from");
@@ -51,7 +57,17 @@ export async function parseMimeSource(source: Buffer | string): Promise<ParsedIn
     (mail.text ?? "").trim() ||
     stripHtml(typeof mail.html === "string" ? mail.html : "") ||
     "(empty)";
-  const parsed: ParsedInboundEmail = {
+
+  const emailAttachments: ParsedEmailAttachment[] = (mail.attachments ?? [])
+    .filter((a) => a.content && a.content.length > 0)
+    .map((a) => ({
+      fileName: a.filename ?? "attachment",
+      contentType: a.contentType ?? "application/octet-stream",
+      sizeBytes: a.size ?? a.content.length,
+      content: Buffer.from(a.content),
+    }));
+
+  const parsed = parsedInboundEmailSchema.parse({
     messageId: mail.messageId ?? `generated-${Date.now()}@keenai.local`,
     from,
     to: listAddresses(mail.to),
@@ -61,9 +77,9 @@ export async function parseMimeSource(source: Buffer | string): Promise<ParsedIn
     inReplyTo: mail.inReplyTo ?? undefined,
     references: collectReferences(mail),
     date: mail.date?.toISOString(),
-  };
+  });
 
-  return parsedInboundEmailSchema.parse(parsed);
+  return { ...parsed, attachments: emailAttachments };
 }
 
 function stripHtml(html: string): string {

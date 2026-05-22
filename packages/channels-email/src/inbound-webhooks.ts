@@ -1,13 +1,17 @@
 import { parseMimeSource } from "./parse.js";
-import type { ParsedInboundEmail } from "./types.js";
+import type { ParsedInboundEmailWithAttachments } from "./types.js";
 
 /** Generic raw MIME POST body (manual / SES raw delivery). */
-export async function adaptRawMimeBody(body: Buffer | string): Promise<ParsedInboundEmail> {
+export async function adaptRawMimeBody(
+  body: Buffer | string,
+): Promise<ParsedInboundEmailWithAttachments> {
   return parseMimeSource(body);
 }
 
 /** AWS SES via SNS notification (simplified JSON; production should verify SNS signature). */
-export async function adaptSesNotification(payload: unknown): Promise<ParsedInboundEmail> {
+export async function adaptSesNotification(
+  payload: unknown,
+): Promise<ParsedInboundEmailWithAttachments> {
   const record = payload as {
     Message?: string;
     message?: { content?: string };
@@ -45,7 +49,7 @@ export async function adaptSendGridInbound(form: {
   text?: string;
   html?: string;
   headers?: string;
-}): Promise<ParsedInboundEmail> {
+}): Promise<ParsedInboundEmailWithAttachments> {
   if (form.raw) return parseMimeSource(form.raw);
   if (form.email) return parseMimeSource(form.email);
 
@@ -63,6 +67,7 @@ export async function adaptSendGridInbound(form: {
     inReplyTo,
     references,
     date: new Date().toISOString(),
+    attachments: [],
   };
 }
 
@@ -77,7 +82,7 @@ export async function adaptMailgunInbound(form: {
   "Message-Id"?: string;
   "In-Reply-To"?: string;
   References?: string;
-}): Promise<ParsedInboundEmail> {
+}): Promise<ParsedInboundEmailWithAttachments> {
   if (form["body-mime"]) return parseMimeSource(form["body-mime"]);
 
   const messageId = form["Message-Id"] ?? `mg-${Date.now()}@mailgun.local`;
@@ -97,6 +102,7 @@ export async function adaptMailgunInbound(form: {
     inReplyTo: form["In-Reply-To"],
     references,
     date: new Date().toISOString(),
+    attachments: [],
   };
 }
 
@@ -113,7 +119,7 @@ function extractReferences(headers: string | undefined): string[] {
   return line.split(/\s+/).filter(Boolean);
 }
 
-function parseFromHeader(raw: string): ParsedInboundEmail["from"] {
+function parseFromHeader(raw: string): ParsedInboundEmailWithAttachments["from"] {
   const m = /^(?:"?([^"]*)"?\s)?<?([^>]+@[^>]+)>?$/.exec(raw.trim());
   const address = m?.[2] ?? raw.trim();
   return { address, name: m?.[1]?.trim() || undefined };

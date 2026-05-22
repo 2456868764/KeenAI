@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { API_VERSION, presignUploadSchema } from "@keenai/shared";
 import { Hono } from "hono";
+import { insertAttachment } from "../lib/attachments.js";
 import {
   consumePresignedUpload,
   createPresignedUpload,
@@ -47,7 +48,16 @@ export function uploadRoutes(ctx: AppContext) {
 
     await saveUploadFile(ctx.env, entry.storageKey, buf);
 
+    const attachment = await insertAttachment(c.get("store").db, {
+      orgId: auth.orgId,
+      storageKey: entry.storageKey,
+      fileName: entry.fileName,
+      contentType: entry.contentType,
+      sizeBytes: buf.byteLength,
+    });
+
     return c.json({
+      attachmentId: attachment.id,
       storageKey: entry.storageKey,
       contentType: entry.contentType,
       sizeBytes: buf.byteLength,

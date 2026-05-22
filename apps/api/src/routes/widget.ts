@@ -2,19 +2,25 @@ import { zValidator } from "@hono/zod-validator";
 import { randomToken, signWidgetAccessToken, verifyWidgetUserHash } from "@keenai/auth";
 import {
   API_VERSION,
+  presignUploadSchema,
   widgetCreateConversationSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
 } from "@keenai/shared";
 import { Hono } from "hono";
+import { insertAttachment } from "../lib/attachments.js";
 import {
-  buildMessageContent,
   getConversationForOrg,
   insertMessage,
   recordConversationEvent,
   serializeConversation,
-  serializeMessage,
 } from "../lib/conversations.js";
+import {
+  consumePresignedUpload,
+  createPresignedUpload,
+  fileChecksum,
+  saveUploadFile,
+} from "../lib/uploads.js";
 import {
   assertWidgetConversation,
   createWidgetConversation,
@@ -129,6 +135,59 @@ export function widgetRoutes() {
   });
 
   r.post(
+    `${prefix}/uploads/presign`,
+    requireWidgetAuth(),
+    zValidator("json", presignUploadSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      try {
+        const apiBase = new URL(c.req.url).origin;
+        const presigned = createPresignedUpload(c.get("env"), body, apiBase);
+        return c.json(presigned, 201);
+      } catch (e) {
+        if (e instanceof Error && e.message === "file_too_large") {
+          return c.json({ error: "file_too_large", maxBytes: c.get("env").UPLOAD_MAX_BYTES }, 413);
+        }
+        throw e;
+      }
+    },
+  );
+
+  r.put(`${prefix}/uploads/:uploadId`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const entry = consumePresignedUpload(c.req.param("uploadId"));
+    if (!entry) return c.json({ error: "invalid_or_expired_upload" }, 410);
+
+    const buf = new Uint8Array(await c.req.arrayBuffer());
+    if (buf.byteLength > c.get("env").UPLOAD_MAX_BYTES) {
+      return c.json({ error: "file_too_large", maxBytes: c.get("env").UPLOAD_MAX_BYTES }, 413);
+    }
+
+    await saveUploadFile(c.get("env"), entry.storageKey, buf);
+
+    const attachment = await insertAttachment(c.get("store").db, {
+      orgId: auth.orgId,
+      storageKey: entry.storageKey,
+      fileName: entry.fileName,
+      contentType: entry.contentType,
+      sizeBytes: buf.byteLength,
+    });
+
+    return c.json({
+      attachmentId: attachment.id,
+      storageKey: entry.storageKey,
+      contentType: entry.contentType,
+      sizeBytes: buf.byteLength,
+      checksum: fileChecksum(buf),
+    });
+  });
+
+  r.post(
     `${prefix}/conversations/:id/messages`,
     requireWidgetAuth(),
     zValidator("json", widgetPostMessageSchema),
@@ -152,13 +211,14 @@ export function widgetRoutes() {
         senderType: "user",
         senderId: auth.sub,
         plainText: body.plainText,
-        content: buildMessageContent(body.plainText),
+        attachmentIds: body.attachmentIds,
+        parts: body.parts,
         isInternal: false,
         sentVia: "messenger",
         isAgentReply: false,
       });
 
-      const message = serializeMessage(result.message);
+      const message = result.serialized;
 
       await recordConversationEvent(c.get("store").db, {
         orgId: auth.orgId,
@@ -166,7 +226,7 @@ export function widgetRoutes() {
         eventType: "message.created",
         actorType: "user",
         actorId: auth.sub,
-        payload: { messageId: message.id },
+        payload: { messageId: result.message.id },
       });
 
       return c.json({ message }, 201);

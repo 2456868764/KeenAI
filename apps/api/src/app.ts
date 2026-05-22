@@ -14,6 +14,7 @@ import { optionalPortalAuth } from "./middleware/portal-auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
+import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
@@ -46,6 +47,7 @@ export function createApp(ctx: AppContext) {
   );
   app.use(`/api/${API_VERSION}/*`, optionalAuth(ctx.authConfig));
   app.use(`/api/${API_VERSION}/widget/*`, optionalWidgetAuth(ctx.authConfig));
+  app.use(`/api/${API_VERSION}/attachments/*`, optionalWidgetAuth(ctx.authConfig));
   app.use(`/api/${API_VERSION}/portal/*`, optionalPortalAuth(ctx.authConfig));
 
   app.get("/health", (c) =>
@@ -92,6 +94,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", inngestRoutes(ctx));
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
+  app.route("/", attachmentRoutes(ctx));
 
   app.get(`/api/${API_VERSION}/me`, requireAuth(), async (c) => {
     const auth = c.get("auth");

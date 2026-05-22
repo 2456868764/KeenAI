@@ -45,6 +45,7 @@ export async function runEmailImapPoll(ctx: AppContext) {
           orgId: resolved.org.id,
           brandId: resolved.brand.id,
           parsed,
+          env,
         });
       },
     },

@@ -37,6 +37,7 @@ export function emailWebhookRoutes() {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       parsed,
+      env: c.get("env"),
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -58,6 +59,7 @@ export function emailWebhookRoutes() {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       parsed,
+      env: c.get("env"),
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -79,6 +81,7 @@ export function emailWebhookRoutes() {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       parsed,
+      env: c.get("env"),
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -100,6 +103,7 @@ export function emailWebhookRoutes() {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       parsed,
+      env: c.get("env"),
     });
 
     return c.json({ accepted: true, ...result }, 202);

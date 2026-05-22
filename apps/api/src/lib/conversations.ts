@@ -1,9 +1,24 @@
 import type { AccessTokenClaims } from "@keenai/auth";
-import type { messageContentSchema } from "@keenai/shared";
+import {
+  type MessageKind,
+  type MessagePart,
+  buildPlainTextFromParts,
+  inferMessageKind,
+  type messageContentSchema,
+} from "@keenai/shared";
 import { brands, conversationEvents, conversations, messages } from "@keenai/storage/schema";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import type { z } from "zod";
 import type { AppVariables } from "../types.js";
+import {
+  buildPartsFromAttachments,
+  buildPartsMessageContent,
+  enrichSerializedMessages,
+  extractPartsFromContent,
+  linkAttachmentsToMessage,
+  loadAttachmentsForMessages,
+  loadPendingAttachments,
+} from "./attachments.js";
 import { publishConversation } from "./conversation-bus.js";
 
 type ContentInput = z.infer<typeof messageContentSchema>;
@@ -80,6 +95,9 @@ export function serializeConversation(row: typeof conversations.$inferSelect) {
 }
 
 export function serializeMessage(row: typeof messages.$inferSelect) {
+  const parts = extractPartsFromContent(row.content);
+  const messageKind =
+    typeof row.metadata.messageKind === "string" ? row.metadata.messageKind : undefined;
   return {
     id: row.id,
     conversationId: row.conversationId,
@@ -92,7 +110,70 @@ export function serializeMessage(row: typeof messages.$inferSelect) {
     inReplyTo: row.inReplyTo,
     sentVia: row.sentVia,
     deliveryStatus: row.deliveryStatus,
+    parts,
+    messageKind,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function serializeMessagesWithAttachments(
+  db: AppVariables["store"]["db"],
+  rows: (typeof messages.$inferSelect)[],
+) {
+  const attachmentMap = await loadAttachmentsForMessages(
+    db,
+    rows.map((r) => r.id),
+  );
+  return enrichSerializedMessages(rows, attachmentMap, serializeMessage);
+}
+
+async function resolveMessagePayload(
+  db: AppVariables["store"]["db"],
+  input: {
+    orgId: string;
+    plainText?: string;
+    attachmentIds?: string[];
+    parts?: MessagePart[];
+    content?: Record<string, unknown>;
+  },
+): Promise<{
+  plainText: string;
+  content: Record<string, unknown>;
+  contentFormat: string;
+  messageKind: MessageKind;
+  attachmentIds: string[];
+}> {
+  const attachmentIds = input.attachmentIds ?? [];
+  if (attachmentIds.length === 0) {
+    const plainText = input.plainText?.trim() ?? "";
+    if (!plainText) throw new Error("plain_text_required");
+    return {
+      plainText,
+      content: input.content ?? { type: "text", text: plainText },
+      contentFormat: input.content?.type === "tiptap" ? "tiptap" : "text",
+      messageKind: "text",
+      attachmentIds: [],
+    };
+  }
+
+  const pending = await loadPendingAttachments(db, input.orgId, attachmentIds);
+  if (pending.length !== attachmentIds.length) {
+    throw new Error("invalid_attachments");
+  }
+
+  const parts = input.parts ?? buildPartsFromAttachments(pending, input.plainText);
+  const attMap = new Map(
+    pending.map((a) => [a.id, { fileName: a.fileName, contentType: a.contentType }]),
+  );
+  const plainText =
+    input.plainText?.trim() || buildPlainTextFromParts(parts, attMap) || "(attachment)";
+
+  return {
+    plainText,
+    content: buildPartsMessageContent(parts),
+    contentFormat: "parts",
+    messageKind: inferMessageKind(parts),
+    attachmentIds,
   };
 }
 
@@ -103,8 +184,10 @@ export async function insertMessage(
     conversationId: string;
     senderType: string;
     senderId?: string;
-    plainText: string;
-    content: Record<string, unknown>;
+    plainText?: string;
+    content?: Record<string, unknown>;
+    attachmentIds?: string[];
+    parts?: MessagePart[];
     isInternal: boolean;
     inReplyTo?: string;
     sentVia?: string;
@@ -112,6 +195,7 @@ export async function insertMessage(
   },
 ) {
   const now = new Date();
+  const prepared = await resolveMessagePayload(db, input);
 
   const [current] = await db
     .select()
@@ -146,17 +230,22 @@ export async function insertMessage(
       conversationId: input.conversationId,
       senderType: input.senderType,
       senderId: input.senderId,
-      plainText: input.plainText,
-      content: input.content,
-      contentFormat: input.content.type === "tiptap" ? "tiptap" : "text",
+      plainText: prepared.plainText,
+      content: prepared.content,
+      contentFormat: prepared.contentFormat,
       isInternal: input.isInternal,
       inReplyTo: input.inReplyTo,
       sentVia: input.sentVia ?? "web",
       deliveryStatus: "sent",
+      metadata: { messageKind: prepared.messageKind },
     })
     .returning();
 
   if (!message) throw new Error("message insert failed");
+
+  if (prepared.attachmentIds.length > 0) {
+    await linkAttachmentsToMessage(db, input.orgId, message.id, prepared.attachmentIds);
+  }
 
   let unreadCount = current.unreadCount;
   let firstResponseAt = current.firstResponseAt;
@@ -180,10 +269,12 @@ export async function insertMessage(
     .where(eq(conversations.id, input.conversationId))
     .returning();
 
+  const [serialized] = await serializeMessagesWithAttachments(db, [message]);
+
   publishConversation({
     type: "message.created",
     conversationId: input.conversationId,
-    message: serializeMessage(message),
+    message: serialized ?? serializeMessage(message),
   });
 
   if (updated) {
@@ -203,7 +294,7 @@ export async function insertMessage(
     });
   }
 
-  return { message, conversation: updated };
+  return { message, conversation: updated, serialized: serialized ?? serializeMessage(message) };
 }
 
 export async function assertBrandInOrg(

@@ -8,7 +8,7 @@ import {
   insertMessage,
   recordConversationEvent,
   serializeConversation,
-  serializeMessage,
+  serializeMessagesWithAttachments,
 } from "./conversations.js";
 
 export function widgetHmacSecret(env: AppVariables["env"]): string {
@@ -122,7 +122,7 @@ export async function createWidgetConversation(
       sentVia: "messenger",
       isAgentReply: false,
     });
-    firstMessage = serializeMessage(result.message);
+    firstMessage = result.serialized;
   }
 
   return { conversation: serializeConversation(conversation), message: firstMessage };
@@ -147,5 +147,5 @@ export async function listWidgetMessages(
     .orderBy(desc(messages.createdAt))
     .limit(limit);
 
-  return rows.reverse().map(serializeMessage);
+  return serializeMessagesWithAttachments(db, rows.reverse());
 }
