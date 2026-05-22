@@ -14,10 +14,18 @@ export {
 export { createKimiDraftProvider, KIMI_BASE_URL, KIMI_DEFAULT_MODEL } from "./providers/kimi.js";
 export { createOpenAiCompatibleDraftProvider } from "./providers/openai-compatible.js";
 export {
+  buildDraftPrompt,
+  buildDraftStreamInput,
+  draftRequestHasImages,
+  type DraftStreamInput,
+} from "./prompts.js";
+export {
+  draftImageSchema,
   draftMessageSchema,
   draftRequestSchema,
   LLM_PROVIDER_IDS,
   llmProviderIdSchema,
+  type DraftImage,
   type DraftMessage,
   type DraftProvider,
   type DraftRequest,

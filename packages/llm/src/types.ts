@@ -13,9 +13,15 @@ export type LlmProviderId = (typeof LLM_PROVIDER_IDS)[number];
 
 export const llmProviderIdSchema = z.enum(LLM_PROVIDER_IDS);
 
+export const draftImageSchema = z.object({
+  mimeType: z.string().min(1),
+  dataBase64: z.string().min(1),
+});
+
 export const draftMessageSchema = z.object({
   role: z.enum(["user", "agent", "system"]),
   plainText: z.string(),
+  images: z.array(draftImageSchema).max(5).optional(),
 });
 
 export const draftRequestSchema = z.object({
@@ -26,6 +32,7 @@ export const draftRequestSchema = z.object({
 
 export type DraftRequest = z.infer<typeof draftRequestSchema>;
 export type DraftMessage = z.infer<typeof draftMessageSchema>;
+export type DraftImage = z.infer<typeof draftImageSchema>;
 
 export type DraftStreamChunk = { type: "text-delta"; text: string } | { type: "done" };
 

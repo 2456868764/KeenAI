@@ -1,11 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
 import { createLlmRegistry } from "@keenai/llm";
 import { API_VERSION, copilotDraftBodySchema, copilotEventBodySchema } from "@keenai/shared";
-import { copilotEvents, messages } from "@keenai/storage/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { copilotEvents } from "@keenai/storage/schema";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
+import { buildCopilotDraftRequest } from "../lib/copilot-context.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
@@ -47,28 +47,12 @@ export function copilotRoutes(ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const rows = await c
-        .get("store")
-        .db.select({
-          senderType: messages.senderType,
-          plainText: messages.plainText,
-          isInternal: messages.isInternal,
-        })
-        .from(messages)
-        .where(and(eq(messages.conversationId, conversation.id), eq(messages.orgId, auth.orgId)))
-        .orderBy(asc(messages.createdAt))
-        .limit(50);
-
-      const draftMessages = rows
-        .filter((m) => !m.isInternal)
-        .map((m) => ({
-          role: (m.senderType === "user" ? "user" : "agent") as "user" | "agent",
-          plainText: m.plainText,
-        }));
-
-      if (draftMessages.length === 0) {
-        draftMessages.push({ role: "user", plainText: conversation.subject ?? "Hello" });
-      }
+      const draftRequest = await buildCopilotDraftRequest(c.get("store").db, ctx.env, {
+        conversationId: conversation.id,
+        orgId: auth.orgId,
+        subject: conversation.subject ?? undefined,
+        instruction: body.instruction,
+      });
 
       const provider =
         body.providerId != null
@@ -81,11 +65,7 @@ export function copilotRoutes(ctx: AppContext) {
           data: JSON.stringify({ providerId: provider.id }),
         });
 
-        for await (const chunk of provider.streamDraft({
-          messages: draftMessages,
-          instruction: body.instruction,
-          subject: conversation.subject ?? undefined,
-        })) {
+        for await (const chunk of provider.streamDraft(draftRequest)) {
           if (chunk.type === "text-delta") {
             stream.writeSSE({ data: JSON.stringify({ text: chunk.text }) });
           }

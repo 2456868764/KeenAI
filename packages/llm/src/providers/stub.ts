@@ -1,3 +1,4 @@
+import { draftRequestHasImages } from "../prompts.js";
 import type { DraftProvider, DraftRequest, DraftStreamChunk } from "../types.js";
 
 function buildStubDraft(req: DraftRequest): string {
@@ -7,8 +8,9 @@ function buildStubDraft(req: DraftRequest): string {
   const intro = instruction
     ? `Following your note (${instruction}), `
     : "Thank you for reaching out. ";
+  const visionNote = draftRequestHasImages(req) ? "I reviewed the image(s) you shared. " : "";
 
-  return `${intro}Regarding "${snippet}", we're reviewing this and will follow up shortly.\n\nIf you have any other details to share, please reply here.\n\nBest regards,\nSupport Team`;
+  return `${intro}${visionNote}Regarding "${snippet}", we're reviewing this and will follow up shortly.\n\nIf you have any other details to share, please reply here.\n\nBest regards,\nSupport Team`;
 }
 
 export const stubDraftProvider: DraftProvider = {

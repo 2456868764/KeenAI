@@ -1,4 +1,4 @@
-import { buildDraftPrompt } from "../prompts.js";
+import { streamDraftText } from "../run-draft-stream.js";
 import type { DraftProvider, DraftRequest, DraftStreamChunk } from "../types.js";
 
 export const GEMINI_DEFAULT_MODEL = "gemini-2.0-flash";
@@ -13,21 +13,9 @@ export function createGeminiDraftProvider(config: {
     id: "gemini",
 
     async *streamDraft(req: DraftRequest): AsyncIterable<DraftStreamChunk> {
-      const { streamText } = await import("ai");
       const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
       const google = createGoogleGenerativeAI({ apiKey: config.apiKey });
-
-      const { system, prompt } = buildDraftPrompt(req);
-      const result = streamText({
-        model: google(model),
-        system,
-        prompt,
-      });
-
-      for await (const delta of result.textStream) {
-        if (delta) yield { type: "text-delta", text: delta };
-      }
-      yield { type: "done" };
+      yield* streamDraftText(google(model), req);
     },
   };
 }
