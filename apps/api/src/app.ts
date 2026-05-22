@@ -10,6 +10,7 @@ import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import { optionalAuth, requireAuth } from "./middleware/auth.js";
 import { injectContext } from "./middleware/context.js";
 import { attachLogger } from "./middleware/logger.js";
+import { optionalPortalAuth } from "./middleware/portal-auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
@@ -45,6 +46,7 @@ export function createApp(ctx: AppContext) {
   );
   app.use(`/api/${API_VERSION}/*`, optionalAuth(ctx.authConfig));
   app.use(`/api/${API_VERSION}/widget/*`, optionalWidgetAuth(ctx.authConfig));
+  app.use(`/api/${API_VERSION}/portal/*`, optionalPortalAuth(ctx.authConfig));
 
   app.get("/health", (c) =>
     c.json({

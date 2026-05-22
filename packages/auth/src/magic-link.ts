@@ -72,3 +72,37 @@ export async function sendMagicLinkEmail(
 
   return { sent: true };
 }
+
+export async function sendPortalMagicLinkEmail(
+  config: AuthConfig,
+  email: string,
+  token: string,
+  orgSlug: string,
+): Promise<{ sent: boolean; devUrl?: string }> {
+  const base = config.portalAppUrl ?? config.appUrl;
+  const url = `${base}/auth/verify?token=${encodeURIComponent(token)}&org=${encodeURIComponent(orgSlug)}`;
+
+  if (!config.smtp) {
+    return { sent: false, devUrl: url };
+  }
+
+  const transport = nodemailer.createTransport({
+    host: config.smtp.host,
+    port: config.smtp.port,
+    secure: config.smtp.port === 465,
+    auth:
+      config.smtp.user && config.smtp.pass
+        ? { user: config.smtp.user, pass: config.smtp.pass }
+        : undefined,
+  });
+
+  await transport.sendMail({
+    from: config.smtp.from,
+    to: email,
+    subject: "Sign in to your support portal",
+    text: `View your tickets:\n\n${url}\n\nThis link expires in 15 minutes.`,
+    html: `<p><a href="${url}">View your tickets</a></p><p>Expires in 15 minutes.</p>`,
+  });
+
+  return { sent: true };
+}

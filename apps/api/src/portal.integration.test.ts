@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { hashPassword } from "@keenai/auth";
+import { createMagicLink, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import {
@@ -157,6 +157,86 @@ describe("portal integration", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { items: { title: string }[] };
     expect(body.items.some((t) => t.title === "Portal ticket")).toBe(true);
+
+    await store.close();
+  });
+
+  it("lists tickets via portal magic link JWT when public read is disabled", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "demo", name: "Demo" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    await db.insert(brands).values({ orgId: org.id, slug: "default", name: "Default" });
+
+    const [typeRow] = await db
+      .insert(ticketTypes)
+      .values({ orgId: org.id, name: "Support", kind: "customer" })
+      .returning();
+    const type = requireRow(typeRow, "type");
+    const [statusRow] = await db
+      .insert(ticketStatuses)
+      .values({ orgId: org.id, name: "Open", category: "active", isDefault: true })
+      .returning();
+    const status = requireRow(statusRow, "status");
+
+    await db.insert(tickets).values({
+      orgId: org.id,
+      typeId: type.id,
+      statusId: status.id,
+      title: "Secure portal ticket",
+      customerId: "customer@example.com",
+    });
+
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      PORTAL_PUBLIC_READ: "false",
+    });
+    const authConfig = {
+      jwtSecret: "test-secret-at-least-32-characters-long!!",
+      accessTtlSec: 900,
+      refreshTtlSec: 604_800,
+      appUrl: "http://localhost:3000",
+      portalAppUrl: "http://localhost:3002",
+      portalAccessTtlSec: 604_800,
+    };
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const denied = await app.request("/api/v1/portal/demo/tickets");
+    expect(denied.status).toBe(401);
+
+    const { token } = await createMagicLink(db, "customer@example.com");
+    const verifyRes = await app.request("/api/v1/portal/demo/magic-link/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    expect(verifyRes.status).toBe(200);
+    const verifyBody = (await verifyRes.json()) as { accessToken: string; customerId: string };
+    expect(verifyBody.customerId).toBe("customer@example.com");
+
+    const listRes = await app.request("/api/v1/portal/demo/tickets", {
+      headers: { Authorization: `Bearer ${verifyBody.accessToken}` },
+    });
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as { items: { title: string }[] };
+    expect(listBody.items.some((t) => t.title === "Secure portal ticket")).toBe(true);
 
     await store.close();
   });

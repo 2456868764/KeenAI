@@ -1,4 +1,9 @@
-import type { AccessTokenClaims, AuthConfig, WidgetAccessClaims } from "@keenai/auth";
+import type {
+  AccessTokenClaims,
+  AuthConfig,
+  PortalAccessClaims,
+  WidgetAccessClaims,
+} from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { FTSStore, Store } from "@keenai/storage";
 import type { Logger } from "./logger.js";
@@ -7,6 +12,7 @@ export type AppVariables = {
   requestId: string;
   auth: AccessTokenClaims | null;
   widgetAuth: WidgetAccessClaims | null;
+  portalAuth: PortalAccessClaims | null;
   log: Logger;
   store: Store;
   authConfig: AuthConfig;

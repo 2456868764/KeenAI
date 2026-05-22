@@ -55,7 +55,11 @@ export {
   type TicketStatusCategory,
 } from "./ticket.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
-export { listPortalTicketsSchema } from "./portal.js";
+export {
+  listPortalTicketsSchema,
+  portalMagicLinkRequestSchema,
+  portalMagicLinkVerifySchema,
+} from "./portal.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
   defaultDatabaseFilePath,

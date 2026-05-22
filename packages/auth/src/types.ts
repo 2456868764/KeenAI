@@ -34,7 +34,11 @@ export interface AuthConfig {
   refreshTtlSec: number;
   /** Widget visitor JWT lifetime (defaults to accessTtlSec). */
   widgetAccessTtlSec?: number;
+  /** Portal customer JWT lifetime (default 7 days). */
+  portalAccessTtlSec?: number;
   appUrl: string;
+  /** Customer portal base URL for magic links. */
+  portalAppUrl?: string;
   smtp?: {
     host: string;
     port: number;

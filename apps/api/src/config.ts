@@ -11,7 +11,9 @@ export function toAuthConfig(env: ApiEnv): AuthConfig {
     accessTtlSec: parseTtlSeconds(env.JWT_ACCESS_TTL, 900),
     refreshTtlSec: parseTtlSeconds(env.JWT_REFRESH_TTL, 604_800),
     widgetAccessTtlSec: 86_400,
+    portalAccessTtlSec: 604_800,
     appUrl: env.APP_URL,
+    portalAppUrl: env.PORTAL_APP_URL,
     smtp:
       env.SMTP_HOST && env.SMTP_FROM
         ? {

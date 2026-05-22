@@ -66,6 +66,8 @@ export const apiEnvSchema = z.object({
   EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),
   /** Allow unauthenticated portal ticket reads (set true in dev via .env) */
   PORTAL_PUBLIC_READ: z.coerce.boolean().default(false),
+  /** Customer portal app URL for magic links */
+  PORTAL_APP_URL: z.string().url().default("http://localhost:3002"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
