@@ -2,6 +2,7 @@ import { processAdmittedChunk, runDigestDaily } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
+import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
 
@@ -15,7 +16,10 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
         brandId: string;
         chunkId: string;
       };
-      return processAdmittedChunk(ctx.store.db, data);
+      return processAdmittedChunk(ctx.store.db, {
+        ...data,
+        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
+      });
     },
   );
 
@@ -28,14 +32,17 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
         orgId?: string;
         brandId?: string;
       };
-      return runDigestDaily(ctx.store.db, data);
+      return runDigestDaily(ctx.store.db, {
+        ...data,
+        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
+      });
     },
   );
 
   const digestDailyCron = client.createFunction(
     { id: "keenai-memory-digest-daily-cron" },
     { cron: ctx.env.INNGEST_MEMORY_DIGEST_CRON },
-    async () => runDigestDaily(ctx.store.db),
+    async () => runDigestDaily(ctx.store.db, { summaryFtsIndexer: getMemorySummaryFtsIndexer() }),
   );
 
   return [extract, digestDaily, digestDailyCron] as const;

@@ -4,6 +4,7 @@ import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
 import { brandDailyScopeKey } from "./scope-key.js";
 import { stubDailyDigest } from "./stub-digest.js";
+import { type MemorySummaryFtsIndexer, indexMemorySummaryInFts } from "./summary-fts-index.js";
 import { defaultDigestDateUtc, utcDayRange } from "./utc-date.js";
 
 const DIGESTABLE_LIFECYCLES = ["admitted", "buffered", "sealed"] as const;
@@ -13,6 +14,7 @@ export type DigestDailyForBrandInput = {
   orgId: string;
   brandId: string;
   dateUtc: string;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type DigestDailyForBrandResult = {
@@ -31,6 +33,7 @@ export type RunDigestDailyInput = {
   dateUtc?: string;
   orgId?: string;
   brandId?: string;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type RunDigestDailyResult = {
@@ -130,6 +133,16 @@ export async function digestDailyForBrand(
 
   if (!summaryRow) throw new Error("memory_daily_digest_create_failed");
 
+  await indexMemorySummaryInFts(input.summaryFtsIndexer, {
+    id: summaryRow.id,
+    orgId: summaryRow.orgId,
+    brandId: summaryRow.brandId,
+    scopeKey: summaryRow.scopeKey,
+    level: summaryRow.level,
+    title: summaryRow.title,
+    summary: summaryRow.summary,
+  });
+
   const episodeScopeId = `${input.brandId}:${input.dateUtc}`;
   const [episodeRow] = await db
     .insert(memoryEpisodes)
@@ -191,6 +204,7 @@ export async function runDigestDaily(
         orgId: brand.orgId,
         brandId: brand.id,
         dateUtc,
+        summaryFtsIndexer: input.summaryFtsIndexer,
       }),
     );
   }

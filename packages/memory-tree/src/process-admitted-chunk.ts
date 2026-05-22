@@ -7,6 +7,7 @@ import { channelRouteChunk, resolveConversationChannel } from "./channel-route.j
 import { extractChunk } from "./extract-chunk.js";
 import { conversationScopeKey } from "./scope-key.js";
 import { sealBuffer } from "./seal-buffer.js";
+import type { MemorySummaryFtsIndexer } from "./summary-fts-index.js";
 import { resolveConversationUserId, topicRouteChunk } from "./topic-route.js";
 
 export type ProcessAdmittedChunkInput = {
@@ -14,6 +15,7 @@ export type ProcessAdmittedChunkInput = {
   brandId: string;
   chunkId: string;
   config?: Partial<BufferConfig>;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type ProcessAdmittedChunkResult = {
@@ -105,6 +107,7 @@ export async function processAdmittedChunk(
     orgId: input.orgId,
     brandId: input.brandId,
     scopeKey,
+    summaryFtsIndexer: input.summaryFtsIndexer,
   });
 
   const topicResult = await routeTopicIfEligible(db, input, conversationId);
@@ -145,6 +148,7 @@ async function routeChannelIfEligible(
     channelType: channel.channelType,
     channelId: channel.channelId,
     config: input.config,
+    summaryFtsIndexer: input.summaryFtsIndexer,
   });
 }
 
@@ -165,5 +169,6 @@ async function routeTopicIfEligible(
     chunkId: input.chunkId,
     userId,
     config: input.config,
+    summaryFtsIndexer: input.summaryFtsIndexer,
   });
 }

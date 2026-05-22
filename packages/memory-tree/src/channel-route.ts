@@ -6,6 +6,7 @@ import type { BufferConfig } from "./buffer-config.js";
 import { isChannelScopedTreeType } from "./channel-config.js";
 import { channelScopeKey } from "./scope-key.js";
 import { sealBuffer } from "./seal-buffer.js";
+import type { MemorySummaryFtsIndexer } from "./summary-fts-index.js";
 
 export type ChannelRouteChunkInput = {
   orgId: string;
@@ -14,6 +15,7 @@ export type ChannelRouteChunkInput = {
   channelType: string;
   channelId: string;
   config?: Partial<BufferConfig>;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type ChannelRouteChunkResult = {
@@ -74,6 +76,7 @@ export async function channelRouteChunk(
     orgId: input.orgId,
     brandId: input.brandId,
     scopeKey,
+    summaryFtsIndexer: input.summaryFtsIndexer,
   });
 
   return {

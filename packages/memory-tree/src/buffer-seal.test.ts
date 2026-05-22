@@ -4,8 +4,13 @@ import {
   conversationScopeKey,
   ingestConversationMessage,
   processAdmittedChunk,
+  searchMemoryChunks,
 } from "@keenai/memory-tree";
-import { createLibsqlStore } from "@keenai/storage";
+import {
+  createLibsqlMemoryChunkFtsStore,
+  createLibsqlMemorySummaryFtsStore,
+  createLibsqlStore,
+} from "@keenai/storage";
 import {
   brands,
   conversations,
@@ -34,6 +39,8 @@ describe("memory-tree buffer + seal", () => {
       "../../storage/migrations/libsql",
     );
     await migrate(db, { migrationsFolder });
+    const summaryFts = createLibsqlMemorySummaryFtsStore(store.client);
+    const chunkFts = createLibsqlMemoryChunkFtsStore(store.client);
 
     const orgRow = await db.insert(organizations).values({ slug: "buf", name: "Buf" }).returning();
     const org = requireRow(orgRow[0], "org");
@@ -97,6 +104,7 @@ describe("memory-tree buffer + seal", () => {
           "chunk",
         ).id,
         config: { maxLeaves: 3, maxTokens: 10_000 },
+        summaryFtsIndexer: summaryFts,
       });
     }
 
@@ -121,6 +129,17 @@ describe("memory-tree buffer + seal", () => {
     expect(episodes).toHaveLength(1);
     expect(episodes[0]?.scope).toBe("conversation");
     expect(episodes[0]?.scopeId).toBe(conv.id);
+
+    const search = await searchMemoryChunks(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      q: "invoice",
+      scope: "conversation",
+      chunkFts,
+      summaryFts,
+    });
+    expect(search.summaryHits.length).toBeGreaterThan(0);
+    expect(search.summaryHits[0]?.kind).toBe("seal");
 
     await store.close();
   });

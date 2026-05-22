@@ -22,6 +22,7 @@ import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
 import { getMemoryChunkEmbedder } from "../lib/memory-chunk-embed-init.js";
 import { getMemoryChunkFtsStore } from "../lib/memory-chunk-fts-init.js";
 import { getMemoryChunkVectorStore } from "../lib/memory-chunk-vector-init.js";
+import { getMemorySummaryFtsStore } from "../lib/memory-summary-fts-init.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
@@ -189,6 +190,7 @@ export function memoryRoutes(_ctx: AppContext) {
         chunkFts: getMemoryChunkFtsStore(),
         chunkVector: getMemoryChunkVectorStore(),
         queryEmbedder: getMemoryChunkEmbedder(),
+        summaryFts: getMemorySummaryFtsStore(),
       });
 
       return c.json({ results });

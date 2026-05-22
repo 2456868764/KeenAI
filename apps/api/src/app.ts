@@ -14,6 +14,7 @@ import {
 import { initMemoryChunkFtsFromStore } from "./lib/memory-chunk-fts-init.js";
 import { initMemoryChunkVectorFromStore } from "./lib/memory-chunk-vector-init.js";
 import { initMemoryDispatch } from "./lib/memory-dispatch-init.js";
+import { initMemorySummaryFtsFromStore } from "./lib/memory-summary-fts-init.js";
 import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import { optionalAuth, requireAuth } from "./middleware/auth.js";
 import { injectContext } from "./middleware/context.js";
@@ -51,6 +52,7 @@ export function createApp(ctx: AppContext) {
   if (ctx.store.dialect === "libsql") {
     initMemoryChunkFtsFromStore(ctx.store);
     initMemoryChunkVectorFromStore(ctx.store);
+    initMemorySummaryFtsFromStore(ctx.store);
     setMemoryChunkEmbedder(resolveMemoryChunkEmbedder(ctx.env));
   }
   const app = new Hono<{ Variables: AppVariables }>();

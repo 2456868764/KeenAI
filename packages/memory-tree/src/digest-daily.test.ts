@@ -6,8 +6,9 @@ import {
   digestDailyForBrand,
   ingestConversationMessage,
   runDigestDaily,
+  searchMemoryChunks,
 } from "@keenai/memory-tree";
-import { createLibsqlStore } from "@keenai/storage";
+import { createLibsqlMemorySummaryFtsStore, createLibsqlStore } from "@keenai/storage";
 import {
   brands,
   conversations,
@@ -35,6 +36,7 @@ describe("memory-tree digest_daily", () => {
       "../../storage/migrations/libsql",
     );
     await migrate(db, { migrationsFolder });
+    const summaryFts = createLibsqlMemorySummaryFtsStore(store.client);
 
     const orgRow = await db
       .insert(organizations)
@@ -106,6 +108,7 @@ describe("memory-tree digest_daily", () => {
       orgId: org.id,
       brandId: brand.id,
       dateUtc,
+      summaryFtsIndexer: summaryFts,
     });
     expect(first.created).toBe(true);
     expect(first.chunkCount).toBe(2);
@@ -135,6 +138,16 @@ describe("memory-tree digest_daily", () => {
     const run = await runDigestDaily(db, { orgId: org.id, brandId: brand.id, dateUtc });
     expect(run.brandsProcessed).toBe(1);
     expect(run.digestsCreated).toBe(0);
+
+    const search = await searchMemoryChunks(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      q: "billing",
+      scope: "all",
+      summaryFts,
+    });
+    expect(search.summaryHits).toHaveLength(1);
+    expect(search.summaryHits[0]?.kind).toBe("daily_digest");
 
     await store.close();
   });

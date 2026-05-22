@@ -7,6 +7,7 @@ import { DEFAULT_HOTNESS_THRESHOLD } from "./hotness-config.js";
 import { refreshCustomerHotness } from "./hotness.js";
 import { customerScopeKey } from "./scope-key.js";
 import { sealBuffer } from "./seal-buffer.js";
+import type { MemorySummaryFtsIndexer } from "./summary-fts-index.js";
 
 export type TopicRouteChunkInput = {
   orgId: string;
@@ -15,6 +16,7 @@ export type TopicRouteChunkInput = {
   userId: string;
   config?: Partial<BufferConfig>;
   hotnessThreshold?: number;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type TopicRouteChunkResult = {
@@ -87,6 +89,7 @@ export async function topicRouteChunk(
     orgId: input.orgId,
     brandId: input.brandId,
     scopeKey,
+    summaryFtsIndexer: input.summaryFtsIndexer,
   });
 
   return {

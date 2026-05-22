@@ -9,12 +9,14 @@ import { and, eq, inArray } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
 import { episodeTargetFromScopeKey } from "./scope-key.js";
 import { stubSealSummary } from "./stub-seal.js";
+import { type MemorySummaryFtsIndexer, indexMemorySummaryInFts } from "./summary-fts-index.js";
 
 export type SealBufferInput = {
   orgId: string;
   brandId: string;
   scopeKey: string;
   level?: number;
+  summaryFtsIndexer?: MemorySummaryFtsIndexer | null;
 };
 
 export type SealBufferResult = {
@@ -102,6 +104,16 @@ export async function sealBuffer(db: KeenaiDb, input: SealBufferInput): Promise<
     .returning();
 
   if (!summaryRow) throw new Error("memory_summary_create_failed");
+
+  await indexMemorySummaryInFts(input.summaryFtsIndexer, {
+    id: summaryRow.id,
+    orgId: summaryRow.orgId,
+    brandId: summaryRow.brandId,
+    scopeKey: summaryRow.scopeKey,
+    level: summaryRow.level,
+    title: summaryRow.title,
+    summary: summaryRow.summary,
+  });
 
   const { scope: episodeScope, scopeId: episodeScopeId } = episodeTargetFromScopeKey(
     input.scopeKey,

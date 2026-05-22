@@ -38,6 +38,12 @@ export {
 } from "./canonicalize.js";
 export { extractChunk, type ExtractChunkResult } from "./extract-chunk.js";
 export {
+  indexMemorySummaryInFts,
+  memorySummaryFtsBody,
+  type MemorySummaryFtsDoc,
+  type MemorySummaryFtsIndexer,
+} from "./summary-fts-index.js";
+export {
   listHotTopics,
   queryMemoryExplorerStats,
   scopeKeyLabel,
@@ -45,6 +51,7 @@ export {
   type MemoryExplorerHotTopic,
   type MemoryExplorerStats,
   type MemorySearchHit,
+  type MemorySummarySearchHit,
   type QueryMemoryExplorerStatsInput,
   type SearchMemoryChunksInput,
   type SearchMemoryChunksResult,

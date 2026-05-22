@@ -6,6 +6,7 @@ import {
   type MemoryExplorerStats,
   type MemoryHotTopic,
   type MemorySearchHit,
+  type MemorySummarySearchHit,
   fetchMe,
   getMemoryDigest,
   getMemoryStats,
@@ -118,6 +119,7 @@ export function MemoryExplorerShell() {
               onQChange={setSearchQ}
               onScopeChange={setSearchScope}
               hits={searchQuery.data?.hits ?? []}
+              summaryHits={searchQuery.data?.summaryHits ?? []}
               loading={searchQuery.isLoading}
               submitted={submittedQ.length > 0}
             />
@@ -226,6 +228,7 @@ function SearchPanel({
   onQChange,
   onScopeChange,
   hits,
+  summaryHits,
   loading,
   submitted,
 }: {
@@ -234,9 +237,11 @@ function SearchPanel({
   onQChange: (q: string) => void;
   onScopeChange: (scope: SearchScope) => void;
   hits: MemorySearchHit[];
+  summaryHits: MemorySummarySearchHit[];
   loading: boolean;
   submitted: boolean;
 }) {
+  const hasResults = hits.length > 0 || summaryHits.length > 0;
   return (
     <section className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -249,7 +254,7 @@ function SearchPanel({
           type="search"
           value={q}
           onChange={(e) => onQChange(e.target.value)}
-          placeholder="Search chunk bodies…"
+          placeholder="Search chunks and summaries…"
           className="min-w-[200px] flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-sm"
         />
         <select
@@ -266,23 +271,65 @@ function SearchPanel({
 
       {!submitted ? (
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          Type a query to search ingested memory chunks.
+          Type a query to search ingested chunks and sealed summaries.
         </p>
       ) : loading ? (
         <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
           <Loader2 className="size-3 animate-spin" />
           Searching…
         </div>
-      ) : hits.length === 0 ? (
+      ) : !hasResults ? (
         <p className="text-xs text-[hsl(var(--muted-foreground))]">No matches.</p>
       ) : (
-        <ul className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
-          {hits.map((hit) => (
-            <SearchHitRow key={hit.chunkId} hit={hit} />
-          ))}
-        </ul>
+        <div className="space-y-4">
+          {summaryHits.length > 0 ? (
+            <div>
+              <p className="mb-2 text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                Summaries
+              </p>
+              <ul className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+                {summaryHits.map((hit) => (
+                  <SummaryHitRow key={hit.summaryId} hit={hit} />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {hits.length > 0 ? (
+            <div>
+              <p className="mb-2 text-xs font-medium text-[hsl(var(--muted-foreground))]">Chunks</p>
+              <ul className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+                {hits.map((hit) => (
+                  <SearchHitRow key={hit.chunkId} hit={hit} />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
       )}
     </section>
+  );
+}
+
+function SummaryHitRow({ hit }: { hit: MemorySummarySearchHit }) {
+  return (
+    <li className="space-y-1 px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+        <span className="rounded bg-[hsl(var(--surface-0))] px-1.5 py-0.5">{hit.kind}</span>
+        <span className="rounded bg-[hsl(var(--surface-0))] px-1.5 py-0.5">{hit.scope}</span>
+        {hit.ftsScore != null ? <span>fts {hit.ftsScore.toFixed(2)}</span> : null}
+        <span>{new Date(hit.sealedAt).toLocaleString()}</span>
+      </div>
+      {hit.title ? <p className="font-medium text-[hsl(var(--foreground))]">{hit.title}</p> : null}
+      <p className="line-clamp-3 text-[hsl(var(--foreground))]">{hit.snippet ?? hit.summary}</p>
+      {hit.conversationId ? (
+        <Link
+          href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
+          className="text-xs text-[hsl(var(--primary))] hover:underline"
+        >
+          Open conversation
+        </Link>
+      ) : null}
+    </li>
   );
 }
 

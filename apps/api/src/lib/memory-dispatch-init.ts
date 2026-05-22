@@ -7,6 +7,7 @@ import {
   createInngestMemoryDispatch,
   createSyncMemoryDispatch,
 } from "./memory-dispatch.js";
+import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 let adapter: MemoryDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
@@ -14,7 +15,10 @@ let inngestClient: Inngest | null = null;
 export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
   const handlers = {
     extractChunk: async (payload: { orgId: string; brandId: string; chunkId: string }) => {
-      const result = await processAdmittedChunk(ctx.store.db, payload);
+      const result = await processAdmittedChunk(ctx.store.db, {
+        ...payload,
+        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
+      });
       return { processed: result.extracted };
     },
   };

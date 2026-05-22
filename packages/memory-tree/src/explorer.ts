@@ -1,4 +1,4 @@
-import type { FTSStore, KeenaiDb, VectorStore } from "@keenai/storage";
+import type { FTSStore, KeenaiDb, MemorySummaryFtsStore, VectorStore } from "@keenai/storage";
 import { rrfFuse } from "@keenai/storage";
 import {
   memoryChunks,
@@ -14,6 +14,7 @@ import { DEFAULT_HOTNESS_THRESHOLD } from "./hotness-config.js";
 import {
   conversationIdFromScopeKey,
   customerIdFromScopeKey,
+  parseBrandDailyScopeKey,
   parseChannelScopeKey,
 } from "./scope-key.js";
 
@@ -43,6 +44,8 @@ export type SearchMemoryChunksInput = {
   chunkVector?: Pick<VectorStore, "query"> | null;
   /** Query embedder for vector leg of hybrid search (KM-05). */
   queryEmbedder?: Pick<MemoryChunkEmbedder, "embed"> | null;
+  /** LibSQL fts_memory_summaries store (KM-06). */
+  summaryFts?: Pick<MemorySummaryFtsStore, "search"> | null;
 };
 
 export type MemorySearchHit = {
@@ -66,6 +69,22 @@ export type SearchMemoryChunksResult = {
   q: string;
   scope: "all" | "conversation" | "customer" | "channel";
   hits: MemorySearchHit[];
+  summaryHits: MemorySummarySearchHit[];
+};
+
+export type MemorySummarySearchHit = {
+  summaryId: string;
+  scopeKey: string;
+  level: number;
+  kind: "seal" | "daily_digest";
+  scope: "conversation" | "customer" | "channel" | "daily_digest" | "unknown";
+  conversationId: string | null;
+  userId: string | null;
+  title: string | null;
+  summary: string;
+  ftsScore: number | null;
+  snippet: string | null;
+  sealedAt: string;
 };
 
 function escapeLikePattern(q: string): string {
@@ -255,7 +274,7 @@ async function scopeRestrictedChunkIds(
 async function searchMemoryChunksWithFts(
   db: KeenaiDb,
   input: SearchMemoryChunksInput & { chunkFts: Pick<FTSStore, "search"> },
-): Promise<SearchMemoryChunksResult> {
+): Promise<{ q: string; scope: SearchMemoryChunksResult["scope"]; hits: MemorySearchHit[] }> {
   const q = input.q.trim();
   const scope = input.scope ?? "all";
   const limit = input.limit ?? 20;
@@ -328,7 +347,7 @@ async function searchMemoryChunksWithHybrid(
     chunkVector: Pick<VectorStore, "query">;
     queryEmbedder: Pick<MemoryChunkEmbedder, "embed">;
   },
-): Promise<SearchMemoryChunksResult> {
+): Promise<{ q: string; scope: SearchMemoryChunksResult["scope"]; hits: MemorySearchHit[] }> {
   const q = input.q.trim();
   const scope = input.scope ?? "all";
   const limit = input.limit ?? 20;
@@ -417,7 +436,77 @@ async function searchMemoryChunksWithHybrid(
   return { q, scope, hits };
 }
 
-/** Search memory chunks via FTS5 (preferred) or SQL LIKE fallback. */
+function inferSummaryHitScope(scopeKey: string, level: number): MemorySummarySearchHit["scope"] {
+  if (level === 0 && parseBrandDailyScopeKey(scopeKey)) return "daily_digest";
+  if (conversationIdFromScopeKey(scopeKey)) return "conversation";
+  if (customerIdFromScopeKey(scopeKey)) return "customer";
+  if (parseChannelScopeKey(scopeKey)) return "channel";
+  return "unknown";
+}
+
+async function searchMemorySummaries(
+  db: KeenaiDb,
+  input: SearchMemoryChunksInput,
+): Promise<MemorySummarySearchHit[]> {
+  if (!input.summaryFts) return [];
+
+  const q = input.q.trim();
+  const scope = input.scope ?? "all";
+  const limit = input.limit ?? 20;
+  if (q.length === 0) return [];
+
+  const ftsHits = await input.summaryFts.search({
+    orgId: input.orgId,
+    brandId: input.brandId,
+    q,
+    scope,
+    limit: Math.min(Math.max(limit * 2, limit), 50),
+  });
+
+  if (ftsHits.length === 0) return [];
+
+  const orderedIds = ftsHits.map((hit) => hit.id);
+  const rows = await db
+    .select()
+    .from(memorySummaries)
+    .where(
+      and(
+        eq(memorySummaries.orgId, input.orgId),
+        eq(memorySummaries.brandId, input.brandId),
+        inArray(memorySummaries.id, orderedIds),
+      ),
+    );
+
+  const rowMap = new Map(rows.map((row) => [row.id, row]));
+  const ftsMap = new Map(ftsHits.map((hit) => [hit.id, hit]));
+  const hits: MemorySummarySearchHit[] = [];
+
+  for (const id of orderedIds) {
+    if (hits.length >= limit) break;
+    const row = rowMap.get(id);
+    if (!row) continue;
+
+    const ftsHit = ftsMap.get(id);
+    hits.push({
+      summaryId: row.id,
+      scopeKey: row.scopeKey,
+      level: row.level,
+      kind: row.level === 0 ? "daily_digest" : "seal",
+      scope: inferSummaryHitScope(row.scopeKey, row.level),
+      conversationId: conversationIdFromScopeKey(row.scopeKey),
+      userId: customerIdFromScopeKey(row.scopeKey),
+      title: row.title,
+      summary: row.summary,
+      ftsScore: ftsHit?.score ?? null,
+      snippet: ftsHit?.snippet ?? null,
+      sealedAt: row.sealedAt.toISOString(),
+    });
+  }
+
+  return hits;
+}
+
+/** Search memory chunks and summaries via FTS5 (preferred) or SQL LIKE fallback. */
 export async function searchMemoryChunks(
   db: KeenaiDb,
   input: SearchMemoryChunksInput,
@@ -427,81 +516,85 @@ export async function searchMemoryChunks(
   const limit = input.limit ?? 20;
 
   if (q.length === 0) {
-    return { q, scope, hits: [] };
+    return { q, scope, hits: [], summaryHits: [] };
   }
 
+  let chunkResult: { q: string; scope: SearchMemoryChunksResult["scope"]; hits: MemorySearchHit[] };
   if (input.chunkFts && input.chunkVector && input.queryEmbedder) {
-    return searchMemoryChunksWithHybrid(db, {
+    chunkResult = await searchMemoryChunksWithHybrid(db, {
       ...input,
       chunkFts: input.chunkFts,
       chunkVector: input.chunkVector,
       queryEmbedder: input.queryEmbedder,
     });
-  }
+  } else if (input.chunkFts) {
+    chunkResult = await searchMemoryChunksWithFts(db, { ...input, chunkFts: input.chunkFts });
+  } else {
+    const pattern = `%${escapeLikePattern(q)}%`;
+    const filters = [
+      eq(memoryChunks.orgId, input.orgId),
+      eq(memoryChunks.brandId, input.brandId),
+      sql`lower(${memoryChunks.bodyMd}) like lower(${pattern})`,
+    ];
 
-  if (input.chunkFts) {
-    return searchMemoryChunksWithFts(db, { ...input, chunkFts: input.chunkFts });
-  }
-
-  const pattern = `%${escapeLikePattern(q)}%`;
-  const filters = [
-    eq(memoryChunks.orgId, input.orgId),
-    eq(memoryChunks.brandId, input.brandId),
-    sql`lower(${memoryChunks.bodyMd}) like lower(${pattern})`,
-  ];
-
-  if (scope === "conversation") {
-    filters.push(sql`json_extract(${memoryChunks.metadata}, '$.conversationId') is not null`);
-  }
-
-  if (scope === "customer") {
-    const customerBuffers = await db
-      .select({ leafIds: memoryTreeBuffers.leafIds })
-      .from(memoryTreeBuffers)
-      .where(
-        and(
-          eq(memoryTreeBuffers.orgId, input.orgId),
-          eq(memoryTreeBuffers.brandId, input.brandId),
-          sql`${memoryTreeBuffers.scopeKey} like 'customer:%'`,
-        ),
-      );
-
-    const customerChunkIds = [...new Set(customerBuffers.flatMap((row) => row.leafIds))];
-    if (customerChunkIds.length === 0) {
-      return { q, scope, hits: [] };
+    if (scope === "conversation") {
+      filters.push(sql`json_extract(${memoryChunks.metadata}, '$.conversationId') is not null`);
     }
-    filters.push(inArray(memoryChunks.id, customerChunkIds));
-  }
 
-  if (scope === "channel") {
-    const channelBuffers = await db
-      .select({ leafIds: memoryTreeBuffers.leafIds })
-      .from(memoryTreeBuffers)
-      .where(
-        and(
-          eq(memoryTreeBuffers.orgId, input.orgId),
-          eq(memoryTreeBuffers.brandId, input.brandId),
-          sql`${memoryTreeBuffers.scopeKey} like 'channel:%'`,
-        ),
-      );
+    if (scope === "customer") {
+      const customerBuffers = await db
+        .select({ leafIds: memoryTreeBuffers.leafIds })
+        .from(memoryTreeBuffers)
+        .where(
+          and(
+            eq(memoryTreeBuffers.orgId, input.orgId),
+            eq(memoryTreeBuffers.brandId, input.brandId),
+            sql`${memoryTreeBuffers.scopeKey} like 'customer:%'`,
+          ),
+        );
 
-    const channelChunkIds = [...new Set(channelBuffers.flatMap((row) => row.leafIds))];
-    if (channelChunkIds.length === 0) {
-      return { q, scope, hits: [] };
+      const customerChunkIds = [...new Set(customerBuffers.flatMap((row) => row.leafIds))];
+      if (customerChunkIds.length === 0) {
+        return { q, scope, hits: [], summaryHits: await searchMemorySummaries(db, input) };
+      }
+      filters.push(inArray(memoryChunks.id, customerChunkIds));
     }
-    filters.push(inArray(memoryChunks.id, channelChunkIds));
+
+    if (scope === "channel") {
+      const channelBuffers = await db
+        .select({ leafIds: memoryTreeBuffers.leafIds })
+        .from(memoryTreeBuffers)
+        .where(
+          and(
+            eq(memoryTreeBuffers.orgId, input.orgId),
+            eq(memoryTreeBuffers.brandId, input.brandId),
+            sql`${memoryTreeBuffers.scopeKey} like 'channel:%'`,
+          ),
+        );
+
+      const channelChunkIds = [...new Set(channelBuffers.flatMap((row) => row.leafIds))];
+      if (channelChunkIds.length === 0) {
+        return { q, scope, hits: [], summaryHits: await searchMemorySummaries(db, input) };
+      }
+      filters.push(inArray(memoryChunks.id, channelChunkIds));
+    }
+
+    const rows = await db
+      .select()
+      .from(memoryChunks)
+      .where(and(...filters))
+      .orderBy(sql`${memoryChunks.createdAt} desc`)
+      .limit(limit);
+
+    chunkResult = {
+      q,
+      scope,
+      hits: rows.map((row) => rowToSearchHit(row)),
+    };
   }
 
-  const rows = await db
-    .select()
-    .from(memoryChunks)
-    .where(and(...filters))
-    .orderBy(sql`${memoryChunks.createdAt} desc`)
-    .limit(limit);
-
-  const hits: MemorySearchHit[] = rows.map((row) => rowToSearchHit(row));
-
-  return { q, scope, hits };
+  const summaryHits = await searchMemorySummaries(db, input);
+  return { ...chunkResult, summaryHits };
 }
 
 export type MemoryExplorerHotTopic = {

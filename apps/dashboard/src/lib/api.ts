@@ -569,20 +569,35 @@ export type MemorySearchHit = {
   createdAt: string;
 };
 
+export type MemorySummarySearchHit = {
+  summaryId: string;
+  scopeKey: string;
+  level: number;
+  kind: "seal" | "daily_digest";
+  scope: "conversation" | "customer" | "channel" | "daily_digest" | "unknown";
+  conversationId: string | null;
+  userId: string | null;
+  title: string | null;
+  summary: string;
+  ftsScore: number | null;
+  snippet: string | null;
+  sealedAt: string;
+};
+
 export async function searchMemory(input: {
   brandId: string;
   q: string;
   scope?: "all" | "conversation" | "customer" | "channel";
-}): Promise<{ hits: MemorySearchHit[] }> {
+}): Promise<{ hits: MemorySearchHit[]; summaryHits: MemorySummarySearchHit[] }> {
   const qs = new URLSearchParams({
     brandId: input.brandId,
     q: input.q,
     scope: input.scope ?? "all",
   });
-  const res = await apiFetch<{ results: { hits: MemorySearchHit[] } }>(
-    `/api/v1/memory/search?${qs}`,
-  );
-  return { hits: res.results.hits };
+  const res = await apiFetch<{
+    results: { hits: MemorySearchHit[]; summaryHits: MemorySummarySearchHit[] };
+  }>(`/api/v1/memory/search?${qs}`);
+  return { hits: res.results.hits, summaryHits: res.results.summaryHits };
 }
 
 export async function transitionTicketStatus(
