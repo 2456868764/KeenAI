@@ -697,7 +697,7 @@ Tracker T1 (Status: In Progress)
 
 ### 6.2 与其他模块的串联
 
-- **AI Block `let_keeni_answer`** → Mount Mastra Agent（[09](09-AGENT-ENGINE.md)）+ Hybrid Retrieval（[11](11-RAG-KNOWLEDGE.md)）+ Memory（[10](10-AGENT-MEMORY.md)）
+- **AI Block `let_keeni_answer`** → Mount Mastra Agent（[09](09-AGENT-ENGINE.md)）+ Hybrid Retrieval（[11](11-RAG-KNOWLEDGE.md)）+ Memory（[10](10-AGENT-MEMORY.md) · [15](15-MEMORY-TREE.md) scope 检索）
 - **Custom Actions** → 在 `http_request` / `mcp_call` Block 中复用（参见 [09 § 7 Tool System](09-AGENT-ENGINE.md)）
 - **Inbox / Conversation / Ticket** → Block 直接走对应 service 接口（assign / tag / close / convert_to_ticket 等）
 - **SLA Engine** → `apply_sla` Block 调用 [§ 4.4 SLA 引擎](#44-sla-引擎)
@@ -712,7 +712,8 @@ Tracker T1 (Status: In Progress)
 
 > **⭐ 设计深度参考**：本模块的**完整设计**已拆分为独立文档：
 > - 🤖 [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md) — Agent 执行核心（参考 [hermes-agent](https://github.com/NousResearch/hermes-agent) + [Mastra](https://mastra.ai/)）
-> - 🧠 [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md) — 4 层记忆系统（参考 [agentmemory](https://github.com/rohitg00/agentmemory)）
+> - 🧠 [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md) — 4 层记忆系统（参考 [agentmemory](https://github.com/rohitg00/agentmemory)）  
+> - 🌳 [15-MEMORY-TREE.md](15-MEMORY-TREE.md) — 摘要树 seal pipeline（参考 [OpenHuman Memory Trees](https://tinyhumans.gitbook.io/openhuman/features/obsidian-wiki/memory-tree)）
 > - 📚 [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md) — Hybrid RAG 知识库
 >
 > 本节为概览，三件套是 AI Kernel 的「执行 / 记忆 / 知识」三足。

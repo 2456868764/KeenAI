@@ -947,6 +947,66 @@ export const memoryAudit = pgTable('memory_audit', {
 }, (t) => ({ idx: index('idx_mem_audit_scope').on(t.scope, t.scopeId, t.createdAt.desc()) }));
 ```
 
+> **Memory Tree 扩展表**（OpenHuman 式 seal pipeline）：见 [15-MEMORY-TREE.md § 十](15-MEMORY-TREE.md)。与上表 **并存**，L2 `memory_episodes` 可由 `memory_summaries` seal 物化。
+
+```ts
+// packages/storage/src/schema/pg/memory-tree.ts（规划）
+export const memoryChunks = pgTable('memory_chunks', {
+  id:            text('id').primaryKey(),                     // content-addressed sha256
+  orgId:         text('org_id').notNull(),
+  brandId:       text('brand_id').notNull(),
+  sourceRef:     text('source_ref').notNull(),                  // message_id / ticket_comment_id
+  bodyMd:        text('body_md').notNull(),
+  lifecycle:     text('lifecycle').notNull(),                   // pending|admitted|buffered|sealed|dropped
+  fastScore:     decimal('fast_score', { precision: 4, scale: 3 }),
+  deepScore:     decimal('deep_score', { precision: 4, scale: 3 }),
+  embedding:     vector('embedding', { dimensions: 1024 }),
+  metadata:      jsonb('metadata').default({}),
+  createdAt:     timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  idxScope: index('idx_mem_chunk_org_brand').on(t.orgId, t.brandId, t.createdAt.desc()),
+}));
+
+export const memoryTreeBuffers = pgTable('memory_tree_buffers', {
+  id:         text('id').primaryKey().$defaultFn(ulid),
+  orgId:      text('org_id').notNull(),
+  brandId:    text('brand_id').notNull(),
+  scopeKey:   text('scope_key').notNull(),                      // conv:xxx | customer:yyy | brand:zzz:day:...
+  level:      integer('level').notNull().default(0),              // L0 buffer
+  leafIds:    text('leaf_ids').array().notNull().default([]),
+  tokenCount: integer('token_count').default(0),
+  updatedAt:  timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  uq: uniqueIndex('uq_mem_tree_buffer').on(t.orgId, t.brandId, t.scopeKey, t.level),
+}));
+
+export const memorySummaries = pgTable('memory_summaries', {
+  id:          text('id').primaryKey().$defaultFn(ulid),
+  orgId:       text('org_id').notNull(),
+  brandId:     text('brand_id').notNull(),
+  scopeKey:    text('scope_key').notNull(),
+  level:       integer('level').notNull(),                      // L1, L2, ...
+  parentId:    text('parent_id'),
+  title:       text('title'),
+  summary:     text('summary').notNull(),
+  provenance:  jsonb('provenance').notNull(),                   // { chunkIds[], messageIds[] }
+  sealedAt:    timestamp('sealed_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  idx: index('idx_mem_summary_scope').on(t.orgId, t.brandId, t.scopeKey, t.level),
+}));
+
+export const memoryHotness = pgTable('memory_hotness', {
+  orgId:      text('org_id').notNull(),
+  brandId:    text('brand_id').notNull(),
+  entityType: text('entity_type').notNull(),                    // customer | kg_entity
+  entityId:   text('entity_id').notNull(),
+  score:      decimal('score', { precision: 8, scale: 3 }).notNull(),
+  updatedAt:  timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.orgId, t.brandId, t.entityType, t.entityId] }),
+}));
+```
+
 ### 4.10 Feedback Portal
 
 ```ts

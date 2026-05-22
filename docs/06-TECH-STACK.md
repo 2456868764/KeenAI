@@ -40,6 +40,7 @@
 │ MCP：@modelcontextprotocol/sdk（Host + Server 双向）           │
 │ 工作流 / 队列：Inngest（事件驱动）+ BullMQ（重 Redis 队列）     │
 │ 多模态消息：MessagePart + attachments · [14-MULTIMODAL.md](14-MULTIMODAL.md) │
+│ Memory Tree：seal pipeline · [15-MEMORY-TREE.md](15-MEMORY-TREE.md) │
 │ 验证：Zod（跨前后端共享 schema）                                │
 │ 日志：pino                                                   │
 │ 配置：c12（unjs 生态）                                        │

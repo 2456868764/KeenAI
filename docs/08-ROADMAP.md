@@ -305,6 +305,11 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Auto-close + CSAT（Inngest 计时器）
 - [ ] Resolution 检测（`generateObject` · confirmed / assumed / unresolved）
 - [ ] Memory consolidation Inngest cron（hourly / daily）
+- [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
+  - [ ] `memory_chunks` + canonicalize + fast-score + admitted/dropped
+  - [ ] source tree seal → 物化 `memory_episodes`
+  - [ ] `memory.digest_daily` brand 日摘要
+  - [ ] 检索 scope：`conversation` / `customer` / `brand_daily`
 - [ ] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
 - [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
 - [ ] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：
@@ -324,6 +329,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Reranker：`@xenova/transformers` bge-reranker-v2-m3
 - [ ] Diversity / Recency 后置
 - [ ] `kb_query_logs` + 用户反馈循环
+- [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–10）：topic tree + hotness · Memory Explorer UI · agentmemory backend 可选
 
 #### Sprint 16（W35-W36）：Custom Actions + MCP
 - [ ] Action 4 步配置 UI（基本信息 / 参数 / 端点 / 数据权限）

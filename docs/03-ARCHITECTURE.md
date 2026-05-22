@@ -648,6 +648,19 @@ Outbound（Agent / 客服 / Workflow → 客户）
     → insertMessage + attachments · WS push
 ```
 
+### 3.2.2 Memory Tree ingest（OpenHuman 式）
+
+> 完整设计见 [15-MEMORY-TREE.md](15-MEMORY-TREE.md)。与四层 Memory（[10-AGENT-MEMORY.md](10-AGENT-MEMORY.md)）并行，增强 L2 seal 与多 scope 检索。
+
+```
+conversation/message.created（及 ticket/email 等 adapter）
+  → canonicalize → memory_chunks（content-addressed id）
+  → fast-score → admitted | dropped
+  → append_buffer（source: conv:* · topic: customer:* · global: brand:day:*）
+  → seal → memory_summaries → 物化 memory_episodes
+  → Agent 检索：drill_down / topic / brand_daily + 现有 RRF
+```
+
 ### 3.3 AI Custom Action 调用
 
 ```

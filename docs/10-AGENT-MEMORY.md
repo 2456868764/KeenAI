@@ -1,6 +1,7 @@
 # KeenAI Agent Memory 设计（Keeni Memory · TypeScript）
 
 > **设计参考**：[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) — 4 层记忆巩固、Hook Pipeline、三流检索（BM25 + Vector + Graph）、Memory Slots、人脑式衰减与遗忘  
+> **摘要树增强**：[15-MEMORY-TREE.md](15-MEMORY-TREE.md) — OpenHuman 式 source/topic/global seal pipeline（在四层之上，不替代 Mastra）  
 > **本地对照源码**：克隆到仓库根目录 `agentmemory/`（见 [00-REFERENCE-REPOS.md](00-REFERENCE-REPOS.md)）  
 > **落地框架**：[Mastra Memory](https://mastra.ai/docs/memory) — TypeScript 一等公民、原生 workingMemory / semanticRecall / processors 配置 + LibSQL/Postgres 双后端
 
@@ -1306,3 +1307,20 @@ export const cacheConfig = {
 - [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md)
 - [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)
 - [12-STORAGE-ABSTRACTION.md](12-STORAGE-ABSTRACTION.md)
+- [14-MULTIMODAL.md](14-MULTIMODAL.md) — canonicalize 输入（plainText / STT / vision）
+- [15-MEMORY-TREE.md](15-MEMORY-TREE.md) — L2 seal · 三 scope 检索 · daily digest
+
+---
+
+## 十九、Memory Tree 关系（摘要）
+
+> 完整设计：[15-MEMORY-TREE.md](15-MEMORY-TREE.md)
+
+| 维度 | 四层 Memory（本文） | Memory Tree（15 号） |
+|------|---------------------|----------------------|
+| 抽象 | Working → Episodic → Semantic → Procedural | L0 buffer → seal → L1/L2 摘要树 |
+| L2 产出 | 会话结束 LLM 摘要 | **source tree seal** 物化 episode |
+| 检索 | BM25 + Vector + Graph RRF | + scope：`conversation` / `customer` / `brand_daily` |
+| 与 KB | Memory = 个体 | Tree ingest **不含** Help Center 文档 |
+
+Hook `conversation/message.created` 在写入 L1 后 **fan-out** `memory/canonicalize`（Inngest），不阻塞热路径。

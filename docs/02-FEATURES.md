@@ -280,6 +280,20 @@
 | **Token 用量监控** | 🔄 | ✅ |
 | **Action Marketplace** | ❌ | 🔮（差异化） |
 
+#### Keeni Memory（持久化记忆 · 对标 AgentMemory + OpenHuman）
+
+> **四层模型**：[10-AGENT-MEMORY.md](10-AGENT-MEMORY.md) · **摘要树**：[15-MEMORY-TREE.md](15-MEMORY-TREE.md)
+
+| 能力 | Featurebase | KeenAI 状态 | 说明 |
+|------|:-----------:|:-----------:|------|
+| 跨会话客户记忆 | ✅ | 🔄 | Mastra Memory + facts/slots |
+| 混合检索 BM25+向量+图 | — | 🔄 | 10 号文档 RRF |
+| Source 对话摘要树 | — | 🔮 | MT-03 per conversation seal |
+| Topic 客户摘要树（hotness） | — | 🔮 | MT-07 |
+| Brand 日 digest | — | 🔮 | MT-04 |
+| Memory Explorer UI | — | 🔮 | MT-08 |
+| 记忆 provenance 跳消息 | — | 🔮 | chunk → messageId |
+
 #### Copilot（面向客服）
 
 | 功能 | Featurebase | KeenAI |

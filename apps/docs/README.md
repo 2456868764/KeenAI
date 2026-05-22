@@ -4,6 +4,7 @@ KeenAI documentation site skeleton (Next.js). Fumadocs MDX integration is planne
 
 Design docs live in the repo root `docs/` folder. Key references:
 
+- [15-MEMORY-TREE.md](../../docs/15-MEMORY-TREE.md) — summary trees (OpenHuman-style seal pipeline)
 - [14-MULTIMODAL.md](../../docs/14-MULTIMODAL.md) — multimodal messaging (inbound/outbound)
 - [08-ROADMAP.md](../../docs/08-ROADMAP.md) — execution roadmap
 

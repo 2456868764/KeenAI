@@ -1377,6 +1377,7 @@ packages/mcp/
 - [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)
 - [12-STORAGE-ABSTRACTION.md](12-STORAGE-ABSTRACTION.md)
 - [14-MULTIMODAL.md](14-MULTIMODAL.md) — Agent/Copilot 多模态输入（vision/STT）与出站（生图/TTS/`parseAgentResponse`）
+- [15-MEMORY-TREE.md](15-MEMORY-TREE.md) — Memory Tree scope 检索 · Context Assembler
 
 ---
 
@@ -1406,3 +1407,26 @@ packages/mcp/
 
 - Phase 2：`POST /copilot/draft` 读取 thread attachments，vision 模型 native 输入
 - SSE 扩展：`attachment.ready`（14 号文档 §7.4）
+
+---
+
+## 附录 B · Memory Tree 检索 scope
+
+> 完整方案见 [15-MEMORY-TREE.md](15-MEMORY-TREE.md)。Context Assembler 在组装 Agent prompt 时按意图选 scope。
+
+```ts
+type MemoryTreeQuery =
+  | { scope: "conversation"; conversationId: string }
+  | { scope: "customer"; userId: string }
+  | { scope: "brand_daily"; date: string }
+  | { scope: "hybrid" };
+```
+
+| Agent 意图 / Tool | 检索 |
+|-------------------|------|
+| 当前 thread 上下文 | `lastMessages` + source tree L0/L1 |
+| 「这个客户之前…」 | topic tree + L3 facts/slots |
+| 「今天 support 概况」 | `brand_daily` global seal |
+| 产品功能说明 | **KB only**（不走 Memory Tree） |
+
+Hook：`conversation/message.created` → L1 observation + async `memory/canonicalize`（不阻塞回复）。

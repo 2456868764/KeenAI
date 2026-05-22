@@ -114,6 +114,7 @@ cd ../agentmemory && git pull
 | [05-FRONTEND.md](05-FRONTEND.md)、根目录 `DESIGN.md` | Dashboard / Widget / Portal 视觉与布局（对标 Featurebase 截图） |
 | [13-WORKFLOW.md](13-WORKFLOW.md) | 无代码自动化编排（Inngest）；AI Block 调用 09 的 Agent |
 | [14-MULTIMODAL.md](14-MULTIMODAL.md) | 多模态消息 Inbound/Outbound；Channel 归一化对照 Hermes Gateway |
+| [15-MEMORY-TREE.md](15-MEMORY-TREE.md) | 摘要树 seal pipeline；对照 [OpenHuman Memory Trees](https://tinyhumans.gitbook.io/openhuman/features/obsidian-wiki/memory-tree) |
 | [12-STORAGE-ABSTRACTION.md](12-STORAGE-ABSTRACTION.md) | `Store` / `VectorStore` / `FTSStore` 接口（KeenAI 存储不复制 AgentMemory 的 iii 引擎） |
 
 ---

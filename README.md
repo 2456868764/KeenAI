@@ -121,6 +121,7 @@ Entry points, responsibilities, and boundaries with the Featurebase-style fronte
 | [12-STORAGE-ABSTRACTION.md](docs/12-STORAGE-ABSTRACTION.md) | **Storage abstraction**: `Store` / `VectorStore` / `FTSStore` + Drizzle dual-dialect (PG `pgvector` ⟷ SQLite `sqlite-vec`), migrations, contract tests |
 | [13-WORKFLOW.md](docs/13-WORKFLOW.md) | **Workflow engine**: Featurebase-style workflows (13 triggers / 21 actions) + Inngest execution, React Flow builder, versioning, shadow runs, eval harness |
 | [14-MULTIMODAL.md](docs/14-MULTIMODAL.md) | **Multimodal messaging**: text / image / audio / video / file — canonical `MessagePart` model, inbound adapters, media pipeline, Agent vision/STT, outbound rendering |
+| [15-MEMORY-TREE.md](docs/15-MEMORY-TREE.md) | **Memory Tree**: OpenHuman-style summary trees (source / topic / global), bucket-seal pipeline, hotness, on top of Keeni 4-layer memory |
 
 ---
 
