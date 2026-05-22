@@ -1,9 +1,11 @@
 "use client";
 
 import type { Conversation } from "@/lib/api";
-import { updateConversation } from "@/lib/api";
+import { createTicketFromConversation, updateConversation } from "@/lib/api";
 import { Button, Input } from "@keenai/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 function snoozeIso(hours: number): string {
@@ -35,8 +37,36 @@ export function ConversationActions({
     },
   });
 
+  const createTicket = useMutation({
+    mutationFn: () => createTicketFromConversation(conversationId),
+    onSuccess: ({ ticket }) => {
+      void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      setLinkedTicketId(ticket.id);
+    },
+  });
+
+  const [linkedTicketId, setLinkedTicketId] = useState<string | null>(null);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {linkedTicketId ? (
+        <Link
+          href="/tickets"
+          className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-400"
+        >
+          Ticket created
+        </Link>
+      ) : (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={createTicket.isPending}
+          onClick={() => createTicket.mutate()}
+        >
+          {createTicket.isPending ? <Loader2 className="size-4 animate-spin" /> : "Create ticket"}
+        </Button>
+      )}
       <Button
         type="button"
         variant="secondary"

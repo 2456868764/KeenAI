@@ -366,3 +366,75 @@ export async function updateWorkflow(
 export async function publishWorkflow(id: string): Promise<{ workflow: Workflow }> {
   return apiFetch(`/api/v1/workflows/${id}/publish`, { method: "POST" });
 }
+
+export type Ticket = {
+  id: string;
+  orgId: string;
+  typeId: string;
+  typeName: string | null;
+  title: string;
+  description: unknown;
+  statusId: string | null;
+  statusName: string | null;
+  priority: string | null;
+  assigneeId: string | null;
+  reporterId: string | null;
+  customerId: string | null;
+  customFields: Record<string, unknown>;
+  dueDate: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  conversationIds: string[];
+};
+
+export async function listTickets(params?: {
+  statusId?: string;
+  assigneeId?: string;
+}): Promise<{ items: Ticket[]; nextCursor: string | null }> {
+  const q = new URLSearchParams();
+  if (params?.statusId) q.set("statusId", params.statusId);
+  if (params?.assigneeId) q.set("assigneeId", params.assigneeId);
+  const qs = q.toString();
+  return apiFetch(`/api/v1/tickets${qs ? `?${qs}` : ""}`);
+}
+
+export async function getTicket(id: string): Promise<{ ticket: Ticket }> {
+  return apiFetch(`/api/v1/tickets/${id}`);
+}
+
+export async function createTicket(input: {
+  title: string;
+  priority?: string;
+  conversationId?: string;
+}): Promise<{ ticket: Ticket }> {
+  return apiFetch("/api/v1/tickets", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateTicket(
+  id: string,
+  patch: {
+    title?: string;
+    statusId?: string | null;
+    priority?: string;
+    assigneeId?: string | null;
+  },
+): Promise<{ ticket: Ticket }> {
+  return apiFetch(`/api/v1/tickets/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function createTicketFromConversation(
+  conversationId: string,
+  title?: string,
+): Promise<{ ticket: Ticket }> {
+  return apiFetch(`/api/v1/conversations/${conversationId}/ticket`, {
+    method: "POST",
+    body: JSON.stringify(title ? { title } : {}),
+  });
+}

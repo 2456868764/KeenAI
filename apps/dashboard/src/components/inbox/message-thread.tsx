@@ -145,7 +145,11 @@ export function MessageThread({
             {conversation?.unreadCount ? ` · ${conversation.unreadCount} unread` : ""}
           </p>
         </div>
-        <ConversationActions conversationId={conversationId} conversation={conversation} />
+        <ConversationActions
+          key={conversationId}
+          conversationId={conversationId}
+          conversation={conversation}
+        />
       </header>
 
       <VirtualMessageList messages={messages} isLoading={isLoading} />
