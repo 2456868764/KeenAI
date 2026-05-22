@@ -6,7 +6,7 @@ const databaseUrl =
   "postgresql://keenai:keenai@localhost:5432/keenai";
 
 export default defineConfig({
-  schema: "./src/schema/postgres/*.ts",
+  schema: ["./src/schema/postgres/meta.ts", "./src/schema/postgres/core.ts"],
   out: "./migrations/postgres",
   dialect: "postgresql",
   casing: "snake_case",

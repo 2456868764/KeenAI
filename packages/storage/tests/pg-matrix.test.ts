@@ -1,3 +1,4 @@
+import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { createPostgresStore } from "../src/postgres/store.js";
 
@@ -22,5 +23,20 @@ describe("postgres storage matrix", () => {
     expect(store.dialect).toBe("postgres");
     await store.ping();
     await store.close();
+  });
+
+  it("has core tables after schema push", async () => {
+    const dsn = process.env.PG_DSN;
+    if (!dsn) {
+      expect(true).toBe(true);
+      return;
+    }
+
+    const sql = postgres(dsn);
+    const [row] = await sql<{ regclass: string | null }[]>`
+      SELECT to_regclass('public.organizations') as regclass
+    `;
+    expect(row?.regclass).toBe("organizations");
+    await sql.end();
   });
 });

@@ -66,6 +66,11 @@ jobs:
         continue-on-error: true
       - run: pnpm install
 
+      - name: Push Postgres schema
+        env:
+          PG_DSN: postgresql://keenai:keenai@localhost:5432/keenai
+        run: pnpm --filter @keenai/storage db:push:pg
+
       - name: Postgres matrix smoke
         env:
           PG_DSN: postgresql://keenai:keenai@localhost:5432/keenai
