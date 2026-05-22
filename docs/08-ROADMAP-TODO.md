@@ -12,7 +12,7 @@
 | I14-01 | Portal magic link JWT auth + middleware | [x] |
 | I14-02 | Postgres core schema（organizations / brands） | [x] |
 | I14-03 | Portal app login flow + IMAP 生产文档 | [x] |
-| I14-04 | 测试 · roadmap · commits | [~] |
+| I14-04 | 测试 · roadmap · commits | [x] |
 
 **下一迭代**：Postgres 全表迁移 · Portal ticket 详情 · Help Center 骨架
 
