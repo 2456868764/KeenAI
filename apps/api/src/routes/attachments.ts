@@ -30,7 +30,29 @@ export function attachmentRoutes(ctx: AppContext) {
     return c.json({
       attachment: serializeAttachment(row, {
         contentUrl: `${prefix}/${row.id}/content`,
+        thumbnailUrl: row.thumbnailKey ? `${prefix}/${row.id}/thumbnail` : undefined,
       }),
+    });
+  });
+
+  r.get(`${prefix}/:id/thumbnail`, async (c) => {
+    const denied = await assertAttachmentAccess(c);
+    if (denied) return denied;
+
+    const orgId = resolveOrgId(c);
+    if (!orgId) return c.json({ error: "unauthorized" }, 401);
+
+    const row = await getAttachmentById(c.get("store").db, c.req.param("id"), orgId);
+    if (!row?.thumbnailKey) return c.json({ error: "not_found" }, 404);
+
+    const buf = await readUploadFile(ctx.env, row.thumbnailKey);
+    if (!buf) return c.json({ error: "not_found" }, 404);
+
+    return new Response(buf as unknown as BodyInit, {
+      headers: {
+        "Content-Type": guessContentType(row.thumbnailKey),
+        "Cache-Control": "private, max-age=3600",
+      },
     });
   });
 

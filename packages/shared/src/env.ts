@@ -32,6 +32,8 @@ export const apiEnvSchema = z.object({
   OPENAI_WHISPER_MODEL: z.string().default("whisper-1"),
   /** STT provider: stub | openai (auto: openai when OPENAI_API_KEY set, else stub) */
   STT_PROVIDER: z.enum(["stub", "openai"]).optional(),
+  /** Video/image thumbnail provider: stub | ffmpeg */
+  THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */
   LLM_PROVIDER: z
     .enum(["stub", "openai", "anthropic", "deepseek", "kimi", "gemini", "ollama"])

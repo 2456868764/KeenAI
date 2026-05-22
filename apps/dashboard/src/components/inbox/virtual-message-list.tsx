@@ -145,6 +145,69 @@ function MessageAudio({ attachment }: { attachment: NonNullable<Message["attachm
   );
 }
 
+function MessageVideo({ attachment }: { attachment: NonNullable<Message["attachments"]>[number] }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [poster, setPoster] = useState<string | null>(null);
+
+  useEffect(() => {
+    let videoUrl: string | null = null;
+    let posterUrl: string | null = null;
+    let cancelled = false;
+
+    void fetchAttachmentBlob(attachment.id, "content")
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        videoUrl = url;
+        setSrc(url);
+      })
+      .catch(() => setSrc(null));
+
+    if (attachment.thumbnailUrl) {
+      void fetchAttachmentBlob(attachment.id, "thumbnail")
+        .then((url) => {
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          posterUrl = url;
+          setPoster(url);
+        })
+        .catch(() => setPoster(null));
+    }
+
+    return () => {
+      cancelled = true;
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      if (posterUrl) URL.revokeObjectURL(posterUrl);
+    };
+  }, [attachment.id, attachment.thumbnailUrl]);
+
+  return (
+    <div className="mt-2">
+      {src ? (
+        <>
+          {/* biome-ignore lint/a11y/useMediaCaption: user-uploaded video without captions */}
+          <video
+            controls
+            preload="metadata"
+            src={src}
+            poster={poster ?? undefined}
+            className="max-h-64 max-w-full rounded-md"
+            aria-label={attachment.fileName ?? "Video attachment"}
+          />
+        </>
+      ) : (
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          {attachment.fileName ?? "Video"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
@@ -152,9 +215,12 @@ function MessageBubble({ message }: { message: Message }) {
     message.attachments?.filter((a) => a.contentType?.startsWith("image/")) ?? [];
   const audioAttachments =
     message.attachments?.filter((a) => a.contentType?.startsWith("audio/")) ?? [];
+  const videoAttachments =
+    message.attachments?.filter((a) => a.contentType?.startsWith("video/")) ?? [];
   const showPlainText = Boolean(
     message.plainText?.trim() &&
       audioAttachments.length === 0 &&
+      videoAttachments.length === 0 &&
       !message.plainText.startsWith("[Image:"),
   );
 
@@ -173,7 +239,7 @@ function MessageBubble({ message }: { message: Message }) {
       >
         {showPlainText ? (
           <p className="whitespace-pre-wrap">{message.plainText}</p>
-        ) : message.plainText && audioAttachments.length === 0 ? (
+        ) : message.plainText && audioAttachments.length === 0 && videoAttachments.length === 0 ? (
           <p className="whitespace-pre-wrap text-[hsl(var(--muted-foreground))]">
             {message.plainText}
           </p>
@@ -183,6 +249,9 @@ function MessageBubble({ message }: { message: Message }) {
         ))}
         {audioAttachments.map((att) => (
           <MessageAudio key={att.id} attachment={att} />
+        ))}
+        {videoAttachments.map((att) => (
+          <MessageVideo key={att.id} attachment={att} />
         ))}
         <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
           {message.isInternal ? "internal note" : message.senderType}

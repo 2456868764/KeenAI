@@ -53,6 +53,7 @@ export const serializedAttachmentSchema = z.object({
   contentType: z.string().nullable(),
   sizeBytes: z.number().nullable(),
   url: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
   metadata: attachmentMetadataSchema.optional(),
 });
 

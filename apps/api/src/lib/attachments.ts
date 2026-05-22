@@ -9,7 +9,7 @@ type AttachmentRow = typeof attachments.$inferSelect;
 
 export function serializeAttachment(
   row: AttachmentRow,
-  opts?: { contentUrl?: string },
+  opts?: { contentUrl?: string; thumbnailUrl?: string },
 ): SerializedAttachment {
   const metadataParsed = attachmentMetadataSchema.safeParse(row.metadata ?? {});
   const metadata = metadataParsed.success ? metadataParsed.data : undefined;
@@ -21,12 +21,19 @@ export function serializeAttachment(
     contentType: row.contentType,
     sizeBytes: row.sizeBytes,
     url: opts?.contentUrl,
+    thumbnailUrl: row.thumbnailKey
+      ? (opts?.thumbnailUrl ?? attachmentThumbnailPath(row.id))
+      : undefined,
     metadata: hasMeta ? metadata : undefined,
   };
 }
 
 export function attachmentContentPath(id: string): string {
   return `/api/v1/attachments/${id}/content`;
+}
+
+export function attachmentThumbnailPath(id: string): string {
+  return `/api/v1/attachments/${id}/thumbnail`;
 }
 
 export async function insertAttachment(
@@ -201,7 +208,10 @@ export function enrichSerializedMessages<
       parts,
       messageKind,
       attachments: atts.map((a) =>
-        serializeAttachment(a, { contentUrl: attachmentContentPath(a.id) }),
+        serializeAttachment(a, {
+          contentUrl: attachmentContentPath(a.id),
+          thumbnailUrl: a.thumbnailKey ? attachmentThumbnailPath(a.id) : undefined,
+        }),
       ),
     };
   });

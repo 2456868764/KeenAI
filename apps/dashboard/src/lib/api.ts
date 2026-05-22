@@ -37,6 +37,7 @@ export type MessageAttachment = {
   contentType: string | null;
   sizeBytes: number | null;
   url?: string;
+  thumbnailUrl?: string;
   metadata?: { transcript?: string; transcribedAt?: string };
 };
 
@@ -68,9 +69,20 @@ export function attachmentContentUrl(attachmentId: string): string {
   return `${API_URL}/api/v1/attachments/${attachmentId}/content`;
 }
 
-export async function fetchAttachmentBlob(attachmentId: string): Promise<string> {
+export function attachmentThumbnailUrl(attachmentId: string): string {
+  return `${API_URL}/api/v1/attachments/${attachmentId}/thumbnail`;
+}
+
+export async function fetchAttachmentBlob(
+  attachmentId: string,
+  variant: "content" | "thumbnail" = "content",
+): Promise<string> {
   const token = getAccessToken();
-  const res = await fetch(attachmentContentUrl(attachmentId), {
+  const url =
+    variant === "thumbnail"
+      ? attachmentThumbnailUrl(attachmentId)
+      : attachmentContentUrl(attachmentId);
+  const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error(`attachment_fetch_failed:${res.status}`);

@@ -14,12 +14,18 @@ import {
 import { publishConversation } from "../conversation-bus.js";
 import { serializeMessagesWithAttachments } from "../conversations.js";
 import { readUploadFile } from "../uploads.js";
+import { generateVideoThumbnail } from "./thumbnail.js";
 import { transcribeAudio } from "./transcribe.js";
 
 export type ProcessMessageMediaInput = {
   orgId: string;
   conversationId: string;
   messageId: string;
+};
+
+export type ProcessMessageMediaResult = {
+  transcribed: number;
+  thumbnailed: number;
 };
 
 function parseAttachmentMetadata(raw: unknown): AttachmentMetadata {
@@ -30,51 +36,83 @@ function parseAttachmentMetadata(raw: unknown): AttachmentMetadata {
 export async function processMessageMedia(
   ctx: AppContext,
   input: ProcessMessageMediaInput,
-): Promise<{ transcribed: number }> {
+): Promise<ProcessMessageMediaResult> {
   const db = ctx.store.db;
   const attachmentMap = await loadAttachmentsForMessages(db, [input.messageId]);
   const rows = attachmentMap.get(input.messageId) ?? [];
   let transcribed = 0;
+  let thumbnailed = 0;
+  let needsPlainTextRefresh = false;
 
   for (const row of rows) {
     const mime = row.contentType?.toLowerCase() ?? "";
-    if (!mime.startsWith("audio/")) continue;
-
     const metadata = parseAttachmentMetadata(row.metadata);
-    if (metadata.transcript?.trim()) continue;
 
-    const data = await readUploadFile(ctx.env, row.storageKey);
-    if (!data) continue;
+    if (mime.startsWith("audio/") && !metadata.transcript?.trim()) {
+      const data = await readUploadFile(ctx.env, row.storageKey);
+      if (!data) continue;
 
-    const { transcript } = await transcribeAudio(ctx.env, {
-      data,
-      contentType: row.contentType ?? "audio/webm",
-      fileName: row.fileName,
-    });
+      const { transcript } = await transcribeAudio(ctx.env, {
+        data,
+        contentType: row.contentType ?? "audio/webm",
+        fileName: row.fileName,
+      });
 
-    await db
-      .update(attachments)
-      .set({
-        metadata: {
-          ...metadata,
-          transcript,
-          transcribedAt: new Date().toISOString(),
-        },
-      })
-      .where(eq(attachments.id, row.id));
+      await db
+        .update(attachments)
+        .set({
+          metadata: {
+            ...metadata,
+            transcript,
+            transcribedAt: new Date().toISOString(),
+          },
+        })
+        .where(eq(attachments.id, row.id));
 
-    transcribed++;
+      transcribed++;
+      needsPlainTextRefresh = true;
+    }
+
+    if (mime.startsWith("video/") && !row.thumbnailKey) {
+      const data = await readUploadFile(ctx.env, row.storageKey);
+      if (!data) continue;
+
+      const thumb = await generateVideoThumbnail(ctx.env, {
+        data,
+        contentType: row.contentType ?? "video/mp4",
+        fileName: row.fileName,
+      });
+
+      await db
+        .update(attachments)
+        .set({
+          thumbnailKey: thumb.thumbnailKey,
+          metadata: {
+            ...metadata,
+            ...(thumb.width ? { width: thumb.width } : {}),
+            ...(thumb.height ? { height: thumb.height } : {}),
+          },
+        })
+        .where(eq(attachments.id, row.id));
+
+      thumbnailed++;
+    }
   }
 
-  if (transcribed === 0) return { transcribed: 0 };
+  if (transcribed === 0 && thumbnailed === 0) {
+    return { transcribed, thumbnailed };
+  }
 
-  await refreshMessagePlainText(db, input.messageId);
+  if (needsPlainTextRefresh) {
+    await refreshMessagePlainText(db, input.messageId);
+  }
+
   const [message] = await db
     .select()
     .from(messages)
     .where(eq(messages.id, input.messageId))
     .limit(1);
-  if (!message) return { transcribed };
+  if (!message) return { transcribed, thumbnailed };
 
   const [serialized] = await serializeMessagesWithAttachments(db, [message]);
   publishConversation({
@@ -83,7 +121,7 @@ export async function processMessageMedia(
     message: serialized,
   });
 
-  return { transcribed };
+  return { transcribed, thumbnailed };
 }
 
 async function refreshMessagePlainText(
