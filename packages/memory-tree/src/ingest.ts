@@ -3,6 +3,7 @@ import { attachments } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { applyFastScoreToChunk } from "./apply-fast-score.js";
 import { canonicalizeConversationMessage, conversationMessageSourceRef } from "./canonicalize.js";
+import { type MemoryChunkFtsIndexer, indexMemoryChunkInFts } from "./chunk-fts-index.js";
 import { persistMemoryChunk } from "./persist.js";
 import type { MemoryChunkSource, PersistMemoryChunkResult } from "./types.js";
 
@@ -17,6 +18,7 @@ export type IngestConversationMessageInput = {
   isInternal: boolean;
   channelType?: string;
   channelId?: string;
+  ftsIndexer?: MemoryChunkFtsIndexer | null;
 };
 
 /** Canonicalize a conversation message and persist a content-addressed memory chunk. */
@@ -62,6 +64,12 @@ export async function ingestConversationMessage(
       ...(input.channelType ? { channelType: input.channelType } : {}),
       ...(input.channelId ? { channelId: input.channelId } : {}),
     },
+  });
+
+  await indexMemoryChunkInFts(input.ftsIndexer, result, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    bodyMd: doc.bodyMd,
   });
 
   if (!result.created) return result;

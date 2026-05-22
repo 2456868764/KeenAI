@@ -99,6 +99,13 @@
       "when": 1779447601090,
       "tag": "0013_freezing_dorian_gray",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1779452800000,
+      "tag": "0014_fts_memory_chunks",
+      "breakpoints": true
     }
   ]
 }

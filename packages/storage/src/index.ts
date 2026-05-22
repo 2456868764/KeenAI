@@ -13,6 +13,10 @@ export {
   createLibsqlFtsStore,
   ensureFtsSchema,
 } from "./libsql/fts-store.js";
+export {
+  createLibsqlMemoryChunkFtsStore,
+  ensureMemoryChunkFtsSchema,
+} from "./libsql/memory-chunk-fts.js";
 export { createLibsqlStore, type LibsqlStore, type LibsqlStoreOptions } from "./libsql/store.js";
 export {
   createPostgresStore,

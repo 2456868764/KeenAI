@@ -1,6 +1,5 @@
 import type { Client } from "@libsql/client";
 import type { FTSStore, FtsHit, FtsQuery } from "../core/fts-store.js";
-import { ensureMemoryChunkFtsSchema } from "./memory-chunk-fts.js";
 
 function escapeFtsQuery(q: string): string {
   const cleaned = q
@@ -12,17 +11,18 @@ function escapeFtsQuery(q: string): string {
   return cleaned.map((t) => `"${t.replace(/"/g, "")}"`).join(" ");
 }
 
-export function createLibsqlFtsStore(client: Client): FTSStore {
+/** FTS5 index for Memory Tree chunk bodies (Keeni Memory KM-02). */
+export function createLibsqlMemoryChunkFtsStore(client: Client): FTSStore {
   return {
     async index(doc) {
       await client.execute({
-        sql: "DELETE FROM fts_conversations WHERE conversation_id = ?",
+        sql: "DELETE FROM fts_memory_chunks WHERE chunk_id = ?",
         args: [doc.id],
       });
       await client.execute({
-        sql: `INSERT INTO fts_conversations (conversation_id, org_id, brand_id, subject, body)
-              VALUES (?, ?, ?, ?, ?)`,
-        args: [doc.id, doc.orgId, doc.brandId ?? "", doc.body.split("\n")[0] ?? "", doc.body],
+        sql: `INSERT INTO fts_memory_chunks (chunk_id, org_id, brand_id, body)
+              VALUES (?, ?, ?, ?)`,
+        args: [doc.id, doc.orgId, doc.brandId ?? "", doc.body],
       });
     },
 
@@ -37,18 +37,18 @@ export function createLibsqlFtsStore(client: Client): FTSStore {
       args.push(limit);
 
       const result = await client.execute({
-        sql: `SELECT conversation_id,
-                     snippet(fts_conversations, 4, '…', '…', '…', 64) AS snippet,
-                     bm25(fts_conversations) AS score
-              FROM fts_conversations
-              WHERE fts_conversations MATCH ? AND org_id = ?${brandFilter}
+        sql: `SELECT chunk_id,
+                     snippet(fts_memory_chunks, 3, '…', '…', '…', 64) AS snippet,
+                     bm25(fts_memory_chunks) AS score
+              FROM fts_memory_chunks
+              WHERE fts_memory_chunks MATCH ? AND org_id = ?${brandFilter}
               ORDER BY score
               LIMIT ?`,
         args,
       });
 
       return result.rows.map((row) => ({
-        id: String(row.conversation_id),
+        id: String(row.chunk_id),
         score: Number(row.score ?? 0),
         snippet: row.snippet != null ? String(row.snippet) : undefined,
       })) satisfies FtsHit[];
@@ -57,7 +57,7 @@ export function createLibsqlFtsStore(client: Client): FTSStore {
     async deleteByIds(ids) {
       for (const id of ids) {
         await client.execute({
-          sql: "DELETE FROM fts_conversations WHERE conversation_id = ?",
+          sql: "DELETE FROM fts_memory_chunks WHERE chunk_id = ?",
           args: [id],
         });
       }
@@ -65,17 +65,15 @@ export function createLibsqlFtsStore(client: Client): FTSStore {
   };
 }
 
-/** Idempotent FTS5 virtual table for conversation search. */
-export async function ensureFtsSchema(client: Client): Promise<void> {
+/** Idempotent FTS5 virtual table for memory chunk search. */
+export async function ensureMemoryChunkFtsSchema(client: Client): Promise<void> {
   await client.execute(`
-    CREATE VIRTUAL TABLE IF NOT EXISTS fts_conversations USING fts5(
-      conversation_id UNINDEXED,
+    CREATE VIRTUAL TABLE IF NOT EXISTS fts_memory_chunks USING fts5(
+      chunk_id UNINDEXED,
       org_id UNINDEXED,
       brand_id UNINDEXED,
-      subject,
       body,
       tokenize = 'porter unicode61'
     )
   `);
-  await ensureMemoryChunkFtsSchema(client);
 }

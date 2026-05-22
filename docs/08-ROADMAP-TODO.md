@@ -5,15 +5,25 @@
 
 ---
 
-## 当前迭代 · Iteration 34（Keeni Memory KM-02 · FTS memory chunks）
+## 当前迭代 · Iteration 35（Keeni Memory KM-03 · FTS memory search）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I34-01 | `fts_memory_chunks` 虚拟表 + migration | [ ] |
-| I34-02 | ingest 时 FTS index + ensure schema | [ ] |
-| I34-03 | tests · roadmap · commit · push | [ ] |
+| I35-01 | `searchMemoryChunks` 改 FTS（替换 SQL LIKE） | [ ] |
+| I35-02 | Explorer/API 返回 FTS score + snippet | [ ] |
+| I35-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-03 · `searchMemoryChunks` 改 FTS
+**下一迭代**：KM-04 · chunk vectors + embed
+
+---
+
+## Iteration 34（Keeni Memory KM-02 · FTS memory chunks）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I34-01 | `fts_memory_chunks` 虚拟表 + migration | [x] |
+| I34-02 | ingest 时 FTS index + ensure schema | [x] |
+| I34-03 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -37,7 +47,7 @@
 | KM | 迭代 | 交付 | 状态 |
 |----|------|------|------|
 | **KM-01** | I33 | `rrfFuse` + `hybridSearch`（storage 层，FTS/Vector 结果融合） | [x] |
-| **KM-02** | I34 | `fts_memory_chunks` 虚拟表 + migration；ingest 时 FTS index | [ ] |
+| **KM-02** | I34 | `fts_memory_chunks` 虚拟表 + migration；ingest 时 FTS index | [x] |
 | **KM-03** | I35 | `searchMemoryChunks` 改 FTS（替换 SQL LIKE）+ API/集成测试 | [ ] |
 | **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（`@xenova/transformers` 可选 env） | [ ] |
 | **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [ ] |
@@ -236,7 +246,7 @@ KM-12 memory package ──► KM-13 export CLI
 | KM ID | 项 | 状态 |
 |-------|-----|------|
 | KM-01 | hybrid RRF（storage） | [x] |
-| KM-02 | fts_memory_chunks + ingest index | [ ] |
+| KM-02 | fts_memory_chunks + ingest index | [x] |
 | KM-03 | FTS memory search | [ ] |
 | KM-04 | chunk vectors + embed | [ ] |
 | KM-05 | hybrid FTS+Vector recall | [ ] |

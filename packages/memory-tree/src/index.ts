@@ -22,6 +22,11 @@ export {
 } from "./canonical-body.js";
 export { computeMemoryChunkId } from "./chunk-id.js";
 export {
+  indexMemoryChunkInFts,
+  type MemoryChunkFtsDoc,
+  type MemoryChunkFtsIndexer,
+} from "./chunk-fts-index.js";
+export {
   canonicalizeConversationMessage,
   conversationMessageSourceRef,
 } from "./canonicalize.js";

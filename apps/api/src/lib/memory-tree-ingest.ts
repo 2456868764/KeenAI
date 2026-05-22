@@ -1,5 +1,6 @@
 import { ingestConversationMessage } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
+import { getMemoryChunkFtsIndexer } from "./memory-chunk-fts-init.js";
 
 export async function ingestMemoryTreeForMessage(
   db: KeenaiDb,
@@ -27,6 +28,7 @@ export async function ingestMemoryTreeForMessage(
     isInternal: input.isInternal,
     channelType: input.channelType,
     channelId: input.channelId,
+    ftsIndexer: getMemoryChunkFtsIndexer(),
   });
 
   if (result.created && result.lifecycle === "admitted") {
