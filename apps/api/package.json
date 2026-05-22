@@ -15,6 +15,7 @@
   "dependencies": {
     "@hono/zod-validator": "^0.4.2",
     "@keenai/auth": "workspace:*",
+    "@keenai/channels-core": "workspace:*",
     "@keenai/channels-email": "workspace:*",
     "@keenai/llm": "workspace:*",
     "@keenai/shared": "workspace:*",

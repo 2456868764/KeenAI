@@ -60,6 +60,14 @@ export {
   type AttachmentMetadata,
 } from "./attachment-metadata.js";
 export {
+  agentResponseParseResultSchema,
+  outboundDirectivesSchema,
+  outboundPartSchema,
+  type AgentResponseParseResult,
+  type OutboundDirectives,
+  type OutboundPart,
+} from "./outbound-parts.js";
+export {
   MESSAGE_KINDS,
   attachmentPlaceholder,
   buildPlainTextFromParts,

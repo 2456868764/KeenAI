@@ -50,6 +50,8 @@ export const listConversationsSchema = z.object({
 export const createMessageSchema = z
   .object({
     plainText: z.string().max(50_000).optional(),
+    /** Agent/Keeni markdown response — parsed via parseAgentResponse (MEDIA: · ![img](attachment:id)) */
+    agentOutboundText: z.string().max(50_000).optional(),
     attachmentIds: z.array(z.string().min(1)).max(10).optional(),
     parts: z.array(messagePartSchema).optional(),
     content: messageContentSchema.optional(),
@@ -60,8 +62,9 @@ export const createMessageSchema = z
   .refine(
     (v) =>
       (typeof v.plainText === "string" && v.plainText.trim().length > 0) ||
+      (typeof v.agentOutboundText === "string" && v.agentOutboundText.trim().length > 0) ||
       (v.attachmentIds !== undefined && v.attachmentIds.length > 0),
-    { message: "plainText or attachmentIds required" },
+    { message: "plainText, agentOutboundText, or attachmentIds required" },
   );
 
 export const listMessagesSchema = z.object({

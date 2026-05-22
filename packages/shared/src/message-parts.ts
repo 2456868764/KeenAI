@@ -62,9 +62,8 @@ export type SerializedAttachment = z.infer<typeof serializedAttachmentSchema>;
 export function inferMessageKind(parts: MessagePart[]): MessageKind {
   if (parts.length === 0) return "text";
   const media = parts.filter((p) => p.type !== "text");
-  const text = parts.filter((p) => p.type === "text");
   if (media.length === 0) return "text";
-  if (media.length > 1 || (media.length === 1 && text.length > 0)) return "mixed";
+  if (media.length > 1) return "mixed";
   const only = media[0];
   if (!only) return "text";
   switch (only.type) {

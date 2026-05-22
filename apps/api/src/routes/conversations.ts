@@ -12,6 +12,7 @@ import { conversations, messages } from "@keenai/storage/schema";
 import { and, desc, eq, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { buildAgentOutboundPayload } from "../lib/agent-outbound.js";
 import { publishConversation, subscribeConversation } from "../lib/conversation-bus.js";
 import {
   assertBrandInOrg,
@@ -310,18 +311,38 @@ export function conversationRoutes(ctx: AppContext) {
       const senderType = body.senderType ?? "agent";
       const isAgentReply = senderType === "agent" || senderType === "ai";
 
+      let plainText = body.plainText;
+      let attachmentIds = body.attachmentIds;
+
+      if (body.agentOutboundText?.trim()) {
+        try {
+          const outbound = await buildAgentOutboundPayload(
+            c.get("store").db,
+            auth.orgId,
+            body.agentOutboundText,
+          );
+          plainText = outbound.plainText;
+          attachmentIds = [...new Set([...(attachmentIds ?? []), ...outbound.attachmentIds])];
+        } catch (e) {
+          if (e instanceof Error && e.message === "invalid_attachments") {
+            return c.json({ error: "invalid_attachments" }, 400);
+          }
+          throw e;
+        }
+      }
+
       const result = await insertMessage(c.get("store").db, {
         orgId: auth.orgId,
         conversationId: conversation.id,
         senderType,
         senderId: auth.memberId,
-        plainText: body.plainText,
-        content: buildMessageContent(body.plainText ?? "", body.content),
-        attachmentIds: body.attachmentIds,
+        plainText,
+        content: plainText ? buildMessageContent(plainText, body.content) : undefined,
+        attachmentIds,
         parts: body.parts,
         isInternal: body.isInternal,
         inReplyTo: body.inReplyTo,
-        sentVia: "web",
+        sentVia: body.agentOutboundText?.trim() ? "agent" : "web",
         isAgentReply,
       });
 

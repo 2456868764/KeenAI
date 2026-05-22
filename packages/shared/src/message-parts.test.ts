@@ -15,6 +15,14 @@ describe("message-parts", () => {
     const map = new Map([["att1", { fileName: "photo.png", contentType: "image/png" }]]);
     expect(buildPlainTextFromParts(parts, map)).toContain("see attached");
     expect(buildPlainTextFromParts(parts, map)).toContain("[Image: photo.png]");
+    expect(inferMessageKind(parts)).toBe("photo");
+  });
+
+  it("infers mixed kind for multiple media parts", () => {
+    const parts = [
+      { type: "image" as const, attachmentId: "att1" },
+      { type: "image" as const, attachmentId: "att2" },
+    ];
     expect(inferMessageKind(parts)).toBe("mixed");
   });
 
