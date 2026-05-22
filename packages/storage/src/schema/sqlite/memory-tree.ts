@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { brands, organizations } from "./core";
 
 export const memoryChunks = sqliteTable(
@@ -16,6 +16,7 @@ export const memoryChunks = sqliteTable(
     sourceRef: text("source_ref").notNull(),
     bodyMd: text("body_md").notNull(),
     lifecycle: text("lifecycle").notNull().default("pending_extraction"),
+    fastScore: real("fast_score"),
     metadata: text("metadata", { mode: "json" })
       .$type<Record<string, unknown>>()
       .notNull()

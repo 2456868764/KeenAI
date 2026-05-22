@@ -54,6 +54,8 @@ export type PersistMemoryChunkInput = {
 export type PersistMemoryChunkResult = {
   id: string;
   created: boolean;
+  lifecycle: MemoryChunkLifecycle;
+  fastScore: number | null;
   chunk: {
     id: string;
     orgId: string;
@@ -62,5 +64,6 @@ export type PersistMemoryChunkResult = {
     sourceRef: string;
     bodyMd: string;
     lifecycle: string;
+    fastScore: number | null;
   };
 };

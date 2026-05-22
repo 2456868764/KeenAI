@@ -2,7 +2,11 @@ import type { KeenaiDb } from "@keenai/storage";
 import { memoryChunks } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { computeMemoryChunkId } from "./chunk-id.js";
-import type { PersistMemoryChunkInput, PersistMemoryChunkResult } from "./types.js";
+import type {
+  MemoryChunkLifecycle,
+  PersistMemoryChunkInput,
+  PersistMemoryChunkResult,
+} from "./types.js";
 
 /** Persist a memory chunk; skips insert when content id already exists. */
 export async function persistMemoryChunk(
@@ -28,7 +32,13 @@ export async function persistMemoryChunk(
     .returning();
 
   if (inserted[0]) {
-    return { id, created: true, chunk: inserted[0] };
+    return {
+      id,
+      created: true,
+      lifecycle: inserted[0].lifecycle as MemoryChunkLifecycle,
+      fastScore: inserted[0].fastScore ?? null,
+      chunk: inserted[0],
+    };
   }
 
   const [existing] = await db
@@ -39,7 +49,13 @@ export async function persistMemoryChunk(
 
   if (!existing) throw new Error("memory_chunk_persist_failed");
 
-  return { id, created: false, chunk: existing };
+  return {
+    id,
+    created: false,
+    lifecycle: existing.lifecycle as MemoryChunkLifecycle,
+    fastScore: existing.fastScore ?? null,
+    chunk: existing,
+  };
 }
 
 export async function getMemoryChunkBySourceRef(

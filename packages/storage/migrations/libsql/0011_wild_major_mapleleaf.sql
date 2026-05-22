@@ -1,0 +1,1 @@
+ALTER TABLE `memory_chunks` ADD `fast_score` real;

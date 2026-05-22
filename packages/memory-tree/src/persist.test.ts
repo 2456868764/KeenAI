@@ -75,6 +75,8 @@ describe("memory-tree persist", () => {
     expect(first.created).toBe(true);
     expect(second.created).toBe(false);
     expect(first.id).toBe(second.id);
+    expect(first.lifecycle).toBe("admitted");
+    expect(first.fastScore).toBeGreaterThanOrEqual(0.5);
 
     const rows = await db
       .select()

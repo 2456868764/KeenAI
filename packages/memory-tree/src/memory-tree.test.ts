@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canonicalizeConversationMessage, conversationMessageSourceRef } from "./canonicalize.js";
 import { computeMemoryChunkId } from "./chunk-id.js";
+import { computeFastScore } from "./fast-score.js";
 
 describe("memory-tree canonicalize", () => {
   it("renders frontmatter and body markdown", () => {
@@ -24,6 +25,44 @@ describe("memory-tree canonicalize", () => {
 
   it("uses deterministic message source ref", () => {
     expect(conversationMessageSourceRef("msg-abc")).toBe("message:msg-abc");
+  });
+});
+
+describe("memory-tree fast-score", () => {
+  it("admits substantive messages and drops pleasantries", () => {
+    expect(
+      computeFastScore({
+        plainText: "I need help upgrading my plan.",
+        source: "conversation_message",
+        senderType: "user",
+      }).lifecycle,
+    ).toBe("admitted");
+
+    expect(
+      computeFastScore({
+        plainText: "谢谢",
+        source: "conversation_message",
+        senderType: "user",
+      }).lifecycle,
+    ).toBe("dropped");
+  });
+
+  it("never drops internal notes or system messages", () => {
+    expect(
+      computeFastScore({
+        plainText: "ok",
+        source: "internal_note",
+        senderType: "agent",
+      }).lifecycle,
+    ).toBe("admitted");
+
+    expect(
+      computeFastScore({
+        plainText: "workflow started",
+        source: "conversation_message",
+        senderType: "system",
+      }).lifecycle,
+    ).toBe("admitted");
   });
 });
 

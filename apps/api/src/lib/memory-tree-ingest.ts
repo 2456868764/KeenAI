@@ -14,7 +14,7 @@ export async function ingestMemoryTreeForMessage(
     createdAt: Date;
   },
 ) {
-  return ingestConversationMessage(db, {
+  const result = await ingestConversationMessage(db, {
     orgId: input.orgId,
     brandId: input.brandId,
     conversationId: input.conversationId,
@@ -24,4 +24,15 @@ export async function ingestMemoryTreeForMessage(
     plainText: input.plainText,
     isInternal: input.isInternal,
   });
+
+  if (result.created && result.lifecycle === "admitted") {
+    const { getMemoryDispatch } = await import("./memory-dispatch-init.js");
+    await getMemoryDispatch().enqueueExtractChunk({
+      orgId: input.orgId,
+      brandId: input.brandId,
+      chunkId: result.id,
+    });
+  }
+
+  return result;
 }

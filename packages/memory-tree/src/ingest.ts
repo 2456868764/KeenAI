@@ -1,6 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { attachments } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
+import { applyFastScoreToChunk } from "./apply-fast-score.js";
 import { canonicalizeConversationMessage, conversationMessageSourceRef } from "./canonicalize.js";
 import { persistMemoryChunk } from "./persist.js";
 import type { MemoryChunkSource, PersistMemoryChunkResult } from "./types.js";
@@ -29,6 +30,8 @@ export async function ingestConversationMessage(
   const source: MemoryChunkSource = input.isInternal ? "internal_note" : "conversation_message";
   const sourceRef = conversationMessageSourceRef(input.messageId);
 
+  const hasAttachments = attachmentRows.length > 0;
+
   const doc = canonicalizeConversationMessage({
     orgId: input.orgId,
     brandId: input.brandId,
@@ -45,7 +48,7 @@ export async function ingestConversationMessage(
     })),
   });
 
-  return persistMemoryChunk(db, {
+  const result = await persistMemoryChunk(db, {
     orgId: input.orgId,
     brandId: input.brandId,
     source,
@@ -56,4 +59,25 @@ export async function ingestConversationMessage(
       messageId: input.messageId,
     },
   });
+
+  if (!result.created) return result;
+
+  const scored = await applyFastScoreToChunk(db, {
+    chunkId: result.id,
+    plainText: input.plainText,
+    source,
+    senderType: input.senderType,
+    hasAttachments,
+  });
+
+  return {
+    ...result,
+    lifecycle: scored.lifecycle,
+    fastScore: scored.score,
+    chunk: {
+      ...result.chunk,
+      lifecycle: scored.lifecycle,
+      fastScore: scored.score,
+    },
+  };
 }
