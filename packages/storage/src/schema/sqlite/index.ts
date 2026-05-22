@@ -17,4 +17,12 @@ export {
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
 export { macros } from "./macros";
+export {
+  ticketConversations,
+  ticketEvents,
+  ticketLinks,
+  ticketStatuses,
+  ticketTypes,
+  tickets,
+} from "./ticket";
 export { workflowRuns, workflows } from "./workflow";
