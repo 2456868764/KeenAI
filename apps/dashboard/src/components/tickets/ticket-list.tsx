@@ -69,7 +69,12 @@ function TicketRow({ ticket }: { ticket: Ticket }) {
   return (
     <li className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0">
-        <p className="font-medium text-[hsl(var(--foreground))]">{ticket.title}</p>
+        <Link
+          href={`/tickets/${ticket.id}`}
+          className="font-medium text-[hsl(var(--foreground))] hover:underline"
+        >
+          {ticket.title}
+        </Link>
         <p className="mt-0.5 text-xs text-[hsl(var(--muted-foreground))]">
           {ticket.statusName ?? "No status"}
           {ticket.priority ? ` · ${ticket.priority}` : ""}

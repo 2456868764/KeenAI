@@ -438,3 +438,39 @@ export async function createTicketFromConversation(
     body: JSON.stringify(title ? { title } : {}),
   });
 }
+
+export type TicketStatus = {
+  id: string;
+  name: string;
+  category: string;
+  color: string | null;
+  isDefault: boolean;
+  sortOrder: number | null;
+};
+
+export type TicketEvent = {
+  id: string;
+  ticketId: string;
+  eventType: string;
+  actorId: string | null;
+  payload: unknown;
+  createdAt: string;
+};
+
+export async function listTicketStatuses(): Promise<{ items: TicketStatus[] }> {
+  return apiFetch("/api/v1/tickets/meta/statuses");
+}
+
+export async function listTicketEvents(id: string): Promise<{ items: TicketEvent[] }> {
+  return apiFetch(`/api/v1/tickets/${id}/events`);
+}
+
+export async function transitionTicketStatus(
+  id: string,
+  statusId: string,
+): Promise<{ ticket: Ticket }> {
+  return apiFetch(`/api/v1/tickets/${id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ statusId }),
+  });
+}
