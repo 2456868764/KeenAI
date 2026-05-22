@@ -7,7 +7,7 @@ import {
 } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
-import { conversationIdFromScopeKey, customerIdFromScopeKey } from "./scope-key.js";
+import { episodeTargetFromScopeKey } from "./scope-key.js";
 import { stubSealSummary } from "./stub-seal.js";
 
 export type SealBufferInput = {
@@ -103,10 +103,9 @@ export async function sealBuffer(db: KeenaiDb, input: SealBufferInput): Promise<
 
   if (!summaryRow) throw new Error("memory_summary_create_failed");
 
-  const conversationId = conversationIdFromScopeKey(input.scopeKey);
-  const customerId = customerIdFromScopeKey(input.scopeKey);
-  const episodeScope = conversationId ? "conversation" : customerId ? "customer" : "conversation";
-  const episodeScopeId = conversationId ?? customerId ?? input.scopeKey;
+  const { scope: episodeScope, scopeId: episodeScopeId } = episodeTargetFromScopeKey(
+    input.scopeKey,
+  );
   const [episodeRow] = await db
     .insert(memoryEpisodes)
     .values({

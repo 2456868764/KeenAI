@@ -16,7 +16,7 @@ import { Brain, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-type SearchScope = "all" | "conversation" | "customer";
+type SearchScope = "all" | "conversation" | "customer" | "channel";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -260,6 +260,7 @@ function SearchPanel({
           <option value="all">All scopes</option>
           <option value="conversation">Conversation</option>
           <option value="customer">Customer topic</option>
+          <option value="channel">Channel (Slack/Telegram)</option>
         </select>
       </div>
 

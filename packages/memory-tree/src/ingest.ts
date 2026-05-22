@@ -15,6 +15,8 @@ export type IngestConversationMessageInput = {
   sentAt: Date;
   plainText: string;
   isInternal: boolean;
+  channelType?: string;
+  channelId?: string;
 };
 
 /** Canonicalize a conversation message and persist a content-addressed memory chunk. */
@@ -57,6 +59,8 @@ export async function ingestConversationMessage(
     metadata: {
       conversationId: input.conversationId,
       messageId: input.messageId,
+      ...(input.channelType ? { channelType: input.channelType } : {}),
+      ...(input.channelId ? { channelId: input.channelId } : {}),
     },
   });
 

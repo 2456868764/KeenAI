@@ -2,18 +2,26 @@ import { z } from "zod";
 
 export const memoryTreeQuerySchema = z
   .object({
-    scope: z.enum(["conversation", "customer"]),
+    scope: z.enum(["conversation", "customer", "channel"]),
     id: z.string().min(1),
     brandId: z.string().min(1).optional(),
+    channelType: z.enum(["slack", "telegram"]).optional(),
     mode: z.enum(["latest", "drill_down"]).default("latest"),
     level: z.coerce.number().int().min(0).max(2).optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.scope === "customer" && !value.brandId) {
+    if ((value.scope === "customer" || value.scope === "channel") && !value.brandId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "brandId_required_for_customer_scope",
+        message: "brandId_required_for_tree_scope",
         path: ["brandId"],
+      });
+    }
+    if (value.scope === "channel" && !value.channelType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "channelType_required_for_channel_scope",
+        path: ["channelType"],
       });
     }
   });
@@ -43,7 +51,7 @@ export const memoryStatsQuerySchema = z.object({
 export const memorySearchQuerySchema = z.object({
   brandId: z.string().min(1),
   q: z.string().min(1).max(500),
-  scope: z.enum(["all", "conversation", "customer"]).default("all"),
+  scope: z.enum(["all", "conversation", "customer", "channel"]).default("all"),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

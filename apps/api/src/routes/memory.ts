@@ -3,6 +3,7 @@ import {
   assembleMemoryContext,
   listHotTopics,
   queryBrandDailyDigest,
+  queryChannelMemoryTree,
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
   queryMemoryExplorerStats,
@@ -55,10 +56,28 @@ export function memoryRoutes(_ctx: AppContext) {
       return c.json({ error: "forbidden" }, 403);
     }
 
-    const tree = await queryCustomerMemoryTree(db, {
+    if (query.scope === "customer") {
+      const tree = await queryCustomerMemoryTree(db, {
+        orgId: auth.orgId,
+        brandId,
+        userId: query.id,
+        mode: query.mode,
+        level: query.level,
+      });
+
+      return c.json({ tree });
+    }
+
+    const channelType = query.channelType;
+    if (!channelType) {
+      return c.json({ error: "channelType_required" }, 400);
+    }
+
+    const tree = await queryChannelMemoryTree(db, {
       orgId: auth.orgId,
       brandId,
-      userId: query.id,
+      channelType,
+      channelId: query.id,
       mode: query.mode,
       level: query.level,
     });

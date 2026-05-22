@@ -8,7 +8,12 @@ import {
 } from "@keenai/storage/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
-import { brandDailyScopeKey, conversationScopeKey, customerScopeKey } from "./scope-key.js";
+import {
+  brandDailyScopeKey,
+  channelScopeKey,
+  conversationScopeKey,
+  customerScopeKey,
+} from "./scope-key.js";
 
 export type MemoryTreeLeafNode = {
   kind: "leaf";
@@ -273,6 +278,103 @@ export async function queryCustomerMemoryTree(
     scope: "customer",
     scopeKey,
     userId: input.userId,
+    mode: input.mode,
+    levels,
+  };
+}
+
+export type QueryChannelMemoryTreeInput = {
+  orgId: string;
+  brandId: string;
+  channelType: string;
+  channelId: string;
+  mode: "latest" | "drill_down";
+  level?: number;
+};
+
+export type ChannelMemoryTreeResult = {
+  scope: "channel";
+  scopeKey: string;
+  channelType: string;
+  channelId: string;
+  mode: "latest" | "drill_down";
+  levels: MemoryTreeLevel[];
+};
+
+/** Query channel-scoped source tree (Slack/Telegram shared buffer). */
+export async function queryChannelMemoryTree(
+  db: KeenaiDb,
+  input: QueryChannelMemoryTreeInput,
+): Promise<ChannelMemoryTreeResult> {
+  const scopeKey = channelScopeKey(input.channelType, input.channelId);
+  const episodeScopeId = `${input.channelType}:${input.channelId}`;
+  const levels: MemoryTreeLevel[] = [];
+  const includeLevel = (level: number) => input.level === undefined || input.level === level;
+
+  if (includeLevel(0)) {
+    const leaves = await loadBufferLeaves(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      scopeKey,
+    });
+    levels.push({ level: 0, nodes: leaves });
+  }
+
+  if (input.mode === "drill_down") {
+    if (includeLevel(1)) {
+      const summaries = await db
+        .select()
+        .from(memorySummaries)
+        .where(
+          and(
+            eq(memorySummaries.orgId, input.orgId),
+            eq(memorySummaries.brandId, input.brandId),
+            eq(memorySummaries.scopeKey, scopeKey),
+            eq(memorySummaries.level, 1),
+          ),
+        )
+        .orderBy(desc(memorySummaries.sealedAt));
+
+      const summaryNodes: MemoryTreeSummaryNode[] = summaries.map((row) => ({
+        kind: "summary",
+        summaryId: row.id,
+        title: row.title,
+        summary: row.summary,
+        provenance: row.provenance,
+        sealedAt: row.sealedAt.toISOString(),
+      }));
+
+      const episodes = await db
+        .select()
+        .from(memoryEpisodes)
+        .where(
+          and(
+            eq(memoryEpisodes.orgId, input.orgId),
+            eq(memoryEpisodes.scope, "channel"),
+            eq(memoryEpisodes.scopeId, episodeScopeId),
+          ),
+        )
+        .orderBy(desc(memoryEpisodes.endsAt));
+
+      const episodeNodes: MemoryTreeEpisodeNode[] = episodes.map((row) => ({
+        kind: "episode",
+        episodeId: row.id,
+        summary: row.summary,
+        topic: row.topic,
+        startsAt: row.startsAt?.toISOString() ?? null,
+        endsAt: row.endsAt?.toISOString() ?? null,
+        metadata: row.metadata,
+      }));
+
+      levels.push({ level: 1, nodes: [...summaryNodes, ...episodeNodes] });
+    }
+  }
+
+  return {
+    scope: "channel",
+    scopeKey,
+    channelType: input.channelType,
+    channelId: input.channelId,
     mode: input.mode,
     levels,
   };

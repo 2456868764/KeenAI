@@ -310,6 +310,8 @@ export async function insertMessage(
     senderType: input.senderType,
     plainText: prepared.plainText,
     isInternal: input.isInternal,
+    channelType: current.channelType,
+    channelId: current.channelId,
     createdAt: message.createdAt,
   });
 

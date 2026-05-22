@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-09（channel-scoped source tree）
+**下一迭代**：Memory Tree MT-10（agentmemory backend 兼容层，可选）
+
+---
+
+## Iteration 31（Memory Tree MT-09）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I31-01 | channelScopeKey + channelRouteChunk pipeline | [x] |
+| I31-02 | queryChannelMemoryTree + GET /memory/tree?scope=channel | [x] |
+| I31-03 | slack/telegram ingest metadata + explorer search | [x] |
+| I31-04 | tests · roadmap · commits | [x] |
 
 ---
 
@@ -149,7 +160,7 @@
 | MT-06 | Agent scope 路由（09 附录 B） | [x] |
 | MT-07 | topic tree + hotness | [x] |
 | MT-08 | Memory Explorer Dashboard MVP | [x] |
-| MT-09 | channel-scoped source tree | [ ] |
+| MT-09 | channel-scoped source tree | [x] |
 | MT-10 | agentmemory backend 兼容层（可选） | [ ] |
 
 ---

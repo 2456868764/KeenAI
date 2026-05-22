@@ -3,6 +3,7 @@ import { memoryChunks } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { appendBuffer } from "./append-buffer.js";
 import type { BufferConfig } from "./buffer-config.js";
+import { channelRouteChunk, resolveConversationChannel } from "./channel-route.js";
 import { extractChunk } from "./extract-chunk.js";
 import { conversationScopeKey } from "./scope-key.js";
 import { sealBuffer } from "./seal-buffer.js";
@@ -25,6 +26,9 @@ export type ProcessAdmittedChunkResult = {
   topicRouted?: boolean;
   topicSealed?: boolean;
   topicHotness?: number;
+  channelRouted?: boolean;
+  channelSealed?: boolean;
+  channelScopeKey?: string;
   reason?: string;
 };
 
@@ -82,6 +86,7 @@ export async function processAdmittedChunk(
 
   if (!appendResult.shouldSeal) {
     const topicResult = await routeTopicIfEligible(db, input, conversationId);
+    const channelResult = await routeChannelIfEligible(db, input, conversationId);
     return {
       chunkId: input.chunkId,
       extracted: true,
@@ -90,6 +95,9 @@ export async function processAdmittedChunk(
       topicRouted: topicResult?.routed,
       topicSealed: topicResult?.sealed,
       topicHotness: topicResult?.hotness,
+      channelRouted: channelResult?.routed,
+      channelSealed: channelResult?.sealed,
+      channelScopeKey: channelResult?.scopeKey,
     };
   }
 
@@ -100,6 +108,7 @@ export async function processAdmittedChunk(
   });
 
   const topicResult = await routeTopicIfEligible(db, input, conversationId);
+  const channelResult = await routeChannelIfEligible(db, input, conversationId);
 
   return {
     chunkId: input.chunkId,
@@ -111,8 +120,32 @@ export async function processAdmittedChunk(
     topicRouted: topicResult?.routed,
     topicSealed: topicResult?.sealed,
     topicHotness: topicResult?.hotness,
+    channelRouted: channelResult?.routed,
+    channelSealed: channelResult?.sealed,
+    channelScopeKey: channelResult?.scopeKey,
     reason: sealResult.sealed ? undefined : sealResult.reason,
   };
+}
+
+async function routeChannelIfEligible(
+  db: KeenaiDb,
+  input: ProcessAdmittedChunkInput,
+  conversationId: string,
+) {
+  const channel = await resolveConversationChannel(db, {
+    orgId: input.orgId,
+    conversationId,
+  });
+  if (!channel) return null;
+
+  return channelRouteChunk(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    chunkId: input.chunkId,
+    channelType: channel.channelType,
+    channelId: channel.channelId,
+    config: input.config,
+  });
 }
 
 async function routeTopicIfEligible(

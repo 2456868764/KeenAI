@@ -554,7 +554,7 @@ export async function getMemoryDigest(
 
 export type MemorySearchHit = {
   chunkId: string;
-  scope: "conversation" | "customer" | "unknown";
+  scope: "conversation" | "customer" | "channel" | "unknown";
   conversationId: string | null;
   messageId: string | null;
   userId: string | null;
@@ -567,7 +567,7 @@ export type MemorySearchHit = {
 export async function searchMemory(input: {
   brandId: string;
   q: string;
-  scope?: "all" | "conversation" | "customer";
+  scope?: "all" | "conversation" | "customer" | "channel";
 }): Promise<{ hits: MemorySearchHit[] }> {
   const qs = new URLSearchParams({
     brandId: input.brandId,

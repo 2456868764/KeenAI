@@ -42,10 +42,23 @@ export { computeFastScore, type FastScoreInput, type FastScoreResult } from "./f
 export { ingestConversationMessage, type IngestConversationMessageInput } from "./ingest.js";
 export { getMemoryChunkBySourceRef, persistMemoryChunk } from "./persist.js";
 export {
+  CHANNEL_SCOPED_TREE_TYPES,
+  isChannelScopedTreeType,
+  type ChannelScopedTreeType,
+} from "./channel-config.js";
+export {
+  channelRouteChunk,
+  resolveConversationChannel,
+  type ChannelRouteChunkInput,
+  type ChannelRouteChunkResult,
+} from "./channel-route.js";
+export {
   queryBrandDailyDigest,
+  queryChannelMemoryTree,
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
   type BrandDailyDigestResult,
+  type ChannelMemoryTreeResult,
   type ConversationMemoryTreeResult,
   type CustomerMemoryTreeResult,
   type MemoryTreeEpisodeNode,
@@ -54,6 +67,7 @@ export {
   type MemoryTreeNode,
   type MemoryTreeSummaryNode,
   type QueryBrandDailyDigestInput,
+  type QueryChannelMemoryTreeInput,
   type QueryConversationMemoryTreeInput,
   type QueryCustomerMemoryTreeInput,
 } from "./query.js";
@@ -65,11 +79,14 @@ export {
 export { sealBuffer, type SealBufferInput, type SealBufferResult } from "./seal-buffer.js";
 export {
   brandDailyScopeKey,
+  channelScopeKey,
   conversationIdFromScopeKey,
   conversationScopeKey,
   customerIdFromScopeKey,
   customerScopeKey,
+  episodeTargetFromScopeKey,
   parseBrandDailyScopeKey,
+  parseChannelScopeKey,
 } from "./scope-key.js";
 export {
   DEFAULT_HOTNESS_THRESHOLD,

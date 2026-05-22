@@ -428,4 +428,53 @@ describe("memory retrieval integration", () => {
 
     await store.close();
   });
+
+  it("returns channel-scoped source tree for slack", async () => {
+    const { app, store, db, org, brand, auth } = await setupMemoryApiTest();
+    const channelId = "C_SLACK_SUPPORT";
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "slack",
+        channelId,
+        subject: "Slack support",
+      }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        senderType: "user",
+        plainText: "Slack channel memory keyword alpha.",
+      }),
+    });
+
+    const chunkRows = await db.select().from(memoryChunks);
+    for (const chunk of chunkRows) {
+      await processAdmittedChunk(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        chunkId: chunk.id,
+      });
+    }
+
+    const treeRes = await app.request(
+      `/api/v1/memory/tree?scope=channel&channelType=slack&id=${channelId}&brandId=${brand.id}`,
+      { headers: auth },
+    );
+    expect(treeRes.status).toBe(200);
+    const treeBody = (await treeRes.json()) as {
+      tree: { scope: string; channelId: string; levels: Array<{ nodes: unknown[] }> };
+    };
+    expect(treeBody.tree.scope).toBe("channel");
+    expect(treeBody.tree.channelId).toBe(channelId);
+    expect(treeBody.tree.levels[0]?.nodes.length).toBeGreaterThan(0);
+
+    await store.close();
+  });
 });

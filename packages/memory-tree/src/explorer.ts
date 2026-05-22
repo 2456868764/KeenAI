@@ -7,8 +7,13 @@ import {
 } from "@keenai/storage/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
+import { isChannelScopedTreeType } from "./channel-config.js";
 import { DEFAULT_HOTNESS_THRESHOLD } from "./hotness-config.js";
-import { conversationIdFromScopeKey, customerIdFromScopeKey } from "./scope-key.js";
+import {
+  conversationIdFromScopeKey,
+  customerIdFromScopeKey,
+  parseChannelScopeKey,
+} from "./scope-key.js";
 
 export type QueryMemoryExplorerStatsInput = {
   orgId: string;
@@ -28,13 +33,13 @@ export type SearchMemoryChunksInput = {
   orgId: string;
   brandId: string;
   q: string;
-  scope?: "all" | "conversation" | "customer";
+  scope?: "all" | "conversation" | "customer" | "channel";
   limit?: number;
 };
 
 export type MemorySearchHit = {
   chunkId: string;
-  scope: "conversation" | "customer" | "unknown";
+  scope: "conversation" | "customer" | "channel" | "unknown";
   conversationId: string | null;
   messageId: string | null;
   userId: string | null;
@@ -46,7 +51,7 @@ export type MemorySearchHit = {
 
 export type SearchMemoryChunksResult = {
   q: string;
-  scope: "all" | "conversation" | "customer";
+  scope: "all" | "conversation" | "customer" | "channel";
   hits: MemorySearchHit[];
 };
 
@@ -125,7 +130,37 @@ export async function queryMemoryExplorerStats(
       ),
     );
 
-  const sourceCount = Math.max(Number(sourceRow?.count ?? 0), Number(summarySourceRow?.count ?? 0));
+  const [channelSourceRow] = await db
+    .select({ count: sql<number>`count(distinct ${memoryTreeBuffers.scopeKey})` })
+    .from(memoryTreeBuffers)
+    .where(
+      and(
+        eq(memoryTreeBuffers.orgId, input.orgId),
+        eq(memoryTreeBuffers.brandId, input.brandId),
+        sql`${memoryTreeBuffers.scopeKey} like 'channel:%'`,
+      ),
+    );
+
+  const [channelSummaryRow] = await db
+    .select({ count: sql<number>`count(distinct ${memorySummaries.scopeKey})` })
+    .from(memorySummaries)
+    .where(
+      and(
+        eq(memorySummaries.orgId, input.orgId),
+        eq(memorySummaries.brandId, input.brandId),
+        sql`${memorySummaries.scopeKey} like 'channel:%'`,
+      ),
+    );
+
+  const convSourceCount = Math.max(
+    Number(sourceRow?.count ?? 0),
+    Number(summarySourceRow?.count ?? 0),
+  );
+  const channelSourceCount = Math.max(
+    Number(channelSourceRow?.count ?? 0),
+    Number(channelSummaryRow?.count ?? 0),
+  );
+  const sourceCount = convSourceCount + channelSourceCount;
   const topicCount = Math.max(Number(topicRow?.count ?? 0), Number(topicBufferRow?.count ?? 0));
 
   return {
@@ -139,6 +174,9 @@ export async function queryMemoryExplorerStats(
 }
 
 function inferHitScope(metadata: Record<string, unknown>): MemorySearchHit["scope"] {
+  if (typeof metadata.channelType === "string" && isChannelScopedTreeType(metadata.channelType)) {
+    return "channel";
+  }
   if (typeof metadata.conversationId === "string") return "conversation";
   if (typeof metadata.userId === "string") return "customer";
   return "unknown";
@@ -185,6 +223,25 @@ export async function searchMemoryChunks(
       return { q, scope, hits: [] };
     }
     filters.push(inArray(memoryChunks.id, customerChunkIds));
+  }
+
+  if (scope === "channel") {
+    const channelBuffers = await db
+      .select({ leafIds: memoryTreeBuffers.leafIds })
+      .from(memoryTreeBuffers)
+      .where(
+        and(
+          eq(memoryTreeBuffers.orgId, input.orgId),
+          eq(memoryTreeBuffers.brandId, input.brandId),
+          sql`${memoryTreeBuffers.scopeKey} like 'channel:%'`,
+        ),
+      );
+
+    const channelChunkIds = [...new Set(channelBuffers.flatMap((row) => row.leafIds))];
+    if (channelChunkIds.length === 0) {
+      return { q, scope, hits: [] };
+    }
+    filters.push(inArray(memoryChunks.id, channelChunkIds));
   }
 
   const rows = await db
@@ -258,5 +315,7 @@ export function scopeKeyLabel(scopeKey: string): string {
   if (conversationId) return `Conversation ${conversationId.slice(0, 8)}…`;
   const customerId = customerIdFromScopeKey(scopeKey);
   if (customerId) return `Customer ${customerId.slice(0, 8)}…`;
+  const channel = parseChannelScopeKey(scopeKey);
+  if (channel) return `${channel.channelType} ${channel.channelId.slice(0, 8)}…`;
   return scopeKey;
 }

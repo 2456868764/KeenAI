@@ -12,6 +12,8 @@ export async function ingestMemoryTreeForMessage(
     plainText: string;
     isInternal: boolean;
     createdAt: Date;
+    channelType?: string;
+    channelId?: string;
   },
 ) {
   const result = await ingestConversationMessage(db, {
@@ -23,6 +25,8 @@ export async function ingestMemoryTreeForMessage(
     sentAt: input.createdAt,
     plainText: input.plainText,
     isInternal: input.isInternal,
+    channelType: input.channelType,
+    channelId: input.channelId,
   });
 
   if (result.created && result.lifecycle === "admitted") {
