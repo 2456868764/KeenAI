@@ -79,12 +79,6 @@ export const apiEnvSchema = z.object({
   INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
   /** Inngest cron for memory digest_daily (default midnight UTC) */
   INNGEST_MEMORY_DIGEST_CRON: z.string().default("0 0 * * *"),
-  /** Sync sealed summaries / digests to an external agentmemory daemon */
-  MEMORY_TREE_AGENTMEMORY_SYNC: z.coerce.boolean().default(false),
-  /** agentmemory REST base URL (OpenHuman-compatible default) */
-  AGENTMEMORY_URL: z.string().default("http://localhost:3111"),
-  AGENTMEMORY_SECRET: z.string().optional(),
-  AGENTMEMORY_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
   /** Org/brand slugs for IMAP ingest target */
   EMAIL_IMAP_ORG_SLUG: z.string().optional(),
   EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),

@@ -477,18 +477,4 @@ describe("memory retrieval integration", () => {
 
     await store.close();
   });
-
-  it("reports agentmemory health status", async () => {
-    const { app, store, brand, auth } = await setupMemoryApiTest();
-
-    const healthRes = await app.request("/api/v1/memory/agentmemory/health", { headers: auth });
-    expect(healthRes.status).toBe(200);
-    const body = (await healthRes.json()) as {
-      agentmemory: { reachable: boolean; syncEnabled: boolean; url: string };
-    };
-    expect(body.agentmemory.url).toContain("3111");
-    expect(typeof body.agentmemory.reachable).toBe("boolean");
-
-    await store.close();
-  });
 });

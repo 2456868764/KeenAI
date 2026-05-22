@@ -70,7 +70,7 @@ pending_extraction → admitted → buffered → sealed
                   ↘ dropped（保留 provenance，不进摘要）
 ```
 
-OpenHuman 可选 `MemoryConfig.backend = "agentmemory"` — KeenAI 与 agentmemory 同源，长期可做 **存储兼容层**（§九）。
+OpenHuman 可选 `MemoryConfig.backend = "agentmemory"` — KeenAI **不集成**外部 agentmemory daemon；Memory Tree 数据仅存 LibSQL（§九 为历史设计参考）。
 
 ---
 
@@ -353,7 +353,7 @@ GET /api/v1/memory/digest?brandId=...&date=2026-05-21
 | MT-07 | topic tree + hotness |
 | MT-08 | Memory Explorer Dashboard MVP |
 | MT-09 | channel-scoped source tree（Slack） |
-| MT-10 | agentmemory backend 兼容层（可选） |
+| MT-10 | ~~agentmemory backend 兼容层~~（已移除，不集成外部 daemon） |
 
 ---
 

@@ -14,18 +14,20 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Phase 3 Memory Tree 完成 · 后续 MT 增强项
+**下一迭代**：Phase 3 Memory Tree 后续增强项（export CLI 等）
 
 ---
 
-## Iteration 32（Memory Tree MT-10）
+## Iteration 32（Memory Tree MT-10 — 已移除）
+
+> agentmemory daemon 集成已回滚；KeenAI 仅保留 LibSQL Memory Tree。
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I32-01 | AgentMemoryClient + remember/smart-search mapping | [x] |
-| I32-02 | seal/digest sync hook + runtime config | [x] |
-| I32-03 | GET /memory/agentmemory/health + recall | [x] |
-| I32-04 | tests · roadmap · commits | [x] |
+| I32-01 | AgentMemoryClient + remember/smart-search mapping | [-] |
+| I32-02 | seal/digest sync hook + runtime config | [-] |
+| I32-03 | GET /memory/agentmemory/health + recall | [-] |
+| I32-04 | Dashboard hybrid recall UI | [-] |
 
 ---
 
@@ -172,7 +174,7 @@
 | MT-07 | topic tree + hotness | [x] |
 | MT-08 | Memory Explorer Dashboard MVP | [x] |
 | MT-09 | channel-scoped source tree | [x] |
-| MT-10 | agentmemory backend 兼容层（可选） | [x] |
+| MT-10 | agentmemory backend 兼容层（可选） | [-] 已移除 |
 
 ---
 

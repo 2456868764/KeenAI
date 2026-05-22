@@ -57,11 +57,3 @@ export const memorySearchQuerySchema = z.object({
 
 export type MemoryStatsQuery = z.infer<typeof memoryStatsQuerySchema>;
 export type MemorySearchQuery = z.infer<typeof memorySearchQuerySchema>;
-
-export const memoryAgentMemoryRecallQuerySchema = z.object({
-  brandId: z.string().min(1),
-  q: z.string().min(1).max(500),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-});
-
-export type MemoryAgentMemoryRecallQuery = z.infer<typeof memoryAgentMemoryRecallQuerySchema>;

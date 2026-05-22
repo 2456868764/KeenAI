@@ -6,7 +6,6 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { initAgentMemoryFromEnv } from "./lib/agentmemory-init.js";
 import { initMediaDispatch } from "./lib/media-dispatch-init.js";
 import { initMemoryDispatch } from "./lib/memory-dispatch-init.js";
 import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
@@ -43,7 +42,6 @@ export function createApp(ctx: AppContext) {
   initWorkflowDispatch(ctx);
   initMediaDispatch(ctx);
   initMemoryDispatch(ctx);
-  initAgentMemoryFromEnv(ctx.env);
   const app = new Hono<{ Variables: AppVariables }>();
 
   app.use("*", cors());

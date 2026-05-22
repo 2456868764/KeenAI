@@ -1,8 +1,6 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { brands, memoryChunks, memoryEpisodes, memorySummaries } from "@keenai/storage/schema";
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
-import { getAgentMemoryRuntime } from "./agentmemory/runtime.js";
-import { syncSummaryToAgentMemory } from "./agentmemory/sync.js";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
 import { brandDailyScopeKey } from "./scope-key.js";
 import { stubDailyDigest } from "./stub-digest.js";
@@ -157,21 +155,6 @@ export async function digestDailyForBrand(
     .returning();
 
   if (!episodeRow) throw new Error("memory_daily_episode_create_failed");
-
-  const agentMemory = getAgentMemoryRuntime();
-  if (agentMemory?.syncEnabled) {
-    void syncSummaryToAgentMemory(agentMemory, {
-      orgId: input.orgId,
-      brandId: input.brandId,
-      scopeKey,
-      title: summaryRow.title,
-      summary: summaryRow.summary,
-      provenance: summaryRow.provenance,
-      kind: "digest",
-    }).catch((err) => {
-      console.warn("[memory-tree] agentmemory sync failed for digest:", err);
-    });
-  }
 
   return {
     ...base,
