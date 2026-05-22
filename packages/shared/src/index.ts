@@ -40,6 +40,16 @@ export {
   type CopilotEventAction,
 } from "./copilot.js";
 export { createMacroSchema } from "./macro.js";
+export {
+  TICKET_PRIORITIES,
+  createTicketFromConversationBodySchema,
+  createTicketFromConversationSchema,
+  createTicketSchema,
+  listTicketsSchema,
+  ticketPrioritySchema,
+  updateTicketSchema,
+  type TicketPriority,
+} from "./ticket.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {

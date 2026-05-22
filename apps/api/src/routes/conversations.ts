@@ -3,6 +3,7 @@ import {
   API_VERSION,
   createConversationSchema,
   createMessageSchema,
+  createTicketFromConversationSchema,
   listConversationsSchema,
   listMessagesSchema,
   updateConversationSchema,
@@ -26,6 +27,7 @@ import {
 } from "../lib/conversations.js";
 import { indexConversationForSearch } from "../lib/fts-index.js";
 import { notifyAssignee } from "../lib/notifications.js";
+import { createTicketFromConversation } from "../lib/tickets.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
@@ -335,6 +337,35 @@ export function conversationRoutes(ctx: AppContext) {
       }
 
       return c.json({ message: serializeMessage(result.message) }, 201);
+    },
+  );
+
+  r.post(
+    `${prefix}/:id/ticket`,
+    requireAuth(),
+    zValidator("json", createTicketFromConversationSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      if (!conversation) return c.json({ error: "not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const body = c.req.valid("json");
+      const ticket = await createTicketFromConversation(c.get("store").db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        reporterId: auth.memberId,
+        title: body.title,
+      });
+      return c.json({ ticket }, 201);
     },
   );
 

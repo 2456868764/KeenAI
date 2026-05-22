@@ -16,6 +16,7 @@ import { optionalWidgetAuth } from "./middleware/widget-auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
+import { emailJobRoutes } from "./routes/email-jobs.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
 import { macroRoutes } from "./routes/macros.js";
