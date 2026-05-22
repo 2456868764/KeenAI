@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "inngest/hono";
 import { createEmailInngestFunctions } from "../lib/email-inngest.js";
+import { createMediaInngestFunctions } from "../lib/media-inngest.js";
 import { getInngestClient, getInngestWorkflowServeHandler } from "../lib/workflow-dispatch.js";
 import type { AppContext } from "../types.js";
 
@@ -11,7 +12,11 @@ export function inngestRoutes(ctx: AppContext) {
 
   if (!client) return r;
 
-  const functions = [...(workflowFunctions ?? []), ...createEmailInngestFunctions(client, ctx)];
+  const functions = [
+    ...(workflowFunctions ?? []),
+    ...createEmailInngestFunctions(client, ctx),
+    ...createMediaInngestFunctions(client, ctx),
+  ];
 
   const handler = serve({ client, functions: [...functions] });
   r.on(["GET", "POST", "PUT"], "/api/inngest", handler);

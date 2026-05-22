@@ -1,5 +1,6 @@
 export type ConversationRealtimeEvent =
   | { type: "message.created"; conversationId: string; message: unknown }
+  | { type: "message.updated"; conversationId: string; message: unknown }
   | { type: "conversation.updated"; conversationId: string; conversation: unknown };
 
 type Listener = (event: ConversationRealtimeEvent) => void;

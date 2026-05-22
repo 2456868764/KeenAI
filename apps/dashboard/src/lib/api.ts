@@ -37,6 +37,7 @@ export type MessageAttachment = {
   contentType: string | null;
   sizeBytes: number | null;
   url?: string;
+  metadata?: { transcript?: string; transcribedAt?: string };
 };
 
 export type LoginResponse = {

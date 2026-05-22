@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { initMediaDispatch } from "./lib/media-dispatch-init.js";
 import { initWorkflowDispatch } from "./lib/workflow-dispatch.js";
 import { optionalAuth, requireAuth } from "./middleware/auth.js";
 import { injectContext } from "./middleware/context.js";
@@ -35,6 +36,7 @@ import type { AppContext, AppVariables } from "./types.js";
 
 export function createApp(ctx: AppContext) {
   initWorkflowDispatch(ctx);
+  initMediaDispatch(ctx);
   const app = new Hono<{ Variables: AppVariables }>();
 
   app.use("*", cors());

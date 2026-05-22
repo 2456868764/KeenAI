@@ -29,6 +29,9 @@ export const apiEnvSchema = z.object({
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  OPENAI_WHISPER_MODEL: z.string().default("whisper-1"),
+  /** STT provider: stub | openai (auto: openai when OPENAI_API_KEY set, else stub) */
+  STT_PROVIDER: z.enum(["stub", "openai"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */
   LLM_PROVIDER: z
     .enum(["stub", "openai", "anthropic", "deepseek", "kimi", "gemini", "ollama"])

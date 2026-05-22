@@ -94,11 +94,69 @@ function MessageImage({ attachmentId }: { attachmentId: string }) {
   );
 }
 
+function MessageAudio({ attachment }: { attachment: NonNullable<Message["attachments"]>[number] }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    void fetchAttachmentBlob(attachment.id)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setSrc(url);
+      })
+      .catch(() => setSrc(null));
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachment.id]);
+
+  const transcript = attachment.metadata?.transcript?.trim();
+
+  return (
+    <div className="mt-2 space-y-1">
+      {src ? (
+        <>
+          {/* biome-ignore lint/a11y/useMediaCaption: transcript is shown below when available */}
+          <audio
+            controls
+            preload="none"
+            src={src}
+            className="max-w-full"
+            aria-label="Voice message"
+          />
+        </>
+      ) : (
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">Voice message</p>
+      )}
+      {transcript ? (
+        <details className="text-xs text-[hsl(var(--muted-foreground))]">
+          <summary className="cursor-pointer select-none">Transcript</summary>
+          <p className="mt-1 whitespace-pre-wrap text-[hsl(var(--foreground))]">{transcript}</p>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
   const imageAttachments =
     message.attachments?.filter((a) => a.contentType?.startsWith("image/")) ?? [];
+  const audioAttachments =
+    message.attachments?.filter((a) => a.contentType?.startsWith("audio/")) ?? [];
+  const showPlainText = Boolean(
+    message.plainText?.trim() &&
+      audioAttachments.length === 0 &&
+      !message.plainText.startsWith("[Image:"),
+  );
 
   return (
     <div className={cn("flex pb-3", isAgent ? "justify-end" : "justify-start")}>
@@ -113,15 +171,18 @@ function MessageBubble({ message }: { message: Message }) {
           isOptimistic && "opacity-70",
         )}
       >
-        {message.plainText && !message.plainText.startsWith("[Image:") ? (
+        {showPlainText ? (
           <p className="whitespace-pre-wrap">{message.plainText}</p>
-        ) : message.plainText ? (
+        ) : message.plainText && audioAttachments.length === 0 ? (
           <p className="whitespace-pre-wrap text-[hsl(var(--muted-foreground))]">
             {message.plainText}
           </p>
         ) : null}
         {imageAttachments.map((att) => (
           <MessageImage key={att.id} attachmentId={att.id} />
+        ))}
+        {audioAttachments.map((att) => (
+          <MessageAudio key={att.id} attachment={att} />
         ))}
         <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
           {message.isInternal ? "internal note" : message.senderType}

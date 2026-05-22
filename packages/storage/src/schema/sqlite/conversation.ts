@@ -90,6 +90,10 @@ export const attachments = sqliteTable(
     sizeBytes: integer("size_bytes"),
     storageKey: text("storage_key").notNull(),
     thumbnailKey: text("thumbnail_key"),
+    metadata: text("metadata", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

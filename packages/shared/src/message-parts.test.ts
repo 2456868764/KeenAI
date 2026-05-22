@@ -17,4 +17,19 @@ describe("message-parts", () => {
     expect(buildPlainTextFromParts(parts, map)).toContain("[Image: photo.png]");
     expect(inferMessageKind(parts)).toBe("mixed");
   });
+
+  it("uses audio transcript when available", () => {
+    const parts = [{ type: "audio" as const, attachmentId: "att-voice" }];
+    const map = new Map([
+      [
+        "att-voice",
+        {
+          fileName: "note.webm",
+          contentType: "audio/webm",
+          transcript: "Please reset my password.",
+        },
+      ],
+    ]);
+    expect(buildPlainTextFromParts(parts, map)).toBe("Please reset my password.");
+  });
 });

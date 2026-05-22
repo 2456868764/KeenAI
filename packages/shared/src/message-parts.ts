@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attachmentMetadataSchema } from "./attachment-metadata.js";
 
 export const MESSAGE_KINDS = [
   "text",
@@ -52,6 +53,7 @@ export const serializedAttachmentSchema = z.object({
   contentType: z.string().nullable(),
   sizeBytes: z.number().nullable(),
   url: z.string().optional(),
+  metadata: attachmentMetadataSchema.optional(),
 });
 
 export type SerializedAttachment = z.infer<typeof serializedAttachmentSchema>;
@@ -88,7 +90,14 @@ export function attachmentPlaceholder(fileName: string, contentType?: string | n
 
 export function buildPlainTextFromParts(
   parts: MessagePart[],
-  attachments: Map<string, { fileName: string | null; contentType: string | null }>,
+  attachments: Map<
+    string,
+    {
+      fileName: string | null;
+      contentType: string | null;
+      transcript?: string;
+    }
+  >,
 ): string {
   const chunks: string[] = [];
   for (const part of parts) {
@@ -97,6 +106,13 @@ export function buildPlainTextFromParts(
       continue;
     }
     const att = attachments.get(part.attachmentId);
+    if (part.type === "audio") {
+      const transcript = att?.transcript?.trim();
+      if (transcript) {
+        chunks.push(transcript);
+        continue;
+      }
+    }
     const fileName = part.type === "file" ? part.fileName : (att?.fileName ?? "attachment");
     chunks.push(attachmentPlaceholder(fileName, att?.contentType));
   }

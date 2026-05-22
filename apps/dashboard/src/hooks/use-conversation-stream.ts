@@ -23,6 +23,7 @@ export function useConversationStream(conversationId: string | null) {
     };
 
     es.addEventListener("message.created", invalidate);
+    es.addEventListener("message.updated", invalidate);
     es.addEventListener("conversation.updated", invalidate);
 
     es.onerror = () => {

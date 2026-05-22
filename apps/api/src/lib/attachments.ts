@@ -1,4 +1,5 @@
 import type { MessagePart, SerializedAttachment } from "@keenai/shared";
+import { attachmentMetadataSchema } from "@keenai/shared";
 import { attachments, conversations, messages } from "@keenai/storage/schema";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
@@ -10,12 +11,17 @@ export function serializeAttachment(
   row: AttachmentRow,
   opts?: { contentUrl?: string },
 ): SerializedAttachment {
+  const metadataParsed = attachmentMetadataSchema.safeParse(row.metadata ?? {});
+  const metadata = metadataParsed.success ? metadataParsed.data : undefined;
+  const hasMeta = metadata && Object.keys(metadata).length > 0;
+
   return {
     id: row.id,
     fileName: row.fileName,
     contentType: row.contentType,
     sizeBytes: row.sizeBytes,
     url: opts?.contentUrl,
+    metadata: hasMeta ? metadata : undefined,
   };
 }
 

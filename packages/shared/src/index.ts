@@ -56,6 +56,10 @@ export {
 } from "./ticket.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
+  attachmentMetadataSchema,
+  type AttachmentMetadata,
+} from "./attachment-metadata.js";
+export {
   MESSAGE_KINDS,
   attachmentPlaceholder,
   buildPlainTextFromParts,

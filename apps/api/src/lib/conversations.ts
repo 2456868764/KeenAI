@@ -2,6 +2,7 @@ import type { AccessTokenClaims } from "@keenai/auth";
 import {
   type MessageKind,
   type MessagePart,
+  attachmentMetadataSchema,
   buildPlainTextFromParts,
   inferMessageKind,
   type messageContentSchema,
@@ -163,7 +164,17 @@ async function resolveMessagePayload(
 
   const parts = input.parts ?? buildPartsFromAttachments(pending, input.plainText);
   const attMap = new Map(
-    pending.map((a) => [a.id, { fileName: a.fileName, contentType: a.contentType }]),
+    pending.map((a) => {
+      const meta = attachmentMetadataSchema.safeParse(a.metadata ?? {});
+      return [
+        a.id,
+        {
+          fileName: a.fileName,
+          contentType: a.contentType,
+          transcript: meta.success ? meta.data.transcript : undefined,
+        },
+      ] as const;
+    }),
   );
   const plainText =
     input.plainText?.trim() || buildPlainTextFromParts(parts, attMap) || "(attachment)";
@@ -269,7 +280,26 @@ export async function insertMessage(
     .where(eq(conversations.id, input.conversationId))
     .returning();
 
-  const [serialized] = await serializeMessagesWithAttachments(db, [message]);
+  let [serialized] = await serializeMessagesWithAttachments(db, [message]);
+
+  if (prepared.attachmentIds.length > 0) {
+    const { getMediaDispatch } = await import("./media-dispatch-init.js");
+    await getMediaDispatch().enqueueMessageMedia({
+      orgId: input.orgId,
+      conversationId: input.conversationId,
+      messageId: message.id,
+    });
+    const [updatedMessage] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, message.id))
+      .limit(1);
+    const [refreshed] = await serializeMessagesWithAttachments(
+      db,
+      updatedMessage ? [updatedMessage] : [message],
+    );
+    if (refreshed) serialized = refreshed;
+  }
 
   publishConversation({
     type: "message.created",
