@@ -270,7 +270,7 @@ function triggerToEventFilter(def: WorkflowDef): string {
 | 类别 | Block | 同步/挂起 | KeenAI 备注 |
 |------|-------|----------|------|
 | AI | `let_keeni_answer` ✅ | 同步（流式） | Mount Mastra Agent，Resolution → 分支 |
-| 客户可见消息 | `send_message` ✅ | 同步 | Tiptap rich content + 动态变量 |
+| 客户可见消息 | `send_message` ✅ | 同步 | Tiptap rich content + 动态变量；**附件**见 [14-MULTIMODAL.md §7.5](14-MULTIMODAL.md) |
 | 客户可见消息 | `show_expected_reply_time` ✅ | 同步 | 拉 Office Hours / Avg Reply Time |
 | 客户输入 | `reply_buttons` ✅ | **挂起** | 等待 `widget/button.clicked` |
 | 客户输入 | `collect_data` ✅ | **挂起** | 等待 `widget/attribute.submitted`，可选 Free text + 多 attribute |

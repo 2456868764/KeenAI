@@ -656,3 +656,44 @@ Chromatic 视觉回归（对标截图 baseline）
 | `www.featurebase.app/help2.png` | Help Center | § 2.5, § 6.2 |
 | `www.featurebase.app/users.jpg` | Directory | § 2.6, § 4.5 |
 | `www.featurebase.app/fibi-cover.jpg` | Widget / AI Chat | § 2.7, § 五 |
+
+---
+
+## 十五、多模态消息 UI
+
+> 完整协议与 API：[14-MULTIMODAL.md](14-MULTIMODAL.md)
+
+### 15.1 Inbox 消息气泡
+
+按 `message.parts`（或 API 返回的 `attachments[]`）分区渲染：
+
+| Part 类型 | 组件 | 行为 |
+|-----------|------|------|
+| `text` | 现有 Tiptap / plain bubble | 不变 |
+| `image` | `<MessageImage />` | signed URL · 点击 lightbox · lazy load |
+| `audio` | `<MessageAudio />` | 播放器 + 可选 transcript 折叠 |
+| `video` | `<MessageVideo />` | poster + controls · 最大高度限制 |
+| `file` | `<MessageFile />` | 图标 + 文件名 + 下载 |
+
+`mixed` 消息：垂直堆叠 parts，caption 文本在最上或最下（与 Featurebase 一致）。
+
+### 15.2 Composer 上传
+
+| 交互 | 实现 |
+|------|------|
+| 拖拽 / 粘贴图片 | presign → PUT → pending `attachmentIds` |
+| 发送 | `POST .../messages` 带 `attachmentIds` + 可选 `plainText` |
+| 进度 | 上传中 chip；失败可重试 |
+| 限制 | 单文件 20MB · MIME 白名单（与 API 一致） |
+
+### 15.3 Widget（体积敏感）
+
+- Phase 2：仅 **图片** upload + 缩略图 bubble（目标仍满足 `pnpm check:widget` 预算）
+- 语音/视频：P3 或原生 App
+
+### 15.4 Copilot 出站
+
+- SSE 扩展 `attachment.ready` 事件（见 14 号文档 §7.4）
+- 采纳草稿时：图片 part 插入 Tiptap composer
+
+---

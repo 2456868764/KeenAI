@@ -2,6 +2,11 @@
 
 KeenAI documentation site skeleton (Next.js). Fumadocs MDX integration is planned for a later iteration.
 
+Design docs live in the repo root `docs/` folder. Key references:
+
+- [14-MULTIMODAL.md](../../docs/14-MULTIMODAL.md) — multimodal messaging (inbound/outbound)
+- [08-ROADMAP.md](../../docs/08-ROADMAP.md) — execution roadmap
+
 ```bash
 pnpm --filter @keenai/docs dev   # http://localhost:3001
 ```

@@ -30,7 +30,7 @@
 | 移动端 App | ✅ | 🔮 | RN 后期 |
 | 桌面通知 | ✅ | ✅ | Web Push API |
 | 富文本编辑器（Notion 风格） | ✅ | ✅ | Tiptap |
-| 文件/图片/视频上传 | ✅ | ✅ | S3 + MinIO |
+| 文件/图片/视频上传 | ✅ | 🔄 | S3 + presign MVP；完整多模态见 [14-MULTIMODAL.md](14-MULTIMODAL.md) |
 | 代码块 / 表格 / 嵌入 | ✅ | ✅ | Tiptap 扩展 |
 | Impersonation 警告 | ✅ | ✅ | 审计日志 |
 | Support Analytics | ✅ | ✅ | 基础数据看板 |
@@ -68,7 +68,7 @@
 | 多 Brand 邮件 | ✅ | ✅ | 域名→Brand 路由 |
 | 邮件签名 | ✅ | ✅ | 模板 |
 | 邮件多语言 | ✅ | ✅ | i18n 模板 |
-| 附件支持 | ✅ | ✅ | S3 存储 |
+| 附件支持 | ✅ | 🔄 | S3 存储；Email 附件 ingest 见 [14-MULTIMODAL.md](14-MULTIMODAL.md) |
 | Convert to Ticket | ✅ | ✅ | Workflow |
 
 #### 其他渠道
@@ -103,6 +103,21 @@
 | Reaction（表情） | ❌ | ✅（差异化） |
 | 输入中提示 | ✅ | ✅ |
 | 已读回执 | ✅ | ✅ |
+
+#### 多模态消息（文本 · 图片 · 语音 · 视频 · 文件）
+
+> **完整技术方案**：[14-MULTIMODAL.md](14-MULTIMODAL.md)
+
+| 能力 | Featurebase | KeenAI 状态 | 阶段 |
+|------|:-----------:|:-----------:|------|
+| 客户发送图片（Widget） | ✅ | 🔄 | MM-03 · presign 已有 |
+| 客服发送图片 / 文件 | ✅ | 🔄 | MM-03 |
+| Email 附件入站 | ✅ | 🔄 | MM-04 |
+| 语音消息 + STT 转写 | ✅ | 🔮 | MM-10 |
+| 视频消息播放 | ✅ | 🔮 | MM-11 |
+| AI 理解图片（Copilot / Keeni vision） | ✅ | 🔮 | MM-06 |
+| AI 回复图片 / 语音（出站） | ✅ | 🔮 | MM-12–14 |
+| IM 渠道原生多模态（Telegram 等） | ✅ | 🔮 | MM-15 |
 
 ---
 

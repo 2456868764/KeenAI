@@ -628,6 +628,26 @@ Email Ingestor Worker（Bun + imapflow + Inngest cron）
   └─ 触发 Inngest 事件 `conversation/message.created`（复用 3.1 流程）
 ```
 
+### 3.2.1 多模态消息流（Inbound / Outbound）
+
+> 完整设计见 [14-MULTIMODAL.md](14-MULTIMODAL.md)。与 Hermes Gateway 对照：`MessageEvent` → S3 缓存 → Agent enrichment → `ChannelRenderer` 出站。
+
+```
+Inbound（客户/渠道 → Store）
+  Widget / Email / IM
+    → Channel Normalizer（MIME 校验 · 下载）
+    → upload → attachments.storageKey
+    → insertMessage { parts[], plainText, messageKind }
+    → Inngest media.*（STT · thumbnail · vision_summary）
+    → Copilot / Keeni：native vision 或 text enrichment
+
+Outbound（Agent / 客服 / Workflow → 客户）
+  OutboundPart[] 或 Markdown（MEDIA: / ![img]）
+    → parseAgentResponse
+    → ChannelRenderer（Widget bubble · Email MIME · IM sendPhoto/sendVoice）
+    → insertMessage + attachments · WS push
+```
+
 ### 3.3 AI Custom Action 调用
 
 ```

@@ -414,7 +414,7 @@ export const messages = pgTable('messages', {
   sentVia:        text('sent_via'),                            // web / messenger / email / api
   deliveryStatus: text('delivery_status'),                     // pending/sent/delivered/failed/read
 
-  metadata:       jsonb('metadata').default({}),               // email headers, AI source citations
+  metadata:       jsonb('metadata').default({}),               // email headers · messageKind · enrichmentStatus
   editedAt:       timestamp('edited_at',   { withTimezone: true }),
   deletedAt:      timestamp('deleted_at',  { withTimezone: true }),
   createdAt:      timestamp('created_at',  { withTimezone: true }).defaultNow(),
@@ -445,11 +445,17 @@ export const attachments = pgTable('attachments', {
   fileName:     text('file_name'),
   contentType:  text('content_type'),
   sizeBytes:    bigint('size_bytes', { mode: 'number' }),
-  storageKey:   text('storage_key').notNull(),                 // S3 key
+  storageKey:   text('storage_key').notNull(),                 // S3 key 或本地 uploads 路径
   thumbnailKey: text('thumbnail_key'),
+  metadata:     jsonb('metadata').default({}),               // transcript · visionSummary · extractedText · durationMs
   createdAt:    timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
+```
 
+> **多模态字段语义**（`MessagePart` · `messageKind` · enrichment）：见 [14-MULTIMODAL.md § 八](14-MULTIMODAL.md)。
+
+```ts
+// packages/storage/src/schema/pg/conversation.ts (续 · reactions)
 export const reactions = pgTable('reactions', {
   messageId: text('message_id').notNull().references(() => messages.id),
   actorType: text('actor_type').notNull(),

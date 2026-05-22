@@ -444,8 +444,18 @@ export const Message = z.object({
   conversationId: z.string(),
   senderType:     SenderType,
   senderId:       z.string().nullable(),
-  content:        z.unknown(),                          // Tiptap JSON
-  attachments:    z.array(z.object({ url: z.string(), mime: z.string(), filename: z.string(), bytes: z.number() })).default([]),
+  content:        z.unknown(),                          // Tiptap JSON 或 MessagePart[]
+  plainText:      z.string().optional(),                // FTS / 通知 fallback
+  messageKind:    z.enum(['text','photo','voice','video','document','mixed']).optional(),
+  attachments:    z.array(z.object({
+    id: z.string(),
+    url: z.string(),
+    mime: z.string(),
+    filename: z.string(),
+    bytes: z.number(),
+    thumbnailUrl: z.string().optional(),
+    metadata: z.record(z.unknown()).optional(),         // transcript · visionSummary
+  })).default([]),
   reactions:      z.array(z.object({ userId: z.string(), emoji: z.string() })).default([]),
   inReplyTo:      z.string().nullable().optional(),
   sentVia:        z.string(),                           // messenger/email/api
@@ -455,6 +465,8 @@ export const Message = z.object({
 });
 export type Message = z.infer<typeof Message>;
 ```
+
+> **多模态 Canonical 模型**（`MessagePart` · Inbound/Outbound · Media Pipeline · ChannelRenderer）：见 [14-MULTIMODAL.md](14-MULTIMODAL.md)。
 
 Drizzle schema：见 [07-DATA-MODEL.md](07-DATA-MODEL.md)。
 

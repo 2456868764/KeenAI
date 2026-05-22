@@ -70,6 +70,7 @@ cd ../agentmemory && git pull
 | 对话主循环、Tool Calling | `run_agent.py`、`model_tools.py` |
 | Skill 发现 / 使用 / 自改进 | `tools/skills_tool.py`、`skills/`、`optional-skills/` |
 | 多渠道 Gateway | `gateway/run.py`、`gateway/session.py`、`gateway/platforms/`（新增渠道见 `gateway/platforms/ADDING_A_PLATFORM.md`） |
+| 多模态 Inbound/Outbound | `gateway/platforms/base.py`（`MessageEvent` · cache · `extract_media`）· `gateway/run.py`（enrichment · TTS）· `agent/image_routing.py` |
 | 会话持久化、FTS | `hermes_state.py` |
 | 轨迹 / 上下文压缩 | `agent/` 下 compression 相关模块 |
 | 定时任务 | `cron/scheduler.py`、`cron/jobs.py` |
@@ -112,6 +113,7 @@ cd ../agentmemory && git pull
 | **本页 + `hermes-agent/` + `agentmemory/`** | AI 内核行为与算法对照 |
 | [05-FRONTEND.md](05-FRONTEND.md)、根目录 `DESIGN.md` | Dashboard / Widget / Portal 视觉与布局（对标 Featurebase 截图） |
 | [13-WORKFLOW.md](13-WORKFLOW.md) | 无代码自动化编排（Inngest）；AI Block 调用 09 的 Agent |
+| [14-MULTIMODAL.md](14-MULTIMODAL.md) | 多模态消息 Inbound/Outbound；Channel 归一化对照 Hermes Gateway |
 | [12-STORAGE-ABSTRACTION.md](12-STORAGE-ABSTRACTION.md) | `Store` / `VectorStore` / `FTSStore` 接口（KeenAI 存储不复制 AgentMemory 的 iii 引擎） |
 
 ---

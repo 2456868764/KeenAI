@@ -1376,3 +1376,33 @@ packages/mcp/
 - [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md)
 - [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)
 - [12-STORAGE-ABSTRACTION.md](12-STORAGE-ABSTRACTION.md)
+- [14-MULTIMODAL.md](14-MULTIMODAL.md) — Agent/Copilot 多模态输入（vision/STT）与出站（生图/TTS/`parseAgentResponse`）
+
+---
+
+## 附录 A · 多模态 Agent 集成要点
+
+> 完整方案见 [14-MULTIMODAL.md](14-MULTIMODAL.md)。本节仅列 Agent Engine 边界。
+
+### A.1 输入：`buildModelMessages`
+
+| 媒体 | native 路径 | text 路径 |
+|------|-------------|-----------|
+| 图片 | Vercel AI SDK `image` part（signed URL） | `metadata.visionSummary` 注入 user text |
+| 语音 | 可选 audio part（Gemini 等） | `metadata.transcript` → plainText |
+| 文档 | Tool `read_document` | `metadata.extractedText` inline |
+
+配置：`LLM_IMAGE_INPUT_MODE=auto|native|text`（对标 Hermes `agent.image_input_mode`）。
+
+### A.2 输出：Tools + Parser
+
+| Tool | 产出 | 出站 |
+|------|------|------|
+| `generate_image` | attachment → S3 | `OutboundPart` type attachment |
+| `text_to_speech` | audio file | `directives.asVoice` → Widget `<audio>` / IM sendVoice |
+| Markdown `![alt](url)` | — | `parseAgentResponse` → send_image |
+
+### A.3 Copilot
+
+- Phase 2：`POST /copilot/draft` 读取 thread attachments，vision 模型 native 输入
+- SSE 扩展：`attachment.ready`（14 号文档 §7.4）
