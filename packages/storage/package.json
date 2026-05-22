@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
-    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:generate:pg": "drizzle-kit generate --config drizzle.config.pg.ts",
+    "db:push:pg": "drizzle-kit push --config drizzle.config.pg.ts"
   },
   "dependencies": {
     "@keenai/shared": "workspace:*",

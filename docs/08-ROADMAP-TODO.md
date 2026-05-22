@@ -5,16 +5,15 @@
 
 ---
 
-## 当前迭代 · Iteration 12（Ticket 详情 + Email/Storage 深化）
+## 当前迭代 · Iteration 13（IMAP Ingest + Postgres + Portal）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I12-01 | Ticket statuses/events API + 状态流转（closedAt） | [x] |
-| I12-02 | Dashboard Ticket 详情页 + 状态选择器 | [x] |
-| I12-03 | IMAP imapflow poll 实现（ingest 待续） | [x] |
-| I12-04 | PostgresStore ping 骨架 + CI 矩阵测试 | [x] |
+| I13-01 | IMAP poll → ingest 进 Conversation | [x] |
+| I13-02 | Postgres Drizzle 双方言骨架（`drizzle.config.pg`） | [x] |
+| I13-03 | Portal API + `apps/portal` 客户工单列表 | [x] |
 
-**下一迭代**：Ticket ingest 入库 · Postgres Drizzle 双方言 · Portal 雏形
+**下一迭代**：Portal 鉴权 · Postgres 全表迁移 · IMAP 生产配置文档
 
 ---
 
@@ -22,9 +21,9 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I12 | Ticket 详情 + imapflow + PostgresStore ping | [x] |
 | I11 | Tickets API + Dashboard + IMAP stub | [x] |
 | I10 | 工程强化 + Tickets schema | [x] |
-| I9 | Alpha 发布 + Docker lite + Inngest cron | [x] |
 
 ---
 
