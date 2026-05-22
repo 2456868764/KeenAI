@@ -5,17 +5,16 @@
 
 ---
 
-## 当前迭代 · Iteration 11（Tickets + Email Worker 起步）
+## 当前迭代 · Iteration 12（Ticket 详情 + Email/Storage 深化）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I11-01 | Tickets REST API（CRUD + list） | [x] |
-| I11-02 | Dashboard Tickets 列表页 | [x] |
-| I11-03 | Conversation → Ticket 转换 | [x] |
-| I11-04 | IMAP Worker stub（Inngest cron + sync scheduler） | [x] |
-| I11-05 | Fumadocs / 文档站骨架（`apps/docs`） | [x] |
+| I12-01 | Ticket statuses/events API + 状态流转（closedAt） | [x] |
+| I12-02 | Dashboard Ticket 详情页 + 状态选择器 | [x] |
+| I12-03 | IMAP imapflow poll 实现（ingest 待续） | [x] |
+| I12-04 | PostgresStore ping 骨架 + CI 矩阵测试 | [x] |
 
-**下一迭代**：Ticket 详情页 · Ticket 状态流转 · IMAP imapflow 实现 · PostgresStore
+**下一迭代**：Ticket ingest 入库 · Postgres Drizzle 双方言 · Portal 雏形
 
 ---
 
@@ -23,10 +22,9 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I11 | Tickets API + Dashboard + IMAP stub | [x] |
 | I10 | 工程强化 + Tickets schema | [x] |
 | I9 | Alpha 发布 + Docker lite + Inngest cron | [x] |
-| I8 | Workflow MVP + Inngest + React Flow | [x] |
-| I7 | Copilot MVP + Tiptap + Macros | [x] |
 
 ---
 
