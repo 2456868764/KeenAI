@@ -51,6 +51,16 @@ export const apiEnvSchema = z.object({
   INNGEST_SCAN_CRON: z.string().default("*/5 * * * *"),
   /** Sync-mode background scan interval in minutes (0 = disabled; ignored when Inngest is enabled) */
   WORKFLOW_SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
+  /** IMAP polling — stub until imapflow worker is wired */
+  EMAIL_IMAP_HOST: z.string().optional(),
+  EMAIL_IMAP_PORT: z.coerce.number().int().positive().optional(),
+  EMAIL_IMAP_USER: z.string().optional(),
+  EMAIL_IMAP_PASS: z.string().optional(),
+  EMAIL_IMAP_MAILBOX: z.string().default("INBOX"),
+  /** Sync-mode IMAP poll interval in minutes (0 = disabled; ignored when Inngest is enabled) */
+  EMAIL_IMAP_POLL_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
+  /** Inngest cron for IMAP poll (default every 5 minutes) */
+  INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

@@ -2,6 +2,7 @@ import { createLibsqlFtsStore, createLibsqlStore, ensureFtsSchema } from "@keena
 import { websocket } from "hono/bun";
 import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
+import { startEmailImapPollScheduler } from "./lib/email-imap-scheduler.js";
 import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 import { createLogger } from "./logger.js";
 import { initOtel } from "./otel.js";
@@ -23,6 +24,14 @@ if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.WORKFLOW_SCAN_INTER
   log.info(
     { intervalMinutes: env.WORKFLOW_SCAN_INTERVAL_MINUTES },
     "workflow unresponsive scan scheduler started",
+  );
+}
+
+if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.EMAIL_IMAP_POLL_INTERVAL_MINUTES > 0) {
+  startEmailImapPollScheduler({ log, env }, env.EMAIL_IMAP_POLL_INTERVAL_MINUTES);
+  log.info(
+    { intervalMinutes: env.EMAIL_IMAP_POLL_INTERVAL_MINUTES },
+    "email imap poll scheduler started",
   );
 }
 

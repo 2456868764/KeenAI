@@ -24,6 +24,7 @@ import { memberRoutes } from "./routes/members.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import { searchRoutes } from "./routes/search.js";
+import { ticketRoutes } from "./routes/tickets.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { widgetRoutes } from "./routes/widget.js";
 import { workflowRoutes } from "./routes/workflows.js";
@@ -81,7 +82,9 @@ export function createApp(ctx: AppContext) {
   app.route("/", memberRoutes());
   app.route("/", macroRoutes());
   app.route("/", copilotRoutes(ctx));
+  app.route("/", ticketRoutes());
   app.route("/", workflowRoutes());
+  app.route("/", emailJobRoutes(ctx));
   app.route("/", inngestRoutes(ctx));
   app.route("/", searchRoutes(ctx));
   app.route("/", uploadRoutes(ctx));

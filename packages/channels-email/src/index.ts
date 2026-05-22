@@ -15,3 +15,4 @@ export {
   adaptSendGridInbound,
   adaptSesNotification,
 } from "./inbound-webhooks.js";
+export { pollImapMailboxes, type ImapPollConfig, type ImapPollResult } from "./imap-poll.js";
