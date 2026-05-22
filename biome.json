@@ -21,6 +21,8 @@
       "data",
       "hermes-agent",
       "agentmemory",
+      "openhuman",
+      "fbapp",
       "www.featurebase.app",
       ".turbo",
       ".next",

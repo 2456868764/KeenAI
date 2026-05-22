@@ -36,6 +36,9 @@ export const apiEnvSchema = z.object({
   TTS_PROVIDER: z.enum(["stub", "openai"]).optional(),
   OPENAI_TTS_MODEL: z.string().default("tts-1"),
   OPENAI_TTS_VOICE: z.string().default("alloy"),
+  /** Image generation provider: stub | openai (auto: openai when OPENAI_API_KEY set, else stub) */
+  IMAGE_GEN_PROVIDER: z.enum(["stub", "openai"]).optional(),
+  OPENAI_IMAGE_MODEL: z.string().default("dall-e-3"),
   /** Video/image thumbnail provider: stub | ffmpeg */
   THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */

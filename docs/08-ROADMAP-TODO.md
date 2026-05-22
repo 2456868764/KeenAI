@@ -1,3 +1,10 @@
+# KeenAI 阶段执行 TODO（跟踪 `08-ROADMAP.md`）
+
+> 每完成一项：**实现 → `pnpm test` / `pnpm lint` → `git commit`**。  
+> 状态：`[ ]` 待办 · `[~]` 进行中 · `[x]` 完成
+
+---
+
 ## 当前迭代 · Iteration 20（TTS Tool + Audio Outbound）
 
 | ID | 项 | 状态 |
@@ -5,9 +12,20 @@
 | I20-01 | synthesizeSpeech + TTS env | [x] |
 | I20-02 | POST /tools/text-to-speech + agent outbound | [x] |
 | I20-03 | Widget audio player + tests | [x] |
-| I20-04 | roadmap · commits | [~] |
+| I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：MM-14 generate_image tool
+**下一迭代**：MM-14 generate_image tool · Memory Tree 设计文档（I21-00）
+
+---
+
+## Iteration 21（Memory Tree 设计 · 文档）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I21-00 | [15-MEMORY-TREE.md](./15-MEMORY-TREE.md) + 关联 doc/roadmap 更新 | [x] |
+| I21-01 | `memory_chunks` schema + canonicalize（MT-01） | [ ] |
+| I21-02 | fast-score + admitted/dropped（MT-02） | [ ] |
+| I21-03 | source tree seal → episodes（MT-03） | [ ] |
 
 ---
 
@@ -21,3 +39,22 @@
 | MM-13 | TTS tool + audio 出站 | [x] |
 | MM-14 | generate_image tool | [ ] |
 | MM-15 | Telegram/Slack IM 多模态 | [ ] |
+
+## Phase 3 · Memory Tree（[15-MEMORY-TREE.md](./15-MEMORY-TREE.md)）
+
+| MT ID | 项 | 状态 |
+|-------|-----|------|
+| MT-01 | memory_chunks + canonicalize + deterministic id | [ ] |
+| MT-02 | fast-score + extract_chunk + admitted/dropped | [ ] |
+| MT-03 | source tree conv:* buffer + seal → episodes | [ ] |
+| MT-04 | memory.digest_daily global node | [ ] |
+| MT-05 | 检索 API drill_down + brand_daily | [ ] |
+| MT-06 | Agent scope 路由（09 附录 B） | [ ] |
+| MT-07 | topic tree + hotness | [ ] |
+| MT-08 | Memory Explorer Dashboard MVP | [ ] |
+| MT-09 | channel-scoped source tree | [ ] |
+| MT-10 | agentmemory backend 兼容层（可选） | [ ] |
+
+---
+
+见 [08-ROADMAP.md](./08-ROADMAP.md) · [15-MEMORY-TREE.md](./15-MEMORY-TREE.md) · [14-MULTIMODAL.md](./14-MULTIMODAL.md) · [ALPHA.md](./ALPHA.md).
