@@ -488,4 +488,60 @@ describe("memory retrieval integration", () => {
 
     await store.close();
   });
+
+  it("returns memory facts for a sealed conversation", async () => {
+    const { app, store, brand, auth } = await setupMemoryApiTest();
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "facts-test",
+        subject: "Facts test",
+      }),
+    });
+    expect(convRes.status).toBe(201);
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const texts = [
+      "Please email support@acme.com about my billing issue.",
+      "My order ORD-99999 has not shipped yet.",
+      "Can you confirm the Pro plan upgrade went through?",
+      "Still waiting on the invoice copy.",
+      "Need manager callback about SLA terms.",
+      "Issue started last Tuesday morning.",
+      "Customer prefers email contact only.",
+      "Please escalate if no update today.",
+    ];
+    for (const plainText of texts) {
+      const msgRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ senderType: "user", plainText }),
+      });
+      expect(msgRes.status).toBe(201);
+    }
+
+    const factsRes = await app.request(
+      `/api/v1/memory/facts?brandId=${brand.id}&scope=conversation&id=${conversation.id}`,
+      { headers: auth },
+    );
+    expect(factsRes.status).toBe(200);
+    const factsBody = (await factsRes.json()) as {
+      facts: { facts: Array<{ predicate: string; object: string }>; slots: Array<{ key: string }> };
+    };
+    expect(factsBody.facts.facts.length).toBeGreaterThan(0);
+    expect(factsBody.facts.slots.some((slot) => slot.key === "contact_email")).toBe(true);
+
+    const ctxRes = await app.request(`/api/v1/memory/context?conversationId=${conversation.id}`, {
+      headers: auth,
+    });
+    expect(ctxRes.status).toBe(200);
+    const ctxBody = (await ctxRes.json()) as { context: { text: string } };
+    expect(ctxBody.context.text).toContain("Semantic memory (L3");
+
+    await store.close();
+  });
 });

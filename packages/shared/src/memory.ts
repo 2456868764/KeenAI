@@ -57,3 +57,23 @@ export const memorySearchQuerySchema = z.object({
 
 export type MemoryStatsQuery = z.infer<typeof memoryStatsQuerySchema>;
 export type MemorySearchQuery = z.infer<typeof memorySearchQuerySchema>;
+
+export const memoryFactsQuerySchema = z
+  .object({
+    brandId: z.string().min(1),
+    scope: z.enum(["conversation", "customer", "channel"]),
+    id: z.string().min(1),
+    channelType: z.enum(["slack", "telegram"]).optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .superRefine((value, ctx) => {
+    if (value.scope === "channel" && !value.channelType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "channelType_required_for_channel_scope",
+        path: ["channelType"],
+      });
+    }
+  });
+
+export type MemoryFactsQuery = z.infer<typeof memoryFactsQuerySchema>;

@@ -1,6 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { memorySummaries } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
+import { buildMemoryL3Section, queryMemoryFacts } from "./query-facts.js";
 import {
   queryBrandDailyDigest,
   queryConversationMemoryTree,
@@ -178,6 +179,19 @@ async function loadCustomerSections(
   return sections;
 }
 
+async function loadL3Section(
+  db: KeenaiDb,
+  input: { orgId: string; brandId: string; scope: string; scopeId: string },
+): Promise<MemoryContextSection | null> {
+  const l3 = await queryMemoryFacts(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    scope: input.scope,
+    scopeId: input.scopeId,
+  });
+  return buildMemoryL3Section(l3);
+}
+
 /** Assemble Memory Tree context blocks for Agent / Copilot prompts. */
 export async function assembleMemoryContext(
   db: KeenaiDb,
@@ -198,6 +212,13 @@ export async function assembleMemoryContext(
 
   if (scope === "conversation" || scope === "hybrid") {
     sections.push(...(await loadConversationSections(db, base)));
+    const l3 = await loadL3Section(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      scope: "conversation",
+      scopeId: input.conversationId,
+    });
+    if (l3) sections.push(l3);
   }
 
   if (scope === "brand_daily" || scope === "hybrid") {
@@ -221,12 +242,29 @@ export async function assembleMemoryContext(
           userId: input.userId,
         })),
       );
+      const l3 = await loadL3Section(db, {
+        orgId: input.orgId,
+        brandId: input.brandId,
+        scope: "customer",
+        scopeId: input.userId,
+      });
+      if (l3) sections.push(l3);
     } else {
       sections.push({
         title: "Customer memory",
         body: "Customer scope requested but conversation has no linked userId.",
       });
     }
+  }
+
+  if (scope === "hybrid" && input.userId) {
+    const customerL3 = await loadL3Section(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      scope: "customer",
+      scopeId: input.userId,
+    });
+    if (customerL3) sections.push(customerL3);
   }
 
   if (scope === "brand_daily" && sections.length === 0) {

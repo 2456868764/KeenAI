@@ -7,12 +7,15 @@ import {
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
   queryMemoryExplorerStats,
+  queryMemoryFacts,
+  resolveMemoryFactsScope,
   searchMemoryChunks,
 } from "@keenai/memory-tree";
 import {
   API_VERSION,
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
+  memoryFactsQuerySchema,
   memorySearchQuerySchema,
   memoryStatsQuerySchema,
   memoryTreeQuerySchema,
@@ -194,6 +197,50 @@ export function memoryRoutes(_ctx: AppContext) {
       });
 
       return c.json({ results });
+    },
+  );
+
+  r.get(
+    `${prefix}/facts`,
+    requireAuth(),
+    zValidator("query", memoryFactsQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const db = c.get("store").db;
+
+      if (query.scope === "conversation") {
+        const conversation = await getConversationForOrg(db, query.id, auth.orgId);
+        if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
+        if (conversation.brandId !== query.brandId) {
+          return c.json({ error: "forbidden" }, 403);
+        }
+      }
+
+      const resolved = resolveMemoryFactsScope({
+        scope: query.scope,
+        id: query.id,
+        channelType: query.channelType,
+      });
+      if ("error" in resolved) {
+        return c.json({ error: resolved.error }, 400);
+      }
+
+      const facts = await queryMemoryFacts(db, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        scope: resolved.scope,
+        scopeId: resolved.scopeId,
+        limit: query.limit,
+      });
+
+      return c.json({ facts });
     },
   );
 

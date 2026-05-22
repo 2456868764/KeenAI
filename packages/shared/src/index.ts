@@ -93,11 +93,13 @@ export {
 export {
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
+  memoryFactsQuerySchema,
   memorySearchQuerySchema,
   memoryStatsQuerySchema,
   memoryTreeQuerySchema,
   type MemoryContextQuery,
   type MemoryDigestQuery,
+  type MemoryFactsQuery,
   type MemorySearchQuery,
   type MemoryStatsQuery,
   type MemoryTreeQuery,

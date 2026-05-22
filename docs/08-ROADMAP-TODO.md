@@ -5,15 +5,24 @@
 
 ---
 
-## 当前迭代 · Iteration 40（Keeni Memory KM-08 · facts API + L3 context）
+## 当前迭代 · Iteration 41（Keeni Memory KM-09 · ingest privacy filter）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I40-01 | `GET /memory/facts` API | [ ] |
-| I40-02 | `assembleMemoryContext` 注入 slots/facts | [ ] |
-| I40-03 | tests · roadmap · commit · push | [ ] |
+| I41-01 | PII 脱敏 processor（ingest 路径） | [ ] |
+| I41-02 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-09 · ingest privacy filter
+**下一迭代**：KM-10（见 `08-ROADMAP.md` Phase 4）
+
+---
+
+## Iteration 40（Keeni Memory KM-08 · facts API + L3 context）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I40-01 | `GET /memory/facts` API | [x] |
+| I40-02 | `assembleMemoryContext` 注入 slots/facts | [x] |
+| I40-03 | tests · roadmap · commit · push | [x] |
 
 ---
 

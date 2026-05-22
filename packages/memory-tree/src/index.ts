@@ -104,6 +104,16 @@ export {
   type QueryCustomerMemoryTreeInput,
 } from "./query.js";
 export {
+  buildMemoryL3Section,
+  queryMemoryFacts,
+  resolveMemoryFactsScope,
+  type MemoryFactView,
+  type MemoryL3Section,
+  type MemorySlotView,
+  type QueryMemoryFactsInput,
+  type QueryMemoryFactsResult,
+} from "./query-facts.js";
+export {
   processAdmittedChunk,
   type ProcessAdmittedChunkInput,
   type ProcessAdmittedChunkResult,
