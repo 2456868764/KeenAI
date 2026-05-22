@@ -8,6 +8,7 @@
     "start": "bun --env-file=../../.env src/index.ts",
     "seed": "bun --env-file=../../.env src/seed.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
+    "compile": "bun build src/index.ts --compile --outfile ../../dist/keenai-api",
     "typecheck": "tsc --noEmit",
     "lint": "biome check ."
   },

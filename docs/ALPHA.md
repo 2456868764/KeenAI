@@ -63,6 +63,7 @@ docker compose --profile lite --profile inngest up --build -d
 - 无 Tickets / Feedback Portal / Help Center
 - OTel / Sentry 为占位
 - `bun build --compile` 单二进制待续
++- 单二进制：`pnpm compile:api` → `dist/keenai-api`
 
 ## 反馈
 
