@@ -23,7 +23,7 @@ package-lock.json
 yarn.lock
 integrations/hermes/__pycache__/
 hermes-agent/
-agentmemory/
+/agentmemory/
 openhuman/
 fbapp/
 .next/

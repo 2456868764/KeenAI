@@ -91,11 +91,13 @@ export {
   portalMagicLinkVerifySchema,
 } from "./portal.js";
 export {
+  memoryAgentMemoryRecallQuerySchema,
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
   memorySearchQuerySchema,
   memoryStatsQuerySchema,
   memoryTreeQuerySchema,
+  type MemoryAgentMemoryRecallQuery,
   type MemoryContextQuery,
   type MemoryDigestQuery,
   type MemorySearchQuery,

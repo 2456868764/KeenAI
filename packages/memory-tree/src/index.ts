@@ -47,6 +47,38 @@ export {
   type ChannelScopedTreeType,
 } from "./channel-config.js";
 export {
+  AgentMemoryClient,
+  type AgentMemoryClientOptions,
+} from "./agentmemory/client.js";
+export {
+  DEFAULT_AGENTMEMORY_TIMEOUT_MS,
+  DEFAULT_AGENTMEMORY_URL,
+  agentMemoryProject,
+  resolveAgentMemoryConfig,
+  type AgentMemoryConfig,
+  type AgentMemoryEnv,
+} from "./agentmemory/config.js";
+export { mapSummaryToRemember, type MapSummaryToRememberInput } from "./agentmemory/mapping.js";
+export {
+  getAgentMemoryRuntime,
+  initAgentMemoryRuntime,
+} from "./agentmemory/runtime.js";
+export {
+  createAgentMemoryClient,
+  probeAgentMemory,
+  recallFromAgentMemory,
+  syncSummaryToAgentMemory,
+  type AgentMemorySyncInput,
+  type AgentMemorySyncResult,
+} from "./agentmemory/sync.js";
+export type {
+  AgentMemoryRecallHit,
+  HealthResponse,
+  RememberRequest,
+  SmartSearchResponse,
+  WireMemory,
+} from "./agentmemory/types.js";
+export {
   channelRouteChunk,
   resolveConversationChannel,
   type ChannelRouteChunkInput,

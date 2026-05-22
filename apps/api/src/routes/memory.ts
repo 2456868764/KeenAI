@@ -2,15 +2,18 @@ import { zValidator } from "@hono/zod-validator";
 import {
   assembleMemoryContext,
   listHotTopics,
+  probeAgentMemory,
   queryBrandDailyDigest,
   queryChannelMemoryTree,
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
   queryMemoryExplorerStats,
+  recallFromAgentMemory,
   searchMemoryChunks,
 } from "@keenai/memory-tree";
 import {
   API_VERSION,
+  memoryAgentMemoryRecallQuerySchema,
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
   memorySearchQuerySchema,
@@ -18,6 +21,7 @@ import {
   memoryTreeQuerySchema,
 } from "@keenai/shared";
 import { Hono } from "hono";
+import { getAgentMemoryConfigFromEnv } from "../lib/agentmemory-init.js";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
@@ -186,6 +190,40 @@ export function memoryRoutes(_ctx: AppContext) {
       });
 
       return c.json({ results });
+    },
+  );
+
+  r.get(`${prefix}/agentmemory/health`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const config = getAgentMemoryConfigFromEnv(c.get("env"));
+    const status = await probeAgentMemory(config);
+    return c.json({ agentmemory: status });
+  });
+
+  r.get(
+    `${prefix}/agentmemory/recall`,
+    requireAuth(),
+    zValidator("query", memoryAgentMemoryRecallQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const config = getAgentMemoryConfigFromEnv(c.get("env"));
+      const hits = await recallFromAgentMemory(config, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        q: query.q,
+        limit: query.limit,
+      });
+
+      return c.json({ hits });
     },
   );
 

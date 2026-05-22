@@ -6,6 +6,8 @@ import {
   memoryTreeBuffers,
 } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
+import { getAgentMemoryRuntime } from "./agentmemory/runtime.js";
+import { syncSummaryToAgentMemory } from "./agentmemory/sync.js";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
 import { episodeTargetFromScopeKey } from "./scope-key.js";
 import { stubSealSummary } from "./stub-seal.js";
@@ -142,6 +144,21 @@ export async function sealBuffer(db: KeenaiDb, input: SealBufferInput): Promise<
       updatedAt: new Date(),
     })
     .where(eq(memoryTreeBuffers.id, buffer.id));
+
+  const agentMemory = getAgentMemoryRuntime();
+  if (agentMemory?.syncEnabled) {
+    void syncSummaryToAgentMemory(agentMemory, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      scopeKey: input.scopeKey,
+      title: summaryRow.title,
+      summary: summaryRow.summary,
+      provenance: summaryRow.provenance,
+      kind: "seal",
+    }).catch((err) => {
+      console.warn("[memory-tree] agentmemory sync failed for seal:", err);
+    });
+  }
 
   return {
     sealed: true,
