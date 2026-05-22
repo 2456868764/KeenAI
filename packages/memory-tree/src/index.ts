@@ -30,6 +30,13 @@ export {
   embedAdmittedMemoryChunk,
   type MemoryChunkEmbedder,
 } from "./chunk-vector-index.js";
+export { persistMemoryFacts, type PersistMemoryFactsInput } from "./persist-facts.js";
+export { recomputeMemorySlots, type RecomputeMemorySlotsInput } from "./recompute-slots.js";
+export {
+  stubExtractFacts,
+  type ExtractedMemoryFact,
+  type StubFactExtractorInput,
+} from "./stub-fact-extractor.js";
 export { createOpenAiMemoryChunkEmbedder } from "./embed/openai-embedder.js";
 export { createStubMemoryChunkEmbedder } from "./embed/stub-embedder.js";
 export {
@@ -37,6 +44,13 @@ export {
   conversationMessageSourceRef,
 } from "./canonicalize.js";
 export { extractChunk, type ExtractChunkResult } from "./extract-chunk.js";
+export {
+  createStubMemoryFactExtractor,
+  extractFactsFromSummary,
+  type ExtractFactsFromSummaryInput,
+  type ExtractFactsFromSummaryResult,
+  type MemoryFactExtractor,
+} from "./extract-facts.js";
 export {
   indexMemorySummaryInFts,
   memorySummaryFtsBody,

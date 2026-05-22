@@ -1,7 +1,8 @@
-import { processAdmittedChunk, runDigestDaily } from "@keenai/memory-tree";
+import { runDigestDaily } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
+import { runExtractFactsForSummary, runProcessAdmittedChunk } from "./memory-pipeline.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
@@ -10,16 +11,38 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
   const extract = client.createFunction(
     { id: "keenai-memory-extract-chunk" },
     { event: MEMORY_INNGEST_EVENTS.EXTRACT_CHUNK },
-    async ({ event }) => {
+    async ({ event, step }) => {
       const data = event.data as {
         orgId: string;
         brandId: string;
         chunkId: string;
       };
-      return processAdmittedChunk(ctx.store.db, {
-        ...data,
-        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
-      });
+
+      const result = await step.run("process-admitted-chunk", () =>
+        runProcessAdmittedChunk(ctx.store.db, data),
+      );
+
+      for (const summaryId of result.summaryIds) {
+        await step.sendEvent(`extract-facts-${summaryId}`, {
+          name: MEMORY_INNGEST_EVENTS.EXTRACT_FACTS,
+          data: { orgId: data.orgId, brandId: data.brandId, summaryId },
+        });
+      }
+
+      return result;
+    },
+  );
+
+  const extractFacts = client.createFunction(
+    { id: "keenai-memory-extract-facts" },
+    { event: MEMORY_INNGEST_EVENTS.EXTRACT_FACTS },
+    async ({ event }) => {
+      const data = event.data as {
+        orgId: string;
+        brandId: string;
+        summaryId: string;
+      };
+      return runExtractFactsForSummary(ctx.store.db, data);
     },
   );
 
@@ -45,5 +68,5 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
     async () => runDigestDaily(ctx.store.db, { summaryFtsIndexer: getMemorySummaryFtsIndexer() }),
   );
 
-  return [extract, digestDaily, digestDailyCron] as const;
+  return [extract, extractFacts, digestDaily, digestDailyCron] as const;
 }

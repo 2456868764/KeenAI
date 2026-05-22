@@ -24,6 +24,7 @@ export type ProcessAdmittedChunkResult = {
   appended: boolean;
   sealed: boolean;
   summaryId?: string;
+  summaryIds: string[];
   episodeId?: string;
   topicRouted?: boolean;
   topicSealed?: boolean;
@@ -33,6 +34,10 @@ export type ProcessAdmittedChunkResult = {
   channelScopeKey?: string;
   reason?: string;
 };
+
+function collectSummaryIds(...ids: Array<string | undefined>): string[] {
+  return [...new Set(ids.filter((id): id is string => Boolean(id)))];
+}
 
 /** Run extract → append_buffer → seal pipeline for an admitted chunk. */
 export async function processAdmittedChunk(
@@ -46,6 +51,7 @@ export async function processAdmittedChunk(
       extracted: false,
       appended: false,
       sealed: false,
+      summaryIds: [],
       reason: "extract_skipped",
     };
   }
@@ -63,6 +69,7 @@ export async function processAdmittedChunk(
       extracted: true,
       appended: false,
       sealed: false,
+      summaryIds: [],
       reason: "no_conversation_scope",
     };
   }
@@ -82,6 +89,7 @@ export async function processAdmittedChunk(
       extracted: true,
       appended: false,
       sealed: false,
+      summaryIds: [],
       reason: appendResult.reason,
     };
   }
@@ -94,6 +102,7 @@ export async function processAdmittedChunk(
       extracted: true,
       appended: true,
       sealed: false,
+      summaryIds: collectSummaryIds(topicResult?.summaryId, channelResult?.summaryId),
       topicRouted: topicResult?.routed,
       topicSealed: topicResult?.sealed,
       topicHotness: topicResult?.hotness,
@@ -119,6 +128,11 @@ export async function processAdmittedChunk(
     appended: true,
     sealed: sealResult.sealed,
     summaryId: sealResult.summaryId,
+    summaryIds: collectSummaryIds(
+      sealResult.summaryId,
+      topicResult?.summaryId,
+      channelResult?.summaryId,
+    ),
     episodeId: sealResult.episodeId,
     topicRouted: topicResult?.routed,
     topicSealed: topicResult?.sealed,

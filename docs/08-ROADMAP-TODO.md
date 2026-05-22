@@ -5,15 +5,25 @@
 
 ---
 
-## 当前迭代 · Iteration 39（Keeni Memory KM-07 · memory_facts + memory_slots）
+## 当前迭代 · Iteration 40（Keeni Memory KM-08 · facts API + L3 context）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I39-01 | `memory_facts` + `memory_slots` schema + migration | [ ] |
-| I39-02 | seal 后 LLM 抽取 facts（Inngest） | [ ] |
-| I39-03 | tests · roadmap · commit · push | [ ] |
+| I40-01 | `GET /memory/facts` API | [ ] |
+| I40-02 | `assembleMemoryContext` 注入 slots/facts | [ ] |
+| I40-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-08 · facts API + Agent L3 context
+**下一迭代**：KM-09 · ingest privacy filter
+
+---
+
+## Iteration 39（Keeni Memory KM-07 · memory_facts + memory_slots）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I39-01 | `memory_facts` + `memory_slots` schema + migration | [x] |
+| I39-02 | seal 后 LLM 抽取 facts（Inngest） | [x] |
+| I39-03 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -92,7 +102,7 @@
 | **KM-04** | I36 | `memory_chunk_vectors` 表 + admit 后 embed（stub / OpenAI env） | [x] |
 | **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [x] |
 | **KM-06** | I38 | `fts_memory_summaries` + 搜索覆盖 seal 摘要与日 digest | [x] |
-| **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [ ] |
+| **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [x] |
 | **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [ ] |
 | **KM-09** | I41 | ingest privacy filter（PII 脱敏 processor） | [ ] |
 | **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [ ] |
@@ -291,7 +301,7 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-04 | chunk vectors + embed | [x] |
 | KM-05 | hybrid FTS+Vector recall | [x] |
 | KM-06 | summaries FTS search | [x] |
-| KM-07 | memory_facts + memory_slots | [ ] |
+| KM-07 | memory_facts + memory_slots | [x] |
 | KM-08 | L3 context API | [ ] |
 | KM-09 | privacy filter ingest | [ ] |
 | KM-10 | flush_stale + entities | [ ] |

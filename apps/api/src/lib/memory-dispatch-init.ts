@@ -1,13 +1,13 @@
-import { processAdmittedChunk } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import { Inngest as InngestClient } from "inngest";
 import type { AppContext } from "../types.js";
 import {
   type MemoryDispatchAdapter,
+  type MemoryExtractFactsPayload,
   createInngestMemoryDispatch,
   createSyncMemoryDispatch,
 } from "./memory-dispatch.js";
-import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
+import { runExtractFactsForSummary, runProcessAdmittedChunk } from "./memory-pipeline.js";
 
 let adapter: MemoryDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
@@ -15,11 +15,19 @@ let inngestClient: Inngest | null = null;
 export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
   const handlers = {
     extractChunk: async (payload: { orgId: string; brandId: string; chunkId: string }) => {
-      const result = await processAdmittedChunk(ctx.store.db, {
-        ...payload,
-        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
-      });
+      const result = await runProcessAdmittedChunk(ctx.store.db, payload);
+      for (const summaryId of result.summaryIds) {
+        await runExtractFactsForSummary(ctx.store.db, {
+          orgId: payload.orgId,
+          brandId: payload.brandId,
+          summaryId,
+        });
+      }
       return { processed: result.extracted };
+    },
+    extractFacts: async (payload: MemoryExtractFactsPayload) => {
+      const result = await runExtractFactsForSummary(ctx.store.db, payload);
+      return { extracted: result.extracted };
     },
   };
 

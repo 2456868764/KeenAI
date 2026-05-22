@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   conversationScopeKey,
+  extractFactsFromSummary,
   ingestConversationMessage,
   processAdmittedChunk,
   searchMemoryChunks,
@@ -16,6 +17,8 @@ import {
   conversations,
   memoryChunks,
   memoryEpisodes,
+  memoryFacts,
+  memorySlots,
   memorySummaries,
   memoryTreeBuffers,
   messages,
@@ -129,6 +132,19 @@ describe("memory-tree buffer + seal", () => {
     expect(episodes).toHaveLength(1);
     expect(episodes[0]?.scope).toBe("conversation");
     expect(episodes[0]?.scopeId).toBe(conv.id);
+
+    const summary = requireRow(summaries[0], "summary");
+    const factsResult = await extractFactsFromSummary(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      summaryId: summary.id,
+    });
+    expect(factsResult.extracted).toBe(true);
+
+    const facts = await db.select().from(memoryFacts).where(eq(memoryFacts.orgId, org.id));
+    expect(facts.length).toBeGreaterThan(0);
+    const slots = await db.select().from(memorySlots).where(eq(memorySlots.orgId, org.id));
+    expect(slots.length).toBeGreaterThan(0);
 
     const search = await searchMemoryChunks(db, {
       orgId: org.id,

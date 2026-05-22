@@ -195,3 +195,53 @@ export const memoryChunkVectors = sqliteTable(
 );
 
 export type MemoryChunkVectorRow = typeof memoryChunkVectors.$inferSelect;
+
+export const memoryFacts = sqliteTable(
+  "memory_facts",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull(),
+    predicate: text("predicate").notNull(),
+    object: text("object", { mode: "json" }).$type<unknown>().notNull(),
+    confidence: real("confidence").notNull().default(1),
+    importance: real("importance").notNull().default(0.5),
+    source: text("source"),
+    summaryId: text("summary_id").references(() => memorySummaries.id),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqScopePredicate: uniqueIndex("uq_mem_facts").on(t.scope, t.scopeId, t.predicate),
+    idxImportance: index("idx_mem_facts_importance").on(t.scope, t.scopeId, t.importance),
+    idxOrgBrand: index("idx_mem_facts_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type MemoryFactRow = typeof memoryFacts.$inferSelect;
+
+export const memorySlots = sqliteTable(
+  "memory_slots",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull(),
+    key: text("key").notNull(),
+    value: text("value", { mode: "json" }).$type<unknown>(),
+    source: text("source"),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqScopeKey: uniqueIndex("uq_mem_slots").on(t.scope, t.scopeId, t.key),
+    idxOrgBrand: index("idx_mem_slots_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type MemorySlotRow = typeof memorySlots.$inferSelect;
