@@ -5,15 +5,16 @@
 
 ---
 
-## 当前迭代 · Iteration 13（IMAP Ingest + Postgres + Portal）
+## 当前迭代 · Iteration 14（Portal Auth + Postgres Core + IMAP Docs）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I13-01 | IMAP poll → ingest 进 Conversation | [x] |
-| I13-02 | Postgres Drizzle 双方言骨架（`drizzle.config.pg`） | [x] |
-| I13-03 | Portal API + `apps/portal` 客户工单列表 | [x] |
+| I14-01 | Portal magic link JWT auth + middleware | [x] |
+| I14-02 | Postgres core schema（organizations / brands） | [x] |
+| I14-03 | Portal app login flow + IMAP 生产文档 | [x] |
+| I14-04 | 测试 · roadmap · commits | [~] |
 
-**下一迭代**：Portal 鉴权 · Postgres 全表迁移 · IMAP 生产配置文档
+**下一迭代**：Postgres 全表迁移 · Portal ticket 详情 · Help Center 骨架
 
 ---
 
@@ -21,9 +22,9 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I13 | IMAP ingest + Postgres 骨架 + Portal API | [x] |
 | I12 | Ticket 详情 + imapflow + PostgresStore ping | [x] |
 | I11 | Tickets API + Dashboard + IMAP stub | [x] |
-| I10 | 工程强化 + Tickets schema | [x] |
 
 ---
 
@@ -35,4 +36,4 @@
 
 ---
 
-见 [08-ROADMAP.md](./08-ROADMAP.md) · [ALPHA.md](./ALPHA.md).
+见 [08-ROADMAP.md](./08-ROADMAP.md) · [ALPHA.md](./ALPHA.md) · [IMAP.md](./IMAP.md).

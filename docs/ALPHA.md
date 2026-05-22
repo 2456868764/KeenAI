@@ -15,6 +15,9 @@
 | **Workflows** | `first_message` / `customer_unresponsive` 触发 · send/assign/close · React Flow Builder |
 | **Notifications** | 应用内通知 · WebSocket 推送 |
 | **Search** | FTS5 全文检索 |
+| **Tickets** | REST API · Dashboard 列表/详情 · 状态流转 |
+| **Portal** | 客户工单列表 · Magic Link JWT 登录 · `apps/portal` |
+| **Postgres** | Drizzle 双方言 · core schema（organizations / brands） |
 
 ## 快速开始
 
@@ -26,6 +29,7 @@ pnpm install
 pnpm db:migrate
 pnpm seed          # owner@keenai.local / keenai-demo-12
 pnpm dev           # API :8090 · Dashboard :3000
+pnpm --filter @keenai/portal dev   # Portal :3002
 pnpm test
 pnpm smoke
 ```
@@ -56,14 +60,15 @@ docker compose --profile lite --profile inngest up --build -d
 
 ## 已知限制
 
-- 仅 LibSQL / SQLite 方言（PostgreSQL 矩阵待续）
+- 主存储仍为 LibSQL / SQLite；PostgreSQL core schema 已就绪，全表迁移进行中
 - Workflow 为 MVP 子集（3 Trigger · 3 Block），无 `wait` / 分支 / HTTP
 - Copilot 无流式输出到 UI
 - Widget 无 Home 页与 CSAT
-- 无 Tickets / Feedback Portal / Help Center
+- Portal 无工单详情页；Help Center 待续
 - OTel / Sentry 为占位
-- `bun build --compile` 单二进制待续
-+- 单二进制：`pnpm compile:api` → `dist/keenai-api`
+- 单二进制：`pnpm compile:api` → `dist/keenai-api`
+
+IMAP 生产配置见 [IMAP.md](./IMAP.md)。
 
 ## 反馈
 
