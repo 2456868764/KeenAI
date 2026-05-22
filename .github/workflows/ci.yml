@@ -31,3 +31,42 @@ jobs:
       - run: pnpm test
       - run: pnpm typecheck
       - run: pnpm --filter @keenai/auth test
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: keenai
+          POSTGRES_PASSWORD: keenai
+          POSTGRES_DB: keenai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U keenai"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        continue-on-error: true
+      - run: pnpm install
+
+      - name: Postgres matrix smoke
+        env:
+          PG_DSN: postgresql://keenai:keenai@localhost:5432/keenai
+        run: pnpm exec vitest run packages/storage/tests/pg-matrix.test.ts
