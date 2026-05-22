@@ -19,6 +19,7 @@ import {
 } from "@keenai/shared";
 import { Hono } from "hono";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
+import { getMemoryChunkFtsStore } from "../lib/memory-chunk-fts-init.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
@@ -183,6 +184,7 @@ export function memoryRoutes(_ctx: AppContext) {
         q: query.q,
         scope: query.scope,
         limit: query.limit,
+        chunkFts: getMemoryChunkFtsStore(),
       });
 
       return c.json({ results });

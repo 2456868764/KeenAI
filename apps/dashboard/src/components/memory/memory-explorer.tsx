@@ -292,10 +292,11 @@ function SearchHitRow({ hit }: { hit: MemorySearchHit }) {
       <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
         <span className="rounded bg-[hsl(var(--surface-0))] px-1.5 py-0.5">{hit.scope}</span>
         <span>{hit.lifecycle}</span>
-        {hit.fastScore != null ? <span>score {hit.fastScore.toFixed(2)}</span> : null}
+        {hit.fastScore != null ? <span>fast {hit.fastScore.toFixed(2)}</span> : null}
+        {hit.ftsScore != null ? <span>fts {hit.ftsScore.toFixed(2)}</span> : null}
         <span>{new Date(hit.createdAt).toLocaleString()}</span>
       </div>
-      <p className="line-clamp-2 text-[hsl(var(--foreground))]">{hit.body}</p>
+      <p className="line-clamp-2 text-[hsl(var(--foreground))]">{hit.snippet ?? hit.body}</p>
       {hit.conversationId ? (
         <Link
           href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}

@@ -421,10 +421,11 @@ describe("memory retrieval integration", () => {
     );
     expect(searchRes.status).toBe(200);
     const searchBody = (await searchRes.json()) as {
-      results: { hits: Array<{ body: string }> };
+      results: { hits: Array<{ body: string; ftsScore: number | null }> };
     };
     expect(searchBody.results.hits.length).toBeGreaterThan(0);
     expect(searchBody.results.hits[0]?.body.toLowerCase()).toContain("billing");
+    expect(searchBody.results.hits[0]?.ftsScore).not.toBeNull();
 
     await store.close();
   });

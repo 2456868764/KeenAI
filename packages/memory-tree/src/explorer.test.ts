@@ -8,7 +8,7 @@ import {
   refreshCustomerHotness,
   searchMemoryChunks,
 } from "@keenai/memory-tree";
-import { createLibsqlStore } from "@keenai/storage";
+import { createLibsqlMemoryChunkFtsStore, createLibsqlStore } from "@keenai/storage";
 import { brands, conversations, messages, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -27,6 +27,7 @@ describe("memory-tree explorer", () => {
       "../../storage/migrations/libsql",
     );
     await migrate(db, { migrationsFolder });
+    const chunkFts = createLibsqlMemoryChunkFtsStore(store.client);
 
     const orgRow = await db.insert(organizations).values({ slug: "exp", name: "Exp" }).returning();
     const org = requireRow(orgRow[0], "org");
@@ -70,6 +71,7 @@ describe("memory-tree explorer", () => {
         sentAt: new Date("2026-05-28T10:00:00.000Z"),
         plainText: text,
         isInternal: false,
+        ftsIndexer: chunkFts,
       });
       await applyFastScoreToChunk(db, {
         chunkId: ingest.id,
@@ -96,9 +98,11 @@ describe("memory-tree explorer", () => {
       brandId: brand.id,
       q: "billing",
       scope: "conversation",
+      chunkFts,
     });
     expect(search.hits.length).toBeGreaterThan(0);
     expect(search.hits[0]?.conversationId).toBe(conv.id);
+    expect(search.hits[0]?.ftsScore).not.toBeNull();
 
     await store.close();
   });

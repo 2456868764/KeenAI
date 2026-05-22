@@ -561,6 +561,8 @@ export type MemorySearchHit = {
   body: string;
   lifecycle: string;
   fastScore: number | null;
+  ftsScore: number | null;
+  snippet: string | null;
   createdAt: string;
 };
 

@@ -1,4 +1,4 @@
-import type { KeenaiDb } from "@keenai/storage";
+import type { FTSStore, KeenaiDb } from "@keenai/storage";
 import {
   memoryChunks,
   memoryHotness,
@@ -35,6 +35,8 @@ export type SearchMemoryChunksInput = {
   q: string;
   scope?: "all" | "conversation" | "customer" | "channel";
   limit?: number;
+  /** LibSQL fts_memory_chunks store (KM-03). Falls back to SQL LIKE when omitted. */
+  chunkFts?: Pick<FTSStore, "search"> | null;
 };
 
 export type MemorySearchHit = {
@@ -46,6 +48,8 @@ export type MemorySearchHit = {
   body: string;
   lifecycle: string;
   fastScore: number | null;
+  ftsScore: number | null;
+  snippet: string | null;
   createdAt: string;
 };
 
@@ -182,7 +186,123 @@ function inferHitScope(metadata: Record<string, unknown>): MemorySearchHit["scop
   return "unknown";
 }
 
-/** Search memory chunks by plain-text body (Memory Explorer MVP). */
+function rowToSearchHit(
+  row: typeof memoryChunks.$inferSelect,
+  fts?: { score: number; snippet?: string },
+): MemorySearchHit {
+  const metadata = row.metadata ?? {};
+  const conversationId =
+    typeof metadata.conversationId === "string" ? metadata.conversationId : null;
+  const userId = typeof metadata.userId === "string" ? metadata.userId : null;
+
+  return {
+    chunkId: row.id,
+    scope: inferHitScope(metadata),
+    conversationId,
+    messageId: messageIdFromChunk({
+      sourceRef: row.sourceRef,
+      metadata,
+    }),
+    userId,
+    body: extractBodyFromCanonicalMd(row.bodyMd),
+    lifecycle: row.lifecycle,
+    fastScore: row.fastScore ?? null,
+    ftsScore: fts?.score ?? null,
+    snippet: fts?.snippet ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+async function scopeRestrictedChunkIds(
+  db: KeenaiDb,
+  input: { orgId: string; brandId: string },
+  scope: "all" | "conversation" | "customer" | "channel",
+): Promise<Set<string> | null> {
+  if (scope === "all" || scope === "conversation") return null;
+
+  const buffers = await db
+    .select({ leafIds: memoryTreeBuffers.leafIds })
+    .from(memoryTreeBuffers)
+    .where(
+      and(
+        eq(memoryTreeBuffers.orgId, input.orgId),
+        eq(memoryTreeBuffers.brandId, input.brandId),
+        scope === "customer"
+          ? sql`${memoryTreeBuffers.scopeKey} like 'customer:%'`
+          : sql`${memoryTreeBuffers.scopeKey} like 'channel:%'`,
+      ),
+    );
+
+  return new Set(buffers.flatMap((row) => row.leafIds));
+}
+
+async function searchMemoryChunksWithFts(
+  db: KeenaiDb,
+  input: SearchMemoryChunksInput & { chunkFts: Pick<FTSStore, "search"> },
+): Promise<SearchMemoryChunksResult> {
+  const q = input.q.trim();
+  const scope = input.scope ?? "all";
+  const limit = input.limit ?? 20;
+
+  const scopeIds = await scopeRestrictedChunkIds(db, input, scope);
+  if (scopeIds && scopeIds.size === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const ftsHits = await input.chunkFts.search({
+    orgId: input.orgId,
+    brandId: input.brandId,
+    q,
+    limit: Math.min(Math.max(limit * 10, limit), 100),
+  });
+
+  if (ftsHits.length === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const orderedIds = ftsHits
+    .filter((hit) => !scopeIds || scopeIds.has(hit.id))
+    .map((hit) => hit.id);
+
+  if (orderedIds.length === 0) {
+    return { q, scope, hits: [] };
+  }
+
+  const rows = await db
+    .select()
+    .from(memoryChunks)
+    .where(
+      and(
+        eq(memoryChunks.orgId, input.orgId),
+        eq(memoryChunks.brandId, input.brandId),
+        inArray(memoryChunks.id, orderedIds),
+      ),
+    );
+
+  const rowMap = new Map(rows.map((row) => [row.id, row]));
+  const ftsMap = new Map(ftsHits.map((hit) => [hit.id, hit]));
+
+  const hits: MemorySearchHit[] = [];
+  for (const id of orderedIds) {
+    if (hits.length >= limit) break;
+    const row = rowMap.get(id);
+    if (!row) continue;
+
+    const metadata = row.metadata ?? {};
+    if (scope === "conversation" && typeof metadata.conversationId !== "string") {
+      continue;
+    }
+
+    const ftsHit = ftsMap.get(id);
+    hits.push(
+      rowToSearchHit(row, ftsHit ? { score: ftsHit.score, snippet: ftsHit.snippet } : undefined),
+    );
+  }
+
+  return { q, scope, hits };
+}
+
+/** Search memory chunks via FTS5 (preferred) or SQL LIKE fallback. */
 export async function searchMemoryChunks(
   db: KeenaiDb,
   input: SearchMemoryChunksInput,
@@ -193,6 +313,10 @@ export async function searchMemoryChunks(
 
   if (q.length === 0) {
     return { q, scope, hits: [] };
+  }
+
+  if (input.chunkFts) {
+    return searchMemoryChunksWithFts(db, { ...input, chunkFts: input.chunkFts });
   }
 
   const pattern = `%${escapeLikePattern(q)}%`;
@@ -251,27 +375,7 @@ export async function searchMemoryChunks(
     .orderBy(sql`${memoryChunks.createdAt} desc`)
     .limit(limit);
 
-  const hits: MemorySearchHit[] = rows.map((row) => {
-    const metadata = row.metadata ?? {};
-    const conversationId =
-      typeof metadata.conversationId === "string" ? metadata.conversationId : null;
-    const userId = typeof metadata.userId === "string" ? metadata.userId : null;
-
-    return {
-      chunkId: row.id,
-      scope: inferHitScope(metadata),
-      conversationId,
-      messageId: messageIdFromChunk({
-        sourceRef: row.sourceRef,
-        metadata,
-      }),
-      userId,
-      body: extractBodyFromCanonicalMd(row.bodyMd),
-      lifecycle: row.lifecycle,
-      fastScore: row.fastScore ?? null,
-      createdAt: row.createdAt.toISOString(),
-    };
-  });
+  const hits: MemorySearchHit[] = rows.map((row) => rowToSearchHit(row));
 
   return { q, scope, hits };
 }
