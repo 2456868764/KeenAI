@@ -26,6 +26,17 @@ export type Message = {
   plainText: string;
   isInternal: boolean;
   createdAt: string;
+  messageKind?: string;
+  attachments?: MessageAttachment[];
+  parts?: { type: string; attachmentId?: string; text?: string; fileName?: string }[];
+};
+
+export type MessageAttachment = {
+  id: string;
+  fileName: string | null;
+  contentType: string | null;
+  sizeBytes: number | null;
+  url?: string;
 };
 
 export type LoginResponse = {
@@ -50,6 +61,20 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getApiUrl(): string {
   return API_URL;
+}
+
+export function attachmentContentUrl(attachmentId: string): string {
+  return `${API_URL}/api/v1/attachments/${attachmentId}/content`;
+}
+
+export async function fetchAttachmentBlob(attachmentId: string): Promise<string> {
+  const token = getAccessToken();
+  const res = await fetch(attachmentContentUrl(attachmentId), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`attachment_fetch_failed:${res.status}`);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
 
 export async function login(
@@ -86,14 +111,16 @@ export async function sendMessage(
   opts?: {
     isInternal?: boolean;
     content?: { type: "tiptap"; doc: Record<string, unknown> };
+    attachmentIds?: string[];
   },
 ): Promise<{ message: Message }> {
   return apiFetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: "POST",
     body: JSON.stringify({
-      plainText,
+      plainText: plainText || undefined,
       isInternal: opts?.isInternal ?? false,
       content: opts?.content ? { type: "tiptap", doc: opts.content.doc } : undefined,
+      attachmentIds: opts?.attachmentIds,
     }),
   });
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import type { Message } from "@/lib/api";
+import { fetchAttachmentBlob } from "@/lib/api";
 import { cn } from "@keenai/ui";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ESTIMATE_PX = 76;
 
@@ -63,9 +64,41 @@ export function VirtualMessageList({
   );
 }
 
+function MessageImage({ attachmentId }: { attachmentId: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    void fetchAttachmentBlob(attachmentId)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setSrc(url);
+      })
+      .catch(() => setSrc(null));
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachmentId]);
+
+  if (!src) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className="mt-2 max-h-64 max-w-full rounded-md object-contain" />
+  );
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
+  const imageAttachments =
+    message.attachments?.filter((a) => a.contentType?.startsWith("image/")) ?? [];
 
   return (
     <div className={cn("flex pb-3", isAgent ? "justify-end" : "justify-start")}>
@@ -80,7 +113,16 @@ function MessageBubble({ message }: { message: Message }) {
           isOptimistic && "opacity-70",
         )}
       >
-        <p className="whitespace-pre-wrap">{message.plainText}</p>
+        {message.plainText && !message.plainText.startsWith("[Image:") ? (
+          <p className="whitespace-pre-wrap">{message.plainText}</p>
+        ) : message.plainText ? (
+          <p className="whitespace-pre-wrap text-[hsl(var(--muted-foreground))]">
+            {message.plainText}
+          </p>
+        ) : null}
+        {imageAttachments.map((att) => (
+          <MessageImage key={att.id} attachmentId={att.id} />
+        ))}
         <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
           {message.isInternal ? "internal note" : message.senderType}
           {isOptimistic ? " · sending" : ""}
