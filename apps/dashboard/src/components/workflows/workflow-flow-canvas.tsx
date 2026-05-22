@@ -23,8 +23,12 @@ type BlockNodeData = {
 
 function blockLabel(block: WorkflowBlock): string {
   switch (block.type) {
-    case "send_message":
-      return block.plainText.length > 48 ? `${block.plainText.slice(0, 48)}…` : block.plainText;
+    case "send_message": {
+      const text = block.plainText?.trim();
+      if (text) return text.length > 48 ? `${text.slice(0, 48)}…` : text;
+      const count = block.attachmentIds?.length ?? 0;
+      return count > 0 ? `${count} attachment(s)` : "(empty message)";
+    }
     case "assign":
       return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
     case "close":
@@ -42,12 +46,27 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       </p>
       <p className="mt-1 text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
       {block.type === "send_message" ? (
-        <textarea
-          value={block.plainText}
-          onChange={(e) => data.onChange({ ...block, plainText: e.target.value })}
-          rows={2}
-          className="mt-2 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
-        />
+        <>
+          <textarea
+            value={block.plainText ?? ""}
+            onChange={(e) => data.onChange({ ...block, plainText: e.target.value })}
+            rows={2}
+            placeholder="Message text (optional if attachments are set)"
+            className="mt-2 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
+          />
+          <input
+            value={(block.attachmentIds ?? []).join(", ")}
+            onChange={(e) => {
+              const ids = e.target.value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              data.onChange({ ...block, attachmentIds: ids.length > 0 ? ids : undefined });
+            }}
+            placeholder="Attachment IDs (comma-separated)"
+            className="mt-1 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
+          />
+        </>
       ) : null}
       <Handle type="source" position={Position.Right} className="!bg-[hsl(var(--primary))]" />
     </div>

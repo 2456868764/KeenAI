@@ -289,12 +289,27 @@ function BlockEditor({
       </div>
 
       {block.type === "send_message" ? (
-        <textarea
-          value={block.plainText}
-          onChange={(e) => onChange({ ...block, plainText: e.target.value })}
-          rows={3}
-          className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
-        />
+        <>
+          <textarea
+            value={block.plainText ?? ""}
+            onChange={(e) => onChange({ ...block, plainText: e.target.value })}
+            rows={3}
+            placeholder="Message text (optional if attachments are set)"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <Input
+            placeholder="Attachment IDs (comma-separated)"
+            value={(block.attachmentIds ?? []).join(", ")}
+            onChange={(e) => {
+              const ids = e.target.value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              onChange({ ...block, attachmentIds: ids.length > 0 ? ids : undefined });
+            }}
+            className="mt-2"
+          />
+        </>
       ) : null}
 
       {block.type === "assign" ? (

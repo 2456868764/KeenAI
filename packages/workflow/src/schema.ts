@@ -9,11 +9,17 @@ export type WorkflowStatus = (typeof WORKFLOW_STATUSES)[number];
 export const WORKFLOW_BLOCK_TYPES = ["send_message", "assign", "close"] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
-export const sendMessageBlockSchema = z.object({
+const sendMessageBlockObjectSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("send_message"),
-  plainText: z.string().min(1).max(10_000),
+  plainText: z.string().max(10_000).optional(),
+  attachmentIds: z.array(z.string().min(1)).max(10).optional(),
 });
+
+export const sendMessageBlockSchema = sendMessageBlockObjectSchema.refine(
+  (val) => (val.plainText?.trim() ?? "").length > 0 || (val.attachmentIds?.length ?? 0) > 0,
+  { message: "plainText_or_attachmentIds_required", path: ["plainText"] },
+);
 
 export const assignBlockSchema = z.object({
   id: z.string().min(1).max(64),
@@ -27,17 +33,32 @@ export const closeBlockSchema = z.object({
 });
 
 export const workflowBlockSchema = z.discriminatedUnion("type", [
-  sendMessageBlockSchema,
+  sendMessageBlockObjectSchema,
   assignBlockSchema,
   closeBlockSchema,
 ]);
 
-export const workflowDefinitionSchema = z.object({
-  trigger: z.enum(WORKFLOW_TRIGGERS),
-  /** Minutes of customer silence after agent reply (customer_unresponsive only). */
-  inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
-  blocks: z.array(workflowBlockSchema).min(1).max(32),
-});
+export const workflowDefinitionSchema = z
+  .object({
+    trigger: z.enum(WORKFLOW_TRIGGERS),
+    /** Minutes of customer silence after agent reply (customer_unresponsive only). */
+    inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
+    blocks: z.array(workflowBlockSchema).min(1).max(32),
+  })
+  .superRefine((val, ctx) => {
+    val.blocks.forEach((block, index) => {
+      if (block.type !== "send_message") return;
+      const text = block.plainText?.trim() ?? "";
+      const attachments = block.attachmentIds?.length ?? 0;
+      if (!text && attachments === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "plainText_or_attachmentIds_required",
+          path: ["blocks", index, "plainText"],
+        });
+      }
+    });
+  });
 
 export type WorkflowBlock = z.infer<typeof workflowBlockSchema>;
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
@@ -60,8 +81,13 @@ export type WorkflowRunContext = {
   conversationId: string;
 };
 
+export type SendMessageInput = {
+  plainText?: string;
+  attachmentIds?: string[];
+};
+
 export type WorkflowActionHandlers = {
-  sendMessage: (plainText: string) => Promise<void>;
+  sendMessage: (input: SendMessageInput) => Promise<void>;
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
 };

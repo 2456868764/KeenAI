@@ -5,19 +5,15 @@
 
 ---
 
-## 当前迭代 · Iteration 15（Multimodal MVP）
+## 当前迭代 · Iteration 16（Copilot Vision + Workflow Attachments）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I15-00 | 多模态技术方案文档 [14-MULTIMODAL.md](./14-MULTIMODAL.md) + 关联 doc/roadmap 更新 | [x] |
-| I15-01 | `@keenai/shared` MessagePart / MessageKind Zod（MM-01） | [x] |
-| I15-02 | messages + attachments 读写打通；API 返回 attachments（MM-02） | [x] |
-| I15-03 | `GET /attachments/:id/content` 鉴权代理（MM-05） | [x] |
-| I15-04 | Widget 发图 + Inbox 图片 bubble（MM-03） | [x] |
-| I15-05 | Email 附件 ingest（MM-04） | [x] |
-| I15-06 | 测试 · roadmap · commits | [x] |
+| I16-01 | Copilot native vision — thread images in draft context（MM-06） | [x] |
+| I16-02 | Workflow `send_message` + `attachmentIds`（MM-07） | [x] |
+| I16-03 | 测试 · roadmap · commits | [x] |
 
-**下一迭代**：Copilot vision（MM-06）· Workflow send_message 附件（MM-07）
+**下一迭代**：Multimodal Agent 完整版（MM-10 STT · MM-11 video · …）
 
 ---
 
@@ -25,6 +21,7 @@
 
 | 迭代 | 主题 | 状态 |
 |------|------|------|
+| I15 | Multimodal MVP | [x] |
 | I14 | Portal Auth + Postgres Core + IMAP Docs | [x] |
 | I13 | IMAP ingest + Postgres 骨架 + Portal API | [x] |
 | I12 | Ticket 详情 + imapflow + PostgresStore ping | [x] |
@@ -40,8 +37,8 @@
 | MM-03 | Widget + Dashboard 图片 | [x] |
 | MM-04 | Email 附件 ingest | [x] |
 | MM-05 | attachment content proxy | [x] |
-| MM-06 | Copilot native vision | [ ] |
-| MM-07 | Workflow send_message attachments | [ ] |
+| MM-06 | Copilot native vision | [x] |
+| MM-07 | Workflow send_message attachments | [x] |
 
 ## Phase 3 · Multimodal Agent 完整版
 

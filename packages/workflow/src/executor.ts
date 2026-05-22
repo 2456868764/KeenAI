@@ -15,7 +15,10 @@ export async function runWorkflow(
     try {
       switch (block.type) {
         case "send_message":
-          await handlers.sendMessage(block.plainText);
+          await handlers.sendMessage({
+            plainText: block.plainText,
+            attachmentIds: block.attachmentIds,
+          });
           break;
         case "assign":
           await handlers.assign(block.assigneeId ?? null);

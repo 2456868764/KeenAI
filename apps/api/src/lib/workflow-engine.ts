@@ -21,13 +21,14 @@ export async function executeWorkflow(
 
   const definition = workflow.definition as WorkflowDefinition;
   const result = await runWorkflow(definition, {
-    sendMessage: async (plainText) => {
+    sendMessage: async ({ plainText, attachmentIds }) => {
       await insertMessage(db, {
         orgId: workflow.orgId,
         conversationId,
         senderType: "agent",
         plainText,
-        content: buildMessageContent(plainText),
+        attachmentIds,
+        content: plainText ? buildMessageContent(plainText) : undefined,
         isInternal: false,
         sentVia: "workflow",
         isAgentReply: true,

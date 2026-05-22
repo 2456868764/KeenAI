@@ -19,11 +19,38 @@ describe("runWorkflow", () => {
 
     const result = await runWorkflow(definition, { sendMessage, assign, close });
 
-    expect(sendMessage).toHaveBeenCalledWith("Thanks for reaching out!");
+    expect(sendMessage).toHaveBeenCalledWith({
+      plainText: "Thanks for reaching out!",
+      attachmentIds: undefined,
+    });
     expect(assign).toHaveBeenCalledWith("member-1");
     expect(close).toHaveBeenCalledOnce();
     expect(result.steps).toHaveLength(3);
     expect(result.steps.every((s) => s.status === "ok")).toBe(true);
+  });
+
+  it("passes attachmentIds to sendMessage handler", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "b1",
+            type: "send_message",
+            plainText: "See attached",
+            attachmentIds: ["att-1", "att-2"],
+          },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      plainText: "See attached",
+      attachmentIds: ["att-1", "att-2"],
+    });
   });
 
   it("stops on first block error", async () => {

@@ -10,6 +10,7 @@ export {
   workflowBlockSchema,
   workflowDefinitionSchema,
   type WorkflowActionHandlers,
+  type SendMessageInput,
   type WorkflowBlock,
   type WorkflowBlockType,
   type WorkflowDefinition,

@@ -339,7 +339,7 @@ export async function searchConversations(
 }
 
 export type WorkflowBlock =
-  | { id: string; type: "send_message"; plainText: string }
+  | { id: string; type: "send_message"; plainText?: string; attachmentIds?: string[] }
   | { id: string; type: "assign"; assigneeId?: string | null }
   | { id: string; type: "close" };
 
