@@ -15,7 +15,7 @@
 | I15-03 | `GET /attachments/:id/content` 鉴权代理（MM-05） | [x] |
 | I15-04 | Widget 发图 + Inbox 图片 bubble（MM-03） | [x] |
 | I15-05 | Email 附件 ingest（MM-04） | [x] |
-| I15-06 | 测试 · roadmap · commits | [~] |
+| I15-06 | 测试 · roadmap · commits | [x] |
 
 **下一迭代**：Copilot vision（MM-06）· Workflow send_message 附件（MM-07）
 
