@@ -1,11 +1,22 @@
 import { z } from "zod";
 
-export const memoryTreeQuerySchema = z.object({
-  scope: z.enum(["conversation"]),
-  id: z.string().min(1),
-  mode: z.enum(["latest", "drill_down"]).default("latest"),
-  level: z.coerce.number().int().min(0).max(2).optional(),
-});
+export const memoryTreeQuerySchema = z
+  .object({
+    scope: z.enum(["conversation", "customer"]),
+    id: z.string().min(1),
+    brandId: z.string().min(1).optional(),
+    mode: z.enum(["latest", "drill_down"]).default("latest"),
+    level: z.coerce.number().int().min(0).max(2).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.scope === "customer" && !value.brandId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "brandId_required_for_customer_scope",
+        path: ["brandId"],
+      });
+    }
+  });
 
 export const memoryDigestQuerySchema = z.object({
   brandId: z.string().min(1),

@@ -1,3 +1,15 @@
+/** Topic tree scope key for a customer (Memory Tree §4.2). */
+export function customerScopeKey(userId: string): string {
+  return `customer:${userId}`;
+}
+
+/** Parse customer user id from a `customer:*` scope key. */
+export function customerIdFromScopeKey(scopeKey: string): string | null {
+  if (!scopeKey.startsWith("customer:")) return null;
+  const id = scopeKey.slice("customer:".length);
+  return id.length > 0 ? id : null;
+}
+
 /** Source tree scope key for a conversation (Memory Tree §4.1). */
 export function conversationScopeKey(conversationId: string): string {
   return `conv:${conversationId}`;

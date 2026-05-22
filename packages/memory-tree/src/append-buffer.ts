@@ -10,6 +10,8 @@ export type AppendBufferInput = {
   chunkId: string;
   scopeKey: string;
   config?: Partial<BufferConfig>;
+  /** Allow re-append when chunk is already buffered (topic tree shares leaves). */
+  allowBuffered?: boolean;
 };
 
 export type AppendBufferResult = {
@@ -79,7 +81,7 @@ export async function appendBuffer(
     };
   }
 
-  if (chunk.lifecycle !== "admitted") {
+  if (chunk.lifecycle !== "admitted" && !(input.allowBuffered && chunk.lifecycle === "buffered")) {
     return {
       appended: false,
       scopeKey: input.scopeKey,
@@ -117,7 +119,7 @@ export async function appendBuffer(
     await db
       .update(memoryChunks)
       .set({ lifecycle: "buffered" })
-      .where(eq(memoryChunks.id, input.chunkId));
+      .where(and(eq(memoryChunks.id, input.chunkId), eq(memoryChunks.lifecycle, "admitted")));
   }
 
   const shouldSeal = leafIds.length >= config.maxLeaves || tokenCount >= config.maxTokens;

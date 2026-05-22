@@ -5,6 +5,7 @@ import {
   applyFastScoreToChunk,
   digestDailyForBrand,
   ingestConversationMessage,
+  processAdmittedChunk,
 } from "@keenai/memory-tree";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
@@ -308,6 +309,65 @@ describe("memory retrieval integration", () => {
     };
     expect(dailyCtx.context.scope).toBe("brand_daily");
     expect(dailyCtx.context.text).toContain("Brand daily digest");
+
+    await store.close();
+  });
+
+  it("returns customer topic tree when user is hot", async () => {
+    const { app, store, db, brand, auth } = await setupMemoryApiTest();
+    const userId = "user_topic_api";
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        userId,
+        channelType: "messenger",
+        channelId: "topic-api",
+        subject: "Topic API",
+      }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    for (const plainText of ["Need help with billing.", "Follow-up on my refund."]) {
+      await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ senderType: "user", plainText }),
+      });
+    }
+
+    const chunkRows = await db.select().from(memoryChunks);
+    for (const chunk of chunkRows) {
+      await processAdmittedChunk(db, {
+        orgId: chunk.orgId,
+        brandId: chunk.brandId,
+        chunkId: chunk.id,
+      });
+    }
+
+    const treeRes = await app.request(
+      `/api/v1/memory/tree?scope=customer&id=${userId}&brandId=${brand.id}`,
+      { headers: auth },
+    );
+    expect(treeRes.status).toBe(200);
+    const treeBody = (await treeRes.json()) as {
+      tree: { scope: string; levels: Array<{ nodes: unknown[] }> };
+    };
+    expect(treeBody.tree.scope).toBe("customer");
+    expect(treeBody.tree.levels[0]?.nodes.length).toBeGreaterThan(0);
+
+    const customerCtxRes = await app.request(
+      `/api/v1/memory/context?conversationId=${conversation.id}&instruction=${encodeURIComponent("这个客户之前说过什么")}`,
+      { headers: auth },
+    );
+    expect(customerCtxRes.status).toBe(200);
+    const customerCtx = (await customerCtxRes.json()) as {
+      context: { scope: string; text: string };
+    };
+    expect(customerCtx.context.scope).toBe("customer");
+    expect(customerCtx.context.text).toContain("Customer topic buffer");
 
     await store.close();
   });

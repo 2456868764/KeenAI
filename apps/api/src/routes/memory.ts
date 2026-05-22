@@ -3,6 +3,7 @@ import {
   assembleMemoryContext,
   queryBrandDailyDigest,
   queryConversationMemoryTree,
+  queryCustomerMemoryTree,
 } from "@keenai/memory-tree";
 import {
   API_VERSION,
@@ -24,21 +25,35 @@ export function memoryRoutes(_ctx: AppContext) {
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
     const query = c.req.valid("query");
-    if (query.scope !== "conversation") {
-      return c.json({ error: "unsupported_scope" }, 400);
+    const db = c.get("store").db;
+
+    if (query.scope === "conversation") {
+      const conversation = await getConversationForOrg(db, query.id, auth.orgId);
+      if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const tree = await queryConversationMemoryTree(db, {
+        orgId: auth.orgId,
+        brandId: conversation.brandId,
+        conversationId: conversation.id,
+        mode: query.mode,
+        level: query.level,
+      });
+
+      return c.json({ tree });
     }
 
-    const db = c.get("store").db;
-    const conversation = await getConversationForOrg(db, query.id, auth.orgId);
-    if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
-    if (!canAccessBrand(auth, conversation.brandId)) {
+    const brandId = query.brandId;
+    if (!brandId || !canAccessBrand(auth, brandId)) {
       return c.json({ error: "forbidden" }, 403);
     }
 
-    const tree = await queryConversationMemoryTree(db, {
+    const tree = await queryCustomerMemoryTree(db, {
       orgId: auth.orgId,
-      brandId: conversation.brandId,
-      conversationId: conversation.id,
+      brandId,
+      userId: query.id,
       mode: query.mode,
       level: query.level,
     });

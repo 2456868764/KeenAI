@@ -20,10 +20,13 @@ export { macros } from "./macros";
 export {
   memoryChunks,
   memoryEpisodes,
+  memoryHotness,
   memorySummaries,
   memoryTreeBuffers,
   type MemoryChunkRow,
   type MemoryEpisodeRow,
+  type MemoryHotnessRow,
+  type MemoryHotnessSignals,
   type MemorySummaryProvenance,
   type MemorySummaryRow,
   type MemoryTreeBufferRow,

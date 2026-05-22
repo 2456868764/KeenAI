@@ -1,4 +1,12 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
 import { brands, organizations } from "./core";
@@ -124,3 +132,40 @@ export const memoryEpisodes = sqliteTable(
 );
 
 export type MemoryEpisodeRow = typeof memoryEpisodes.$inferSelect;
+
+export type MemoryHotnessSignals = {
+  messageCount7d: number;
+  openTicketCount: number;
+  negativeCsatWeight: number;
+  agentPinBoost: number;
+};
+
+export const memoryHotness = sqliteTable(
+  "memory_hotness",
+  {
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    score: real("score").notNull(),
+    signals: text("signals", { mode: "json" }).$type<MemoryHotnessSignals>().notNull().default({
+      messageCount7d: 0,
+      openTicketCount: 0,
+      negativeCsatWeight: 0,
+      agentPinBoost: 0,
+    }),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.orgId, t.brandId, t.entityType, t.entityId] }),
+    idxOrgBrandScore: index("idx_mem_hotness_org_brand").on(t.orgId, t.brandId, t.score),
+  }),
+);
+
+export type MemoryHotnessRow = typeof memoryHotness.$inferSelect;

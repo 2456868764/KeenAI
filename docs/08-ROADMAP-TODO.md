@@ -14,7 +14,18 @@
 | I20-03 | Widget audio player + tests | [x] |
 | I20-04 | roadmap · commits | [x] |
 
-**下一迭代**：Memory Tree MT-07（topic tree + hotness）
+**下一迭代**：Memory Tree MT-08（Memory Explorer Dashboard MVP）
+
+---
+
+## Iteration 29（Memory Tree MT-07）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I29-01 | memory_hotness schema + refreshCustomerHotness | [x] |
+| I29-02 | topicRouteChunk + customer topic buffer/seal | [x] |
+| I29-03 | queryCustomerMemoryTree + assemble customer scope | [x] |
+| I29-04 | GET /memory/tree?scope=customer + tests · commits | [x] |
 
 ---
 
@@ -125,7 +136,7 @@
 | MT-04 | memory.digest_daily global node | [x] |
 | MT-05 | 检索 API drill_down + brand_daily | [x] |
 | MT-06 | Agent scope 路由（09 附录 B） | [x] |
-| MT-07 | topic tree + hotness | [ ] |
+| MT-07 | topic tree + hotness | [x] |
 | MT-08 | Memory Explorer Dashboard MVP | [ ] |
 | MT-09 | channel-scoped source tree | [ ] |
 | MT-10 | agentmemory backend 兼容层（可选） | [ ] |

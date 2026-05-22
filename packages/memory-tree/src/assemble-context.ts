@@ -1,8 +1,12 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { memorySummaries } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { queryBrandDailyDigest, queryConversationMemoryTree } from "./query.js";
-import { conversationScopeKey } from "./scope-key.js";
+import {
+  queryBrandDailyDigest,
+  queryConversationMemoryTree,
+  queryCustomerMemoryTree,
+} from "./query.js";
+import { conversationScopeKey, customerScopeKey } from "./scope-key.js";
 import {
   type MemoryScope,
   resolveDigestDateFromInstruction,
@@ -127,6 +131,53 @@ async function loadBrandDailySection(
   };
 }
 
+async function loadCustomerSections(
+  db: KeenaiDb,
+  input: { orgId: string; brandId: string; userId: string },
+): Promise<MemoryContextSection[]> {
+  const sections: MemoryContextSection[] = [];
+
+  const tree = await queryCustomerMemoryTree(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    userId: input.userId,
+    mode: "latest",
+    level: 0,
+  });
+
+  const leaves = tree.levels.flatMap((level) => level.nodes.filter((node) => node.kind === "leaf"));
+  if (leaves.length > 0) {
+    sections.push({
+      title: "Customer topic buffer (L0)",
+      body: leaves.map((leaf) => `- ${leaf.body}`).join("\n"),
+    });
+  }
+
+  const scopeKey = customerScopeKey(input.userId);
+  const [summary] = await db
+    .select()
+    .from(memorySummaries)
+    .where(
+      and(
+        eq(memorySummaries.orgId, input.orgId),
+        eq(memorySummaries.brandId, input.brandId),
+        eq(memorySummaries.scopeKey, scopeKey),
+        eq(memorySummaries.level, 1),
+      ),
+    )
+    .orderBy(desc(memorySummaries.sealedAt))
+    .limit(1);
+
+  if (summary) {
+    sections.push({
+      title: summary.title ?? "Customer summary (L1)",
+      body: summary.summary,
+    });
+  }
+
+  return sections;
+}
+
 /** Assemble Memory Tree context blocks for Agent / Copilot prompts. */
 export async function assembleMemoryContext(
   db: KeenaiDb,
@@ -162,12 +213,20 @@ export async function assembleMemoryContext(
   }
 
   if (scope === "customer") {
-    sections.push({
-      title: "Customer memory",
-      body: input.userId
-        ? `Customer scope (${input.userId}) is routed but topic tree retrieval is not enabled yet (MT-07).`
-        : "Customer scope requested but conversation has no linked userId.",
-    });
+    if (input.userId) {
+      sections.push(
+        ...(await loadCustomerSections(db, {
+          orgId: input.orgId,
+          brandId: input.brandId,
+          userId: input.userId,
+        })),
+      );
+    } else {
+      sections.push({
+        title: "Customer memory",
+        body: "Customer scope requested but conversation has no linked userId.",
+      });
+    }
   }
 
   if (scope === "brand_daily" && sections.length === 0) {

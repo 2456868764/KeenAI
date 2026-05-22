@@ -8,7 +8,7 @@ import {
 } from "@keenai/storage/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { extractBodyFromCanonicalMd, messageIdFromChunk } from "./canonical-body.js";
-import { brandDailyScopeKey, conversationScopeKey } from "./scope-key.js";
+import { brandDailyScopeKey, conversationScopeKey, customerScopeKey } from "./scope-key.js";
 
 export type MemoryTreeLeafNode = {
   kind: "leaf";
@@ -180,6 +180,99 @@ export async function queryConversationMemoryTree(
     scope: "conversation",
     scopeKey,
     conversationId: input.conversationId,
+    mode: input.mode,
+    levels,
+  };
+}
+
+export type QueryCustomerMemoryTreeInput = {
+  orgId: string;
+  brandId: string;
+  userId: string;
+  mode: "latest" | "drill_down";
+  level?: number;
+};
+
+export type CustomerMemoryTreeResult = {
+  scope: "customer";
+  scopeKey: string;
+  userId: string;
+  mode: "latest" | "drill_down";
+  levels: MemoryTreeLevel[];
+};
+
+/** Query customer topic tree (L0 buffer and optional drill-down summaries). */
+export async function queryCustomerMemoryTree(
+  db: KeenaiDb,
+  input: QueryCustomerMemoryTreeInput,
+): Promise<CustomerMemoryTreeResult> {
+  const scopeKey = customerScopeKey(input.userId);
+  const levels: MemoryTreeLevel[] = [];
+  const includeLevel = (level: number) => input.level === undefined || input.level === level;
+
+  if (includeLevel(0)) {
+    const leaves = await loadBufferLeaves(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      scopeKey,
+    });
+    levels.push({ level: 0, nodes: leaves });
+  }
+
+  if (input.mode === "drill_down") {
+    if (includeLevel(1)) {
+      const summaries = await db
+        .select()
+        .from(memorySummaries)
+        .where(
+          and(
+            eq(memorySummaries.orgId, input.orgId),
+            eq(memorySummaries.brandId, input.brandId),
+            eq(memorySummaries.scopeKey, scopeKey),
+            eq(memorySummaries.level, 1),
+          ),
+        )
+        .orderBy(desc(memorySummaries.sealedAt));
+
+      const summaryNodes: MemoryTreeSummaryNode[] = summaries.map((row) => ({
+        kind: "summary",
+        summaryId: row.id,
+        title: row.title,
+        summary: row.summary,
+        provenance: row.provenance,
+        sealedAt: row.sealedAt.toISOString(),
+      }));
+
+      const episodes = await db
+        .select()
+        .from(memoryEpisodes)
+        .where(
+          and(
+            eq(memoryEpisodes.orgId, input.orgId),
+            eq(memoryEpisodes.scope, "customer"),
+            eq(memoryEpisodes.scopeId, input.userId),
+          ),
+        )
+        .orderBy(desc(memoryEpisodes.endsAt));
+
+      const episodeNodes: MemoryTreeEpisodeNode[] = episodes.map((row) => ({
+        kind: "episode",
+        episodeId: row.id,
+        summary: row.summary,
+        topic: row.topic,
+        startsAt: row.startsAt?.toISOString() ?? null,
+        endsAt: row.endsAt?.toISOString() ?? null,
+        metadata: row.metadata,
+      }));
+
+      levels.push({ level: 1, nodes: [...summaryNodes, ...episodeNodes] });
+    }
+  }
+
+  return {
+    scope: "customer",
+    scopeKey,
+    userId: input.userId,
     mode: input.mode,
     levels,
   };

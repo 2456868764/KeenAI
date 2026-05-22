@@ -124,4 +124,83 @@ describe("memory-tree assemble context", () => {
 
     await store.close();
   });
+
+  it("assembles customer topic scope when user is hot", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const orgRow = await db.insert(organizations).values({ slug: "cus", name: "Cus" }).returning();
+    const org = requireRow(orgRow[0], "org");
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    const userId = "user_ctx_hot";
+    const convRow = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        userId,
+        channelType: "messenger",
+        channelId: "cus-ctx",
+        status: "open",
+      })
+      .returning();
+    const conv = requireRow(convRow[0], "conversation");
+
+    for (const text of ["Prior billing question.", "Follow-up on refund."]) {
+      const msgRow = await db
+        .insert(messages)
+        .values({
+          orgId: org.id,
+          conversationId: conv.id,
+          senderType: "user",
+          plainText: text,
+          content: { type: "text", text },
+        })
+        .returning();
+      const msg = requireRow(msgRow[0], "message");
+      const ingest = await ingestConversationMessage(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        conversationId: conv.id,
+        messageId: msg.id,
+        senderType: "user",
+        sentAt: new Date("2026-05-27T10:00:00.000Z"),
+        plainText: text,
+        isInternal: false,
+      });
+      await applyFastScoreToChunk(db, {
+        chunkId: ingest.id,
+        plainText: text,
+        source: "conversation_message",
+        senderType: "user",
+      });
+      await processAdmittedChunk(db, {
+        orgId: org.id,
+        brandId: brand.id,
+        chunkId: ingest.id,
+      });
+    }
+
+    const customerContext = await assembleMemoryContext(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      conversationId: conv.id,
+      userId,
+      instruction: "这个客户之前说过什么？",
+    });
+    expect(customerContext.scope).toBe("customer");
+    expect(customerContext.applied).toBe(true);
+    expect(customerContext.text).toContain("Customer topic buffer");
+
+    await store.close();
+  });
 });

@@ -6,6 +6,7 @@ import type { BufferConfig } from "./buffer-config.js";
 import { extractChunk } from "./extract-chunk.js";
 import { conversationScopeKey } from "./scope-key.js";
 import { sealBuffer } from "./seal-buffer.js";
+import { resolveConversationUserId, topicRouteChunk } from "./topic-route.js";
 
 export type ProcessAdmittedChunkInput = {
   orgId: string;
@@ -21,6 +22,9 @@ export type ProcessAdmittedChunkResult = {
   sealed: boolean;
   summaryId?: string;
   episodeId?: string;
+  topicRouted?: boolean;
+  topicSealed?: boolean;
+  topicHotness?: number;
   reason?: string;
 };
 
@@ -77,11 +81,15 @@ export async function processAdmittedChunk(
   }
 
   if (!appendResult.shouldSeal) {
+    const topicResult = await routeTopicIfEligible(db, input, conversationId);
     return {
       chunkId: input.chunkId,
       extracted: true,
       appended: true,
       sealed: false,
+      topicRouted: topicResult?.routed,
+      topicSealed: topicResult?.sealed,
+      topicHotness: topicResult?.hotness,
     };
   }
 
@@ -91,6 +99,8 @@ export async function processAdmittedChunk(
     scopeKey,
   });
 
+  const topicResult = await routeTopicIfEligible(db, input, conversationId);
+
   return {
     chunkId: input.chunkId,
     extracted: true,
@@ -98,6 +108,29 @@ export async function processAdmittedChunk(
     sealed: sealResult.sealed,
     summaryId: sealResult.summaryId,
     episodeId: sealResult.episodeId,
+    topicRouted: topicResult?.routed,
+    topicSealed: topicResult?.sealed,
+    topicHotness: topicResult?.hotness,
     reason: sealResult.sealed ? undefined : sealResult.reason,
   };
+}
+
+async function routeTopicIfEligible(
+  db: KeenaiDb,
+  input: ProcessAdmittedChunkInput,
+  conversationId: string,
+) {
+  const userId = await resolveConversationUserId(db, {
+    orgId: input.orgId,
+    conversationId,
+  });
+  if (!userId) return null;
+
+  return topicRouteChunk(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    chunkId: input.chunkId,
+    userId,
+    config: input.config,
+  });
 }

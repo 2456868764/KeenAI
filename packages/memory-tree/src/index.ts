@@ -32,8 +32,10 @@ export { getMemoryChunkBySourceRef, persistMemoryChunk } from "./persist.js";
 export {
   queryBrandDailyDigest,
   queryConversationMemoryTree,
+  queryCustomerMemoryTree,
   type BrandDailyDigestResult,
   type ConversationMemoryTreeResult,
+  type CustomerMemoryTreeResult,
   type MemoryTreeEpisodeNode,
   type MemoryTreeLeafNode,
   type MemoryTreeLevel,
@@ -41,6 +43,7 @@ export {
   type MemoryTreeSummaryNode,
   type QueryBrandDailyDigestInput,
   type QueryConversationMemoryTreeInput,
+  type QueryCustomerMemoryTreeInput,
 } from "./query.js";
 export {
   processAdmittedChunk,
@@ -52,8 +55,29 @@ export {
   brandDailyScopeKey,
   conversationIdFromScopeKey,
   conversationScopeKey,
+  customerIdFromScopeKey,
+  customerScopeKey,
   parseBrandDailyScopeKey,
 } from "./scope-key.js";
+export {
+  DEFAULT_HOTNESS_THRESHOLD,
+  DEFAULT_HOTNESS_WEIGHTS,
+  computeHotnessScore,
+  isHotEnough,
+  type HotnessWeights,
+} from "./hotness-config.js";
+export {
+  getCustomerHotness,
+  refreshCustomerHotness,
+  type RefreshCustomerHotnessInput,
+  type RefreshCustomerHotnessResult,
+} from "./hotness.js";
+export {
+  topicRouteChunk,
+  resolveConversationUserId,
+  type TopicRouteChunkInput,
+  type TopicRouteChunkResult,
+} from "./topic-route.js";
 export {
   MEMORY_SCOPES,
   type MemoryScope,
