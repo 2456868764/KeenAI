@@ -1,6 +1,6 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { memoryFacts, memorySlots } from "@keenai/storage/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 export type MemoryL3Section = {
   title: string;
@@ -58,6 +58,7 @@ export async function queryMemoryFacts(
     eq(memoryFacts.brandId, input.brandId),
     eq(memoryFacts.scope, input.scope),
     eq(memoryFacts.scopeId, input.scopeId),
+    isNull(memoryFacts.archivedAt),
   );
 
   const factRows = await db

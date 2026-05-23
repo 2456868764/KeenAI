@@ -3,6 +3,8 @@ import {
   extractFactsFromSummary,
   flushStaleBuffers,
   processAdmittedChunk,
+  runMemoryConsolidation,
+  runMemoryDecaySweep,
 } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
 import { getMemoryEntityExtractor } from "./memory-entity-extract-init.js";
@@ -85,3 +87,5 @@ export async function runFlushStaleBuffers(db: KeenaiDb) {
 
   return result;
 }
+
+export { runMemoryConsolidation, runMemoryDecaySweep };

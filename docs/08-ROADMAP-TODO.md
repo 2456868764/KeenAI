@@ -5,15 +5,24 @@
 
 ---
 
-## 当前迭代 · Iteration 43（Keeni Memory KM-11 · consolidation/decay）
+## 当前迭代 · Iteration 44（Keeni Memory KM-12 · @keenai/memory facade）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I43-01 | consolidation/decay Inngest cron | [ ] |
-| I43-02 | eviction 分数 | [ ] |
-| I43-03 | tests · roadmap · commit · push | [ ] |
+| I44-01 | `@keenai/memory` facade API | [ ] |
+| I44-02 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-12 · `@keenai/memory` facade
+**下一迭代**：KM-13 · export CLI
+
+---
+
+## Iteration 43（Keeni Memory KM-11 · consolidation/decay）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I43-01 | consolidation/decay Inngest cron | [x] |
+| I43-02 | eviction 分数 | [x] |
+| I43-03 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -135,8 +144,8 @@
 | **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [x] |
 | **KM-09** | I41 | ingest privacy filter（PII 脱敏 processor） | [x] |
 | **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [x] |
-| **KM-11** | I43 | consolidation/decay Inngest cron + eviction 分数 | [ ] ← **next** |
-| **KM-12** | I44 | `@keenai/memory` facade：`store` / `recall` / `get` / `forget` 统一 API | [ ] |
+| **KM-11** | I43 | consolidation/decay Inngest cron + eviction 分数 | [x] |
+| **KM-12** | I44 | `@keenai/memory` facade：`store` / `recall` / `get` / `forget` 统一 API | [ ] ← **next** |
 | **KM-13** | I45 | `keenai memory export --vault` CLI → Markdown vault | [ ] |
 
 ### 依赖关系（简图）
@@ -334,7 +343,7 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-08 | L3 context API | [x] |
 | KM-09 | privacy filter ingest | [x] |
 | KM-10 | flush_stale + entities | [x] |
-| KM-11 | consolidation + decay | [ ] |
+| KM-11 | consolidation + decay | [x] |
 | KM-12 | @keenai/memory facade | [ ] |
 | KM-13 | export CLI | [ ] |
 

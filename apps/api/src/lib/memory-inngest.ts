@@ -6,12 +6,16 @@ import {
   runExtractEntitiesForSummary,
   runExtractFactsForSummary,
   runFlushStaleBuffers,
+  runMemoryConsolidation,
+  runMemoryDecaySweep,
   runProcessAdmittedChunk,
 } from "./memory-pipeline.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
 export const MEMORY_FLUSH_STALE_CRON_DEFAULT = "0 * * * *";
+export const MEMORY_CONSOLIDATE_CRON_DEFAULT = "0 * * * *";
+export const MEMORY_DECAY_CRON_DEFAULT = "0 3 * * *";
 
 export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
   const extract = client.createFunction(
@@ -97,6 +101,18 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
     async () => runFlushStaleBuffers(ctx.store.db),
   );
 
+  const consolidateCron = client.createFunction(
+    { id: "keenai-memory-consolidate-cron" },
+    { cron: ctx.env.INNGEST_MEMORY_CONSOLIDATE_CRON },
+    async () => runMemoryConsolidation(ctx.store.db),
+  );
+
+  const decaySweepCron = client.createFunction(
+    { id: "keenai-memory-decay-sweep-cron" },
+    { cron: ctx.env.INNGEST_MEMORY_DECAY_CRON },
+    async () => runMemoryDecaySweep(ctx.store.db),
+  );
+
   return [
     extract,
     extractFacts,
@@ -104,5 +120,7 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
     digestDaily,
     digestDailyCron,
     flushStaleCron,
+    consolidateCron,
+    decaySweepCron,
   ] as const;
 }

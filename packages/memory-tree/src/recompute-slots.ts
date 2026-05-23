@@ -1,6 +1,6 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { memoryFacts, memorySlots } from "@keenai/storage/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 export type RecomputeMemorySlotsInput = {
   orgId: string;
@@ -23,6 +23,7 @@ export async function recomputeMemorySlots(
         eq(memoryFacts.orgId, input.orgId),
         eq(memoryFacts.scope, input.scope),
         eq(memoryFacts.scopeId, input.scopeId),
+        isNull(memoryFacts.archivedAt),
       ),
     );
 

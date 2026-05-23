@@ -81,6 +81,10 @@ export const apiEnvSchema = z.object({
   INNGEST_MEMORY_DIGEST_CRON: z.string().default("0 0 * * *"),
   /** Inngest cron for memory flush_stale_buffers (default hourly) */
   INNGEST_MEMORY_FLUSH_STALE_CRON: z.string().default("0 * * * *"),
+  /** Inngest cron for memory consolidation (default hourly) */
+  INNGEST_MEMORY_CONSOLIDATE_CRON: z.string().default("0 * * * *"),
+  /** Inngest cron for memory decay sweep (default 03:00 UTC daily) */
+  INNGEST_MEMORY_DECAY_CRON: z.string().default("0 3 * * *"),
   /** Embed admitted memory chunks into memory_chunk_vectors */
   MEMORY_TREE_EMBED_ENABLED: z.coerce.boolean().default(false),
   MEMORY_TREE_EMBED_PROVIDER: z.enum(["stub", "openai"]).default("stub"),

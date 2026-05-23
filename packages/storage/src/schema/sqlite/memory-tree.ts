@@ -212,6 +212,10 @@ export const memoryFacts = sqliteTable(
     importance: real("importance").notNull().default(0.5),
     source: text("source"),
     summaryId: text("summary_id").references(() => memorySummaries.id),
+    lastAccessAt: integer("last_access_at", { mode: "timestamp_ms" }),
+    accessCount: integer("access_count").notNull().default(0),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    evictionScore: real("eviction_score"),
     ...sqliteTimestamps,
   },
   (t) => ({

@@ -72,6 +72,31 @@ export {
   type FlushStaleBuffersResult,
 } from "./flush-stale-buffers.js";
 export {
+  consolidateMemoryScope,
+  runMemoryConsolidation,
+  runMemoryDecaySweep,
+  type ConsolidateMemoryScopeInput,
+  type ConsolidateMemoryScopeResult,
+  type RunMemoryConsolidationInput,
+  type RunMemoryConsolidationResult,
+  type RunMemoryDecaySweepInput,
+  type RunMemoryDecaySweepResult,
+} from "./consolidate-memory.js";
+export {
+  DEFAULT_MEMORY_HALF_LIFE_DAYS,
+  DEFAULT_MIN_CONFIDENCE,
+  computeDecayedFactScore,
+  daysSince,
+  memoryStrength,
+  type ComputeDecayedFactInput,
+  type DecayedFactScore,
+} from "./decay.js";
+export {
+  DEFAULT_MAX_FACTS_PER_SCOPE,
+  evictionScore,
+  type EvictionScoreInput,
+} from "./eviction.js";
+export {
   indexMemorySummaryInFts,
   memorySummaryFtsBody,
   type MemorySummaryFtsDoc,
