@@ -2,10 +2,16 @@ import { runDigestDaily } from "@keenai/memory-tree";
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
-import { runExtractFactsForSummary, runProcessAdmittedChunk } from "./memory-pipeline.js";
+import {
+  runExtractEntitiesForSummary,
+  runExtractFactsForSummary,
+  runFlushStaleBuffers,
+  runProcessAdmittedChunk,
+} from "./memory-pipeline.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
+export const MEMORY_FLUSH_STALE_CRON_DEFAULT = "0 * * * *";
 
 export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
   const extract = client.createFunction(
@@ -27,6 +33,10 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
           name: MEMORY_INNGEST_EVENTS.EXTRACT_FACTS,
           data: { orgId: data.orgId, brandId: data.brandId, summaryId },
         });
+        await step.sendEvent(`extract-entities-${summaryId}`, {
+          name: MEMORY_INNGEST_EVENTS.EXTRACT_ENTITIES,
+          data: { orgId: data.orgId, brandId: data.brandId, summaryId },
+        });
       }
 
       return result;
@@ -43,6 +53,19 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
         summaryId: string;
       };
       return runExtractFactsForSummary(ctx.store.db, data);
+    },
+  );
+
+  const extractEntities = client.createFunction(
+    { id: "keenai-memory-extract-entities" },
+    { event: MEMORY_INNGEST_EVENTS.EXTRACT_ENTITIES },
+    async ({ event }) => {
+      const data = event.data as {
+        orgId: string;
+        brandId: string;
+        summaryId: string;
+      };
+      return runExtractEntitiesForSummary(ctx.store.db, data);
     },
   );
 
@@ -68,5 +91,18 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
     async () => runDigestDaily(ctx.store.db, { summaryFtsIndexer: getMemorySummaryFtsIndexer() }),
   );
 
-  return [extract, extractFacts, digestDaily, digestDailyCron] as const;
+  const flushStaleCron = client.createFunction(
+    { id: "keenai-memory-flush-stale-cron" },
+    { cron: ctx.env.INNGEST_MEMORY_FLUSH_STALE_CRON },
+    async () => runFlushStaleBuffers(ctx.store.db),
+  );
+
+  return [
+    extract,
+    extractFacts,
+    extractEntities,
+    digestDaily,
+    digestDailyCron,
+    flushStaleCron,
+  ] as const;
 }

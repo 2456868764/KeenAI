@@ -19,6 +19,7 @@ export { copilotEvents } from "./copilot";
 export { macros } from "./macros";
 export {
   memoryChunks,
+  memoryEntities,
   memoryEpisodes,
   memoryFacts,
   memoryHotness,
@@ -26,6 +27,7 @@ export {
   memorySummaries,
   memoryTreeBuffers,
   type MemoryChunkRow,
+  type MemoryEntityRow,
   type MemoryEpisodeRow,
   type MemoryFactRow,
   type MemoryHotnessRow,

@@ -31,12 +31,18 @@ export {
   type MemoryChunkEmbedder,
 } from "./chunk-vector-index.js";
 export { persistMemoryFacts, type PersistMemoryFactsInput } from "./persist-facts.js";
+export { persistMemoryEntities, type PersistMemoryEntitiesInput } from "./persist-entities.js";
 export { recomputeMemorySlots, type RecomputeMemorySlotsInput } from "./recompute-slots.js";
 export {
   stubExtractFacts,
   type ExtractedMemoryFact,
   type StubFactExtractorInput,
 } from "./stub-fact-extractor.js";
+export {
+  stubExtractEntities,
+  type ExtractedMemoryEntity,
+  type StubEntityExtractorInput,
+} from "./stub-entity-extractor.js";
 export { createOpenAiMemoryChunkEmbedder } from "./embed/openai-embedder.js";
 export { createStubMemoryChunkEmbedder } from "./embed/stub-embedder.js";
 export {
@@ -51,6 +57,20 @@ export {
   type ExtractFactsFromSummaryResult,
   type MemoryFactExtractor,
 } from "./extract-facts.js";
+export {
+  createStubMemoryEntityExtractor,
+  extractEntitiesFromSummary,
+  type ExtractEntitiesFromSummaryInput,
+  type ExtractEntitiesFromSummaryResult,
+  type MemoryEntityExtractor,
+} from "./extract-entities.js";
+export {
+  DEFAULT_BUFFER_STALE_MS,
+  flushStaleBuffers,
+  type FlushStaleBufferResult,
+  type FlushStaleBuffersInput,
+  type FlushStaleBuffersResult,
+} from "./flush-stale-buffers.js";
 export {
   indexMemorySummaryInFts,
   memorySummaryFtsBody,

@@ -245,3 +245,32 @@ export const memorySlots = sqliteTable(
 );
 
 export type MemorySlotRow = typeof memorySlots.$inferSelect;
+
+export const memoryEntities = sqliteTable(
+  "memory_entities",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull(),
+    entityType: text("entity_type").notNull(),
+    name: text("name").notNull(),
+    aliases: text("aliases", { mode: "json" }).$type<string[]>().notNull().default([]),
+    attributes: text("attributes", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    mentionCount: integer("mention_count").notNull().default(1),
+    summaryId: text("summary_id").references(() => memorySummaries.id),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqEntity: uniqueIndex("uq_mem_entities").on(t.orgId, t.scope, t.scopeId, t.entityType, t.name),
+    idxOrgBrand: index("idx_mem_entities_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type MemoryEntityRow = typeof memoryEntities.$inferSelect;

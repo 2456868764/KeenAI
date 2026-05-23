@@ -127,6 +127,13 @@
       "when": 1779463600000,
       "tag": "0017_memory_facts_slots",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1779467200000,
+      "tag": "0018_memory_entities",
+      "breakpoints": true
     }
   ]
 }

@@ -3,11 +3,16 @@ import { Inngest as InngestClient } from "inngest";
 import type { AppContext } from "../types.js";
 import {
   type MemoryDispatchAdapter,
+  type MemoryExtractEntitiesPayload,
   type MemoryExtractFactsPayload,
   createInngestMemoryDispatch,
   createSyncMemoryDispatch,
 } from "./memory-dispatch.js";
-import { runExtractFactsForSummary, runProcessAdmittedChunk } from "./memory-pipeline.js";
+import {
+  runExtractEntitiesForSummary,
+  runExtractFactsForSummary,
+  runProcessAdmittedChunk,
+} from "./memory-pipeline.js";
 
 let adapter: MemoryDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
@@ -22,11 +27,20 @@ export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
           brandId: payload.brandId,
           summaryId,
         });
+        await runExtractEntitiesForSummary(ctx.store.db, {
+          orgId: payload.orgId,
+          brandId: payload.brandId,
+          summaryId,
+        });
       }
       return { processed: result.extracted };
     },
     extractFacts: async (payload: MemoryExtractFactsPayload) => {
       const result = await runExtractFactsForSummary(ctx.store.db, payload);
+      return { extracted: result.extracted };
+    },
+    extractEntities: async (payload: MemoryExtractEntitiesPayload) => {
+      const result = await runExtractEntitiesForSummary(ctx.store.db, payload);
       return { extracted: result.extracted };
     },
   };
