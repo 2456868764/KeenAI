@@ -7,6 +7,7 @@ import { canonicalizeConversationMessage, conversationMessageSourceRef } from ".
 import { type MemoryChunkFtsIndexer, indexMemoryChunkInFts } from "./chunk-fts-index.js";
 import { type MemoryChunkEmbedder, embedAdmittedMemoryChunk } from "./chunk-vector-index.js";
 import { persistMemoryChunk } from "./persist.js";
+import { redactPii } from "./privacy-filter.js";
 import type { MemoryChunkSource, PersistMemoryChunkResult } from "./types.js";
 
 export type IngestConversationMessageInput = {
@@ -23,6 +24,8 @@ export type IngestConversationMessageInput = {
   ftsIndexer?: MemoryChunkFtsIndexer | null;
   chunkEmbedder?: MemoryChunkEmbedder | null;
   chunkVectorStore?: VectorStore | null;
+  /** When false, skip PII redaction (tests only). Defaults to true. */
+  privacyFilter?: boolean;
 };
 
 /** Canonicalize a conversation message and persist a content-addressed memory chunk. */
@@ -39,6 +42,8 @@ export async function ingestConversationMessage(
   const sourceRef = conversationMessageSourceRef(input.messageId);
 
   const hasAttachments = attachmentRows.length > 0;
+  const privacyFilter = input.privacyFilter ?? true;
+  const plainText = privacyFilter ? redactPii(input.plainText).text : input.plainText;
 
   const doc = canonicalizeConversationMessage({
     orgId: input.orgId,
@@ -48,7 +53,7 @@ export async function ingestConversationMessage(
     messageId: input.messageId,
     senderType: input.senderType,
     sentAt: input.sentAt,
-    plainText: input.plainText,
+    plainText,
     attachments: attachmentRows.map((a) => ({
       id: a.id,
       mime: a.contentType,
@@ -80,7 +85,7 @@ export async function ingestConversationMessage(
 
   const scored = await applyFastScoreToChunk(db, {
     chunkId: result.id,
-    plainText: input.plainText,
+    plainText,
     source,
     senderType: input.senderType,
     hasAttachments,

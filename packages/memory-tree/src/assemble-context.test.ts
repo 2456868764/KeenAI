@@ -291,7 +291,7 @@ describe("memory-tree assemble context", () => {
     });
 
     expect(context.text).toContain("Semantic memory (L3");
-    expect(context.text).toContain("contact_email");
+    expect(context.text).toContain("order_id");
     expect(context.sections.some((section) => section.title.includes("L3"))).toBe(true);
 
     await store.close();

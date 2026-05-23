@@ -533,7 +533,7 @@ describe("memory retrieval integration", () => {
       facts: { facts: Array<{ predicate: string; object: string }>; slots: Array<{ key: string }> };
     };
     expect(factsBody.facts.facts.length).toBeGreaterThan(0);
-    expect(factsBody.facts.slots.some((slot) => slot.key === "contact_email")).toBe(true);
+    expect(factsBody.facts.slots.some((slot) => slot.key === "order_id")).toBe(true);
 
     const ctxRes = await app.request(`/api/v1/memory/context?conversationId=${conversation.id}`, {
       headers: auth,

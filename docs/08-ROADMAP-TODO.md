@@ -5,14 +5,24 @@
 
 ---
 
-## 当前迭代 · Iteration 41（Keeni Memory KM-09 · ingest privacy filter）
+## 当前迭代 · Iteration 42（Keeni Memory KM-10 · flush_stale + entities）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I41-01 | PII 脱敏 processor（ingest 路径） | [ ] |
-| I41-02 | tests · roadmap · commit · push | [ ] |
+| I42-01 | `flush_stale` buffer cron | [ ] |
+| I42-02 | `memory_entities` 实体抽取 stub | [ ] |
+| I42-03 | tests · roadmap · commit · push | [ ] |
 
-**下一迭代**：KM-10（见 `08-ROADMAP.md` Phase 4）
+**下一迭代**：KM-11 · consolidation/decay
+
+---
+
+## Iteration 41（Keeni Memory KM-09 · ingest privacy filter）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I41-01 | PII 脱敏 processor（ingest 路径） | [x] |
+| I41-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -112,9 +122,9 @@
 | **KM-05** | I37 | Memory 混合检索：FTS + Vector RRF；`GET /memory/search` 返回 fused score | [x] |
 | **KM-06** | I38 | `fts_memory_summaries` + 搜索覆盖 seal 摘要与日 digest | [x] |
 | **KM-07** | I39 | `memory_facts` + `memory_slots` schema；seal 后 LLM 抽取 facts（Inngest） | [x] |
-| **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [ ] |
-| **KM-09** | I41 | ingest privacy filter（PII 脱敏 processor） | [ ] |
-| **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [ ] |
+| **KM-08** | I40 | `GET /memory/facts` + `assembleMemoryContext` 注入 L3 slots/facts | [x] |
+| **KM-09** | I41 | ingest privacy filter（PII 脱敏 processor） | [x] |
+| **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [ ] ← **next** |
 | **KM-11** | I43 | consolidation/decay Inngest cron + eviction 分数 | [ ] |
 | **KM-12** | I44 | `@keenai/memory` facade：`store` / `recall` / `get` / `forget` 统一 API | [ ] |
 | **KM-13** | I45 | `keenai memory export --vault` CLI → Markdown vault | [ ] |
@@ -311,8 +321,8 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-05 | hybrid FTS+Vector recall | [x] |
 | KM-06 | summaries FTS search | [x] |
 | KM-07 | memory_facts + memory_slots | [x] |
-| KM-08 | L3 context API | [ ] |
-| KM-09 | privacy filter ingest | [ ] |
+| KM-08 | L3 context API | [x] |
+| KM-09 | privacy filter ingest | [x] |
 | KM-10 | flush_stale + entities | [ ] |
 | KM-11 | consolidation + decay | [ ] |
 | KM-12 | @keenai/memory facade | [ ] |

@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import {
   conversationMessageSourceRef,
   createStubMemoryChunkEmbedder,
+  extractBodyFromCanonicalMd,
   ingestConversationMessage,
 } from "@keenai/memory-tree";
 import {
@@ -230,6 +231,66 @@ describe("memory-tree persist", () => {
     expect(hits).toHaveLength(1);
     expect(hits[0]?.id).toBe(result.id);
     expect(hits[0]?.score).toBeGreaterThan(0);
+
+    await store.close();
+  });
+
+  it("redacts PII before persisting memory chunks on ingest", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const orgRow = await db.insert(organizations).values({ slug: "pii", name: "PII" }).returning();
+    const org = requireRow(orgRow[0], "org");
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    const convRow = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "pii-tree",
+        status: "open",
+      })
+      .returning();
+    const conv = requireRow(convRow[0], "conversation");
+    const msgRow = await db
+      .insert(messages)
+      .values({
+        orgId: org.id,
+        conversationId: conv.id,
+        senderType: "user",
+        plainText: "Reach me at alice@example.com or 13800138000",
+        content: { type: "text", text: "Reach me at alice@example.com or 13800138000" },
+      })
+      .returning();
+    const msg = requireRow(msgRow[0], "message");
+
+    const result = await ingestConversationMessage(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      conversationId: conv.id,
+      messageId: msg.id,
+      senderType: "user",
+      sentAt: new Date("2026-05-21T10:00:00.000Z"),
+      plainText: "Reach me at alice@example.com or 13800138000",
+      isInternal: false,
+    });
+
+    const [chunk] = await db.select().from(memoryChunks).where(eq(memoryChunks.id, result.id));
+    const body = extractBodyFromCanonicalMd(requireRow(chunk, "chunk").bodyMd);
+    expect(body).toContain("<email>");
+    expect(body).toContain("<phone>");
+    expect(body).not.toContain("alice@example.com");
+    expect(body).not.toContain("13800138000");
 
     await store.close();
   });

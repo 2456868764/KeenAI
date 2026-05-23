@@ -72,6 +72,12 @@ export {
 } from "./explorer.js";
 export { computeFastScore, type FastScoreInput, type FastScoreResult } from "./fast-score.js";
 export { ingestConversationMessage, type IngestConversationMessageInput } from "./ingest.js";
+export {
+  DEFAULT_PII_PATTERNS,
+  redactPii,
+  type PiiPattern,
+  type RedactPiiResult,
+} from "./privacy-filter.js";
 export { getMemoryChunkBySourceRef, persistMemoryChunk } from "./persist.js";
 export {
   CHANNEL_SCOPED_TREE_TYPES,
