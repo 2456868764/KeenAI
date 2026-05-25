@@ -5,6 +5,11 @@ import {
   indexKbDocument,
 } from "./ingest/index-document.js";
 import { listKbDocuments } from "./list-documents.js";
+import {
+  type SearchKbChunksInput,
+  type SearchKbChunksResult,
+  searchKbChunks,
+} from "./search-kb-chunks.js";
 import { syncKbSource } from "./sync-source.js";
 import type { KeenaiKb, KeenaiKbDeps } from "./types.js";
 
@@ -16,5 +21,7 @@ export function createKeenaiKb(deps: KeenaiKbDeps): KeenaiKb {
       syncKbSource(deps.db, input),
     indexDocument: (input: IndexKbDocumentInput): Promise<IndexKbDocumentResult> =>
       indexKbDocument(deps.db, input),
+    search: (input: SearchKbChunksInput): Promise<SearchKbChunksResult> =>
+      searchKbChunks(deps.db, input),
   };
 }

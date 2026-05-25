@@ -14,6 +14,11 @@ export {
   ensureFtsSchema,
 } from "./libsql/fts-store.js";
 export {
+  createLibsqlKbChunkFtsStore,
+  ensureKbChunkFtsSchema,
+} from "./libsql/kb-chunk-fts.js";
+export { createLibsqlKbChunkVectorStore } from "./libsql/kb-chunk-vectors.js";
+export {
   createLibsqlMemoryChunkFtsStore,
   ensureMemoryChunkFtsSchema,
 } from "./libsql/memory-chunk-fts.js";

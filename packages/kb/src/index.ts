@@ -1,5 +1,10 @@
 export { createKeenaiKb } from "./client.js";
 export {
+  indexKbChunkInFts,
+  type KbChunkFtsDoc,
+  type KbChunkFtsIndexer,
+} from "./chunk-fts-index.js";
+export {
   createHelpCenterStubConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,
@@ -30,6 +35,14 @@ export {
   type ParseKbDocumentInput,
 } from "./ingest/parse-document.js";
 export { listKbDocuments } from "./list-documents.js";
+export {
+  createStubKbQueryEmbedder,
+  searchKbChunks,
+  type KbQueryEmbedder,
+  type KbSearchHit,
+  type SearchKbChunksInput,
+  type SearchKbChunksResult,
+} from "./search-kb-chunks.js";
 export { syncKbSource } from "./sync-source.js";
 export type {
   KeenaiKb,

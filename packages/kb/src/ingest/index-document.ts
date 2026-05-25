@@ -1,6 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { kbChunkVectors, kbChunks, kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { type KbChunkFtsIndexer, indexKbChunkInFts } from "../chunk-fts-index.js";
 import { chunkKbDocument } from "./chunk-document.js";
 import { embedKbChunkStub } from "./embed-chunks-stub.js";
 import { parseKbDocument } from "./parse-document.js";
@@ -9,6 +10,7 @@ export type IndexKbDocumentInput = {
   orgId: string;
   brandId: string;
   documentId: string;
+  chunkFtsIndexer?: KbChunkFtsIndexer | null;
 };
 
 export type IndexKbDocumentResult = {
@@ -58,6 +60,9 @@ export async function indexKbDocument(
 
   if (existingIds.length > 0) {
     await db.delete(kbChunkVectors).where(inArray(kbChunkVectors.chunkId, existingIds));
+    if (input.chunkFtsIndexer) {
+      await input.chunkFtsIndexer.deleteByIds(existingIds);
+    }
   }
   await db.delete(kbChunks).where(eq(kbChunks.documentId, input.documentId));
 
@@ -93,6 +98,17 @@ export async function indexKbDocument(
       embeddingJson: JSON.stringify(vector.embedding),
       updatedAt: now,
     });
+
+    if (input.chunkFtsIndexer) {
+      await indexKbChunkInFts(input.chunkFtsIndexer, {
+        chunkId,
+        orgId: input.orgId,
+        brandId: input.brandId,
+        content: draft.content,
+        contextPrefix: draft.contextPrefix,
+      });
+    }
+
     embedded += 1;
   }
 

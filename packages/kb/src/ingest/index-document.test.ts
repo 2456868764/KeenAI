@@ -1,13 +1,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  chunkKbDocument,
   createHelpCenterStubConnector,
   createKeenaiKb,
   embedKbChunkStub,
   parseKbDocument,
 } from "@keenai/kb";
-import { createLibsqlStore } from "@keenai/storage";
+import { chunkKbDocument } from "@keenai/kb";
+import { createLibsqlKbChunkFtsStore, createLibsqlStore } from "@keenai/storage";
 import { brands, kbChunkVectors, kbChunks, kbSources, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
@@ -58,6 +58,7 @@ describe("KB ingestion pipeline", () => {
     const kbSource = requireRow(source, "source");
 
     const kb = createKeenaiKb({ db });
+    const chunkFts = createLibsqlKbChunkFtsStore(store.client);
     const sync = await kb.syncSource({
       orgId: org.id,
       brandId: brand.id,
@@ -73,6 +74,7 @@ describe("KB ingestion pipeline", () => {
       orgId: org.id,
       brandId: brand.id,
       documentId: doc.id,
+      chunkFtsIndexer: chunkFts,
     });
 
     expect(result.chunkCount).toBeGreaterThan(0);

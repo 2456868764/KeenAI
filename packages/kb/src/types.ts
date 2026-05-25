@@ -2,6 +2,7 @@ import type { KeenaiDb } from "@keenai/storage";
 import type { KbDocumentStatus } from "@keenai/storage/schema";
 import type { SyncKbSourceInput, SyncKbSourceResult } from "./connectors/types.js";
 import type { IndexKbDocumentInput, IndexKbDocumentResult } from "./ingest/index-document.js";
+import type { SearchKbChunksInput, SearchKbChunksResult } from "./search-kb-chunks.js";
 
 export type KeenaiKbDeps = {
   db: KeenaiDb;
@@ -30,6 +31,14 @@ export type KeenaiKb = {
   listDocuments(input: ListKbDocumentsInput): Promise<KbDocumentView[]>;
   syncSource(input: SyncKbSourceInput): Promise<SyncKbSourceResult>;
   indexDocument(input: IndexKbDocumentInput): Promise<IndexKbDocumentResult>;
+  search(input: SearchKbChunksInput): Promise<SearchKbChunksResult>;
 };
 
-export type { SyncKbSourceInput, SyncKbSourceResult, IndexKbDocumentInput, IndexKbDocumentResult };
+export type {
+  SyncKbSourceInput,
+  SyncKbSourceResult,
+  IndexKbDocumentInput,
+  IndexKbDocumentResult,
+  SearchKbChunksInput,
+  SearchKbChunksResult,
+};
