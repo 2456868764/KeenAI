@@ -178,6 +178,11 @@ export {
   type QueryMemoryFactsResult,
 } from "./query-facts.js";
 export {
+  queryRelatedTopics,
+  type QueryRelatedTopicsInput,
+  type RelatedTopicHit,
+} from "./query-graph.js";
+export {
   processAdmittedChunk,
   type ProcessAdmittedChunkInput,
   type ProcessAdmittedChunkResult,

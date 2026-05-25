@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 48（Knowledge Graph KG-03 · relatedTopics query）
+## 当前迭代 · Iteration 49（Knowledge Graph KG-04 · graph API）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I48-01 | `relatedTopics` 递归 CTE 查询 | [ ] |
-| I48-02 | tests · roadmap · commit · push | [ ] |
+| I49-01 | `GET /memory/graph/related` API | [ ] |
+| I49-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 48（Knowledge Graph KG-03 · relatedTopics query）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I48-01 | `relatedTopics` 递归 CTE 查询 | [x] |
+| I48-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -202,9 +211,9 @@ KM-12 memory package ──► KM-13 export CLI
 | KG | 迭代 | 交付 | 状态 |
 |----|------|------|------|
 | **KG-01** | I46 | `memory_relations` schema + migration | [x] |
-| **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [ ] ← **next** |
-| **KG-03** | I48 | `relatedTopics` 递归 CTE 查询 | [ ] |
-| **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [ ] |
+| **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [x] |
+| **KG-03** | I48 | `relatedTopics` 递归 CTE 查询 | [x] |
+| **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [ ] ← **next** |
 
 ### 依赖关系（简图）
 
@@ -406,8 +415,8 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KG ID | 项 | 状态 |
 |-------|-----|------|
 | KG-01 | memory_relations schema | [x] |
-| KG-02 | relation extractor + persist | [ ] |
-| KG-03 | relatedTopics recursive query | [ ] |
+| KG-02 | relation extractor + persist | [x] |
+| KG-03 | relatedTopics recursive query | [x] |
 | KG-04 | GET /memory/graph/related API | [ ] |
 
 ---
