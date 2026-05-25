@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
 import { brands, organizations } from "./core";
@@ -95,3 +95,68 @@ export const kbDocuments = sqliteTable(
 );
 
 export type KbDocumentRow = typeof kbDocuments.$inferSelect;
+
+export const kbChunks = sqliteTable(
+  "kb_chunks",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => kbDocuments.id),
+    parentChunkId: text("parent_chunk_id"),
+    sectionId: text("section_id"),
+    chunkIndex: integer("chunk_index").notNull(),
+    content: text("content").notNull(),
+    contextPrefix: text("context_prefix"),
+    contentSize: integer("content_size"),
+    locale: text("locale"),
+    permissions: text("permissions", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    confidence: real("confidence").notNull().default(1),
+    metadata: text("metadata", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    brandIdx: index("idx_kb_chunks_brand").on(t.orgId, t.brandId),
+    docIdx: index("idx_kb_chunks_doc").on(t.documentId),
+    localeIdx: index("idx_kb_chunks_locale").on(t.brandId, t.locale),
+    docIndexUq: uniqueIndex("uq_kb_chunks_doc_index").on(t.documentId, t.chunkIndex),
+  }),
+);
+
+export type KbChunkRow = typeof kbChunks.$inferSelect;
+
+export const kbChunkVectors = sqliteTable(
+  "kb_chunk_vectors",
+  {
+    chunkId: text("chunk_id")
+      .primaryKey()
+      .references(() => kbChunks.id),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    model: text("model").notNull(),
+    dimensions: integer("dimensions").notNull(),
+    embeddingJson: text("embedding_json").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    idxOrgBrand: index("idx_kb_chunk_vec_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type KbChunkVectorRow = typeof kbChunkVectors.$inferSelect;

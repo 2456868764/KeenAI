@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 52（KB / RAG KB-03 · ingestion pipeline stub）
+## 当前迭代 · Iteration 53（KB / RAG KB-04 · hybrid retriever）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I52-01 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [ ] |
-| I52-02 | tests · roadmap · commit · push | [ ] |
+| I53-01 | Hybrid retriever（FTS + Vector RRF） | [ ] |
+| I53-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 52（KB / RAG KB-03 · ingestion pipeline stub）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I52-01 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [x] |
+| I52-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -259,8 +268,8 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 |----|------|------|------|
 | **KB-01** | I50 | `@keenai/kb` package skeleton + `kb_documents` schema | [x] |
 | **KB-02** | I51 | Help Center / Web source connector stub | [x] |
-| **KB-03** | I52 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [ ] ← **next** |
-| **KB-04** | I53 | Hybrid retriever（FTS + Vector RRF） | [ ] |
+| **KB-03** | I52 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [x] |
+| **KB-04** | I53 | Hybrid retriever（FTS + Vector RRF） | [ ] ← **next** |
 | **KB-05** | I54 | `GET /kb/search` API | [ ] |
 | **KB-06** | I55 | Agent context 注入 KB 段落 | [ ] |
 
@@ -467,7 +476,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 |-------|-----|------|
 | KB-01 | @keenai/kb package skeleton | [x] |
 | KB-02 | source connector stub | [x] |
-| KB-03 | ingestion pipeline parse/chunk/embed | [ ] |
+| KB-03 | ingestion pipeline parse/chunk/embed | [x] |
 | KB-04 | hybrid retriever | [ ] |
 | KB-05 | GET /kb/search API | [ ] |
 | KB-06 | Agent KB context injection | [ ] |

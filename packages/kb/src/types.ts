@@ -1,6 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
 import type { KbDocumentStatus } from "@keenai/storage/schema";
 import type { SyncKbSourceInput, SyncKbSourceResult } from "./connectors/types.js";
+import type { IndexKbDocumentInput, IndexKbDocumentResult } from "./ingest/index-document.js";
 
 export type KeenaiKbDeps = {
   db: KeenaiDb;
@@ -28,6 +29,7 @@ export type KbDocumentView = {
 export type KeenaiKb = {
   listDocuments(input: ListKbDocumentsInput): Promise<KbDocumentView[]>;
   syncSource(input: SyncKbSourceInput): Promise<SyncKbSourceResult>;
+  indexDocument(input: IndexKbDocumentInput): Promise<IndexKbDocumentResult>;
 };
 
-export type { SyncKbSourceInput, SyncKbSourceResult };
+export type { SyncKbSourceInput, SyncKbSourceResult, IndexKbDocumentInput, IndexKbDocumentResult };

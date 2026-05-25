@@ -155,6 +155,13 @@
       "when": 1779684000000,
       "tag": "0021_kb_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1779687600000,
+      "tag": "0022_kb_chunks",
+      "breakpoints": true
     }
   ]
 }
