@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { initKbChunkFtsFromStore } from "./lib/kb-chunk-fts-init.js";
+import { initKbChunkVectorFromStore } from "./lib/kb-chunk-vector-init.js";
 import { initMediaDispatch } from "./lib/media-dispatch-init.js";
 import {
   resolveMemoryChunkEmbedder,
@@ -31,6 +33,7 @@ import { emailJobRoutes } from "./routes/email-jobs.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
 import { imWebhookRoutes } from "./routes/im-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
+import { kbRoutes } from "./routes/kb.js";
 import { macroRoutes } from "./routes/macros.js";
 import { memberRoutes } from "./routes/members.js";
 import { memoryRoutes } from "./routes/memory.js";
@@ -53,6 +56,8 @@ export function createApp(ctx: AppContext) {
     initMemoryChunkFtsFromStore(ctx.store);
     initMemoryChunkVectorFromStore(ctx.store);
     initMemorySummaryFtsFromStore(ctx.store);
+    initKbChunkFtsFromStore(ctx.store);
+    initKbChunkVectorFromStore(ctx.store);
     setMemoryChunkEmbedder(resolveMemoryChunkEmbedder(ctx.env));
   }
   const app = new Hono<{ Variables: AppVariables }>();
@@ -115,6 +120,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", inngestRoutes(ctx));
   app.route("/", searchRoutes(ctx));
   app.route("/", memoryRoutes(ctx));
+  app.route("/", kbRoutes(ctx));
   app.route("/", uploadRoutes(ctx));
   app.route("/", toolRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));

@@ -106,6 +106,7 @@ export {
   type MemoryStatsQuery,
   type MemoryTreeQuery,
 } from "./memory.js";
+export { kbSearchQuerySchema, type KbSearchQuery } from "./kb.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
   defaultDatabaseFilePath,

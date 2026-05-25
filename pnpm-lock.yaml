@@ -47,6 +47,9 @@ importers:
       '@keenai/channels-im':
         specifier: workspace:*
         version: link:../../packages/channels-im
+      '@keenai/kb':
+        specifier: workspace:*
+        version: link:../../packages/kb
       '@keenai/llm':
         specifier: workspace:*
         version: link:../../packages/llm
