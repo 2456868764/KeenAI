@@ -1,5 +1,6 @@
 import type { KeenaiDb } from "@keenai/storage";
 import type { KbDocumentStatus } from "@keenai/storage/schema";
+import type { SyncKbSourceInput, SyncKbSourceResult } from "./connectors/types.js";
 
 export type KeenaiKbDeps = {
   db: KeenaiDb;
@@ -26,4 +27,7 @@ export type KbDocumentView = {
 
 export type KeenaiKb = {
   listDocuments(input: ListKbDocumentsInput): Promise<KbDocumentView[]>;
+  syncSource(input: SyncKbSourceInput): Promise<SyncKbSourceResult>;
 };
+
+export type { SyncKbSourceInput, SyncKbSourceResult };
