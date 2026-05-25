@@ -6,6 +6,7 @@ import {
   queryChannelMemoryTree,
   queryConversationMemoryTree,
   queryCustomerMemoryTree,
+  queryGraphRelated,
   queryMemoryExplorerStats,
   queryMemoryFacts,
   resolveMemoryFactsScope,
@@ -16,6 +17,7 @@ import {
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
   memoryFactsQuerySchema,
+  memoryGraphRelatedQuerySchema,
   memorySearchQuerySchema,
   memoryStatsQuerySchema,
   memoryTreeQuerySchema,
@@ -241,6 +243,34 @@ export function memoryRoutes(_ctx: AppContext) {
       });
 
       return c.json({ facts });
+    },
+  );
+
+  r.get(
+    `${prefix}/graph/related`,
+    requireAuth(),
+    zValidator("query", memoryGraphRelatedQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const graph = await queryGraphRelated(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        entityId: query.entityId,
+        maxDepth: query.maxDepth,
+      });
+
+      if (graph.reason === "entity_not_found") {
+        return c.json({ error: "entity_not_found" }, 404);
+      }
+
+      return c.json({ graph });
     },
   );
 

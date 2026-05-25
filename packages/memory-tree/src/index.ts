@@ -178,7 +178,11 @@ export {
   type QueryMemoryFactsResult,
 } from "./query-facts.js";
 export {
+  queryGraphRelated,
   queryRelatedTopics,
+  type GraphRelatedNode,
+  type QueryGraphRelatedInput,
+  type QueryGraphRelatedResult,
   type QueryRelatedTopicsInput,
   type RelatedTopicHit,
 } from "./query-graph.js";

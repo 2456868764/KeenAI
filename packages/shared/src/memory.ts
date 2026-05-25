@@ -77,3 +77,11 @@ export const memoryFactsQuerySchema = z
   });
 
 export type MemoryFactsQuery = z.infer<typeof memoryFactsQuerySchema>;
+
+export const memoryGraphRelatedQuerySchema = z.object({
+  brandId: z.string().min(1),
+  entityId: z.string().min(1),
+  maxDepth: z.coerce.number().int().min(1).max(5).default(3),
+});
+
+export type MemoryGraphRelatedQuery = z.infer<typeof memoryGraphRelatedQuerySchema>;

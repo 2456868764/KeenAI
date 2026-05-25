@@ -15,6 +15,8 @@ import {
   conversations,
   members,
   memoryChunks,
+  memoryEntities,
+  memoryRelations,
   messages,
   organizations,
 } from "@keenai/storage/schema";
@@ -541,6 +543,62 @@ describe("memory retrieval integration", () => {
     expect(ctxRes.status).toBe(200);
     const ctxBody = (await ctxRes.json()) as { context: { text: string } };
     expect(ctxBody.context.text).toContain("Semantic memory (L3");
+
+    await store.close();
+  });
+
+  it("returns related graph nodes for an entity", async () => {
+    const { app, store, auth, org, brand } = await setupMemoryApiTest();
+    const db = store.db;
+
+    const scope = "customer";
+    const scopeId = "user_graph_api";
+
+    const [topicA] = await db
+      .insert(memoryEntities)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        scope,
+        scopeId,
+        entityType: "topic",
+        name: "Billing",
+      })
+      .returning();
+    const a = requireRow(topicA, "a");
+
+    const [productB] = await db
+      .insert(memoryEntities)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        scope,
+        scopeId,
+        entityType: "product",
+        name: "Pro Plan",
+      })
+      .returning();
+    const b = requireRow(productB, "b");
+
+    await db.insert(memoryRelations).values({
+      orgId: org.id,
+      brandId: brand.id,
+      fromEntityId: a.id,
+      relationType: "concerns",
+      toEntityId: b.id,
+      confidence: 0.9,
+    });
+
+    const graphRes = await app.request(
+      `/api/v1/memory/graph/related?brandId=${brand.id}&entityId=${a.id}&maxDepth=2`,
+      { headers: auth },
+    );
+    expect(graphRes.status).toBe(200);
+    const graphBody = (await graphRes.json()) as {
+      graph: { rootEntityId: string; related: Array<{ name: string; depth: number }> };
+    };
+    expect(graphBody.graph.rootEntityId).toBe(a.id);
+    expect(graphBody.graph.related.some((node) => node.name === "Pro Plan")).toBe(true);
 
     await store.close();
   });

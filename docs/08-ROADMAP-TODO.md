@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 49（Knowledge Graph KG-04 · graph API）
+## 当前迭代 · Iteration 50（KB / RAG KB-01 · @keenai/kb skeleton）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I49-01 | `GET /memory/graph/related` API | [ ] |
-| I49-02 | tests · roadmap · commit · push | [ ] |
+| I50-01 | `@keenai/kb` package skeleton + schema stub | [ ] |
+| I50-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 49（Knowledge Graph KG-04 · graph API）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I49-01 | `GET /memory/graph/related` API | [x] |
+| I49-02 | tests · roadmap · commit · push | [x] |
 
 ---
 

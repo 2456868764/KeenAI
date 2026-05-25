@@ -1,4 +1,6 @@
 import type { KeenaiDb } from "@keenai/storage";
+import { memoryEntities } from "@keenai/storage/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
 export type RelatedTopicHit = {
@@ -53,4 +55,90 @@ export async function queryRelatedTopics(
     relationType: row.relation_type,
     depth: row.depth,
   }));
+}
+
+export type GraphRelatedNode = {
+  entityId: string;
+  entityType: string;
+  name: string;
+  relationType: string;
+  depth: number;
+};
+
+export type QueryGraphRelatedInput = {
+  orgId: string;
+  brandId: string;
+  entityId: string;
+  maxDepth?: number;
+};
+
+export type QueryGraphRelatedResult = {
+  rootEntityId: string;
+  related: GraphRelatedNode[];
+  reason?: "entity_not_found";
+};
+
+/** Resolve related graph nodes with entity metadata for API responses. */
+export async function queryGraphRelated(
+  db: KeenaiDb,
+  input: QueryGraphRelatedInput,
+): Promise<QueryGraphRelatedResult> {
+  const [root] = await db
+    .select({ id: memoryEntities.id })
+    .from(memoryEntities)
+    .where(
+      and(
+        eq(memoryEntities.id, input.entityId),
+        eq(memoryEntities.orgId, input.orgId),
+        eq(memoryEntities.brandId, input.brandId),
+      ),
+    )
+    .limit(1);
+
+  if (!root) {
+    return { rootEntityId: input.entityId, related: [], reason: "entity_not_found" };
+  }
+
+  const hits = await queryRelatedTopics(db, {
+    orgId: input.orgId,
+    entityId: input.entityId,
+    maxDepth: input.maxDepth,
+  });
+
+  if (hits.length === 0) {
+    return { rootEntityId: root.id, related: [] };
+  }
+
+  const entityRows = await db
+    .select({
+      id: memoryEntities.id,
+      entityType: memoryEntities.entityType,
+      name: memoryEntities.name,
+    })
+    .from(memoryEntities)
+    .where(
+      and(
+        eq(memoryEntities.orgId, input.orgId),
+        inArray(
+          memoryEntities.id,
+          hits.map((hit) => hit.entityId),
+        ),
+      ),
+    );
+
+  const byId = new Map(entityRows.map((row) => [row.id, row]));
+
+  return {
+    rootEntityId: root.id,
+    related: hits.map((hit) => {
+      const entity = byId.get(hit.entityId);
+      return {
+        entityId: hit.entityId,
+        entityType: entity?.entityType ?? "unknown",
+        name: entity?.name ?? "unknown",
+        relationType: hit.relationType,
+        depth: hit.depth,
+      };
+    }),
+  };
 }
