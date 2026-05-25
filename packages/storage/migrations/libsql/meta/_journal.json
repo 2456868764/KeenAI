@@ -141,6 +141,13 @@
       "when": 1779470800000,
       "tag": "0019_memory_facts_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1779680391950,
+      "tag": "0020_memory_relations",
+      "breakpoints": true
     }
   ]
 }

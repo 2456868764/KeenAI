@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 46（Knowledge Graph KG-01 · memory_relations schema）
+## 当前迭代 · Iteration 47（Knowledge Graph KG-02 · relation extractor）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I46-01 | `memory_relations` schema + migration | [ ] |
-| I46-02 | tests · roadmap · commit · push | [ ] |
+| I47-01 | seal 后 relation 抽取 stub + persist | [ ] |
+| I47-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 46（Knowledge Graph KG-01 · memory_relations schema）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I46-01 | `memory_relations` schema + migration | [x] |
+| I46-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -183,8 +192,8 @@ KM-12 memory package ──► KM-13 export CLI
 
 | KG | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **KG-01** | I46 | `memory_relations` schema + migration | [ ] ← **next** |
-| **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [ ] |
+| **KG-01** | I46 | `memory_relations` schema + migration | [x] |
+| **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [ ] ← **next** |
 | **KG-03** | I48 | `relatedTopics` 递归 CTE 查询 | [ ] |
 | **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [ ] |
 
@@ -387,7 +396,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 
 | KG ID | 项 | 状态 |
 |-------|-----|------|
-| KG-01 | memory_relations schema | [ ] |
+| KG-01 | memory_relations schema | [x] |
 | KG-02 | relation extractor + persist | [ ] |
 | KG-03 | relatedTopics recursive query | [ ] |
 | KG-04 | GET /memory/graph/related API | [ ] |

@@ -278,3 +278,38 @@ export const memoryEntities = sqliteTable(
 );
 
 export type MemoryEntityRow = typeof memoryEntities.$inferSelect;
+
+export const memoryRelations = sqliteTable(
+  "memory_relations",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    fromEntityId: text("from_entity_id")
+      .notNull()
+      .references(() => memoryEntities.id),
+    relationType: text("relation_type").notNull(),
+    toEntityId: text("to_entity_id")
+      .notNull()
+      .references(() => memoryEntities.id),
+    confidence: real("confidence").notNull().default(1),
+    evidence: text("evidence", { mode: "json" }).$type<string[]>().notNull().default([]),
+    summaryId: text("summary_id").references(() => memorySummaries.id),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqRelation: uniqueIndex("uq_mem_relations").on(
+      t.orgId,
+      t.fromEntityId,
+      t.relationType,
+      t.toEntityId,
+    ),
+    idxFrom: index("idx_mem_relations_from").on(t.fromEntityId),
+    idxTo: index("idx_mem_relations_to").on(t.toEntityId),
+    idxOrgBrand: index("idx_mem_relations_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type MemoryRelationRow = typeof memoryRelations.$inferSelect;
