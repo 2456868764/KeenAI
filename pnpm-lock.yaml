@@ -332,6 +332,22 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/kb:
+    dependencies:
+      '@keenai/storage':
+        specifier: workspace:*
+        version: link:../storage
+      drizzle-orm:
+        specifier: ^0.38.3
+        version: 0.38.4(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@types/pg@8.15.6)(@types/react@19.2.14)(bun-types@1.3.14)(postgres@3.4.9)(react@19.2.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.19
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/llm:
     dependencies:
       zod:

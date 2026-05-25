@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 50（KB / RAG KB-01 · @keenai/kb skeleton）
+## 当前迭代 · Iteration 51（KB / RAG KB-02 · source connector stub）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I50-01 | `@keenai/kb` package skeleton + schema stub | [ ] |
-| I50-02 | tests · roadmap · commit · push | [ ] |
+| I51-01 | Help Center / Web source connector stub | [ ] |
+| I51-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 50（KB / RAG KB-01 · @keenai/kb skeleton）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I50-01 | `@keenai/kb` package skeleton + schema stub | [x] |
+| I50-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -222,7 +231,7 @@ KM-12 memory package ──► KM-13 export CLI
 | **KG-01** | I46 | `memory_relations` schema + migration | [x] |
 | **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [x] |
 | **KG-03** | I48 | `relatedTopics` 递归 CTE 查询 | [x] |
-| **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [ ] ← **next** |
+| **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [x] |
 
 ### 依赖关系（简图）
 
@@ -230,6 +239,21 @@ KM-12 memory package ──► KM-13 export CLI
 KM-10 entities ──► KG-01 relations schema ──► KG-02 extract + persist
 KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 ```
+
+---
+
+## Phase 6 · KB / RAG（KB-01～06）
+
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 15 · [11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)
+
+| KB | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KB-01** | I50 | `@keenai/kb` package skeleton + `kb_documents` schema | [x] |
+| **KB-02** | I51 | Help Center / Web source connector stub | [ ] ← **next** |
+| **KB-03** | I52 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [ ] |
+| **KB-04** | I53 | Hybrid retriever（FTS + Vector RRF） | [ ] |
+| **KB-05** | I54 | `GET /kb/search` API | [ ] |
+| **KB-06** | I55 | Agent context 注入 KB 段落 | [ ] |
 
 ### 与 Memory Tree 已完成项的关系
 
@@ -426,7 +450,18 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KG-01 | memory_relations schema | [x] |
 | KG-02 | relation extractor + persist | [x] |
 | KG-03 | relatedTopics recursive query | [x] |
-| KG-04 | GET /memory/graph/related API | [ ] |
+| KG-04 | GET /memory/graph/related API | [x] |
+
+## Phase 6 · KB / RAG（[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)）
+
+| KB ID | 项 | 状态 |
+|-------|-----|------|
+| KB-01 | @keenai/kb package skeleton | [x] |
+| KB-02 | source connector stub | [ ] |
+| KB-03 | ingestion pipeline parse/chunk/embed | [ ] |
+| KB-04 | hybrid retriever | [ ] |
+| KB-05 | GET /kb/search API | [ ] |
+| KB-06 | Agent KB context injection | [ ] |
 
 ---
 

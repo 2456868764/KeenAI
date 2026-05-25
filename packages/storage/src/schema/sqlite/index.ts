@@ -16,6 +16,20 @@ export {
 } from "./conversation";
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
+export {
+  KB_DOCUMENT_STATUSES,
+  KB_SOURCE_STATUSES,
+  KB_SOURCE_SYNC_STRATEGIES,
+  KB_SOURCE_TYPES,
+  kbDocuments,
+  kbSources,
+  type KbDocumentRow,
+  type KbDocumentStatus,
+  type KbSourceRow,
+  type KbSourceStatus,
+  type KbSourceSyncStrategy,
+  type KbSourceType,
+} from "./kb";
 export { macros } from "./macros";
 export {
   memoryChunks,
