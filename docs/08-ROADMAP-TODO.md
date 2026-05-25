@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 45（Keeni Memory KM-13 · export CLI）
+## 当前迭代 · Iteration 46（Knowledge Graph KG-01 · memory_relations schema）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I45-01 | `keenai memory export --vault` CLI | [ ] |
-| I45-02 | tests · roadmap · commit · push | [ ] |
+| I46-01 | `memory_relations` schema + migration | [ ] |
+| I46-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 45（Keeni Memory KM-13 · export CLI）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I45-01 | `keenai memory export --vault` CLI | [x] |
+| I45-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -153,7 +162,7 @@
 | **KM-10** | I42 | `flush_stale` buffer cron + `memory_entities` 实体抽取 stub | [x] |
 | **KM-11** | I43 | consolidation/decay Inngest cron + eviction 分数 | [x] |
 | **KM-12** | I44 | `@keenai/memory` facade：`store` / `recall` / `get` / `forget` 统一 API | [x] |
-| **KM-13** | I45 | `keenai memory export --vault` CLI → Markdown vault | [ ] ← **next** |
+| **KM-13** | I45 | `keenai memory export --vault` CLI → Markdown vault | [x] |
 
 ### 依赖关系（简图）
 
@@ -164,6 +173,26 @@ KM-04 vectors ──► KM-05 hybrid recall ──► KM-06 summaries FTS
 KM-07 facts/slots ──► KM-08 Agent L3 context
 KM-09 privacy ──► KM-10 flush + entities ──► KM-11 consolidation
 KM-12 memory package ──► KM-13 export CLI
+```
+
+---
+
+## Phase 5 · Knowledge Graph（KG-01～04）
+
+对标 [10-AGENT-MEMORY.md](./10-AGENT-MEMORY.md) §9，在 KM-10 实体 stub 之上补齐关系图谱。
+
+| KG | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KG-01** | I46 | `memory_relations` schema + migration | [ ] ← **next** |
+| **KG-02** | I47 | seal 后 relation 抽取 stub + persist | [ ] |
+| **KG-03** | I48 | `relatedTopics` 递归 CTE 查询 | [ ] |
+| **KG-04** | I49 | `GET /memory/graph/related` API + Explorer 链接 | [ ] |
+
+### 依赖关系（简图）
+
+```
+KM-10 entities ──► KG-01 relations schema ──► KG-02 extract + persist
+KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 ```
 
 ### 与 Memory Tree 已完成项的关系
@@ -352,7 +381,16 @@ KM-12 memory package ──► KM-13 export CLI
 | KM-10 | flush_stale + entities | [x] |
 | KM-11 | consolidation + decay | [x] |
 | KM-12 | @keenai/memory facade | [x] |
-| KM-13 | export CLI | [ ] |
+| KM-13 | export CLI | [x] |
+
+## Phase 5 · Knowledge Graph（[10-AGENT-MEMORY.md](./10-AGENT-MEMORY.md) §9）
+
+| KG ID | 项 | 状态 |
+|-------|-----|------|
+| KG-01 | memory_relations schema | [ ] |
+| KG-02 | relation extractor + persist | [ ] |
+| KG-03 | relatedTopics recursive query | [ ] |
+| KG-04 | GET /memory/graph/related API | [ ] |
 
 ---
 
