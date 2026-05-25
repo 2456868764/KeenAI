@@ -9,7 +9,7 @@ import {
   createSyncMemoryDispatch,
 } from "./memory-dispatch.js";
 import {
-  runExtractEntitiesForSummary,
+  runExtractEntitiesAndRelationsForSummary,
   runExtractFactsForSummary,
   runProcessAdmittedChunk,
 } from "./memory-pipeline.js";
@@ -27,7 +27,7 @@ export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
           brandId: payload.brandId,
           summaryId,
         });
-        await runExtractEntitiesForSummary(ctx.store.db, {
+        await runExtractEntitiesAndRelationsForSummary(ctx.store.db, {
           orgId: payload.orgId,
           brandId: payload.brandId,
           summaryId,
@@ -40,8 +40,8 @@ export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
       return { extracted: result.extracted };
     },
     extractEntities: async (payload: MemoryExtractEntitiesPayload) => {
-      const result = await runExtractEntitiesForSummary(ctx.store.db, payload);
-      return { extracted: result.extracted };
+      const result = await runExtractEntitiesAndRelationsForSummary(ctx.store.db, payload);
+      return { extracted: result.entityResult.extracted || result.relationResult.extracted };
     },
   };
 

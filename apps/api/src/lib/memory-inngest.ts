@@ -3,7 +3,7 @@ import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
 import {
-  runExtractEntitiesForSummary,
+  runExtractEntitiesAndRelationsForSummary,
   runExtractFactsForSummary,
   runFlushStaleBuffers,
   runMemoryConsolidation,
@@ -69,7 +69,7 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
         brandId: string;
         summaryId: string;
       };
-      return runExtractEntitiesForSummary(ctx.store.db, data);
+      return runExtractEntitiesAndRelationsForSummary(ctx.store.db, data);
     },
   );
 

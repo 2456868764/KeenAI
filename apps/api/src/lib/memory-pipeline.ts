@@ -1,6 +1,7 @@
 import {
   extractEntitiesFromSummary,
   extractFactsFromSummary,
+  extractRelationsFromSummary,
   flushStaleBuffers,
   processAdmittedChunk,
   runMemoryConsolidation,
@@ -9,6 +10,7 @@ import {
 import type { KeenaiDb } from "@keenai/storage";
 import { getMemoryEntityExtractor } from "./memory-entity-extract-init.js";
 import { getMemoryFactExtractor } from "./memory-fact-extract-init.js";
+import { getMemoryRelationExtractor } from "./memory-relation-extract-init.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export async function runProcessAdmittedChunk(
@@ -66,6 +68,37 @@ export async function runExtractEntitiesForSummary(
   });
 }
 
+export async function runExtractRelationsForSummary(
+  db: KeenaiDb,
+  payload: { orgId: string; brandId: string; summaryId: string },
+) {
+  const extractor = getMemoryRelationExtractor();
+  if (!extractor) {
+    return {
+      extracted: false,
+      summaryId: payload.summaryId,
+      scope: "",
+      scopeId: "",
+      relationCount: 0,
+      reason: "extract_disabled",
+    };
+  }
+
+  return extractRelationsFromSummary(db, {
+    ...payload,
+    relationExtractor: extractor,
+  });
+}
+
+export async function runExtractEntitiesAndRelationsForSummary(
+  db: KeenaiDb,
+  payload: { orgId: string; brandId: string; summaryId: string },
+) {
+  const entityResult = await runExtractEntitiesForSummary(db, payload);
+  const relationResult = await runExtractRelationsForSummary(db, payload);
+  return { entityResult, relationResult };
+}
+
 export async function runFlushStaleBuffers(db: KeenaiDb) {
   const result = await flushStaleBuffers(db, {
     summaryFtsIndexer: getMemorySummaryFtsIndexer(),
@@ -78,7 +111,7 @@ export async function runFlushStaleBuffers(db: KeenaiDb) {
       brandId: row.brandId,
       summaryId: row.summaryId,
     });
-    await runExtractEntitiesForSummary(db, {
+    await runExtractEntitiesAndRelationsForSummary(db, {
       orgId: row.orgId,
       brandId: row.brandId,
       summaryId: row.summaryId,

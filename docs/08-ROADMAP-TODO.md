@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 47（Knowledge Graph KG-02 · relation extractor）
+## 当前迭代 · Iteration 48（Knowledge Graph KG-03 · relatedTopics query）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I47-01 | seal 后 relation 抽取 stub + persist | [ ] |
-| I47-02 | tests · roadmap · commit · push | [ ] |
+| I48-01 | `relatedTopics` 递归 CTE 查询 | [ ] |
+| I48-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 47（Knowledge Graph KG-02 · relation extractor）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I47-01 | seal 后 relation 抽取 stub + persist | [x] |
+| I47-02 | tests · roadmap · commit · push | [x] |
 
 ---
 

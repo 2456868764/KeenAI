@@ -65,6 +65,19 @@ export {
   type MemoryEntityExtractor,
 } from "./extract-entities.js";
 export {
+  createStubMemoryRelationExtractor,
+  extractRelationsFromSummary,
+  type ExtractRelationsFromSummaryInput,
+  type ExtractRelationsFromSummaryResult,
+  type MemoryRelationExtractor,
+} from "./extract-relations.js";
+export { persistMemoryRelations, type PersistMemoryRelationsInput } from "./persist-relations.js";
+export {
+  stubExtractRelations,
+  type ExtractedMemoryRelation,
+  type StubRelationExtractorInput,
+} from "./stub-relation-extractor.js";
+export {
   DEFAULT_BUFFER_STALE_MS,
   flushStaleBuffers,
   type FlushStaleBufferResult,
