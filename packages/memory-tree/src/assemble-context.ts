@@ -1,3 +1,5 @@
+import type { KbSearchHit, SearchKbChunksInput } from "@keenai/kb";
+import { searchKbChunks } from "@keenai/kb";
 import type { KeenaiDb } from "@keenai/storage";
 import { memorySummaries } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
@@ -22,6 +24,11 @@ export type MemoryContextSection = {
   body: string;
 };
 
+export type KbContextSearch = Pick<
+  SearchKbChunksInput,
+  "chunkFts" | "chunkVector" | "queryEmbedder" | "limit"
+>;
+
 export type AssembleMemoryContextInput = {
   orgId: string;
   brandId: string;
@@ -29,6 +36,7 @@ export type AssembleMemoryContextInput = {
   userId?: string | null;
   instruction?: string;
   dateUtc?: string;
+  kbSearch?: KbContextSearch | null;
 };
 
 export type AssembleMemoryContextResult = {
@@ -192,6 +200,40 @@ async function loadL3Section(
   return buildMemoryL3Section(l3);
 }
 
+function formatKbHit(hit: KbSearchHit, index: number): string {
+  const prefix = hit.contextPrefix ? `[${hit.contextPrefix}] ` : "";
+  return `${index + 1}. ${hit.documentTitle}\n${prefix}${hit.content}`;
+}
+
+function buildKbSection(hits: KbSearchHit[]): MemoryContextSection {
+  return {
+    title: "Knowledge Base",
+    body: hits.map(formatKbHit).join("\n\n"),
+  };
+}
+
+async function loadKbSection(
+  db: KeenaiDb,
+  input: {
+    orgId: string;
+    brandId: string;
+    query: string;
+    kbSearch: KbContextSearch;
+  },
+): Promise<MemoryContextSection | null> {
+  const results = await searchKbChunks(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    q: input.query,
+    chunkFts: input.kbSearch.chunkFts,
+    chunkVector: input.kbSearch.chunkVector,
+    queryEmbedder: input.kbSearch.queryEmbedder,
+    limit: input.kbSearch.limit ?? 5,
+  });
+  if (results.hits.length === 0) return null;
+  return buildKbSection(results.hits);
+}
+
 /** Assemble Memory Tree context blocks for Agent / Copilot prompts. */
 export async function assembleMemoryContext(
   db: KeenaiDb,
@@ -200,7 +242,25 @@ export async function assembleMemoryContext(
   const { scope, signals } = resolveMemoryScope({ instruction: input.instruction });
 
   if (scope === "kb_only") {
-    return { scope, applied: false, sections: [], text: "", signals };
+    const sections: MemoryContextSection[] = [];
+    const query = input.instruction?.trim() ?? "";
+    if (query && input.kbSearch) {
+      const kbSection = await loadKbSection(db, {
+        orgId: input.orgId,
+        brandId: input.brandId,
+        query,
+        kbSearch: input.kbSearch,
+      });
+      if (kbSection) sections.push(kbSection);
+    }
+    const text = formatSections(scope, sections);
+    return {
+      scope,
+      applied: sections.length > 0,
+      sections,
+      text,
+      signals,
+    };
   }
 
   const sections: MemoryContextSection[] = [];

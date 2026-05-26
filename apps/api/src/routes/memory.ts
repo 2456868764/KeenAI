@@ -24,6 +24,7 @@ import {
 } from "@keenai/shared";
 import { Hono } from "hono";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
+import { getKbContextSearch } from "../lib/kb-search-config.js";
 import { getMemoryChunkEmbedder } from "../lib/memory-chunk-embed-init.js";
 import { getMemoryChunkFtsStore } from "../lib/memory-chunk-fts-init.js";
 import { getMemoryChunkVectorStore } from "../lib/memory-chunk-vector-init.js";
@@ -141,6 +142,7 @@ export function memoryRoutes(_ctx: AppContext) {
         userId: conversation.userId,
         instruction: query.instruction,
         dateUtc: query.date,
+        kbSearch: getKbContextSearch(),
       });
 
       return c.json({ context });

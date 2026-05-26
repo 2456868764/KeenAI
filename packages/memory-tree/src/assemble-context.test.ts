@@ -1,6 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  createHelpCenterStubConnector,
+  createKeenaiKb,
+  createStubKbQueryEmbedder,
+} from "@keenai/kb";
+import {
   applyFastScoreToChunk,
   assembleMemoryContext,
   digestDailyForBrand,
@@ -8,10 +13,15 @@ import {
   ingestConversationMessage,
   processAdmittedChunk,
 } from "@keenai/memory-tree";
-import { createLibsqlStore } from "@keenai/storage";
+import {
+  createLibsqlKbChunkFtsStore,
+  createLibsqlKbChunkVectorStore,
+  createLibsqlStore,
+} from "@keenai/storage";
 import {
   brands,
   conversations,
+  kbSources,
   memoryChunks,
   messages,
   organizations,
@@ -293,6 +303,82 @@ describe("memory-tree assemble context", () => {
     expect(context.text).toContain("Semantic memory (L3");
     expect(context.text).toContain("order_id");
     expect(context.sections.some((section) => section.title.includes("L3"))).toBe(true);
+
+    await store.close();
+  });
+
+  it("injects KB passages for kb_only scope when search is configured", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const chunkFts = createLibsqlKbChunkFtsStore(store.client);
+    const chunkVector = createLibsqlKbChunkVectorStore(store.client);
+
+    const orgRow = await db.insert(organizations).values({ slug: "kbctx", name: "KB" }).returning();
+    const org = requireRow(orgRow[0], "org");
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    const convRow = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "kbctx",
+        status: "open",
+      })
+      .returning();
+    const conv = requireRow(convRow[0], "conversation");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "help_center", name: "Help" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+
+    const kb = createKeenaiKb({ db });
+    await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createHelpCenterStubConnector(),
+    });
+
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    for (const document of documents) {
+      await kb.indexDocument({
+        orgId: org.id,
+        brandId: brand.id,
+        documentId: document.id,
+        chunkFtsIndexer: chunkFts,
+      });
+    }
+
+    const kbContext = await assembleMemoryContext(db, {
+      orgId: org.id,
+      brandId: brand.id,
+      conversationId: conv.id,
+      instruction: "产品怎么用？ billing",
+      kbSearch: {
+        chunkFts,
+        chunkVector,
+        queryEmbedder: createStubKbQueryEmbedder(),
+        limit: 3,
+      },
+    });
+
+    expect(kbContext.scope).toBe("kb_only");
+    expect(kbContext.applied).toBe(true);
+    expect(kbContext.text).toContain("Knowledge Base");
+    expect(kbContext.text).toContain("Billing FAQ");
 
     await store.close();
   });

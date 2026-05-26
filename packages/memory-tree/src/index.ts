@@ -2,6 +2,7 @@ export {
   assembleMemoryContext,
   type AssembleMemoryContextInput,
   type AssembleMemoryContextResult,
+  type KbContextSearch,
   type MemoryContextSection,
 } from "./assemble-context.js";
 export {

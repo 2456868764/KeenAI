@@ -426,6 +426,9 @@ importers:
 
   packages/memory-tree:
     dependencies:
+      '@keenai/kb':
+        specifier: workspace:*
+        version: link:../kb
       '@keenai/shared':
         specifier: workspace:*
         version: link:../shared

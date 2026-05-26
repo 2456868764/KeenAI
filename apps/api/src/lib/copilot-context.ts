@@ -6,6 +6,7 @@ import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { loadAttachmentsForMessages } from "./attachments.js";
+import { getKbContextSearch } from "./kb-search-config.js";
 import { readUploadFile } from "./uploads.js";
 
 const MAX_VISION_IMAGES_PER_MSG = 3;
@@ -95,6 +96,7 @@ export async function buildCopilotDraftRequest(
     conversationId: input.conversationId,
     userId: input.userId,
     instruction: input.instruction,
+    kbSearch: getKbContextSearch(),
   });
 
   return {

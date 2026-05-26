@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 55（KB / RAG KB-06 · Agent KB context）
+## 当前迭代 · Iteration 56（Phase 6 收尾 / 下一阶段规划）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I55-01 | Agent context 注入 KB 段落 | [ ] |
-| I55-02 | tests · roadmap · commit · push | [ ] |
+| I56-01 | Phase 6 KB/RAG 收尾检查 | [ ] |
+| I56-02 | roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 55（KB / RAG KB-06 · Agent KB context）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I55-01 | Agent context 注入 KB 段落 | [x] |
+| I55-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -289,7 +298,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | **KB-03** | I52 | Ingestion pipeline step 1–3（parse → chunk → embed stub） | [x] |
 | **KB-04** | I53 | Hybrid retriever（FTS + Vector RRF） | [x] |
 | **KB-05** | I54 | `GET /kb/search` API | [x] |
-| **KB-06** | I55 | Agent context 注入 KB 段落 | [ ] ← **next** |
+| **KB-06** | I55 | Agent context 注入 KB 段落 | [x] |
 
 ### 与 Memory Tree 已完成项的关系
 
@@ -497,7 +506,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KB-03 | ingestion pipeline parse/chunk/embed | [x] |
 | KB-04 | hybrid retriever | [x] |
 | KB-05 | GET /kb/search API | [x] |
-| KB-06 | Agent KB context injection | [ ] |
+| KB-06 | Agent KB context injection | [x] |
 
 ---
 

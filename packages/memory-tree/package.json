@@ -11,6 +11,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
+    "@keenai/kb": "workspace:*",
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
     "drizzle-orm": "^0.38.3"
