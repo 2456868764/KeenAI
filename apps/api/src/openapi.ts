@@ -119,6 +119,38 @@ export const openApiDocument = {
         },
       },
     },
+    [`/api/${API_VERSION}/custom-actions`]: {
+      get: {
+        summary: "List custom actions",
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Action list" } },
+      },
+      post: {
+        summary: "Create custom action",
+        security: [{ bearerAuth: [] }],
+        responses: { "201": { description: "Created" }, "409": { description: "Name conflict" } },
+      },
+    },
+    [`/api/${API_VERSION}/custom-actions/{id}`]: {
+      get: {
+        summary: "Get custom action",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "200": { description: "Action" }, "404": { description: "Not found" } },
+      },
+      patch: {
+        summary: "Update custom action",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "200": { description: "Updated" } },
+      },
+      delete: {
+        summary: "Delete custom action",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "204": { description: "Deleted" } },
+      },
+    },
   },
   components: {
     securitySchemes: {

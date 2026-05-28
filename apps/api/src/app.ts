@@ -29,6 +29,7 @@ import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
+import { customActionRoutes } from "./routes/custom-actions.js";
 import { emailJobRoutes } from "./routes/email-jobs.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
 import { imWebhookRoutes } from "./routes/im-webhooks.js";
@@ -121,6 +122,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", searchRoutes(ctx));
   app.route("/", memoryRoutes(ctx));
   app.route("/", kbRoutes(ctx));
+  app.route("/", customActionRoutes());
   app.route("/", uploadRoutes(ctx));
   app.route("/", toolRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));

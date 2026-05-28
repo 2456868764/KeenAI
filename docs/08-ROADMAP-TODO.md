@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 58（Phase 7 · Custom Actions CA-02 · REST API）
+## 当前迭代 · Iteration 59（Phase 7 · Custom Actions CA-03 · executor stub）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I58-01 | Custom Action REST CRUD API | [ ] |
-| I58-02 | tests · roadmap · commit · push | [ ] |
+| I59-01 | HMAC signing + `http_direct` executor stub | [ ] |
+| I59-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 58（Phase 7 · Custom Actions CA-02 · REST API）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I58-01 | Custom Action REST CRUD API | [x] |
+| I58-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -45,8 +54,8 @@
 | CA | 迭代 | 交付 | 状态 |
 |----|------|------|------|
 | **CA-01** | I57 | `custom_actions` schema + migration | [x] |
-| **CA-02** | I58 | Custom Action REST CRUD API | [ ] ← **next** |
-| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
+| **CA-02** | I58 | Custom Action REST CRUD API | [x] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] ← **next** |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
 | **CA-06** | I62 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] |
@@ -364,8 +373,8 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | CA | 迭代 | 交付 | 状态 |
 |----|------|------|------|
 | **CA-01** | I57 | `custom_actions` schema + migration | [x] |
-| **CA-02** | I58 | Custom Action REST CRUD API | [ ] ← **next** |
-| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
+| **CA-02** | I58 | Custom Action REST CRUD API | [x] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] ← **next** |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
 | **CA-06** | I62 | MCP Host mode stub | [ ] |
@@ -573,7 +582,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | CA ID | 项 | 状态 |
 |-------|-----|------|
 | CA-01 | custom_actions schema | [x] |
-| CA-02 | Custom Action REST CRUD API | [ ] |
+| CA-02 | Custom Action REST CRUD API | [x] |
 | CA-03 | HMAC signing + http_direct executor | [ ] |
 | CA-04 | AI SDK tool() copilot/agent wire | [ ] |
 | CA-05 | Action call logs | [ ] |

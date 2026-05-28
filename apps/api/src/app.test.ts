@@ -48,6 +48,7 @@ describe("API health", () => {
     expect(body.openapi).toBe("3.1.0");
     expect(body.info.title).toBe("KeenAI API");
     expect(body.paths).toHaveProperty("/api/v1/kb/search");
+    expect(body.paths).toHaveProperty("/api/v1/custom-actions");
 
     await store.close();
   });

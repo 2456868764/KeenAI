@@ -107,6 +107,20 @@ export {
   type MemoryTreeQuery,
 } from "./memory.js";
 export { kbSearchQuerySchema, type KbSearchQuery } from "./kb.js";
+export {
+  CUSTOM_ACTION_AUTH_TYPES,
+  CUSTOM_ACTION_HTTP_METHODS,
+  CUSTOM_ACTION_SANDBOXES,
+  customActionBodySchema,
+  listCustomActionsQuerySchema,
+  updateCustomActionBodySchema,
+  type CustomActionAuthType,
+  type CustomActionBody,
+  type CustomActionHttpMethod,
+  type CustomActionSandbox,
+  type ListCustomActionsQuery,
+  type UpdateCustomActionBody,
+} from "./custom-actions.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";
 export {
   defaultDatabaseFilePath,
