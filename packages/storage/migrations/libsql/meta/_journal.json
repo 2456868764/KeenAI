@@ -169,6 +169,13 @@
       "when": 1779691200000,
       "tag": "0023_fts_kb_chunks",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1779802000000,
+      "tag": "0024_custom_actions",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,16 @@ export {
 export { notifications } from "./notification";
 export { copilotEvents } from "./copilot";
 export {
+  CUSTOM_ACTION_AUTH_TYPES,
+  CUSTOM_ACTION_HTTP_METHODS,
+  CUSTOM_ACTION_SANDBOXES,
+  customActions,
+  type CustomActionAuthType,
+  type CustomActionHttpMethod,
+  type CustomActionRow,
+  type CustomActionSandbox,
+} from "./custom-actions";
+export {
   KB_DOCUMENT_STATUSES,
   KB_SOURCE_STATUSES,
   KB_SOURCE_SYNC_STRATEGIES,

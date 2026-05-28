@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 57（Phase 7 · Custom Actions CA-01 · schema）
+## 当前迭代 · Iteration 58（Phase 7 · Custom Actions CA-02 · REST API）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I57-01 | `custom_actions` schema + migration | [ ] |
-| I57-02 | tests · roadmap · commit · push | [ ] |
+| I58-01 | Custom Action REST CRUD API | [ ] |
+| I58-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 57（Phase 7 · Custom Actions CA-01 · schema）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I57-01 | `custom_actions` schema + migration | [x] |
+| I57-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -35,8 +44,8 @@
 
 | CA | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **CA-01** | I57 | `custom_actions` schema + migration | [ ] ← **next** |
-| **CA-02** | I58 | Custom Action REST CRUD API | [ ] |
+| **CA-01** | I57 | `custom_actions` schema + migration | [x] |
+| **CA-02** | I58 | Custom Action REST CRUD API | [ ] ← **next** |
 | **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
@@ -354,8 +363,8 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 
 | CA | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **CA-01** | I57 | `custom_actions` schema + migration | [ ] ← **next** |
-| **CA-02** | I58 | Custom Action REST CRUD API | [ ] |
+| **CA-01** | I57 | `custom_actions` schema + migration | [x] |
+| **CA-02** | I58 | Custom Action REST CRUD API | [ ] ← **next** |
 | **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
@@ -563,7 +572,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 
 | CA ID | 项 | 状态 |
 |-------|-----|------|
-| CA-01 | custom_actions schema | [ ] |
+| CA-01 | custom_actions schema | [x] |
 | CA-02 | Custom Action REST CRUD API | [ ] |
 | CA-03 | HMAC signing + http_direct executor | [ ] |
 | CA-04 | AI SDK tool() copilot/agent wire | [ ] |
