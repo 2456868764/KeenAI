@@ -319,18 +319,19 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [ ] Telegram / Slack IM 原生多模态收发
 
 #### Sprint 15（W33-W34）：KB / RAG 三流融合
-- [ ] `@keenai/kb` 包 + Mastra `MDocument` + `@mastra/rag`
-- [ ] Source Connectors：Help Center / 已解决对话 / Feedback / Notion / GitHub / Web Crawl（crawlee）
-- [ ] 8 阶段 Ingestion Pipeline（Inngest steps）
+- [x] `@keenai/kb` 包 skeleton + parse/chunk/embed stub pipeline（Mastra `MDocument` / `@mastra/rag` 待接）
+- [x] Source Connectors stub：Help Center / Web Crawl（已解决对话 / Feedback / Notion / GitHub / crawlee 待接）
+- [ ] 8 阶段 Inngest Ingestion Pipeline（当前为同步 stub）
 - [ ] Parsers：unpdf（PDF）/ mammoth（DOCX）/ cheerio + marked（HTML/MD）
 - [ ] Chunkers：semantic / hierarchical / contextual（Anthropic Contextual Retrieval · Vercel AI SDK prompt caching）
-- [ ] Embed：`@xenova/transformers` bge-m3 本地（ONNX）
-- [ ] Hybrid Retriever：BM25（FTSStore）+ Vector（VectorStore）+ Graph + RRF Fusion
+- [x] Embed stub + `kb_chunk_vectors`（`@xenova/transformers` bge-m3 本地待接）
+- [x] Hybrid Retriever stub：FTS + Vector RRF（Graph rerank 待接）
 - [ ] Reranker：`@xenova/transformers` bge-reranker-v2-m3
 - [ ] Diversity / Recency 后置
 - [ ] `kb_query_logs` + 用户反馈循环
+- [x] `GET /kb/search` API + Agent KB context 注入（`assembleMemoryContext` · `kb_only` scope）
 - [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI · [x]
-- [ ] Keeni Memory 原生（[08-ROADMAP-TODO.md](08-ROADMAP-TODO.md) KM-01～13）：hybrid RRF · FTS/Vector · facts/slots · consolidation
+- [x] Keeni Memory 原生（[08-ROADMAP-TODO.md](08-ROADMAP-TODO.md) KM-01～13 + KG-01～04 + KB-01～06）：hybrid RRF · FTS/Vector · facts/slots · consolidation · graph · KB stub
 
 #### Sprint 16（W35-W36）：Custom Actions + MCP
 - [ ] Action 4 步配置 UI（基本信息 / 参数 / 端点 / 数据权限）

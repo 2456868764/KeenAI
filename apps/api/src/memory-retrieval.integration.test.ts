@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashPassword } from "@keenai/auth";
+import { createHelpCenterStubConnector, createKeenaiKb } from "@keenai/kb";
 import {
   applyFastScoreToChunk,
   digestDailyForBrand,
@@ -13,6 +14,7 @@ import {
   accounts,
   brands,
   conversations,
+  kbSources,
   members,
   memoryChunks,
   memoryEntities,
@@ -24,6 +26,7 @@ import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
+import { getKbChunkFtsStore } from "./lib/kb-chunk-fts-init.js";
 import { createLogger } from "./logger.js";
 import { requireRow } from "./test-helpers.js";
 
@@ -599,6 +602,64 @@ describe("memory retrieval integration", () => {
     };
     expect(graphBody.graph.rootEntityId).toBe(a.id);
     expect(graphBody.graph.related.some((node) => node.name === "Pro Plan")).toBe(true);
+
+    await store.close();
+  });
+
+  it("returns KB passages for kb_only memory context scope", async () => {
+    const { app, store, db, org, brand, auth } = await setupMemoryApiTest();
+
+    const convRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "kb-ctx",
+        subject: "Product help",
+      }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "help_center", name: "Help" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+
+    const kb = createKeenaiKb({ db });
+    await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createHelpCenterStubConnector(),
+    });
+
+    const chunkFts = getKbChunkFtsStore();
+    expect(chunkFts).not.toBeNull();
+
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    for (const document of documents) {
+      await kb.indexDocument({
+        orgId: org.id,
+        brandId: brand.id,
+        documentId: document.id,
+        chunkFtsIndexer: chunkFts,
+      });
+    }
+
+    const kbCtxRes = await app.request(
+      `/api/v1/memory/context?conversationId=${conversation.id}&instruction=${encodeURIComponent("产品怎么用？ billing")}`,
+      { headers: auth },
+    );
+    expect(kbCtxRes.status).toBe(200);
+    const kbCtx = (await kbCtxRes.json()) as {
+      context: { scope: string; applied: boolean; text: string };
+    };
+    expect(kbCtx.context.scope).toBe("kb_only");
+    expect(kbCtx.context.applied).toBe(true);
+    expect(kbCtx.context.text).toContain("Knowledge Base");
+    expect(kbCtx.context.text).toContain("Billing FAQ");
 
     await store.close();
   });

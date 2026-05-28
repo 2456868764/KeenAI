@@ -103,6 +103,22 @@ export const openApiDocument = {
         responses: { "201": { description: "Message" } },
       },
     },
+    [`/api/${API_VERSION}/kb/search`]: {
+      get: {
+        summary: "Hybrid KB chunk search (FTS + vector RRF)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "brandId", in: "query", required: true },
+          { name: "q", in: "query", required: true },
+          { name: "limit", in: "query", required: false },
+        ],
+        responses: {
+          "200": { description: "Search hits" },
+          "403": { description: "Forbidden" },
+          "503": { description: "KB FTS unavailable" },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {

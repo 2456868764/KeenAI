@@ -5,12 +5,42 @@
 
 ---
 
-## 当前迭代 · Iteration 56（Phase 6 收尾 / 下一阶段规划）
+## 当前迭代 · Iteration 57（Phase 7 · Custom Actions CA-01 · schema）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I56-01 | Phase 6 KB/RAG 收尾检查 | [ ] |
-| I56-02 | roadmap · commit · push | [ ] |
+| I57-01 | `custom_actions` schema + migration | [ ] |
+| I57-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 56（Phase 6 收尾 / 下一阶段规划）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I56-01 | Phase 6 KB/RAG 收尾检查 | [x] |
+| I56-02 | roadmap · commit · push | [x] |
+
+**Phase 6 验收（KB-01～06）**
+
+| 检查项 | 状态 |
+|--------|------|
+| `@keenai/kb` package + migrations `0021`–`0023` | [x] |
+| `GET /api/v1/kb/search` + OpenAPI 条目 | [x] |
+| `assembleMemoryContext` · `kb_only` + Copilot 注入 | [x] |
+| 集成测试（`kb.integration` · `memory-retrieval` kb_only） | [x] |
+| `pnpm lint` · `typecheck` · `test` 全绿 | [x] |
+
+**Phase 7 预告（Sprint 16 · Custom Actions + MCP）**
+
+| CA | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **CA-01** | I57 | `custom_actions` schema + migration | [ ] ← **next** |
+| **CA-02** | I58 | Custom Action REST CRUD API | [ ] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
+| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
+| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
+| **CA-06** | I62 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] |
 
 ---
 
@@ -310,6 +340,27 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | Explorer `LIKE` 搜索 | → FTS → hybrid RRF |
 | ~~MT-10 外部 daemon~~ | **取消**；能力由 KM-* 原生实现 |
 
+### Phase 6 后续 backlog（Sprint 15 未完项）
+
+- Inngest 8 阶段 ingestion · PDF/DOCX/HTML parsers · contextual chunking
+- bge-m3 / bge-reranker 本地 ONNX · Graph rerank · diversity/recency
+- `kb_query_logs` + 反馈循环 · 更多 source connectors
+
+---
+
+## Phase 7 · Custom Actions + MCP（CA-01～06）
+
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 16
+
+| CA | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **CA-01** | I57 | `custom_actions` schema + migration | [ ] ← **next** |
+| **CA-02** | I58 | Custom Action REST CRUD API | [ ] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] |
+| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
+| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
+| **CA-06** | I62 | MCP Host mode stub | [ ] |
+
 ---
 
 ## Iteration 32（Memory Tree MT-10 — 已移除）
@@ -507,6 +558,17 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KB-04 | hybrid retriever | [x] |
 | KB-05 | GET /kb/search API | [x] |
 | KB-06 | Agent KB context injection | [x] |
+
+## Phase 7 · Custom Actions + MCP（[08-ROADMAP.md](./08-ROADMAP.md) Sprint 16）
+
+| CA ID | 项 | 状态 |
+|-------|-----|------|
+| CA-01 | custom_actions schema | [ ] |
+| CA-02 | Custom Action REST CRUD API | [ ] |
+| CA-03 | HMAC signing + http_direct executor | [ ] |
+| CA-04 | AI SDK tool() copilot/agent wire | [ ] |
+| CA-05 | Action call logs | [ ] |
+| CA-06 | MCP Host mode stub | [ ] |
 
 ---
 

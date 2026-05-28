@@ -40,9 +40,14 @@ describe("API health", () => {
 
     const res = await app.request("/api/v1/openapi.json");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { openapi: string; info: { title: string } };
+    const body = (await res.json()) as {
+      openapi: string;
+      info: { title: string };
+      paths: Record<string, unknown>;
+    };
     expect(body.openapi).toBe("3.1.0");
     expect(body.info.title).toBe("KeenAI API");
+    expect(body.paths).toHaveProperty("/api/v1/kb/search");
 
     await store.close();
   });
