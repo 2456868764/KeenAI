@@ -113,6 +113,7 @@ export {
   CUSTOM_ACTION_SANDBOXES,
   customActionBodySchema,
   listCustomActionsQuerySchema,
+  listCustomActionLogsQuerySchema,
   executeCustomActionBodySchema,
   updateCustomActionBodySchema,
   type CustomActionAuthType,
@@ -120,6 +121,7 @@ export {
   type CustomActionHttpMethod,
   type CustomActionSandbox,
   type ListCustomActionsQuery,
+  type ListCustomActionLogsQuery,
   type ExecuteCustomActionBody,
   type UpdateCustomActionBody,
 } from "./custom-actions.js";

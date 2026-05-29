@@ -24,6 +24,7 @@
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
     "@keenai/workflow": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.16",
     "inngest": "^3.27.0",

@@ -19,10 +19,14 @@ export { copilotEvents } from "./copilot";
 export {
   CUSTOM_ACTION_AUTH_TYPES,
   CUSTOM_ACTION_HTTP_METHODS,
+  CUSTOM_ACTION_LOG_SOURCES,
   CUSTOM_ACTION_SANDBOXES,
+  customActionLogs,
   customActions,
   type CustomActionAuthType,
   type CustomActionHttpMethod,
+  type CustomActionLogRow,
+  type CustomActionLogSource,
   type CustomActionRow,
   type CustomActionSandbox,
 } from "./custom-actions";

@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 61（Phase 7 · Custom Actions CA-05 · call logs）
+## 当前迭代 · Iteration 62（Phase 7 · Custom Actions CA-06 · MCP Host stub）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I61-01 | Action call logs（Drizzle + OTel span stub） | [ ] |
-| I61-02 | tests · roadmap · commit · push | [ ] |
+| I62-01 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] |
+| I62-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 61（Phase 7 · Custom Actions CA-05 · call logs）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I61-01 | Action call logs（Drizzle + OTel span stub） | [x] |
+| I61-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -31,8 +40,8 @@
 | I58 | CA-02 | Custom Action REST CRUD API | [x] |
 | I59 | CA-03 | HMAC signing + `http_direct` executor | [x] |
 | I60 | CA-04 | AI SDK `tool()` → Copilot | [x] |
-| **I61** | **CA-05** | Action call logs | [ ] ← **next** |
-| I62 | CA-06 | MCP Host mode stub | [ ] |
+| **I61** | **CA-05** | Action call logs | [x] |
+| **I62** | **CA-06** | MCP Host mode stub | [ ] ← **next** |
 
 ---
 
@@ -88,8 +97,8 @@
 | **CA-02** | I58 | Custom Action REST CRUD API | [x] |
 | **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [x] |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [x] |
-| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] ← **next** |
-| **CA-06** | I62 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] |
+| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [x] |
+| **CA-06** | I62 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] ← **next** |
 
 ---
 
@@ -616,7 +625,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | CA-02 | Custom Action REST CRUD API | [x] |
 | CA-03 | HMAC signing + http_direct executor | [x] |
 | CA-04 | AI SDK tool() copilot/agent wire | [x] |
-| CA-05 | Action call logs | [ ] |
+| CA-05 | Action call logs | [x] |
 | CA-06 | MCP Host mode stub | [ ] |
 
 ---

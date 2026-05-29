@@ -52,3 +52,9 @@ export const executeCustomActionBodySchema = z.object({
 });
 
 export type ExecuteCustomActionBody = z.infer<typeof executeCustomActionBodySchema>;
+
+export const listCustomActionLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export type ListCustomActionLogsQuery = z.infer<typeof listCustomActionLogsQuerySchema>;

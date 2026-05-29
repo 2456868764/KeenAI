@@ -103,11 +103,16 @@ export async function buildCopilotDraftRequest(
 
   const tools = await loadCustomActionDraftTools(
     db,
-    { orgId: input.orgId, brandId: input.brandId },
+    {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      conversationId: input.conversationId,
+    },
     {
       fetch: globalThis.fetch.bind(globalThis),
       getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
     },
+    { otelEnabled: env.OTEL_ENABLED },
   );
 
   return {

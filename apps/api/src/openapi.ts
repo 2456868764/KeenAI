@@ -151,6 +151,14 @@ export const openApiDocument = {
         responses: { "204": { description: "Deleted" } },
       },
     },
+    [`/api/${API_VERSION}/custom-actions/{id}/logs`]: {
+      get: {
+        summary: "List custom action call logs",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: { "200": { description: "Call log list" }, "404": { description: "Not found" } },
+      },
+    },
     [`/api/${API_VERSION}/custom-actions/{id}/execute`]: {
       post: {
         summary: "Execute custom action via http_direct sandbox",

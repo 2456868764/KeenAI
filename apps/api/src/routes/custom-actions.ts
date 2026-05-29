@@ -3,18 +3,21 @@ import {
   API_VERSION,
   customActionBodySchema,
   executeCustomActionBodySchema,
+  listCustomActionLogsQuerySchema,
   listCustomActionsQuerySchema,
   updateCustomActionBodySchema,
 } from "@keenai/shared";
-import { customActions } from "@keenai/storage/schema";
+import { customActionLogs, customActions } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { assertBrandInOrg, canAccessBrand } from "../lib/conversations.js";
+import { executeAndLogCustomAction } from "../lib/custom-action-call-log.js";
+import { resolveCustomActionSecretFromEnv } from "../lib/custom-action-executor.js";
 import {
-  executeCustomActionHttpDirect,
-  resolveCustomActionSecretFromEnv,
-} from "../lib/custom-action-executor.js";
-import { isUniqueConstraintError, serializeCustomAction } from "../lib/custom-actions.js";
+  isUniqueConstraintError,
+  serializeCustomAction,
+  serializeCustomActionLog,
+} from "../lib/custom-actions.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -209,6 +212,39 @@ export function customActionRoutes() {
     return c.body(null, 204);
   });
 
+  r.get(
+    `${prefix}/:id/logs`,
+    requireAuth(),
+    zValidator("query", listCustomActionLogsQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      const [row] = await c
+        .get("store")
+        .db.select()
+        .from(customActions)
+        .where(and(eq(customActions.id, c.req.param("id")), eq(customActions.orgId, auth.orgId)))
+        .limit(1);
+
+      if (!row) return c.json({ error: "not_found" }, 404);
+      if (row.brandId && !canAccessBrand(auth, row.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const logs = await c
+        .get("store")
+        .db.select()
+        .from(customActionLogs)
+        .where(and(eq(customActionLogs.actionId, row.id), eq(customActionLogs.orgId, auth.orgId)))
+        .orderBy(desc(customActionLogs.createdAt))
+        .limit(query.limit);
+
+      return c.json({ items: logs.map(serializeCustomActionLog) });
+    },
+  );
+
   r.post(
     `${prefix}/:id/execute`,
     requireAuth(),
@@ -231,10 +267,22 @@ export function customActionRoutes() {
       }
 
       try {
-        const result = await executeCustomActionHttpDirect(row, body, {
-          fetch: globalThis.fetch.bind(globalThis),
-          getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
-        });
+        const result = await executeAndLogCustomAction(
+          c.get("store").db,
+          row,
+          {
+            orgId: auth.orgId,
+            brandId: row.brandId,
+            source: "api",
+            triggeredBy: auth.sub,
+          },
+          body,
+          {
+            fetch: globalThis.fetch.bind(globalThis),
+            getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
+          },
+          { otelEnabled: c.get("env").OTEL_ENABLED },
+        );
         return c.json({ result });
       } catch (error) {
         const mapped = mapExecutorError(error);

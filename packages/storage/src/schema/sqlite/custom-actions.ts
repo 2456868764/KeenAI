@@ -51,3 +51,48 @@ export const customActions = sqliteTable(
 );
 
 export type CustomActionRow = typeof customActions.$inferSelect;
+
+export const CUSTOM_ACTION_LOG_SOURCES = ["api", "copilot"] as const;
+export type CustomActionLogSource = (typeof CUSTOM_ACTION_LOG_SOURCES)[number];
+
+/** Audit trail for custom action executions (Sprint 16 · CA-05). */
+export const customActionLogs = sqliteTable(
+  "custom_action_logs",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    actionId: text("action_id")
+      .notNull()
+      .references(() => customActions.id, { onDelete: "cascade" }),
+    actionName: text("action_name").notNull(),
+    source: text("source").$type<CustomActionLogSource>().notNull(),
+    triggeredBy: text("triggered_by"),
+    conversationId: text("conversation_id"),
+    parameters: text("parameters", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    requestUrl: text("request_url").notNull(),
+    requestMethod: text("request_method").notNull(),
+    responseStatus: integer("response_status").notNull().default(0),
+    ok: integer("ok", { mode: "boolean" }).notNull().default(false),
+    resultData: text("result_data", { mode: "json" }).$type<unknown>(),
+    filtered: integer("filtered", { mode: "boolean" }).notNull().default(false),
+    errorCode: text("error_code"),
+    durationMs: integer("duration_ms").notNull(),
+    traceId: text("trace_id"),
+    spanId: text("span_id"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    actionIdx: index("idx_custom_action_logs_action").on(t.actionId, t.createdAt),
+    orgIdx: index("idx_custom_action_logs_org").on(t.orgId, t.createdAt),
+  }),
+);
+
+export type CustomActionLogRow = typeof customActionLogs.$inferSelect;

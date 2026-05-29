@@ -253,6 +253,18 @@ describe("custom actions integration", () => {
       }),
     );
 
+    const logsRes = await app.request(`/api/v1/custom-actions/${action.id}/logs`, {
+      headers: auth,
+    });
+    expect(logsRes.status).toBe(200);
+    const logsBody = (await logsRes.json()) as {
+      items: Array<{ source: string; ok: boolean; responseStatus: number }>;
+    };
+    expect(logsBody.items).toHaveLength(1);
+    expect(logsBody.items[0]?.source).toBe("api");
+    expect(logsBody.items[0]?.ok).toBe(true);
+    expect(logsBody.items[0]?.responseStatus).toBe(200);
+
     fetchSpy.mockRestore();
     vi.unstubAllEnvs();
     await store.close();
