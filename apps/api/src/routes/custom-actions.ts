@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import {
   API_VERSION,
   customActionBodySchema,
+  executeCustomActionBodySchema,
   listCustomActionsQuerySchema,
   updateCustomActionBodySchema,
 } from "@keenai/shared";
@@ -9,9 +10,31 @@ import { customActions } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { assertBrandInOrg, canAccessBrand } from "../lib/conversations.js";
+import {
+  executeCustomActionHttpDirect,
+  resolveCustomActionSecretFromEnv,
+} from "../lib/custom-action-executor.js";
 import { isUniqueConstraintError, serializeCustomAction } from "../lib/custom-actions.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
+
+function mapExecutorError(error: unknown): { status: number; error: string } | null {
+  if (!(error instanceof Error)) return null;
+  switch (error.message) {
+    case "action_disabled":
+      return { status: 400, error: error.message };
+    case "sandbox_not_supported":
+      return { status: 501, error: error.message };
+    case "auth_secret_missing":
+    case "auth_secret_unavailable":
+    case "auth_type_unsupported":
+      return { status: 422, error: error.message };
+    case "response_too_large":
+      return { status: 502, error: error.message };
+    default:
+      return null;
+  }
+}
 
 export function customActionRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -185,6 +208,41 @@ export function customActionRoutes() {
     await c.get("store").db.delete(customActions).where(eq(customActions.id, existing.id));
     return c.body(null, 204);
   });
+
+  r.post(
+    `${prefix}/:id/execute`,
+    requireAuth(),
+    zValidator("json", executeCustomActionBodySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const [row] = await c
+        .get("store")
+        .db.select()
+        .from(customActions)
+        .where(and(eq(customActions.id, c.req.param("id")), eq(customActions.orgId, auth.orgId)))
+        .limit(1);
+
+      if (!row) return c.json({ error: "not_found" }, 404);
+      if (row.brandId && !canAccessBrand(auth, row.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      try {
+        const result = await executeCustomActionHttpDirect(row, body, {
+          fetch: globalThis.fetch.bind(globalThis),
+          getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
+        });
+        return c.json({ result });
+      } catch (error) {
+        const mapped = mapExecutorError(error);
+        if (mapped) return c.json({ error: mapped.error }, mapped.status);
+        throw error;
+      }
+    },
+  );
 
   return r;
 }

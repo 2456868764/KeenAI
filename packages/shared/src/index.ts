@@ -113,12 +113,14 @@ export {
   CUSTOM_ACTION_SANDBOXES,
   customActionBodySchema,
   listCustomActionsQuerySchema,
+  executeCustomActionBodySchema,
   updateCustomActionBodySchema,
   type CustomActionAuthType,
   type CustomActionBody,
   type CustomActionHttpMethod,
   type CustomActionSandbox,
   type ListCustomActionsQuery,
+  type ExecuteCustomActionBody,
   type UpdateCustomActionBody,
 } from "./custom-actions.js";
 export { MEMBER_ROLES, memberRoleSchema, type MemberRole } from "./roles.js";

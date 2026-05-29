@@ -45,3 +45,10 @@ export const listCustomActionsQuerySchema = z.object({
 export type CustomActionBody = z.infer<typeof customActionBodySchema>;
 export type UpdateCustomActionBody = z.infer<typeof updateCustomActionBodySchema>;
 export type ListCustomActionsQuery = z.infer<typeof listCustomActionsQuerySchema>;
+
+export const executeCustomActionBodySchema = z.object({
+  parameters: z.record(z.unknown()).default({}),
+  timeoutMs: z.number().int().min(100).max(30_000).optional(),
+});
+
+export type ExecuteCustomActionBody = z.infer<typeof executeCustomActionBodySchema>;

@@ -151,6 +151,18 @@ export const openApiDocument = {
         responses: { "204": { description: "Deleted" } },
       },
     },
+    [`/api/${API_VERSION}/custom-actions/{id}/execute`]: {
+      post: {
+        summary: "Execute custom action via http_direct sandbox",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: {
+          "200": { description: "Execution result" },
+          "422": { description: "Auth configuration error" },
+          "501": { description: "Sandbox not supported" },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {

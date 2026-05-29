@@ -9,6 +9,12 @@ export {
 export { verifyAccessToken, parseTtlSeconds } from "./jwt.js";
 export { createWidgetUserHash, verifyWidgetUserHash } from "./widget-hmac.js";
 export {
+  DEFAULT_CUSTOM_ACTION_SIGNATURE_HEADER,
+  signCustomActionRequest,
+  type SignCustomActionRequestInput,
+  type SignCustomActionRequestResult,
+} from "./custom-action-hmac.js";
+export {
   signWidgetAccessToken,
   verifyWidgetAccessToken,
   type WidgetAccessClaims,

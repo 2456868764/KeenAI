@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 59（Phase 7 · Custom Actions CA-03 · executor stub）
+## 当前迭代 · Iteration 60（Phase 7 · Custom Actions CA-04 · AI SDK tools）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I59-01 | HMAC signing + `http_direct` executor stub | [ ] |
-| I59-02 | tests · roadmap · commit · push | [ ] |
+| I60-01 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
+| I60-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 59（Phase 7 · Custom Actions CA-03 · executor stub）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I59-01 | HMAC signing + `http_direct` executor stub | [x] |
+| I59-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -55,8 +64,8 @@
 |----|------|------|------|
 | **CA-01** | I57 | `custom_actions` schema + migration | [x] |
 | **CA-02** | I58 | Custom Action REST CRUD API | [x] |
-| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] ← **next** |
-| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [x] |
+| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] ← **next** |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
 | **CA-06** | I62 | MCP Host mode stub（`@modelcontextprotocol/sdk`） | [ ] |
 
@@ -374,8 +383,8 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 |----|------|------|------|
 | **CA-01** | I57 | `custom_actions` schema + migration | [x] |
 | **CA-02** | I58 | Custom Action REST CRUD API | [x] |
-| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [ ] ← **next** |
-| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] |
+| **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [x] |
+| **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [ ] ← **next** |
 | **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] |
 | **CA-06** | I62 | MCP Host mode stub | [ ] |
 
@@ -583,7 +592,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 |-------|-----|------|
 | CA-01 | custom_actions schema | [x] |
 | CA-02 | Custom Action REST CRUD API | [x] |
-| CA-03 | HMAC signing + http_direct executor | [ ] |
+| CA-03 | HMAC signing + http_direct executor | [x] |
 | CA-04 | AI SDK tool() copilot/agent wire | [ ] |
 | CA-05 | Action call logs | [ ] |
 | CA-06 | MCP Host mode stub | [ ] |
