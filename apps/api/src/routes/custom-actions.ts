@@ -238,7 +238,18 @@ export function customActionRoutes() {
         return c.json({ result });
       } catch (error) {
         const mapped = mapExecutorError(error);
-        if (mapped) return c.json({ error: mapped.error }, mapped.status);
+        if (mapped) {
+          switch (mapped.status) {
+            case 400:
+              return c.json({ error: mapped.error }, 400);
+            case 422:
+              return c.json({ error: mapped.error }, 422);
+            case 501:
+              return c.json({ error: mapped.error }, 501);
+            case 502:
+              return c.json({ error: mapped.error }, 502);
+          }
+        }
         throw error;
       }
     },

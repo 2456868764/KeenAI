@@ -1,6 +1,7 @@
 import type { CustomActionRow } from "@keenai/storage/schema";
 import { describe, expect, it, vi } from "vitest";
 import {
+  type CustomActionFetch,
   executeCustomActionHttpDirect,
   filterCustomActionResponse,
   renderCustomActionTemplate,
@@ -56,7 +57,7 @@ describe("custom action executor", () => {
   });
 
   it("executes http_direct actions with HMAC signing", async () => {
-    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    const fetchMock: CustomActionFetch = vi.fn(async (_url, init) => {
       expect(init?.method).toBe("POST");
       expect(init?.headers).toMatchObject({
         "X-App": "keenai",
@@ -76,7 +77,7 @@ describe("custom action executor", () => {
       sampleAction(),
       { parameters: { user_id: "user-1", days: 7 }, timeoutMs: 1000 },
       {
-        fetch: fetchMock as unknown as typeof fetch,
+        fetch: fetchMock,
         getSecret: () => "super-secret",
         now: () => 1_700_000_000_000,
       },

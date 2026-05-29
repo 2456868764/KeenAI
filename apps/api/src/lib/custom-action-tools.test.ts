@@ -5,6 +5,7 @@ import { createLibsqlStore } from "@keenai/storage";
 import { brands, customActions, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it, vi } from "vitest";
+import type { CustomActionFetch } from "./custom-action-executor.js";
 import { loadCustomActionDraftTools } from "./custom-action-tools.js";
 
 describe("loadCustomActionDraftTools", () => {
@@ -39,14 +40,14 @@ describe("loadCustomActionDraftTools", () => {
       enabled: true,
     });
 
-    const fetchMock = vi.fn(async () =>
+    const fetchMock: CustomActionFetch = vi.fn(async () =>
       Response.json({ status: "ok", new_end_date: "2026-06-01" }),
     );
 
     const tools = await loadCustomActionDraftTools(
       db,
       { orgId: orgRow.id, brandId: brandRow.id },
-      { fetch: fetchMock as unknown as typeof fetch, getSecret: () => null },
+      { fetch: fetchMock, getSecret: () => null },
     );
 
     expect(tools).toHaveLength(1);

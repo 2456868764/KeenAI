@@ -4,7 +4,7 @@ import type { CustomActionRow } from "@keenai/storage/schema";
 export const CUSTOM_ACTION_MAX_RESPONSE_BYTES = 20_000;
 export const CUSTOM_ACTION_DEFAULT_TIMEOUT_MS = 10_000;
 
-export type CustomActionFetch = typeof fetch;
+export type CustomActionFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 export type ExecuteCustomActionInput = {
   parameters?: Record<string, unknown>;
