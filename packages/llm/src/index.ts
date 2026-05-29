@@ -19,6 +19,7 @@ export {
   draftRequestHasImages,
   type DraftStreamInput,
 } from "./prompts.js";
+export { buildDraftToolSet, formatDraftToolSummary } from "./draft-tools.js";
 export {
   draftImageSchema,
   draftMessageSchema,
@@ -30,6 +31,8 @@ export {
   type DraftProvider,
   type DraftRequest,
   type DraftStreamChunk,
+  type DraftToolDefinition,
+  type DraftToolRuntime,
   type LlmConfig,
   type LlmProviderId,
 } from "./types.js";

@@ -18,7 +18,7 @@ import { isUniqueConstraintError, serializeCustomAction } from "../lib/custom-ac
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
-function mapExecutorError(error: unknown): { status: number; error: string } | null {
+function mapExecutorError(error: unknown): { status: 400 | 422 | 501 | 502; error: string } | null {
   if (!(error instanceof Error)) return null;
   switch (error.message) {
     case "action_disabled":

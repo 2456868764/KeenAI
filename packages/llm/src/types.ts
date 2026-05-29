@@ -31,7 +31,19 @@ export const draftRequestSchema = z.object({
   memoryContext: z.string().max(8_000).optional(),
 });
 
-export type DraftRequest = z.infer<typeof draftRequestSchema>;
+export type DraftRequest = z.infer<typeof draftRequestSchema> & {
+  tools?: DraftToolRuntime[];
+};
+
+export type DraftToolDefinition = {
+  name: string;
+  description: string;
+  parametersSchema: Record<string, unknown>;
+};
+
+export type DraftToolRuntime = DraftToolDefinition & {
+  execute: (args: Record<string, unknown>) => Promise<unknown>;
+};
 export type DraftMessage = z.infer<typeof draftMessageSchema>;
 export type DraftImage = z.infer<typeof draftImageSchema>;
 

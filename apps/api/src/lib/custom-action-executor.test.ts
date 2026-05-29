@@ -76,7 +76,7 @@ describe("custom action executor", () => {
       sampleAction(),
       { parameters: { user_id: "user-1", days: 7 }, timeoutMs: 1000 },
       {
-        fetch: fetchMock as typeof fetch,
+        fetch: fetchMock as unknown as typeof fetch,
         getSecret: () => "super-secret",
         now: () => 1_700_000_000_000,
       },

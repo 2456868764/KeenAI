@@ -1,10 +1,13 @@
+import { formatDraftToolSummary } from "./draft-tools.js";
 import type { DraftRequest } from "./types.js";
 
 export function buildDraftPrompt(req: DraftRequest): { system: string; prompt: string } {
+  const toolSummary = formatDraftToolSummary(req.tools ?? []);
   const system = [
     "You are a helpful customer support agent drafting a reply.",
     "Be concise, professional, and empathetic.",
     "Output only the reply body — no subject line.",
+    toolSummary,
     req.memoryContext ? `Relevant memory:\n${req.memoryContext}` : "",
     req.instruction ? `Agent instruction: ${req.instruction}` : "",
   ]

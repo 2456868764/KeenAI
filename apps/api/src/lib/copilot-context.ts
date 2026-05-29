@@ -6,6 +6,8 @@ import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { loadAttachmentsForMessages } from "./attachments.js";
+import { resolveCustomActionSecretFromEnv } from "./custom-action-executor.js";
+import { loadCustomActionDraftTools } from "./custom-action-tools.js";
 import { getKbContextSearch } from "./kb-search-config.js";
 import { readUploadFile } from "./uploads.js";
 
@@ -38,7 +40,7 @@ export async function buildCopilotDraftRequest(
     subject?: string;
     instruction?: string;
   },
-): Promise<{ request: DraftRequest; memoryScope: MemoryScope }> {
+): Promise<{ request: DraftRequest; memoryScope: MemoryScope; toolNames: string[] }> {
   const rows = await db
     .select({
       id: messages.id,
@@ -99,13 +101,24 @@ export async function buildCopilotDraftRequest(
     kbSearch: getKbContextSearch(),
   });
 
+  const tools = await loadCustomActionDraftTools(
+    db,
+    { orgId: input.orgId, brandId: input.brandId },
+    {
+      fetch: globalThis.fetch.bind(globalThis),
+      getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
+    },
+  );
+
   return {
     memoryScope: memory.scope,
+    toolNames: tools.map((tool) => tool.name),
     request: {
       messages: draftMessages,
       instruction: input.instruction,
       subject: input.subject,
       ...(memory.text ? { memoryContext: memory.text } : {}),
+      ...(tools.length > 0 ? { tools } : {}),
     },
   };
 }
