@@ -171,6 +171,20 @@ export const openApiDocument = {
         },
       },
     },
+    [`/api/${API_VERSION}/mcp/servers`]: {
+      get: {
+        summary: "List configured MCP host servers",
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "MCP server config" } },
+      },
+    },
+    [`/api/${API_VERSION}/mcp/tools`]: {
+      get: {
+        summary: "List tools from connected MCP servers",
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "MCP tool list" } },
+      },
+    },
   },
   components: {
     securitySchemes: {

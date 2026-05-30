@@ -49,6 +49,7 @@ describe("API health", () => {
     expect(body.info.title).toBe("KeenAI API");
     expect(body.paths).toHaveProperty("/api/v1/kb/search");
     expect(body.paths).toHaveProperty("/api/v1/custom-actions");
+    expect(body.paths).toHaveProperty("/api/v1/mcp/tools");
 
     await store.close();
   });

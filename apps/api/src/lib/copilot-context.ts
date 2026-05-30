@@ -9,6 +9,7 @@ import { loadAttachmentsForMessages } from "./attachments.js";
 import { resolveCustomActionSecretFromEnv } from "./custom-action-executor.js";
 import { loadCustomActionDraftTools } from "./custom-action-tools.js";
 import { getKbContextSearch } from "./kb-search-config.js";
+import { loadMcpDraftTools } from "./mcp-tools.js";
 import { readUploadFile } from "./uploads.js";
 
 const MAX_VISION_IMAGES_PER_MSG = 3;
@@ -101,19 +102,23 @@ export async function buildCopilotDraftRequest(
     kbSearch: getKbContextSearch(),
   });
 
-  const tools = await loadCustomActionDraftTools(
-    db,
-    {
-      orgId: input.orgId,
-      brandId: input.brandId,
-      conversationId: input.conversationId,
-    },
-    {
-      fetch: globalThis.fetch.bind(globalThis),
-      getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
-    },
-    { otelEnabled: env.OTEL_ENABLED },
-  );
+  const [customTools, mcpTools] = await Promise.all([
+    loadCustomActionDraftTools(
+      db,
+      {
+        orgId: input.orgId,
+        brandId: input.brandId,
+        conversationId: input.conversationId,
+      },
+      {
+        fetch: globalThis.fetch.bind(globalThis),
+        getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
+      },
+      { otelEnabled: env.OTEL_ENABLED },
+    ),
+    loadMcpDraftTools(env),
+  ]);
+  const tools = [...customTools, ...mcpTools];
 
   return {
     memoryScope: memory.scope,

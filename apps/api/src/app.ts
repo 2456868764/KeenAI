@@ -36,6 +36,7 @@ import { imWebhookRoutes } from "./routes/im-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
 import { kbRoutes } from "./routes/kb.js";
 import { macroRoutes } from "./routes/macros.js";
+import { mcpRoutes } from "./routes/mcp.js";
 import { memberRoutes } from "./routes/members.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { notificationRoutes } from "./routes/notifications.js";
@@ -123,6 +124,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", memoryRoutes(ctx));
   app.route("/", kbRoutes(ctx));
   app.route("/", customActionRoutes());
+  app.route("/", mcpRoutes());
   app.route("/", uploadRoutes(ctx));
   app.route("/", toolRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));

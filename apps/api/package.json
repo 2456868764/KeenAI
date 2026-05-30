@@ -21,6 +21,7 @@
     "@keenai/kb": "workspace:*",
     "@keenai/llm": "workspace:*",
     "@keenai/memory-tree": "workspace:*",
+    "@keenai/mcp": "workspace:*",
     "@keenai/shared": "workspace:*",
     "@keenai/storage": "workspace:*",
     "@keenai/workflow": "workspace:*",
