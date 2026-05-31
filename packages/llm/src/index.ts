@@ -20,6 +20,7 @@ export {
   type DraftStreamInput,
 } from "./prompts.js";
 export { buildDraftToolSet, formatDraftToolSummary } from "./draft-tools.js";
+export { streamDraftText, type DraftLanguageModel } from "./run-draft-stream.js";
 export {
   draftImageSchema,
   draftMessageSchema,

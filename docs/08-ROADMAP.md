@@ -298,7 +298,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 ### Sprint 分解
 
 #### Sprint 13-14（W29-W32）：Keeni AI Agent + Memory
-- [ ] `@keenai/agent` 包基于 `@mastra/core/agent`
+- [x] `@keenai/agent` 包 skeleton + run wrapper（AE-01 · Mastra adapter stub；`@mastra/core` 待 AE-02）
 - [ ] `@keenai/memory` 包基于 `@mastra/memory` + 4 层（observations / episodes / facts / patterns / slots / entities / relations / audit）
 - [ ] Mastra processors：PiiFilter / TrajectoryCompressor / ConfidenceFilter
 - [ ] Workflow "Let Keeni Answer" Block（含 maxSteps + 工具链）

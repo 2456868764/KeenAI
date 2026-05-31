@@ -109,7 +109,10 @@ describe("copilot integration", () => {
     const body = await draftRes.text();
     expect(body).toContain('"providerId":"stub"');
     expect(body).toContain('"memoryScope":"conversation"');
-    expect(body).toContain("reaching o");
+    expect(body).toContain("Keeni");
+    expect(body).toContain("Guardrails");
+    // Stub stream emits ~12-char JSON chunks; user message may split across chunk boundaries.
+    expect(body).toContain("fund order 4");
 
     const eventRes = await app.request("/api/v1/copilot/events", {
       method: "POST",

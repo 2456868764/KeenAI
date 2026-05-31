@@ -5,7 +5,37 @@
 
 ---
 
-## 当前迭代 · Phase 7 收尾（Sprint 16 · Custom Actions + MCP）✓
+## 当前迭代 · Iteration 64（Phase 8 · Sprint 13–14 · AE-02 Mastra 接入）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I64-01 | Mastra `@mastra/core/agent` 接入 | [ ] |
+| I64-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 63（Phase 8 · Sprint 13–14 · Keeni Agent AE-01）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I63-01 | `@keenai/agent` 包 skeleton + Mastra adapter stub | [x] |
+| I63-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## Phase 8 · Sprint 13–14 · Keeni AI Agent（AE-01～）
+
+| AE | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **AE-01** | I63 | `@keenai/agent` skeleton + run wrapper | [x] |
+| **AE-02** | I64 | Mastra `@mastra/core/agent` 接入 | [ ] ← **next** |
+| AE-02 | I64 | Mastra `@mastra/core/agent` 接入 | [ ] |
+| AE-03 | I65 | Resolution 检测 + post-run hooks | [ ] |
+| AE-04 | I66 | Skill system stub | [ ] |
+
+---
+
+## Phase 7 收尾（Sprint 16 · Custom Actions + MCP）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

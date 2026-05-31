@@ -35,6 +35,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.4.2
         version: 0.4.3(hono@4.12.19)(zod@3.25.76)
+      '@keenai/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@keenai/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -237,6 +240,25 @@ importers:
       vite:
         specifier: ^6.0.6
         version: 6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
+
+  packages/agent:
+    dependencies:
+      '@keenai/llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@keenai/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.19
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/auth:
     dependencies:

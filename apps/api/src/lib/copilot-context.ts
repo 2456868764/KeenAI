@@ -1,3 +1,4 @@
+import { buildKeeniAgentContext } from "@keenai/agent";
 import type { DraftMessage, DraftRequest } from "@keenai/llm";
 import type { MemoryScope } from "@keenai/memory-tree";
 import { assembleMemoryContext } from "@keenai/memory-tree";
@@ -120,15 +121,25 @@ export async function buildCopilotDraftRequest(
   ]);
   const tools = [...customTools, ...mcpTools];
 
-  return {
-    memoryScope: memory.scope,
-    toolNames: tools.map((tool) => tool.name),
-    request: {
+  const agentContext = buildKeeniAgentContext({
+    params: {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      conversationId: input.conversationId,
+      userId: input.userId,
+    },
+    draftRequest: {
       messages: draftMessages,
       instruction: input.instruction,
       subject: input.subject,
       ...(memory.text ? { memoryContext: memory.text } : {}),
       ...(tools.length > 0 ? { tools } : {}),
     },
+  });
+
+  return {
+    memoryScope: memory.scope,
+    toolNames: tools.map((tool) => tool.name),
+    request: agentContext.draftRequest,
   };
 }
