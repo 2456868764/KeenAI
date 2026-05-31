@@ -305,6 +305,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Workflow "Let Keeni Answer" Block（含 maxSteps + 工具链）
 - [ ] Auto-close + CSAT（Inngest 计时器）
 - [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）
+- [x] Skill system stub（AE-04 · registry / match / runner / discoverer）
 - [ ] Memory consolidation Inngest cron（hourly / daily）
 - [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
   - [ ] `memory_chunks` + canonicalize + fast-score + admitted/dropped

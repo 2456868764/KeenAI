@@ -51,3 +51,19 @@ export {
   type KeeniAgentStreamEvent,
   type KeeniAgentTrigger,
 } from "./types.js";
+export {
+  DEFAULT_REFUND_SKILL,
+  createInMemorySkillRegistry,
+  matchSkills,
+  matchSkillsFromRegistry,
+  proposalToDraftSkill,
+  proposeSkillFromRun,
+  runSkill,
+  type KeeniSkill,
+  type KeeniSkillMatch,
+  type KeeniSkillProposal,
+  type KeeniSkillRunResult,
+  type RunSkillInput,
+  type SkillRegistry,
+  type SkillRunContext,
+} from "./skill/index.js";
