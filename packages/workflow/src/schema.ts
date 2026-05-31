@@ -1,4 +1,19 @@
 import { z } from "zod";
+import {
+  type LetKeeniAnswerInput,
+  type LetKeeniAnswerResult,
+  letKeeniAnswerBlockSchema,
+} from "./blocks/let-keeni-answer.js";
+
+export {
+  letKeeniAnswerBlockSchema,
+  letKeeniAnswerOutcomeRoutingSchema,
+  resolveLetKeeniAnswerNext,
+  type LetKeeniAnswerBlock,
+  type LetKeeniAnswerInput,
+  type LetKeeniAnswerOutcomeRouting,
+  type LetKeeniAnswerResult,
+} from "./blocks/let-keeni-answer.js";
 
 export const WORKFLOW_TRIGGERS = ["first_message", "customer_unresponsive"] as const;
 export type WorkflowTrigger = (typeof WORKFLOW_TRIGGERS)[number];
@@ -6,7 +21,12 @@ export type WorkflowTrigger = (typeof WORKFLOW_TRIGGERS)[number];
 export const WORKFLOW_STATUSES = ["draft", "published"] as const;
 export type WorkflowStatus = (typeof WORKFLOW_STATUSES)[number];
 
-export const WORKFLOW_BLOCK_TYPES = ["send_message", "assign", "close"] as const;
+export const WORKFLOW_BLOCK_TYPES = [
+  "send_message",
+  "assign",
+  "close",
+  "let_keeni_answer",
+] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
 const sendMessageBlockObjectSchema = z.object({
@@ -36,6 +56,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendMessageBlockObjectSchema,
   assignBlockSchema,
   closeBlockSchema,
+  letKeeniAnswerBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -79,6 +100,9 @@ export type WorkflowRunContext = {
   orgId: string;
   brandId: string;
   conversationId: string;
+  targetCustomerId?: string | null;
+  subject?: string;
+  isShadowRun?: boolean;
 };
 
 export type SendMessageInput = {
@@ -90,6 +114,7 @@ export type WorkflowActionHandlers = {
   sendMessage: (input: SendMessageInput) => Promise<void>;
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
+  letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
 };
 
 export type WorkflowStepResult = {
@@ -97,6 +122,11 @@ export type WorkflowStepResult = {
   type: WorkflowBlockType;
   status: "ok" | "error";
   error?: string;
+  output?: {
+    replyText?: string;
+    resolutionType?: string;
+    nextBlockId?: string | null;
+  };
 };
 
 export type WorkflowRunResult = {

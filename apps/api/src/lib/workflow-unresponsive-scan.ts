@@ -1,3 +1,4 @@
+import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, messages, workflowRuns, workflows } from "@keenai/storage/schema";
 import { type WorkflowDefinition, resolveInactivityMs } from "@keenai/workflow";
@@ -48,7 +49,7 @@ async function hasRunSince(
 
 export async function scanCustomerUnresponsiveWorkflows(
   db: Db,
-  opts?: { now?: Date; orgId?: string },
+  opts: { env: ApiEnv; now?: Date; orgId?: string },
 ): Promise<UnresponsiveScanResult> {
   const now = opts?.now ?? new Date();
   const wfFilters = [
@@ -99,7 +100,7 @@ export async function scanCustomerUnresponsiveWorkflows(
       const alreadyRan = await hasRunSince(db, workflow.id, conversation.id, last.createdAt);
       if (alreadyRan) continue;
 
-      const run = await executeWorkflow(db, workflow, conversation.id);
+      const run = await executeWorkflow(db, workflow, conversation.id, opts.env);
       if (run) {
         runs.push(run.id);
         triggered += 1;

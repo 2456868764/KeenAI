@@ -125,4 +125,98 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("runs let_keeni_answer workflow block on first message", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Keeni auto answer",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [{ id: "keeni", type: "let_keeni_answer", maxSteps: 5 }],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "w-keeni",
+        subject: "Refund help",
+        initialMessage: { plainText: "Please refund order 42" },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    expect(messages.status).toBe(200);
+    const body = (await messages.json()) as { items: { plainText: string; sentVia?: string }[] };
+    expect(body.items.some((m) => m.sentVia === "workflow" && m.plainText.includes("Keeni"))).toBe(
+      true,
+    );
+
+    await store.close();
+  });
 });

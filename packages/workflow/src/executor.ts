@@ -1,6 +1,7 @@
 import type {
   WorkflowActionHandlers,
   WorkflowDefinition,
+  WorkflowRunContext,
   WorkflowRunResult,
   WorkflowStepResult,
 } from "./schema.js";
@@ -8,6 +9,7 @@ import type {
 export async function runWorkflow(
   definition: WorkflowDefinition,
   handlers: WorkflowActionHandlers,
+  context?: WorkflowRunContext,
 ): Promise<WorkflowRunResult> {
   const steps: WorkflowStepResult[] = [];
 
@@ -19,19 +21,51 @@ export async function runWorkflow(
             plainText: block.plainText,
             attachmentIds: block.attachmentIds,
           });
+          steps.push({ blockId: block.id, type: block.type, status: "ok" });
           break;
         case "assign":
           await handlers.assign(block.assigneeId ?? null);
+          steps.push({ blockId: block.id, type: block.type, status: "ok" });
           break;
         case "close":
           await handlers.close();
+          steps.push({ blockId: block.id, type: block.type, status: "ok" });
           break;
+        case "let_keeni_answer": {
+          if (!handlers.letKeeniAnswer) {
+            throw new Error("let_keeni_answer_handler_missing");
+          }
+          if (!context) {
+            throw new Error("workflow_context_required");
+          }
+          const result = await handlers.letKeeniAnswer({
+            block,
+            context: {
+              orgId: context.orgId,
+              brandId: context.brandId,
+              conversationId: context.conversationId,
+              targetCustomerId: context.targetCustomerId,
+              subject: context.subject,
+              isShadowRun: context.isShadowRun,
+            },
+          });
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: {
+              replyText: result.replyText,
+              resolutionType: result.resolution.type,
+              nextBlockId: result.nextBlockId,
+            },
+          });
+          break;
+        }
         default: {
           const _exhaustive: never = block;
           throw new Error(`unknown_block:${String(_exhaustive)}`);
         }
       }
-      steps.push({ blockId: block.id, type: block.type, status: "ok" });
     } catch (e) {
       const message = e instanceof Error ? e.message : "unknown_error";
       steps.push({ blockId: block.id, type: block.type, status: "error", error: message });

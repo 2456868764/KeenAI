@@ -302,7 +302,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Mastra `@mastra/core/agent` 接入（AE-02 · `buildKeeniMastraAgent` + stream adapter）
 - [ ] `@keenai/memory` 包基于 `@mastra/memory` + 4 层（observations / episodes / facts / patterns / slots / entities / relations / audit）
 - [ ] Mastra processors：PiiFilter / TrajectoryCompressor / ConfidenceFilter
-- [ ] Workflow "Let Keeni Answer" Block（含 maxSteps + 工具链）
+- [x] Workflow "Let Keeni Answer" Block（WF-01 · stub provider + outcome routing metadata）
 - [ ] Auto-close + CSAT（Inngest 计时器）
 - [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）
 - [x] Skill system stub（AE-04 · registry / match / runner / discoverer）

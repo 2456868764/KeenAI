@@ -23,7 +23,11 @@ describe("startWorkflowScanScheduler", () => {
 
   it("does nothing when interval is zero", () => {
     const stop = startWorkflowScanScheduler(
-      { store: {} as never, log: { info: vi.fn(), error: vi.fn() } as never },
+      {
+        store: {} as never,
+        log: { info: vi.fn(), error: vi.fn() } as never,
+        env: {} as never,
+      },
       0,
     );
     vi.advanceTimersByTime(60_000);
@@ -33,7 +37,10 @@ describe("startWorkflowScanScheduler", () => {
 
   it("runs scan on interval", async () => {
     const log = { info: vi.fn(), error: vi.fn() };
-    const stop = startWorkflowScanScheduler({ store: {} as never, log: log as never }, 1);
+    const stop = startWorkflowScanScheduler(
+      { store: {} as never, log: log as never, env: {} as never },
+      1,
+    );
 
     await vi.advanceTimersByTimeAsync(60_000);
     expect(scanCustomerUnresponsiveWorkflows).toHaveBeenCalledOnce();

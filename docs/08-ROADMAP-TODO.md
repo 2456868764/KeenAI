@@ -5,11 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 67（Phase 8 · Sprint 13–14 · Memory / Workflow 下一项）
+## 当前迭代 · Iteration 67（Phase 8 · Sprint 13–14 · WF-01 Let Keeni Answer block）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I67-01 | 待定（Memory 或 Workflow block） | [ ] |
+| I67-01 | Workflow `let_keeni_answer` block + API wiring | [x] |
+| I67-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 68（Phase 8 · Sprint 13–14 · Memory Mastra 接入）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I68-01 | `@keenai/memory` Mastra adapter stub | [ ] |
+| I68-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

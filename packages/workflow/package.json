@@ -12,6 +12,7 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
+    "@keenai/agent": "workspace:*",
     "zod": "^3.24.1"
   },
   "optionalDependencies": {

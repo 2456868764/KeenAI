@@ -20,7 +20,7 @@ initOtel(env, log);
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
 
 if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.WORKFLOW_SCAN_INTERVAL_MINUTES > 0) {
-  startWorkflowScanScheduler({ store, log }, env.WORKFLOW_SCAN_INTERVAL_MINUTES);
+  startWorkflowScanScheduler({ store, log, env }, env.WORKFLOW_SCAN_INTERVAL_MINUTES);
   log.info(
     { intervalMinutes: env.WORKFLOW_SCAN_INTERVAL_MINUTES },
     "workflow unresponsive scan scheduler started",
