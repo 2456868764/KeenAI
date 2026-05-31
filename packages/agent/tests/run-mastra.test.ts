@@ -1,19 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildKeeniAgentContext } from "../src/orchestrator.js";
 
-vi.mock("@keenai/llm", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@keenai/llm")>();
-  return {
-    ...actual,
-    streamDraftText: async function* () {
-      yield { type: "text-delta" as const, text: "Hello from Keeni" };
-      yield { type: "done" as const };
-    },
-  };
-});
-
-describe("runKeeniAgentStream", () => {
-  it("streams message deltas from the llm adapter", async () => {
+describe("runKeeniAgentStream (Mastra)", () => {
+  it("streams message deltas from a Mastra agent", async () => {
     const { runKeeniAgentStream } = await import("../src/run.js");
     const ctx = buildKeeniAgentContext({
       params: {
@@ -25,6 +14,14 @@ describe("runKeeniAgentStream", () => {
         messages: [{ role: "user", plainText: "Need help" }],
       },
     });
+
+    const agent = {
+      stream: async () => ({
+        fullStream: (async function* () {
+          yield { type: "text-delta", payload: { text: "Hello from Mastra" } };
+        })(),
+      }),
+    };
 
     const events = [];
     for await (const event of runKeeniAgentStream({
@@ -39,13 +36,13 @@ describe("runKeeniAgentStream", () => {
         resourceId: "user-1",
         threadId: "conv-1",
       },
-      useMastra: false,
+      agent: agent as never,
     })) {
       events.push(event);
     }
 
     expect(events).toEqual([
-      { type: "message_delta", delta: "Hello from Keeni" },
+      { type: "message_delta", delta: "Hello from Mastra" },
       { type: "done" },
     ]);
   });

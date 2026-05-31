@@ -21,7 +21,7 @@ export type BuildKeeniAgentContextInput = {
   tokenBudget?: number;
 };
 
-/** Build agent runtime context — today wraps Vercel AI SDK; Mastra Agent lands in AE-02+. */
+/** Build agent runtime context before Mastra Agent construction or llm fallback runs. */
 export function buildKeeniAgentContext(input: BuildKeeniAgentContextInput): KeeniAgentContext {
   const personality = input.personality ?? buildPersonality();
   const agentSystem = buildAgentSystemPrompt(personality);

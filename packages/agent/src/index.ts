@@ -10,12 +10,16 @@ export {
   type BuildKeeniAgentContextInput,
   type KeeniAgentContext,
 } from "./orchestrator.js";
-export { mapDraftChunkToAgentEvent } from "./events.js";
+export { mapDraftChunkToAgentEvent, mapMastraChunkToAgentEvent } from "./events.js";
 export {
-  describeMastraAgentStub,
+  buildKeeniAgent,
+  buildKeeniMastraAgent,
+  buildMastraStreamMessages,
+  describeMastraAgentIdentity,
   KEENI_AGENT_MASTRA_ADAPTER,
-  type MastraAgentStub,
-} from "./mastra-stub.js";
+  type BuildKeeniMastraAgentInput,
+  type MastraAgentIdentity,
+} from "./mastra-agent.js";
 export { runKeeniAgentStream, type RunKeeniAgentInput } from "./run.js";
 export {
   KEENI_AGENT_TRIGGERS,
