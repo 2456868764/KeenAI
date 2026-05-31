@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 65（Phase 8 · Sprint 13–14 · AE-03 Resolution + post-run hooks）
+## 当前迭代 · Iteration 66（Phase 8 · Sprint 13–14 · AE-04 Skill system stub）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I65-01 | Resolution 检测 + post-run hooks | [ ] |
-| I65-02 | tests · roadmap · commit · push | [ ] |
+| I66-01 | Skill system stub | [ ] |
+| I66-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 65（Phase 8 · Sprint 13–14 · AE-03 Resolution + post-run hooks）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I65-01 | Resolution 检测 + post-run hooks | [x] |
+| I65-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -38,8 +47,8 @@
 |----|------|------|------|
 | **AE-01** | I63 | `@keenai/agent` skeleton + run wrapper | [x] |
 | **AE-02** | I64 | Mastra `@mastra/core/agent` 接入 | [x] |
-| **AE-03** | I65 | Resolution 检测 + post-run hooks | [ ] ← **next** |
-| AE-04 | I66 | Skill system stub | [ ] |
+| **AE-03** | I65 | Resolution 检测 + post-run hooks | [x] |
+| **AE-04** | I66 | Skill system stub | [ ] ← **next** |
 
 ---
 

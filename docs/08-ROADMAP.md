@@ -304,7 +304,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Mastra processors：PiiFilter / TrajectoryCompressor / ConfidenceFilter
 - [ ] Workflow "Let Keeni Answer" Block（含 maxSteps + 工具链）
 - [ ] Auto-close + CSAT（Inngest 计时器）
-- [ ] Resolution 检测（`generateObject` · confirmed / assumed / unresolved）
+- [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）
 - [ ] Memory consolidation Inngest cron（hourly / daily）
 - [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
   - [ ] `memory_chunks` + canonicalize + fast-score + admitted/dropped

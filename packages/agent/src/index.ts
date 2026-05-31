@@ -22,6 +22,26 @@ export {
 } from "./mastra-agent.js";
 export { runKeeniAgentStream, type RunKeeniAgentInput } from "./run.js";
 export {
+  KEENI_AGENT_INNGEST_EVENTS,
+  buildAgentRunCompletedPayload,
+  createInngestPostRunDispatcher,
+  createSyncPostRunDispatcher,
+  dispatchAgentRunCompleted,
+  type BuildAgentRunCompletedInput,
+  type InngestSendFn,
+  type KeeniAgentPostRunDispatcher,
+  type KeeniAgentPostRunHook,
+  type KeeniAgentRunCompletedPayload,
+} from "./post-run.js";
+export {
+  KEENI_RESOLUTION_TYPES,
+  detectResolution,
+  keenResolutionSchema,
+  type DetectResolutionInput,
+  type KeeniResolution,
+  type KeeniResolutionType,
+} from "./resolution.js";
+export {
   KEENI_AGENT_TRIGGERS,
   keenAgentParamsSchema,
   keenAgentRunRequestSchema,

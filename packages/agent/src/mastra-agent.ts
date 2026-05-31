@@ -5,7 +5,7 @@ import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import type { KeeniAgentContext } from "./orchestrator.js";
 
-/** Mastra adapter metadata — AE-03+ adds memory and post-run hooks. */
+/** Mastra adapter metadata — memory wiring lands in a later sprint. */
 export const KEENI_AGENT_MASTRA_ADAPTER = {
   enabled: true,
   targetPackage: "@mastra/core/agent",
