@@ -5,21 +5,30 @@
 
 ---
 
-## 当前迭代 · Iteration 68（Phase 8 · Sprint 13–14 · Memory Mastra 接入）✓
+## 当前迭代 · Iteration 69（Phase 8 · Sprint 13–14 · Memory processors stub）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I69-01 | Mastra processors stub（PiiFilter / TrajectoryCompressor / ConfidenceFilter） | [x] |
+| I69-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 70（Phase 8 · Sprint 13–14 · Memory consolidation cron stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I70-01 | Memory consolidation Inngest cron stub | [ ] |
+| I70-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 68（Phase 8 · Sprint 13–14 · Memory Mastra 接入）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
 | I68-01 | `@keenai/memory` Mastra adapter stub | [x] |
 | I68-02 | tests · roadmap · commit · push | [x] |
-
----
-
-## 当前迭代 · Iteration 69（Phase 8 · Sprint 13–14 · Memory processors stub）
-
-| ID | 项 | 状态 |
-|----|-----|------|
-| I69-01 | Mastra processors stub（PiiFilter / TrajectoryCompressor / ConfidenceFilter） | [ ] |
-| I69-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

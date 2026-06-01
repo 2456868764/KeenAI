@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mastra": "./src/mastra-adapter.ts"
+    "./mastra": "./src/mastra-adapter.ts",
+    "./processors": "./src/processors/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

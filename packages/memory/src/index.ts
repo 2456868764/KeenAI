@@ -14,6 +14,21 @@ export {
   type MemorySubject,
 } from "./mastra-adapter.js";
 export {
+  buildKeeniMemoryProcessors,
+  ConfidenceFilter,
+  DEFAULT_KEENI_MEMORY_PROCESSOR_OPTIONS,
+  KEENI_MEMORY_PROCESSORS,
+  PiiFilter,
+  runKeeniMemoryProcessors,
+  TrajectoryCompressor,
+  type BuildKeeniMemoryProcessorsInput,
+  type ConfidenceFilterOptions,
+  type KeeniMemoryMessage,
+  type KeeniMemoryMessageList,
+  type KeeniMemoryProcessor,
+  type TrajectoryCompressorOptions,
+} from "./processors/index.js";
+export {
   exportMemoryVault,
   type ExportMemoryVaultInput,
   type ExportMemoryVaultResult,

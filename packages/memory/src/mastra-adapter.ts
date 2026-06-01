@@ -1,7 +1,7 @@
 import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { Memory } from "@mastra/memory";
 
-/** Mastra adapter metadata — processors and PG backend land in later sprints. */
+/** Mastra adapter metadata — agent inputProcessor wiring lands in a later sprint. */
 export const KEENI_MEMORY_MASTRA_ADAPTER = {
   enabled: true,
   targetPackage: "@mastra/memory",
