@@ -18,7 +18,7 @@
   "dependencies": {
     "@keenai/shared": "workspace:*",
     "@keenai/workflow": "workspace:*",
-    "@libsql/client": "^0.14.0",
+    "@libsql/client": "^0.15.15",
     "drizzle-orm": "^0.38.3",
     "postgres": "^3.4.5",
     "ulid": "^2.3.0"

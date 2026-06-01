@@ -5,21 +5,30 @@
 
 ---
 
-## 当前迭代 · Iteration 67（Phase 8 · Sprint 13–14 · WF-01 Let Keeni Answer block）✓
+## 当前迭代 · Iteration 68（Phase 8 · Sprint 13–14 · Memory Mastra 接入）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I68-01 | `@keenai/memory` Mastra adapter stub | [x] |
+| I68-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 69（Phase 8 · Sprint 13–14 · Memory processors stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I69-01 | Mastra processors stub（PiiFilter / TrajectoryCompressor / ConfidenceFilter） | [ ] |
+| I69-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 67（Phase 8 · Sprint 13–14 · WF-01 Let Keeni Answer block）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
 | I67-01 | Workflow `let_keeni_answer` block + API wiring | [x] |
 | I67-02 | tests · roadmap · commit · push | [x] |
-
----
-
-## 当前迭代 · Iteration 68（Phase 8 · Sprint 13–14 · Memory Mastra 接入）
-
-| ID | 项 | 状态 |
-|----|-----|------|
-| I68-01 | `@keenai/memory` Mastra adapter stub | [ ] |
-| I68-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 
