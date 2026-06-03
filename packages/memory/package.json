@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./mastra": "./src/mastra-adapter.ts",
-    "./processors": "./src/processors/index.ts"
+    "./processors": "./src/processors/index.ts",
+    "./inngest": "./src/inngest/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -19,6 +20,9 @@
     "@mastra/libsql": "^1.11.1",
     "@mastra/memory": "^1.20.0",
     "drizzle-orm": "^0.38.3"
+  },
+  "optionalDependencies": {
+    "inngest": "^3.27.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

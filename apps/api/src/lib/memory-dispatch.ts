@@ -1,10 +1,6 @@
-export const MEMORY_INNGEST_EVENTS = {
-  EXTRACT_CHUNK: "keenai/memory.extract_chunk",
-  EXTRACT_FACTS: "keenai/memory.extract_facts",
-  EXTRACT_ENTITIES: "keenai/memory.extract_entities",
-  DIGEST_DAILY: "keenai/memory.digest_daily",
-  FLUSH_STALE_BUFFERS: "keenai/memory.flush_stale_buffers",
-} as const;
+import { MEMORY_INNGEST_EVENTS as PACKAGE_MEMORY_INNGEST_EVENTS } from "@keenai/memory/inngest";
+
+export const MEMORY_INNGEST_EVENTS = PACKAGE_MEMORY_INNGEST_EVENTS;
 
 export type MemoryExtractChunkPayload = {
   orgId: string;

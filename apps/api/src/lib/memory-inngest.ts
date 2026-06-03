@@ -1,7 +1,13 @@
 import { runDigestDaily } from "@keenai/memory-tree";
+import {
+  MEMORY_CONSOLIDATE_CRON_DEFAULT,
+  MEMORY_DECAY_CRON_DEFAULT,
+  MEMORY_DIGEST_CRON_DEFAULT,
+  MEMORY_FLUSH_STALE_CRON_DEFAULT,
+  createMemoryInngestFunctions as createPackageMemoryInngestFunctions,
+} from "@keenai/memory/inngest";
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
-import { MEMORY_INNGEST_EVENTS } from "./memory-dispatch.js";
 import {
   runExtractEntitiesAndRelationsForSummary,
   runExtractFactsForSummary,
@@ -12,115 +18,34 @@ import {
 } from "./memory-pipeline.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
-export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
-export const MEMORY_FLUSH_STALE_CRON_DEFAULT = "0 * * * *";
-export const MEMORY_CONSOLIDATE_CRON_DEFAULT = "0 * * * *";
-export const MEMORY_DECAY_CRON_DEFAULT = "0 3 * * *";
+export {
+  MEMORY_CONSOLIDATE_CRON_DEFAULT,
+  MEMORY_DECAY_CRON_DEFAULT,
+  MEMORY_DIGEST_CRON_DEFAULT,
+  MEMORY_FLUSH_STALE_CRON_DEFAULT,
+};
 
 export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
-  const extract = client.createFunction(
-    { id: "keenai-memory-extract-chunk" },
-    { event: MEMORY_INNGEST_EVENTS.EXTRACT_CHUNK },
-    async ({ event, step }) => {
-      const data = event.data as {
-        orgId: string;
-        brandId: string;
-        chunkId: string;
-      };
-
-      const result = await step.run("process-admitted-chunk", () =>
-        runProcessAdmittedChunk(ctx.store.db, data),
-      );
-
-      for (const summaryId of result.summaryIds) {
-        await step.sendEvent(`extract-facts-${summaryId}`, {
-          name: MEMORY_INNGEST_EVENTS.EXTRACT_FACTS,
-          data: { orgId: data.orgId, brandId: data.brandId, summaryId },
-        });
-        await step.sendEvent(`extract-entities-${summaryId}`, {
-          name: MEMORY_INNGEST_EVENTS.EXTRACT_ENTITIES,
-          data: { orgId: data.orgId, brandId: data.brandId, summaryId },
-        });
-      }
-
-      return result;
+  return createPackageMemoryInngestFunctions(
+    client,
+    {
+      processAdmittedChunk: (payload) => runProcessAdmittedChunk(ctx.store.db, payload),
+      extractFacts: (payload) => runExtractFactsForSummary(ctx.store.db, payload),
+      extractEntities: (payload) => runExtractEntitiesAndRelationsForSummary(ctx.store.db, payload),
+      digestDaily: (payload) =>
+        runDigestDaily(ctx.store.db, {
+          ...payload,
+          summaryFtsIndexer: getMemorySummaryFtsIndexer(),
+        }),
+      flushStaleBuffers: () => runFlushStaleBuffers(ctx.store.db),
+      consolidate: (payload) => runMemoryConsolidation(ctx.store.db, payload),
+      decaySweep: (payload) => runMemoryDecaySweep(ctx.store.db, payload),
+    },
+    {
+      digestCron: ctx.env.INNGEST_MEMORY_DIGEST_CRON,
+      flushStaleCron: ctx.env.INNGEST_MEMORY_FLUSH_STALE_CRON,
+      consolidateCron: ctx.env.INNGEST_MEMORY_CONSOLIDATE_CRON,
+      decayCron: ctx.env.INNGEST_MEMORY_DECAY_CRON,
     },
   );
-
-  const extractFacts = client.createFunction(
-    { id: "keenai-memory-extract-facts" },
-    { event: MEMORY_INNGEST_EVENTS.EXTRACT_FACTS },
-    async ({ event }) => {
-      const data = event.data as {
-        orgId: string;
-        brandId: string;
-        summaryId: string;
-      };
-      return runExtractFactsForSummary(ctx.store.db, data);
-    },
-  );
-
-  const extractEntities = client.createFunction(
-    { id: "keenai-memory-extract-entities" },
-    { event: MEMORY_INNGEST_EVENTS.EXTRACT_ENTITIES },
-    async ({ event }) => {
-      const data = event.data as {
-        orgId: string;
-        brandId: string;
-        summaryId: string;
-      };
-      return runExtractEntitiesAndRelationsForSummary(ctx.store.db, data);
-    },
-  );
-
-  const digestDaily = client.createFunction(
-    { id: "keenai-memory-digest-daily" },
-    { event: MEMORY_INNGEST_EVENTS.DIGEST_DAILY },
-    async ({ event }) => {
-      const data = (event.data ?? {}) as {
-        dateUtc?: string;
-        orgId?: string;
-        brandId?: string;
-      };
-      return runDigestDaily(ctx.store.db, {
-        ...data,
-        summaryFtsIndexer: getMemorySummaryFtsIndexer(),
-      });
-    },
-  );
-
-  const digestDailyCron = client.createFunction(
-    { id: "keenai-memory-digest-daily-cron" },
-    { cron: ctx.env.INNGEST_MEMORY_DIGEST_CRON },
-    async () => runDigestDaily(ctx.store.db, { summaryFtsIndexer: getMemorySummaryFtsIndexer() }),
-  );
-
-  const flushStaleCron = client.createFunction(
-    { id: "keenai-memory-flush-stale-cron" },
-    { cron: ctx.env.INNGEST_MEMORY_FLUSH_STALE_CRON },
-    async () => runFlushStaleBuffers(ctx.store.db),
-  );
-
-  const consolidateCron = client.createFunction(
-    { id: "keenai-memory-consolidate-cron" },
-    { cron: ctx.env.INNGEST_MEMORY_CONSOLIDATE_CRON },
-    async () => runMemoryConsolidation(ctx.store.db),
-  );
-
-  const decaySweepCron = client.createFunction(
-    { id: "keenai-memory-decay-sweep-cron" },
-    { cron: ctx.env.INNGEST_MEMORY_DECAY_CRON },
-    async () => runMemoryDecaySweep(ctx.store.db),
-  );
-
-  return [
-    extract,
-    extractFacts,
-    extractEntities,
-    digestDaily,
-    digestDailyCron,
-    flushStaleCron,
-    consolidateCron,
-    decaySweepCron,
-  ] as const;
 }

@@ -21,6 +21,7 @@
     "@keenai/channels-im": "workspace:*",
     "@keenai/kb": "workspace:*",
     "@keenai/llm": "workspace:*",
+    "@keenai/memory": "workspace:*",
     "@keenai/memory-tree": "workspace:*",
     "@keenai/mcp": "workspace:*",
     "@keenai/shared": "workspace:*",

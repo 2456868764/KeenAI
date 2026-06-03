@@ -5,21 +5,30 @@
 
 ---
 
-## 当前迭代 · Iteration 69（Phase 8 · Sprint 13–14 · Memory processors stub）✓
+## 当前迭代 · Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I71-01 | Auto-close + CSAT Inngest timer stub | [ ] |
+| I71-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 70（Phase 8 · Sprint 13–14 · Memory consolidation cron stub）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I70-01 | Memory consolidation Inngest cron stub | [x] |
+| I70-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## Iteration 69（Phase 8 · Sprint 13–14 · Memory processors stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
 | I69-01 | Mastra processors stub（PiiFilter / TrajectoryCompressor / ConfidenceFilter） | [x] |
 | I69-02 | tests · roadmap · commit · push | [x] |
-
----
-
-## 当前迭代 · Iteration 70（Phase 8 · Sprint 13–14 · Memory consolidation cron stub）
-
-| ID | 项 | 状态 |
-|----|-----|------|
-| I70-01 | Memory consolidation Inngest cron stub | [ ] |
-| I70-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

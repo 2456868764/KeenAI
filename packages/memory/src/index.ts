@@ -29,6 +29,23 @@ export {
   type TrajectoryCompressorOptions,
 } from "./processors/index.js";
 export {
+  createMemoryInngestFunctions,
+  MEMORY_CONSOLIDATE_CRON_DEFAULT,
+  MEMORY_DECAY_CRON_DEFAULT,
+  MEMORY_DIGEST_CRON_DEFAULT,
+  MEMORY_FLUSH_STALE_CRON_DEFAULT,
+  MEMORY_INNGEST_EVENTS,
+  type MemoryConsolidationPayload,
+  type MemoryDecaySweepPayload,
+  type MemoryDigestDailyPayload,
+  type MemoryExtractChunkPayload,
+  type MemoryExtractEntitiesPayload,
+  type MemoryExtractFactsPayload,
+  type MemoryInngestHandlers,
+  type MemoryInngestOptions,
+  type ProcessAdmittedChunkResult,
+} from "./inngest/index.js";
+export {
   exportMemoryVault,
   type ExportMemoryVaultInput,
   type ExportMemoryVaultResult,
