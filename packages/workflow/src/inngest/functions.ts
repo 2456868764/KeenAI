@@ -1,6 +1,11 @@
 import { Inngest } from "inngest";
 import { WORKFLOW_INNGEST_EVENTS } from "../adapter/inngest.js";
 import type { WorkflowDispatchHandlers } from "../adapter/types.js";
+import {
+  type WorkflowTimerHandlers,
+  createWorkflowTimerInngestFunctions,
+  stubWorkflowTimerHandlers,
+} from "./timers.js";
 
 /** Default Inngest cron — every 5 minutes */
 export const WORKFLOW_SCAN_CRON_DEFAULT = "*/5 * * * *";
@@ -9,12 +14,18 @@ export type WorkflowInngestOptions = {
   scanCron?: string;
 };
 
+export type WorkflowInngestHandlers = WorkflowDispatchHandlers & Partial<WorkflowTimerHandlers>;
+
 export function createWorkflowInngestFunctions(
   client: Inngest,
-  handlers: WorkflowDispatchHandlers,
+  handlers: WorkflowInngestHandlers,
   opts?: WorkflowInngestOptions,
 ) {
   const scanCron = opts?.scanCron ?? WORKFLOW_SCAN_CRON_DEFAULT;
+  const timerHandlers: WorkflowTimerHandlers = {
+    ...stubWorkflowTimerHandlers,
+    ...handlers,
+  };
 
   const firstMessage = client.createFunction(
     { id: "keenai-workflow-first-message" },
@@ -45,7 +56,9 @@ export function createWorkflowInngestFunctions(
     async () => handlers.scanCustomerUnresponsive(undefined),
   );
 
-  return [firstMessage, scanUnresponsive, scanUnresponsiveCron] as const;
+  const timerFunctions = createWorkflowTimerInngestFunctions(client, timerHandlers);
+
+  return [firstMessage, scanUnresponsive, scanUnresponsiveCron, ...timerFunctions] as const;
 }
 
 export function createInngestClient(appId = "keenai") {

@@ -5,12 +5,21 @@
 
 ---
 
-## 当前迭代 · Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）
+## 当前迭代 · Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I71-01 | Auto-close + CSAT Inngest timer stub | [ ] |
-| I71-02 | tests · roadmap · commit · push | [ ] |
+| I71-01 | Auto-close + CSAT Inngest timer stub | [x] |
+| I71-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 72（Phase 8 · Sprint 13–14 · Memory Tree MT-01 stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I72-01 | Memory Tree `memory_chunks` canonicalize stub | [ ] |
+| I72-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

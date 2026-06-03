@@ -1,6 +1,9 @@
 export const WORKFLOW_INNGEST_EVENTS = {
   FIRST_MESSAGE: "keenai/workflow.first_message",
   SCAN_UNRESPONSIVE: "keenai/workflow.scan_unresponsive",
+  STEP_AWAITING_INPUT: "keenai/workflow.step_awaiting_input",
+  CSAT_REQUEST: "keenai/workflow.csat_request",
+  CONVERSATION_CLOSED: "conversation/state.changed.closed",
 } as const;
 
 export type InngestSendFn = (payload: {

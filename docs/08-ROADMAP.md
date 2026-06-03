@@ -305,7 +305,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Memory consolidation Inngest cron stub（I70 · consolidate + decay sweep crons）
 - [ ] `@keenai/memory` 包基于 `@mastra/memory` + 4 层（observations / episodes / facts / patterns / slots / entities / relations / audit）
 - [x] Workflow "Let Keeni Answer" Block（WF-01 · stub provider + outcome routing metadata）
-- [ ] Auto-close + CSAT（Inngest 计时器）
+- [x] Auto-close + CSAT Inngest timer stub（I71 · `@keenai/workflow` timer functions）
 - [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）
 - [x] Skill system stub（AE-04 · registry / match / runner / discoverer）
 - [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
