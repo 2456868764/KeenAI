@@ -50,6 +50,12 @@ export {
   canonicalizeConversationMessage,
   conversationMessageSourceRef,
 } from "./canonicalize.js";
+export {
+  KEENI_MEMORY_TREE_MT01,
+  prepareMemoryChunkFromMessage,
+  type PrepareMemoryChunkInput,
+  type PreparedMemoryChunk,
+} from "./prepare-chunk.js";
 export { extractChunk, type ExtractChunkResult } from "./extract-chunk.js";
 export {
   createStubMemoryFactExtractor,

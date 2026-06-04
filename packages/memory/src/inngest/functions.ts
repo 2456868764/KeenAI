@@ -4,6 +4,7 @@ import {
   MEMORY_DIGEST_CRON_DEFAULT,
   MEMORY_FLUSH_STALE_CRON_DEFAULT,
   MEMORY_INNGEST_EVENTS,
+  type MemoryCanonicalizePayload,
   type MemoryConsolidationPayload,
   type MemoryDecaySweepPayload,
   type MemoryDigestDailyPayload,
@@ -24,6 +25,7 @@ export {
   MEMORY_INNGEST_EVENTS,
 } from "./types.js";
 export type {
+  MemoryCanonicalizePayload,
   MemoryConsolidationPayload,
   MemoryDecaySweepPayload,
   MemoryDigestDailyPayload,
@@ -47,6 +49,15 @@ export function createMemoryInngestFunctions<TFn extends MemoryInngestFunction>(
   const flushStaleCronSchedule = opts.flushStaleCron ?? MEMORY_FLUSH_STALE_CRON_DEFAULT;
   const consolidateCronSchedule = opts.consolidateCron ?? MEMORY_CONSOLIDATE_CRON_DEFAULT;
   const decayCronSchedule = opts.decayCron ?? MEMORY_DECAY_CRON_DEFAULT;
+
+  const canonicalize = client.createFunction(
+    { id: "keenai-memory-canonicalize" },
+    { event: MEMORY_INNGEST_EVENTS.CANONICALIZE },
+    async ({ event, step }) => {
+      const data = event.data as MemoryCanonicalizePayload;
+      return step.run("canonicalize-message", () => handlers.canonicalizeMessage(data));
+    },
+  );
 
   const extract = client.createFunction(
     { id: "keenai-memory-extract-chunk" },
@@ -130,6 +141,7 @@ export function createMemoryInngestFunctions<TFn extends MemoryInngestFunction>(
   );
 
   return [
+    canonicalize,
     extract,
     extractFacts,
     extractEntities,

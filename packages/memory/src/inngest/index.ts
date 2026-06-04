@@ -7,6 +7,7 @@ export {
   MEMORY_INNGEST_EVENTS,
 } from "./functions.js";
 export type {
+  MemoryCanonicalizePayload,
   MemoryConsolidationPayload,
   MemoryDecaySweepPayload,
   MemoryDigestDailyPayload,

@@ -14,16 +14,25 @@
 
 ---
 
-## 当前迭代 · Iteration 72（Phase 8 · Sprint 13–14 · Memory Tree MT-01 stub）
+## 当前迭代 · Iteration 72（Phase 8 · Sprint 13–14 · Memory Tree MT-01 stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I72-01 | Memory Tree `memory_chunks` canonicalize stub | [ ] |
-| I72-02 | tests · roadmap · commit · push | [ ] |
+| I72-01 | Memory Tree `memory_chunks` canonicalize stub | [x] |
+| I72-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
-## Iteration 70（Phase 8 · Sprint 13–14 · Memory consolidation cron stub）✓
+## 当前迭代 · Iteration 73（Phase 8 · Sprint 13–14 · Memory Tree MT-02 fast-score stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I73-01 | Memory Tree fast-score + extract_chunk enqueue stub | [ ] |
+| I73-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

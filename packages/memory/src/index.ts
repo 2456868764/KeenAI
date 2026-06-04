@@ -35,6 +35,7 @@ export {
   MEMORY_DIGEST_CRON_DEFAULT,
   MEMORY_FLUSH_STALE_CRON_DEFAULT,
   MEMORY_INNGEST_EVENTS,
+  type MemoryCanonicalizePayload,
   type MemoryConsolidationPayload,
   type MemoryDecaySweepPayload,
   type MemoryDigestDailyPayload,

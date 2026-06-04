@@ -17,6 +17,7 @@ import {
   runProcessAdmittedChunk,
 } from "./memory-pipeline.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
+import { ingestMemoryTreeForMessage } from "./memory-tree-ingest.js";
 
 export {
   MEMORY_CONSOLIDATE_CRON_DEFAULT,
@@ -29,6 +30,19 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
   return createPackageMemoryInngestFunctions(
     client,
     {
+      canonicalizeMessage: (payload) =>
+        ingestMemoryTreeForMessage(ctx.store.db, {
+          orgId: payload.orgId,
+          brandId: payload.brandId,
+          conversationId: payload.conversationId,
+          messageId: payload.messageId,
+          senderType: payload.senderType,
+          plainText: payload.plainText,
+          isInternal: payload.isInternal,
+          createdAt: new Date(payload.sentAt),
+          channelType: payload.channelType,
+          channelId: payload.channelId,
+        }),
       processAdmittedChunk: (payload) => runProcessAdmittedChunk(ctx.store.db, payload),
       extractFacts: (payload) => runExtractFactsForSummary(ctx.store.db, payload),
       extractEntities: (payload) => runExtractEntitiesAndRelationsForSummary(ctx.store.db, payload),

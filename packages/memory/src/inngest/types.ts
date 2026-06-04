@@ -1,4 +1,5 @@
 export const MEMORY_INNGEST_EVENTS = {
+  CANONICALIZE: "keenai/memory.canonicalize",
   EXTRACT_CHUNK: "keenai/memory.extract_chunk",
   EXTRACT_FACTS: "keenai/memory.extract_facts",
   EXTRACT_ENTITIES: "keenai/memory.extract_entities",
@@ -12,6 +13,19 @@ export const MEMORY_DIGEST_CRON_DEFAULT = "0 0 * * *";
 export const MEMORY_FLUSH_STALE_CRON_DEFAULT = "0 * * * *";
 export const MEMORY_CONSOLIDATE_CRON_DEFAULT = "0 * * * *";
 export const MEMORY_DECAY_CRON_DEFAULT = "0 3 * * *";
+
+export type MemoryCanonicalizePayload = {
+  orgId: string;
+  brandId: string;
+  conversationId: string;
+  messageId: string;
+  senderType: string;
+  sentAt: string;
+  plainText: string;
+  isInternal: boolean;
+  channelType?: string;
+  channelId?: string;
+};
 
 export type MemoryExtractChunkPayload = {
   orgId: string;
@@ -52,6 +66,7 @@ export type ProcessAdmittedChunkResult = {
 };
 
 export type MemoryInngestHandlers = {
+  canonicalizeMessage: (payload: MemoryCanonicalizePayload) => Promise<unknown>;
   processAdmittedChunk: (payload: MemoryExtractChunkPayload) => Promise<ProcessAdmittedChunkResult>;
   extractFacts: (payload: MemoryExtractFactsPayload) => Promise<unknown>;
   extractEntities: (payload: MemoryExtractEntitiesPayload) => Promise<unknown>;

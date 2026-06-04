@@ -2,6 +2,7 @@ import type { Inngest } from "inngest";
 import { Inngest as InngestClient } from "inngest";
 import type { AppContext } from "../types.js";
 import {
+  type MemoryCanonicalizePayload,
   type MemoryDispatchAdapter,
   type MemoryExtractEntitiesPayload,
   type MemoryExtractFactsPayload,
@@ -13,12 +14,28 @@ import {
   runExtractFactsForSummary,
   runProcessAdmittedChunk,
 } from "./memory-pipeline.js";
+import { ingestMemoryTreeForMessage } from "./memory-tree-ingest.js";
 
 let adapter: MemoryDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
 
 export function initMemoryDispatch(ctx: AppContext): MemoryDispatchAdapter {
   const handlers = {
+    canonicalizeMessage: async (payload: MemoryCanonicalizePayload) => {
+      const result = await ingestMemoryTreeForMessage(ctx.store.db, {
+        orgId: payload.orgId,
+        brandId: payload.brandId,
+        conversationId: payload.conversationId,
+        messageId: payload.messageId,
+        senderType: payload.senderType,
+        plainText: payload.plainText,
+        isInternal: payload.isInternal,
+        createdAt: new Date(payload.sentAt),
+        channelType: payload.channelType,
+        channelId: payload.channelId,
+      });
+      return { chunkId: result.id };
+    },
     extractChunk: async (payload: { orgId: string; brandId: string; chunkId: string }) => {
       const result = await runProcessAdmittedChunk(ctx.store.db, payload);
       for (const summaryId of result.summaryIds) {

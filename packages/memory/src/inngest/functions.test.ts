@@ -11,6 +11,7 @@ import {
 
 describe("createMemoryInngestFunctions", () => {
   const handlers = {
+    canonicalizeMessage: vi.fn(async () => ({ id: "chunk-1", created: true })),
     processAdmittedChunk: vi.fn(async () => ({ summaryIds: [] })),
     extractFacts: vi.fn(async () => ({})),
     extractEntities: vi.fn(async () => ({})),
@@ -24,8 +25,9 @@ describe("createMemoryInngestFunctions", () => {
     const client = new Inngest({ id: "test" });
     const fns = createMemoryInngestFunctions(client, handlers);
 
-    expect(fns).toHaveLength(10);
+    expect(fns).toHaveLength(11);
     expect(fns.map((fn) => fn.id())).toEqual([
+      "keenai-memory-canonicalize",
       "keenai-memory-extract-chunk",
       "keenai-memory-extract-facts",
       "keenai-memory-extract-entities",
@@ -46,11 +48,12 @@ describe("createMemoryInngestFunctions", () => {
       decayCron: "30 4 * * *",
     });
 
-    expect(fns[7]?.id()).toBe("keenai-memory-consolidate-cron");
-    expect(fns[9]?.id()).toBe("keenai-memory-decay-sweep-cron");
+    expect(fns[8]?.id()).toBe("keenai-memory-consolidate-cron");
+    expect(fns[10]?.id()).toBe("keenai-memory-decay-sweep-cron");
   });
 
-  it("exports memory cron defaults and consolidation events", () => {
+  it("exports canonicalize event", () => {
+    expect(MEMORY_INNGEST_EVENTS.CANONICALIZE).toBe("keenai/memory.canonicalize");
     expect(MEMORY_INNGEST_EVENTS.CONSOLIDATE).toBe("keenai/memory.consolidate");
     expect(MEMORY_INNGEST_EVENTS.DECAY_SWEEP).toBe("keenai/memory.decay_sweep");
     expect(MEMORY_CONSOLIDATE_CRON_DEFAULT).toBe("0 * * * *");
