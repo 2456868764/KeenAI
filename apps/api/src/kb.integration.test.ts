@@ -4,7 +4,15 @@ import { hashPassword } from "@keenai/auth";
 import { createHelpCenterStubConnector, createKeenaiKb } from "@keenai/kb";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, kbSources, members, organizations } from "@keenai/storage/schema";
+import {
+  accounts,
+  brands,
+  kbQueryLogs,
+  kbSources,
+  members,
+  organizations,
+} from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -114,10 +122,40 @@ describe("kb search API", () => {
     );
     expect(searchRes.status).toBe(200);
     const body = (await searchRes.json()) as {
-      results: { hits: Array<{ documentTitle: string; fusedScore: number }> };
+      logId: string;
+      results: { hits: Array<{ documentTitle: string; fusedScore: number; chunkId: string }> };
     };
     expect(body.results.hits.length).toBeGreaterThan(0);
     expect(body.results.hits.some((hit) => hit.documentTitle === "Billing FAQ")).toBe(true);
+    expect(body.logId).toMatch(/^[0-9A-Z]{26}$/i);
+
+    const [logRow] = await db.select().from(kbQueryLogs).where(eq(kbQueryLogs.id, body.logId));
+    expect(logRow?.queryText).toBe("billing invoice");
+    expect(logRow?.retrievedChunkIds?.length).toBe(body.results.hits.length);
+    expect(logRow?.latencyMs).toBeGreaterThanOrEqual(0);
+
+    const feedbackRes = await app.request(`/api/v1/kb/search/${body.logId}/feedback`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback: "helpful" }),
+    });
+    expect(feedbackRes.status).toBe(200);
+    const feedbackBody = (await feedbackRes.json()) as { ok: boolean; feedback: string };
+    expect(feedbackBody.ok).toBe(true);
+    expect(feedbackBody.feedback).toBe("helpful");
+
+    const [afterFeedback] = await db
+      .select()
+      .from(kbQueryLogs)
+      .where(eq(kbQueryLogs.id, body.logId));
+    expect(afterFeedback?.userFeedback).toBe("helpful");
+
+    const notFoundRes = await app.request("/api/v1/kb/search/01NOTFOUND0000000000000000/feedback", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback: "not_helpful" }),
+    });
+    expect(notFoundRes.status).toBe(404);
 
     await store.close();
   });

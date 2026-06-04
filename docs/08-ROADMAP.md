@@ -338,7 +338,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **KB-09** · KG entity-link expansion（I80 · `expandKbChunksFromGraph` · RRF 0.35/0.45/0.20）
 - [x] **KB-10** · Hierarchical chunk hydrate（I81 · `hydrateKbSearchHits` · rerank 后默认开启）
 - [x] **KB-11** · Diversity + Recency 后置（I82 · `applyKbSearchPostFuse` · halfLife 90d）
-- [ ] **KB-12** · `kb_query_logs` + `POST /kb/search/:id/feedback`
+- [x] **KB-12** · `kb_query_logs` + `POST /kb/search/:id/feedback`（I83 · search 返回 `logId`）
 - [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI · [x]
 - [x] Keeni Memory 原生（KM-01～13 + KG-01～04 + KB-01～06）
 

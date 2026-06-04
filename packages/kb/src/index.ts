@@ -1,5 +1,17 @@
 export { createKeenaiKb } from "./client.js";
 export {
+  KEENI_KB_KB12,
+  KB_QUERY_LOG_FEEDBACK,
+  createKbQueryLog,
+  kbHitLogScore,
+  setKbQueryLogFeedback,
+  type CreateKbQueryLogInput,
+  type CreateKbQueryLogResult,
+  type KbQueryLogFeedback,
+  type KbQueryLogHitSnapshot,
+  type SetKbQueryLogFeedbackInput,
+} from "./query-log.js";
+export {
   indexKbChunkInFts,
   type KbChunkFtsDoc,
   type KbChunkFtsIndexer,

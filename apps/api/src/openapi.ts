@@ -113,9 +113,21 @@ export const openApiDocument = {
           { name: "limit", in: "query", required: false },
         ],
         responses: {
-          "200": { description: "Search hits" },
+          "200": { description: "Search hits and logId (KB-12)" },
           "403": { description: "Forbidden" },
           "503": { description: "KB FTS unavailable" },
+        },
+      },
+    },
+    [`/api/${API_VERSION}/kb/search/{id}/feedback`]: {
+      post: {
+        summary: "Submit helpful/not_helpful feedback for a KB search log",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true }],
+        responses: {
+          "200": { description: "Feedback recorded" },
+          "403": { description: "Forbidden" },
+          "404": { description: "Log not found" },
         },
       },
     },

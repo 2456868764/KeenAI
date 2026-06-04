@@ -9,3 +9,11 @@ export const kbSearchQuerySchema = z.object({
 });
 
 export type KbSearchQuery = z.infer<typeof kbSearchQuerySchema>;
+
+export const KB_SEARCH_FEEDBACK = ["helpful", "not_helpful"] as const;
+
+export const kbSearchFeedbackSchema = z.object({
+  feedback: z.enum(KB_SEARCH_FEEDBACK),
+});
+
+export type KbSearchFeedback = z.infer<typeof kbSearchFeedbackSchema>;

@@ -15,8 +15,8 @@
 | 4 | I80 | KB-09 | KG entity-link expansion（第三检索流） | [x] |
 | 5 | I81 | KB-10 | Hierarchical chunk hydrate | [x] |
 | 6 | I82 | KB-11 | Diversity + Recency 后置 | [x] |
-| 7 | **I83** | KB-12 | `kb_query_logs` + feedback API | [ ] ← **当前** |
-| 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [ ] |
+| 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [x] |
+| 8 | **I84～I90** | KB Phase B | KB-13～18 + KG-05 | [ ] ← **当前** |
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] |
 
 **Phase 8 Sprint 13–14 收尾**：I77 完成后 Memory Tree MT-01～06 全部打勾。  
@@ -105,7 +105,16 @@
 
 ---
 
-## 当前迭代 · Iteration 82（KB Phase A · KB-11 diversify + recency）✓
+## 当前迭代 · Iteration 83（KB Phase A · KB-12 query logs + feedback）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I83-01 | `kb_query_logs` + `POST /kb/search/:id/feedback` | [x] |
+| I83-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## Iteration 82（KB Phase A · KB-11 diversify + recency）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
@@ -634,7 +643,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | **KB-08** | I79 | bge-reranker-v2-m3 reranker | [x] |
 | **KB-10** | I81 | Hierarchical chunk hydrate | [x] |
 | **KB-11** | I82 | Diversity + Recency 后置 | [x] |
-| **KB-12** | I83 | `kb_query_logs` + feedback API | [ ] ← **next（KB 轨）** |
+| **KB-12** | I83 | `kb_query_logs` + feedback API | [x] |
 
 **Phase A 验收**：Recall@5 ≥ 88% · Precision@5 ≥ 90% · P95 < 200ms
 
@@ -905,7 +914,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 | KB-09 | graph entity-link expansion | [x] |
 | KB-10 | hierarchical chunk hydrate | [x] |
 | KB-11 | diversity + recency | [x] |
-| KB-12 | kb_query_logs + feedback API | [ ] |
+| KB-12 | kb_query_logs + feedback API | [x] |
 
 ## KB 优化 · Phase B（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §四 · I84～I90）
 

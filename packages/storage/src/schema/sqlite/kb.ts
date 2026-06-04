@@ -228,3 +228,34 @@ export const kbRelations = sqliteTable(
 );
 
 export type KbRelationRow = typeof kbRelations.$inferSelect;
+
+export const KB_QUERY_LOG_FEEDBACK = ["helpful", "not_helpful"] as const;
+export type KbQueryLogFeedback = (typeof KB_QUERY_LOG_FEEDBACK)[number];
+
+/** Retrieval audit log for eval and user feedback (KB-12). */
+export const kbQueryLogs = sqliteTable(
+  "kb_query_logs",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    queryText: text("query_text").notNull(),
+    retrievedChunkIds: text("retrieved_chunk_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    scores: text("scores", { mode: "json" }).$type<number[]>().notNull().default([]),
+    latencyMs: integer("latency_ms"),
+    userFeedback: text("user_feedback").$type<KbQueryLogFeedback>(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    brandIdx: index("idx_kb_query_logs_brand").on(t.orgId, t.brandId, t.createdAt),
+  }),
+);
+
+export type KbQueryLogRow = typeof kbQueryLogs.$inferSelect;

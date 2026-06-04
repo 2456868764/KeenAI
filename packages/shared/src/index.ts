@@ -106,7 +106,13 @@ export {
   type MemoryStatsQuery,
   type MemoryTreeQuery,
 } from "./memory.js";
-export { kbSearchQuerySchema, type KbSearchQuery } from "./kb.js";
+export {
+  KB_SEARCH_FEEDBACK,
+  kbSearchFeedbackSchema,
+  kbSearchQuerySchema,
+  type KbSearchFeedback,
+  type KbSearchQuery,
+} from "./kb.js";
 export {
   CUSTOM_ACTION_AUTH_TYPES,
   CUSTOM_ACTION_HTTP_METHODS,
