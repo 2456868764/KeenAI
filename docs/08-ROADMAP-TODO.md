@@ -41,12 +41,21 @@
 
 ---
 
-## 当前迭代 · Iteration 75（Phase 8 · Sprint 13–14 · Memory Tree MT-04 digest stub）
+## 当前迭代 · Iteration 75（Phase 8 · Sprint 13–14 · Memory Tree MT-04 digest stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I75-01 | Memory Tree `memory.digest_daily` brand daily stub | [ ] |
-| I75-02 | tests · roadmap · commit · push | [ ] |
+| I75-01 | Memory Tree `memory.digest_daily` brand daily stub | [x] |
+| I75-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 76（Phase 8 · Sprint 13–14 · Memory Tree MT-05 retrieval stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I76-01 | Memory Tree retrieval scope stub（conversation / customer / brand_daily） | [ ] |
+| I76-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

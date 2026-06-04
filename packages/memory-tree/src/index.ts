@@ -6,6 +6,17 @@ export {
   type MemoryContextSection,
 } from "./assemble-context.js";
 export {
+  KEENI_MEMORY_TREE_MT04,
+  MEMORY_TREE_DIGEST_DAILY_EVENT,
+  brandDailyScopeKeyForDigest,
+  normalizeBrandDailyDigestInput,
+  runBrandDailyDigestForBrandStub,
+  runBrandDailyDigestStub,
+  type BrandDailyDigestPayload,
+  type NormalizedBrandDailyDigestInput,
+  type RunBrandDailyDigestForBrandInput,
+} from "./brand-daily-digest.js";
+export {
   digestDailyForBrand,
   runDigestDaily,
   type DigestDailyForBrandInput,

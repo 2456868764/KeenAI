@@ -1,9 +1,11 @@
 import {
+  type BrandDailyDigestPayload,
   extractEntitiesFromSummary,
   extractFactsFromSummary,
   extractRelationsFromSummary,
   flushStaleBuffers,
   processAdmittedChunk,
+  runBrandDailyDigestStub,
   runMemoryConsolidation,
   runMemoryDecaySweep,
 } from "@keenai/memory-tree";
@@ -19,6 +21,12 @@ export async function runProcessAdmittedChunk(
 ) {
   return processAdmittedChunk(db, {
     ...payload,
+    summaryFtsIndexer: getMemorySummaryFtsIndexer(),
+  });
+}
+
+export async function runDigestDailyPipeline(db: KeenaiDb, payload?: BrandDailyDigestPayload) {
+  return runBrandDailyDigestStub(db, payload, {
     summaryFtsIndexer: getMemorySummaryFtsIndexer(),
   });
 }

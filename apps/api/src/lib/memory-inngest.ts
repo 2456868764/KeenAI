@@ -1,4 +1,3 @@
-import { runDigestDaily } from "@keenai/memory-tree";
 import {
   MEMORY_CONSOLIDATE_CRON_DEFAULT,
   MEMORY_DECAY_CRON_DEFAULT,
@@ -9,6 +8,7 @@ import {
 import type { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import {
+  runDigestDailyPipeline,
   runExtractEntitiesAndRelationsForSummary,
   runExtractFactsForSummary,
   runFlushStaleBuffers,
@@ -16,7 +16,6 @@ import {
   runMemoryDecaySweep,
   runProcessAdmittedChunk,
 } from "./memory-pipeline.js";
-import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 import { ingestMemoryTreeForMessage } from "./memory-tree-ingest.js";
 
 export {
@@ -46,11 +45,7 @@ export function createMemoryInngestFunctions(client: Inngest, ctx: AppContext) {
       processAdmittedChunk: (payload) => runProcessAdmittedChunk(ctx.store.db, payload),
       extractFacts: (payload) => runExtractFactsForSummary(ctx.store.db, payload),
       extractEntities: (payload) => runExtractEntitiesAndRelationsForSummary(ctx.store.db, payload),
-      digestDaily: (payload) =>
-        runDigestDaily(ctx.store.db, {
-          ...payload,
-          summaryFtsIndexer: getMemorySummaryFtsIndexer(),
-        }),
+      digestDaily: (payload) => runDigestDailyPipeline(ctx.store.db, payload),
       flushStaleBuffers: () => runFlushStaleBuffers(ctx.store.db),
       consolidate: (payload) => runMemoryConsolidation(ctx.store.db, payload),
       decaySweep: (payload) => runMemoryDecaySweep(ctx.store.db, payload),
