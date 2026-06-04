@@ -1,6 +1,6 @@
 # KeenAI RAG / 知识库设计（TypeScript · Mastra RAG）
 
-> **设计参考**：AgentMemory 的三流检索 + RRF Fusion + 4-tier Memory；Hermes Agent 的 Skill / MCP 集成；Anthropic Contextual Retrieval；LlamaIndex 父子分层；RAGAS / DeepEval 评估范式。
+> **设计参考**：AgentMemory 的三流检索 + RRF Fusion + 4-tier Memory；Hermes Agent 的 Skill / MCP 集成；Anthropic Contextual Retrieval；LlamaIndex 父子分层；RAGAS / DeepEval 评估范式；[LLM Wiki v2 优化路线](11-RAG-OPTIMIZATION.md)（KB-07～24 执行跟踪）。  
 > **落地框架**：[`@mastra/rag`](https://mastra.ai/docs/rag) （`MDocument` chunker、embed、graphRAG）+ [Vercel AI SDK v4](https://sdk.vercel.ai/) （embed / rerank / generateObject）+ [`@keenai/storage`](12-STORAGE-ABSTRACTION.md)（双后端 VectorStore / FTSStore）。
 
 ---
@@ -1512,6 +1512,7 @@ export const mcpHost = new MCPClient({
 | 来源 | 借鉴 |
 |------|------|
 | [AgentMemory 4-tier + Hooks + RRF](https://github.com/rohitg00/agentmemory) | 主要架构灵感 |
+| [LLM Wiki v2](https://gist.github.com/rohitg00/2067ab416f7bbe447c1977edaaa681e2) | 知识生命周期 · Crystallization · 执行见 [11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) |
 | [Anthropic Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) | Chunk Context 增强 |
 | [Mastra RAG](https://mastra.ai/docs/rag) | TS 一等公民的 RAG 原语 |
 | [BGE-M3 (HuggingFace)](https://huggingface.co/BAAI/bge-m3) | 默认嵌入（@xenova/transformers） |

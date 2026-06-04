@@ -299,7 +299,7 @@ KeenAI 的 AI 内核由 **三个深度耦合但职责清晰** 的子系统组成
 详细设计：
 - **执行核心** → [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md)
 - **记忆系统** → [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md)
-- **知识库 / RAG** → [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)
+- **知识库 / RAG** → [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md) · 优化路线 [11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md)
 
 #### LLMProvider 抽象（多模型 · 不绑定）
 

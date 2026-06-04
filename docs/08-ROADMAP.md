@@ -284,7 +284,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 ### 功能范围
 - ✅ Keeni AI Agent（基于 Mastra 完整版 · 见 [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md)）
 - ✅ Memory System 4 层巩固（见 [10-AGENT-MEMORY.md](10-AGENT-MEMORY.md)）
-- ✅ KB / RAG Hybrid Retrieval（见 [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)）
+- ✅ KB / RAG Hybrid Retrieval（见 [11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md) · 优化路线 [11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md)）
 - ✅ Custom Actions（Function Calling + HMAC + Sandbox）
 - ✅ MCP（Host + Server 双向）
 - ✅ Roadmap
@@ -323,22 +323,43 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [ ] Widget 语音播放 · 视频 bubble
   - [ ] Telegram / Slack IM 原生多模态收发
 
-#### Sprint 15（W33-W34）：KB / RAG 三流融合
-- [x] `@keenai/kb` 包 skeleton + parse/chunk/embed stub pipeline（Mastra `MDocument` / `@mastra/rag` 待接）
-- [x] Source Connectors stub：Help Center / Web Crawl（已解决对话 / Feedback / Notion / GitHub / crawlee 待接）
-- [ ] 8 阶段 Inngest Ingestion Pipeline（当前为同步 stub）
-- [ ] Parsers：unpdf（PDF）/ mammoth（DOCX）/ cheerio + marked（HTML/MD）
-- [ ] Chunkers：semantic / hierarchical / contextual（Anthropic Contextual Retrieval · Vercel AI SDK prompt caching）
-- [x] Embed stub + `kb_chunk_vectors`（`@xenova/transformers` bge-m3 本地待接）
-- [x] Hybrid Retriever stub：FTS + Vector RRF（Graph rerank 待接）
-- [ ] Reranker：`@xenova/transformers` bge-reranker-v2-m3
-- [ ] Diversity / Recency 后置
-- [ ] `kb_query_logs` + 用户反馈循环
-- [x] `GET /kb/search` API + Agent KB context 注入（`assembleMemoryContext` · `kb_only` scope）
-- [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI · [x]
-- [x] Keeni Memory 原生（[08-ROADMAP-TODO.md](08-ROADMAP-TODO.md) KM-01～13 + KG-01～04 + KB-01～06）：hybrid RRF · FTS/Vector · facts/slots · consolidation · graph · KB stub
+#### Sprint 15（W33-W34）：KB / RAG Phase A — 检索质量
 
-#### Sprint 16（W35-W36）：Custom Actions + MCP
+> **优化路线**：[11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) · Phase A（KB-07～KB-12）· 跟踪 [08-ROADMAP-TODO.md](08-ROADMAP-TODO.md) I78～I83  
+> **基线已完成**：KB-01～06（[11-RAG-KNOWLEDGE.md](11-RAG-KNOWLEDGE.md)）
+
+- [x] `@keenai/kb` 包 skeleton + parse/chunk/embed stub pipeline（KB-01～03）
+- [x] Source Connectors stub：Help Center / Web Crawl（KB-02 · 已解决对话 / Feedback / Notion / GitHub / crawlee 待接）
+- [x] Embed stub + `kb_chunk_vectors`（KB-03 · 真实 bge-m3 → **KB-07**）
+- [x] Hybrid Retriever stub：FTS + Vector RRF（KB-04 · Graph expansion → **KB-09**）
+- [x] `GET /kb/search` API + Agent KB context 注入（KB-05～06）
+- [ ] **KB-07** · `@xenova/transformers` bge-m3 真实 embedder（替换 embed stub）
+- [ ] **KB-08** · bge-reranker-v2-m3 reranker（RRF top-40 → rerank → top-15）
+- [ ] **KB-09** · KG entity-link expansion 第三检索流（依赖 **KG-05** · 1-hop graph → chunk_ids）
+- [ ] **KB-10** · Hierarchical chunk hydrate（leaf 命中 → parent section 上下文）
+- [ ] **KB-11** · Diversity + Recency 后置（maxPerSource/section · halfLife 90d）
+- [ ] **KB-12** · `kb_query_logs` + `POST /kb/search/:id/feedback`
+- [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI · [x]
+- [x] Keeni Memory 原生（KM-01～13 + KG-01～04 + KB-01～06）
+
+**Phase A 验收**：Recall@5 ≥ 88% · Precision@5 ≥ 90% · P95 检索 < 200ms
+
+#### Sprint 16（W35-W36）：Custom Actions + MCP · KB Phase B 并行
+
+> **KB 优化**：[11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) · Phase B（KB-13～KB-18 · KG-05）· 跟踪 I84～I90（与 CA 主轨并行）
+
+**KB Phase B — 知识生命周期（并行轨）**
+
+- [ ] **KB-13** · Evidence-based confidence + `provenance` jsonb
+- [ ] **KB-14** · Supersession chain（document/chunk status · 显式取代非 blind decay）
+- [ ] **KB-15** · Freshness rules → `retrievalWeight`（`config/kb-freshness.yaml`）
+- [ ] **KB-16** · Inngest 8 阶段 ingestion（fetch→…→notify · 替换同步 stub）
+- [ ] **KB-17** · `content_hash` diff 增量索引（保留稳定 chunk_id）
+- [ ] **KB-18** · Parsers（unpdf/mammoth/cheerio）+ Chunkers（semantic/hierarchical/contextual）
+- [ ] **KG-05** · `kb_entities` / `kb_relations` + ingest extractor（支撑 KB-09）
+
+**Custom Actions + MCP（主轨）**
+
 - [ ] Action 4 步配置 UI（基本信息 / 参数 / 端点 / 数据权限）
 - [ ] HMAC 签名（`crypto.subtle.sign`）
 - [ ] Vercel AI SDK `tool()` 集成
@@ -348,7 +369,18 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] `@modelcontextprotocol/sdk` Host 模式（外部 MCP server 接入）
 - [ ] MCP Server 暴露 KeenAI 工具（其他 LLM Agent 可调用）
 
-#### Sprint 17（W37-W38）：Roadmap + Changelog + 国产化
+#### Sprint 17（W37-W38）：Roadmap + Changelog + 国产化 · KB Phase C 启动
+
+> **KB 优化**：[11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) · Phase C 前半（KB-19～KB-21）· 跟踪 I91～I93
+
+**KB Phase C — Compounding（前半）**
+
+- [ ] **KB-19** · Crystallization pipeline（`conversation/closed` → FAQ → quality gate → index/candidate）
+- [ ] **KB-20** · Contradiction reconcile + supersession propose（写入冲突检测）
+- [ ] **KB-21** · Brand KB Schema（entity_types · ingest_rules · quality_gates）
+
+**Roadmap + Changelog + 国产化（主轨）**
+
 - [ ] Roadmap Kanban / Timeline 视图（dnd-kit + TanStack Table）
 - [ ] Changelog 编辑器（Tiptap + AI 起草 from Linear / Jira 已完成 issue）
 - [ ] 受众分群发布（segment DSL · Zod）
@@ -359,8 +391,19 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] AI Prompt 中文优化（指令调优 + 评测集）
 - [ ] 10 种语言（next-intl messages + AI 翻译辅助）
 
-#### Sprint 18（W39-W40）：评测 + 发布准备
-- [ ] Mastra Eval + DeepEval-TS 评测集（faithfulness / relevance / contextual recall）
+#### Sprint 18（W39-W40）：评测 + 发布准备 · KB Phase C 收尾
+
+> **KB 优化**：[11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) · Phase C 后半（KB-22～KB-24）· 跟踪 I94～I96
+
+**KB Phase C — Compounding（后半）+ Eval**
+
+- [ ] **KB-22** · Unified Context Orchestrator（KB + Memory + Memory Tree · query intent 路由）
+- [ ] **KB-23** · Eval 闭环（failed query → golden 候选 · lifecycle metrics 趋势）
+- [ ] **KB-24** · Memory Tree hotness → crystallize 优先级（MT-07 联动）
+
+**评测 + 发布准备（主轨）**
+
+- [ ] Mastra Eval + DeepEval-TS 评测集（faithfulness / relevance / contextual recall · 与 **KB-23** 共用 pipeline）
 - [ ] 黄金问题集 `kb_golden_queries` + CI nightly run
 - [ ] 性能优化（autocannon 压测 → 调 Bun 并发 / Drizzle 索引）
 - [ ] 文档站完整化（架构 / API / 部署 / 迁移指南）
@@ -376,6 +419,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] GitHub Stars ≥ 5000
 - [ ] 自托管实例数 ≥ 200（telemetry 自愿上报）
 - [ ] Mastra Eval faithfulness ≥ 0.85 · contextual recall ≥ 0.75
+- [ ] KB 优化 Phase A–C 完成（[11-RAG-OPTIMIZATION.md](11-RAG-OPTIMIZATION.md) · KB-07～24）：Recall@5 ≥ 92% · Stale answer rate < 2%
 
 ---
 

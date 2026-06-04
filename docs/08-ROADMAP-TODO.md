@@ -532,7 +532,7 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 
 ## Phase 6 · KB / RAG（KB-01～06）
 
-对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 15 · [11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 15 · [11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md) · 后续优化 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)
 
 | KB | 迭代 | 交付 | 状态 |
 |----|------|------|------|
@@ -553,11 +553,70 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | Explorer `LIKE` 搜索 | → FTS → hybrid RRF |
 | ~~MT-10 外部 daemon~~ | **取消**；能力由 KM-* 原生实现 |
 
-### Phase 6 后续 backlog（Sprint 15 未完项）
+### Phase 6 后续 backlog（→ [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)）
 
-- Inngest 8 阶段 ingestion · PDF/DOCX/HTML parsers · contextual chunking
-- bge-m3 / bge-reranker 本地 ONNX · Graph rerank · diversity/recency
-- `kb_query_logs` + 反馈循环 · 更多 source connectors
+已拆分为 KB-RAG Phase A/B/C（KB-07～24），见下方 **KB 优化 · Phase A/B/C**。
+
+---
+
+## KB 优化 · Phase A — 检索质量（KB-07～12）
+
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 15 · [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §三
+
+| KB | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KB-07** | I78 | `@xenova/transformers` bge-m3 真实 embedder | [ ] ← **next（KB 轨）** |
+| **KB-08** | I79 | bge-reranker-v2-m3 reranker | [ ] |
+| **KB-09** | I80 | KG entity-link expansion（第三检索流） | [ ] |
+| **KB-10** | I81 | Hierarchical chunk hydrate | [ ] |
+| **KB-11** | I82 | Diversity + Recency 后置 | [ ] |
+| **KB-12** | I83 | `kb_query_logs` + feedback API | [ ] |
+
+**Phase A 验收**：Recall@5 ≥ 88% · Precision@5 ≥ 90% · P95 < 200ms
+
+### 依赖
+
+```
+KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
+                              │
+                              └──► KB-09 ◄── KG-05（kb_entities）
+                                       └──► KB-10 → KB-11 → KB-12
+```
+
+---
+
+## KB 优化 · Phase B — 知识生命周期（KB-13～18 · KG-05）
+
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 16 并行轨 · [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §四
+
+| KB | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KB-13** | I84 | Evidence-based confidence + provenance | [ ] |
+| **KB-14** | I85 | Supersession chain | [ ] |
+| **KB-15** | I86 | Freshness rules → retrievalWeight | [ ] |
+| **KB-16** | I87 | Inngest 8 阶段 ingestion pipeline | [ ] |
+| **KB-17** | I88 | content_hash diff 增量索引 | [ ] |
+| **KB-18** | I89 | Parsers + semantic/hierarchical/contextual chunkers | [ ] |
+| **KG-05** | I90 | `kb_entities` / `kb_relations` + KB ingest extractor | [ ] |
+
+**Phase B 验收**：Stale answer rate < 5% · 增量索引 chunk_id 稳定 · Inngest 编排 ingestion
+
+---
+
+## KB 优化 · Phase C — Compounding 闭环（KB-19～24）
+
+对标 [08-ROADMAP.md](./08-ROADMAP.md) Sprint 17–18 · [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §五
+
+| KB | 迭代 | 交付 | 状态 |
+|----|------|------|------|
+| **KB-19** | I91 | Crystallization pipeline | [ ] |
+| **KB-20** | I92 | Contradiction reconcile + supersession propose | [ ] |
+| **KB-21** | I93 | Brand KB Schema | [ ] |
+| **KB-22** | I94 | Unified Context Orchestrator | [ ] |
+| **KB-23** | I95 | Eval 闭环 + lifecycle metrics | [ ] |
+| **KB-24** | I96 | Memory Tree hotness → crystallize 优先级 | [ ] |
+
+**Phase C 验收**：Recall@5 ≥ 92% · Crystallization accept ≥ 60% · graph contribution ≥ 25%
 
 ---
 
@@ -760,8 +819,9 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KG-02 | relation extractor + persist | [x] |
 | KG-03 | relatedTopics recursive query | [x] |
 | KG-04 | GET /memory/graph/related API | [x] |
+| KG-05 | kb_entities / kb_relations（KB 侧 · 见 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)） | [ ] |
 
-## Phase 6 · KB / RAG（[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)）
+## Phase 6 · KB / RAG（[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md) · 优化 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)）
 
 | KB ID | 项 | 状态 |
 |-------|-----|------|
@@ -771,6 +831,40 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KB-04 | hybrid retriever | [x] |
 | KB-05 | GET /kb/search API | [x] |
 | KB-06 | Agent KB context injection | [x] |
+
+## KB 优化 · Phase A（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §三 · I78～I83）
+
+| KB ID | 项 | 状态 |
+|-------|-----|------|
+| KB-07 | bge-m3 real embedder | [ ] |
+| KB-08 | bge-reranker reranker | [ ] |
+| KB-09 | graph entity-link expansion | [ ] |
+| KB-10 | hierarchical chunk hydrate | [ ] |
+| KB-11 | diversity + recency | [ ] |
+| KB-12 | kb_query_logs + feedback API | [ ] |
+
+## KB 优化 · Phase B（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §四 · I84～I90）
+
+| KB ID | 项 | 状态 |
+|-------|-----|------|
+| KB-13 | provenance + evidence confidence | [ ] |
+| KB-14 | supersession chain | [ ] |
+| KB-15 | freshness → retrievalWeight | [ ] |
+| KB-16 | Inngest 8-step ingestion | [ ] |
+| KB-17 | content_hash diff index | [ ] |
+| KB-18 | parsers + advanced chunkers | [ ] |
+| KG-05 | kb_entities / kb_relations | [ ] |
+
+## KB 优化 · Phase C（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §五 · I91～I96）
+
+| KB ID | 项 | 状态 |
+|-------|-----|------|
+| KB-19 | crystallization pipeline | [ ] |
+| KB-20 | contradiction reconcile | [ ] |
+| KB-21 | brand KB schema | [ ] |
+| KB-22 | unified context orchestrator | [ ] |
+| KB-23 | eval loop + lifecycle metrics | [ ] |
+| KB-24 | MT hotness → crystallize priority | [ ] |
 
 ## Phase 7 · Custom Actions + MCP（[08-ROADMAP.md](./08-ROADMAP.md) Sprint 16）
 
