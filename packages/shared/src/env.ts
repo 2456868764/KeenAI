@@ -57,6 +57,8 @@ export const apiEnvSchema = z.object({
     .optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
+  /** KB-19 optional LLM FAQ extract on conversation crystallize (requires OPENAI_API_KEY). */
+  KEENAI_CRYSTALLIZE_MODEL: z.string().min(1).optional(),
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),

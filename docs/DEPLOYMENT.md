@@ -22,6 +22,9 @@
 | `KEENAI_AUTO_SEED` | no | `1` in Docker lite seeds demo user |
 | `INNGEST_EVENT_KEY` | no | Enables Inngest cron instead of in-process scan |
 | `WORKFLOW_SCAN_INTERVAL_MINUTES` | no | Default `5`; `0` disables sync scan |
+| `OPENAI_API_KEY` | no | Enables copilot + optional KB crystallize LLM extract |
+| `KEENAI_CRYSTALLIZE_MODEL` | no | KB-19 FAQ extract model (e.g. `gpt-4o-mini`); needs `OPENAI_API_KEY` |
+| `KEENAI_EVAL_JUDGE_MODEL` | no | Optional Mastra/LLM answer scoring in `pnpm kb:eval` |
 
 Copy [.env.example](../.env.example) for local development.
 

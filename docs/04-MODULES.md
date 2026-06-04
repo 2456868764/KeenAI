@@ -318,7 +318,7 @@ interface BootOpts {
 ```
 IMAP Poll (Inngest cron 每 30s) / SES/SendGrid/Mailgun Webhook
     ↓
-Email Ingestor (apps/worker)
+Email Ingestor (`apps/api/src/lib/email-ingest.ts` · IMAP via Inngest cron in API)
     ├─ MIME 解析（mailparser）
     ├─ 提取 From/To/Subject/Body
     ├─ Threading（Message-ID/References）
@@ -330,7 +330,7 @@ Email Ingestor (apps/worker)
 ```
 
 ```ts
-// apps/worker/src/jobs/email-imap-poll.ts
+// apps/api/src/lib/email-imap-poll.ts (planned) · packages/workflow Inngest cron
 import { inngest } from '@keenai/workflow/inngest';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
@@ -554,7 +554,7 @@ export const SLATracker = z.object({
 **Inngest 执行**：每条对话启动一个 SLA Inngest function；到期前 50% / 80% / 100% 触发预警；客服回复 → 发 `conversation/replied` 事件取消等待。
 
 ```ts
-// apps/worker/src/jobs/sla-watch.ts
+// packages/workflow SLA timers (Inngest) · API `apps/api/src/lib/workflow-*.ts`
 export const slaWatch = inngest.createFunction(
   { id: 'sla-watch' },
   { event: 'conversation/sla.started' },

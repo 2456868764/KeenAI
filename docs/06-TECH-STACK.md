@@ -626,11 +626,12 @@ services:
     command: ["bun", "run", "apps/api/src/index.ts"]
     ports: ["8080:8080"]
 
-  worker:
-    <<: *keenai-image
-    profiles: ["standard", "full"]
-    depends_on: [api, redis]
-    command: ["bun", "run", "apps/worker/src/index.ts"]
+  # worker: reserved — background jobs run in API process + Inngest (`packages/kb`, `packages/workflow`)
+  # worker:
+  #   <<: *keenai-image
+  #   profiles: ["standard", "full"]
+  #   depends_on: [api, redis]
+  #   command: ["bun", "run", "apps/worker/src/index.ts"]
 
   dashboard:
     profiles: ["standard", "full"]

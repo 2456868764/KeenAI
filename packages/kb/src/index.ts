@@ -178,6 +178,12 @@ export {
   type BuildKbCrystallizePayloadInput,
 } from "./lifecycle/crystallize-payload.js";
 export {
+  extractKbCrystallizeFaq,
+  type ExtractKbCrystallizeFaqOptions,
+  type ExtractKbCrystallizeFaqResult,
+  type KbCrystallizeExtractSource,
+} from "./lifecycle/crystallize-extract.js";
+export {
   KEENI_KB_KB19,
   KB_CRYSTALLIZE_MIN_CSAT,
   gateKbCrystallizeQuality,

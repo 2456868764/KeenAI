@@ -2,6 +2,7 @@ import type { KeenaiDb } from "@keenai/storage";
 import { kbCandidates, kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { parseKbBrandSchema, resolveKbQualityGates } from "../schema/brand-kb-schema.js";
+import { extractKbCrystallizeFaq } from "./crystallize-extract.js";
 import { detectKbContradictions, proposeKbSupersession } from "./reconcile.js";
 
 export const KEENI_KB_KB19 = {
@@ -17,6 +18,7 @@ export type KbCrystallizeExtract = {
   answer: string;
   entities: string[];
   qualityScore: number;
+  extractSource?: "heuristic" | "llm";
 };
 
 export type KbCrystallizeGate = "auto_index" | "candidate" | "memory_only";
@@ -78,14 +80,21 @@ export async function runKbCrystallization(
   const brandSchema = parseKbBrandSchema(source.config ?? {});
   const gates = resolveKbQualityGates(brandSchema);
 
+  const faq = await extractKbCrystallizeFaq({
+    question: input.question,
+    answer: input.answer,
+    csatScore: input.csatScore,
+  });
+
   const extract: KbCrystallizeExtract = {
-    question: input.question.trim(),
-    answer: input.answer.trim(),
-    entities: input.entities ?? [],
+    question: faq.question,
+    answer: faq.answer,
+    entities: input.entities?.length ? input.entities : faq.entities,
     qualityScore: scoreKbCrystallizeQuality({
       csatScore: input.csatScore,
-      answer: input.answer,
+      answer: faq.answer,
     }),
+    extractSource: faq.source,
   };
 
   const gate = gateKbCrystallizeQuality(extract.qualityScore, gates);
@@ -146,7 +155,11 @@ export async function runKbCrystallization(
       rawContent: `# ${title}\n\n${extract.answer}`,
       contentType: "text/markdown",
       status: "active",
-      metadata: { crystallizedFrom: input.conversationId, qualityScore: extract.qualityScore },
+      metadata: {
+        crystallizedFrom: input.conversationId,
+        qualityScore: extract.qualityScore,
+        extractSource: extract.extractSource ?? "heuristic",
+      },
     })
     .returning({ id: kbDocuments.id });
 

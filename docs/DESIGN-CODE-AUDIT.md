@@ -35,7 +35,7 @@
 | KB-16 | [x] | Inngest steps exist; not all 8 stages match full production ingest (connectors, retries, notify) |
 | KB-18 | [x] | Parsers/chunkers are **stubs** (markdown/hierarchical samples) |
 | KG-05 | [x] | `extractKbEntitiesFromDocument` heuristic; graph used in retrieval expand |
-| KB-19 | [x] | Quality gate is **heuristic** (not LLM `generateObject`); CSAT from `conversations.rating` or default 5 |
+| KB-19 | [x] | LLM FAQ extract optional (`KEENAI_CRYSTALLIZE_MODEL`); quality gate still heuristic; CSAT from `conversations.rating` only |
 | KB-20 | [x] | Reconcile is **lexical** overlap, not embedding contradiction detector |
 | KB-22 | [x] | `assembleUnifiedAgentContext` wired in copilot; **weights in metadata only** (no dynamic re-rank) |
 | KB-23 | [x] | Query-log metrics always on; recall/precision need **`includeGolden`** or `POST /kb/eval/run` |
@@ -64,7 +64,8 @@ See [GA.md](./GA.md) quality gates: Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95
 | I104 | CSAT `rating` API + widget · crystallize 无隐式默认 CSAT | [x] |
 | I105 | `keenai import zendesk --kb` 实写 `kb_documents` | [x] |
 | I106 | close → `keenai/conversation.closed` 集成测试 | [x] |
-| I107 | `MIGRATION.md` + `04-MODULES` / `06-TECH-STACK` 路径勘误 | [~] |
-| I108 | KB-19 LLM FAQ extract（可选 env） | 待办 |
-| I109 | Dashboard CA 向导 · Help Center Portal | 待办 |
-| I110+ | CHANGELOG 1.0 · Helm · 质量门槛实测 · Release | 待办 |
+| I107 | `MIGRATION.md` + `04-MODULES` / `06-TECH-STACK` 路径勘误 | [x] |
+| I108 | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL`） | [x] |
+| I109 | Dashboard CA 向导 · Help Center KB search (`/custom-actions`, `/help-center`) | [x] |
+| I110 | `CHANGELOG.md` · `deploy/helm/README.md` 规划 | [x] |
+| I111+ | GitHub Release · Docker `1.0.0` · 质量门槛实测 | 待办 |

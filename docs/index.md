@@ -9,8 +9,10 @@
 | [README](../README.md) | Vision, stack, monorepo layout |
 | [ALPHA.md](./ALPHA.md) | Alpha scope, quick start, Docker lite |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production profiles, env, `kb:bench` / `kb:eval` |
+| [deploy/helm/README.md](../deploy/helm/README.md) | Helm chart (planned) |
 | [MIGRATION.md](./MIGRATION.md) | Intercom / Zendesk import (`keenai import`) |
 | [GA.md](./GA.md) | 1.0 release checklist |
+| [CHANGELOG.md](../CHANGELOG.md) | Release notes (unreleased / 1.0) |
 | [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md) | Design vs code gaps (pre-GA) |
 
 ## Product & architecture

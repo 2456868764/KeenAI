@@ -24,14 +24,33 @@
 | 13 | I104 | GA · CSAT | `rating` API + widget CSAT · crystallize 无默认 5 分 | [x] |
 | 14 | I105 | GA · Import | Zendesk HC JSON → `kb_documents` 实写（`keenai import`） | [x] |
 | 15 | I106 | GA · Hardening | close→`conversation.closed` 集成测试 | [x] |
-| 16 | I107 | GA · Docs | `MIGRATION.md` · worker 路径勘误（04/06） | [~] |
-| 17 | I108 | GA · KB depth | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL` 可选） | [ ] |
-| 18 | I109 | GA · Product | Dashboard CA 向导 · Help Center Portal | [ ] |
-| 19 | I110+ | 1.0 release | CHANGELOG · Helm · 质量门槛实测 · GitHub Release | [ ] |
+| 16 | I107 | GA · Docs | `MIGRATION.md` · worker 路径勘误（04/06） | [x] |
+| 17 | I108 | GA · KB depth | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL` 可选） | [x] |
+| 18 | I109 | GA · Product | Dashboard CA 向导 · Help Center Portal | [x] |
+| 19 | I110 | GA · Release prep | `CHANGELOG.md` 草案 · Helm · 质量门槛实测 | [x] |
+| 20 | I111+ | 1.0 release | GitHub Release · Docker `1.0.0` tag | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：I104～I107（CSAT + import + 测试 + 文档）→ I110 GA release。  
+**当前主轨**：I109 产品面 · I110–I111 GA release（质量门槛实测后打 tag）。  
 **深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → I108+ 迭代。
+
+---
+
+## 当前迭代 · Iteration 109～110（GA · Dashboard + release prep）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I109 | `/custom-actions` 4-step wizard stub + `/help-center` KB search | [x] |
+| I110 | `CHANGELOG.md` + `deploy/helm/README.md` 规划 | [x] |
+
+---
+
+## 当前迭代 · Iteration 107～108（GA · docs + KB-19 LLM extract）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I107 | `04-MODULES` / `06-TECH-STACK` worker → API/Inngest 路径勘误 | [x] |
+| I108 | `extractKbCrystallizeFaq` + `KEENAI_CRYSTALLIZE_MODEL` | [x] |
 
 ---
 

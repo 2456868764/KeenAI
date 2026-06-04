@@ -36,6 +36,12 @@ export function AppHeader({
           <NavLink href="/memory" active={pathname.startsWith("/memory")}>
             Memory
           </NavLink>
+          <NavLink href="/custom-actions" active={pathname.startsWith("/custom-actions")}>
+            Actions
+          </NavLink>
+          <NavLink href="/help-center" active={pathname.startsWith("/help-center")}>
+            Help
+          </NavLink>
         </nav>
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">

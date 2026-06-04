@@ -609,3 +609,77 @@ export async function transitionTicketStatus(
     body: JSON.stringify({ statusId }),
   });
 }
+
+export type CustomAction = {
+  id: string;
+  orgId: string;
+  brandId: string;
+  name: string;
+  description: string | null;
+  whenToUse: string | null;
+  endpoint: string;
+  method: string;
+  authType: string;
+  sandbox: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomActionLog = {
+  id: string;
+  actionId: string;
+  ok: boolean;
+  responseStatus: number | null;
+  durationMs: number | null;
+  createdAt: string;
+};
+
+export async function listCustomActions(brandId: string): Promise<{ items: CustomAction[] }> {
+  const qs = new URLSearchParams({ brandId });
+  return apiFetch(`/api/v1/custom-actions?${qs}`);
+}
+
+export async function createCustomAction(input: {
+  brandId: string;
+  name: string;
+  description?: string;
+  whenToUse?: string;
+  endpoint: string;
+  method: string;
+  authType: string;
+  sandbox?: string;
+}): Promise<{ action: CustomAction }> {
+  return apiFetch("/api/v1/custom-actions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listCustomActionLogs(
+  actionId: string,
+): Promise<{ items: CustomActionLog[] }> {
+  return apiFetch(`/api/v1/custom-actions/${actionId}/logs`);
+}
+
+export type KbSearchHit = {
+  chunkId: string;
+  documentId: string;
+  documentTitle: string;
+  content: string;
+  fusedScore: number;
+  snippet: string | null;
+};
+
+export async function searchKb(input: {
+  brandId: string;
+  q: string;
+  limit?: number;
+}): Promise<{ results: { hits: KbSearchHit[] }; logId: string }> {
+  const qs = new URLSearchParams({
+    brandId: input.brandId,
+    q: input.q,
+    limit: String(input.limit ?? 10),
+  });
+  return apiFetch(`/api/v1/kb/search?${qs}`);
+}
