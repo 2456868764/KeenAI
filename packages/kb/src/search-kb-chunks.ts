@@ -2,6 +2,7 @@ import type { FTSStore, KeenaiDb, VectorStore } from "@keenai/storage";
 import { kbChunks, kbDocuments } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { stubEmbedKbChunk } from "./ingest/embed-chunks-stub.js";
+import { applyKbSearchPostFuse } from "./retriever/fuse.js";
 import {
   KB_RRF_WEIGHTS_DEFAULT,
   type KbRetrievalSource,
@@ -37,6 +38,13 @@ export type SearchKbChunksInput = {
   graphExpand?: boolean;
   /** When false, skip hierarchical hydrate (KB-10). Defaults to true. */
   hydrate?: boolean;
+  /** When false, skip recency rescoring (KB-11). Defaults to true. */
+  recency?: boolean;
+  /** When false, skip source/section diversity caps (KB-11). Defaults to true. */
+  diversify?: boolean;
+  recencyHalfLifeDays?: number;
+  diversifyMaxPerSource?: number;
+  diversifyMaxPerSection?: number;
   rrfWeights?: { fts: number; vector: number; graph: number };
 };
 
@@ -56,12 +64,18 @@ export type KbSearchHit = {
   sectionSummary?: string | null;
   /** KB-10: `contextPrefix` + section summary (also copied into `contextPrefix` when hydrate runs). */
   hydratedContextPrefix?: string | null;
+  sectionId: string | null;
+  sourceId: string;
+  /** KB-11: exponential recency multiplier applied to ranking score. */
+  recencyBoost?: number;
 };
 
 type KbSearchHitRow = KbSearchHit & {
-  sectionId: string | null;
   parentChunkId: string | null;
   chunkIndex: number;
+  sourceUpdatedAt: Date | null;
+  updatedAt: Date;
+  indexedAt: Date | null;
 };
 
 export type SearchKbChunksResult = {
@@ -187,6 +201,10 @@ export async function searchKbChunks(
       content: kbChunks.content,
       contextPrefix: kbChunks.contextPrefix,
       documentTitle: kbDocuments.title,
+      sourceId: kbDocuments.sourceId,
+      sourceUpdatedAt: kbDocuments.sourceUpdatedAt,
+      documentUpdatedAt: kbDocuments.updatedAt,
+      indexedAt: kbDocuments.indexedAt,
     })
     .from(kbChunks)
     .innerJoin(kbDocuments, eq(kbChunks.documentId, kbDocuments.id))
@@ -215,7 +233,11 @@ export async function searchKbChunks(
       chunkId: row.chunkId,
       documentId: row.documentId,
       documentTitle: row.documentTitle,
+      sourceId: row.sourceId,
       sectionId: row.sectionId,
+      sourceUpdatedAt: row.sourceUpdatedAt,
+      updatedAt: row.documentUpdatedAt,
+      indexedAt: row.indexedAt,
       parentChunkId: row.parentChunkId,
       chunkIndex: row.chunkIndex,
       content: row.content,
@@ -236,15 +258,23 @@ export async function searchKbChunks(
     })) as KbSearchHitRow[];
   }
 
-  const hydrated = await hydrateKbSearchHits(db, ranked, {
+  const hydrated = await hydrateKbSearchHits(db, ranked as KbSearchHitRow[], {
     orgId: input.orgId,
     brandId: input.brandId,
     hydrate: input.hydrate,
   });
 
+  const postFused = applyKbSearchPostFuse(hydrated as KbSearchHitRow[], {
+    recency: input.recency,
+    diversify: input.diversify,
+    halfLifeDays: input.recencyHalfLifeDays,
+    maxPerSource: input.diversifyMaxPerSource,
+    maxPerSection: input.diversifyMaxPerSection,
+  });
+
   return {
     q,
-    hits: hydrated.slice(0, limit).map((hit) => ({
+    hits: postFused.slice(0, limit).map((hit) => ({
       chunkId: hit.chunkId,
       documentId: hit.documentId,
       documentTitle: hit.documentTitle,
@@ -258,6 +288,9 @@ export async function searchKbChunks(
       snippet: hit.snippet,
       sectionSummary: hit.sectionSummary,
       hydratedContextPrefix: hit.hydratedContextPrefix,
+      sectionId: hit.sectionId,
+      sourceId: hit.sourceId,
+      recencyBoost: hit.recencyBoost,
     })),
   };
 }

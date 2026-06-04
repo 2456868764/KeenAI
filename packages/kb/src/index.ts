@@ -40,6 +40,26 @@ export {
   createKbQueryEmbedderFromChunkEmbedder,
 } from "./embed-query.js";
 export {
+  KEENI_KB_KB11,
+  KB_DIVERSIFY_MAX_PER_SECTION,
+  KB_DIVERSIFY_MAX_PER_SOURCE,
+  KB_RECENCY_HALF_LIFE_DAYS,
+  applyKbRecency,
+  applyKbSearchPostFuse,
+  diversifyKbSearchHits,
+  kbHitRankingScore,
+  kbRecencyBoost,
+  resolveKbRecencyTimestamp,
+  sortKbSearchHitsByRankingScore,
+  type ApplyKbRecencyOptions,
+  type ApplyKbSearchPostFuseOptions,
+  type DiversifyKbHitsOptions,
+  type KbDiversifiableHit,
+  type KbRecencyAppliedFields,
+  type KbRecencyHit,
+  type KbRecencyScorableHit,
+} from "./retriever/fuse.js";
+export {
   KEENI_KB_KB10,
   KB_SECTION_SUMMARY_MAX_CHARS,
   buildKbSectionSummary,
