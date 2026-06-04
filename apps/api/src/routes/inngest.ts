@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "inngest/hono";
 import { createEmailInngestFunctions } from "../lib/email-inngest.js";
+import { createKbInngestFunctions } from "../lib/kb-inngest.js";
 import { createMediaInngestFunctions } from "../lib/media-inngest.js";
 import { createMemoryInngestFunctions } from "../lib/memory-inngest.js";
 import { getInngestClient, getInngestWorkflowServeHandler } from "../lib/workflow-dispatch.js";
@@ -18,6 +19,7 @@ export function inngestRoutes(ctx: AppContext) {
     ...createEmailInngestFunctions(client, ctx),
     ...createMediaInngestFunctions(client, ctx),
     ...createMemoryInngestFunctions(client, ctx),
+    ...(createKbInngestFunctions(client, ctx) as Parameters<typeof serve>[0]["functions"]),
   ];
 
   const handler = serve({ client, functions: [...functions] });

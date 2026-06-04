@@ -16,8 +16,8 @@
 | 5 | I81 | KB-10 | Hierarchical chunk hydrate | [x] |
 | 6 | I82 | KB-11 | Diversity + Recency 后置 | [x] |
 | 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [x] |
-| 8 | **I84～I90** | KB Phase B | KB-13～18 + KG-05 | [ ] ← **当前** |
-| 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] |
+| 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [x] |
+| 9 | **I91～I96** | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] ← **当前** |
 
 **Phase 8 Sprint 13–14 收尾**：I77 完成后 Memory Tree MT-01～06 全部打勾。  
 **下一主轨**：KB 优化 Phase A（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) · 验收 Recall@5 ≥ 88%）。
@@ -105,7 +105,21 @@
 
 ---
 
-## 当前迭代 · Iteration 83（KB Phase A · KB-12 query logs + feedback）✓
+## 当前迭代 · Iteration 84～90（KB Phase B · 知识生命周期）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I84 | KB-13 provenance + confidence | [x] |
+| I85 | KB-14 supersession chain | [x] |
+| I86 | KB-15 freshness rules | [x] |
+| I87 | KB-16 Inngest kb-ingest | [x] |
+| I88 | KB-17 diff index | [x] |
+| I89 | KB-18 parsers/chunkers stub | [x] |
+| I90 | KG-05 entity extractor | [x] |
+
+---
+
+## Iteration 83（KB Phase A · KB-12 query logs + feedback）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
@@ -664,13 +678,13 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 | KB | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **KB-13** | I84 | Evidence-based confidence + provenance | [ ] |
-| **KB-14** | I85 | Supersession chain | [ ] |
-| **KB-15** | I86 | Freshness rules → retrievalWeight | [ ] |
-| **KB-16** | I87 | Inngest 8 阶段 ingestion pipeline | [ ] |
-| **KB-17** | I88 | content_hash diff 增量索引 | [ ] |
-| **KB-18** | I89 | Parsers + semantic/hierarchical/contextual chunkers | [ ] |
-| **KG-05** | I90 | `kb_entities` / `kb_relations` + KB ingest extractor | [ ] |
+| **KB-13** | I84 | Evidence-based confidence + provenance | [x] |
+| **KB-14** | I85 | Supersession chain | [x] |
+| **KB-15** | I86 | Freshness rules → retrievalWeight | [x] |
+| **KB-16** | I87 | Inngest 8 阶段 ingestion pipeline | [x] |
+| **KB-17** | I88 | content_hash diff 增量索引 | [x] |
+| **KB-18** | I89 | Parsers + semantic/hierarchical/contextual chunkers | [x] |
+| **KG-05** | I90 | `kb_entities` / `kb_relations` + KB ingest extractor | [x] |
 
 **Phase B 验收**：Stale answer rate < 5% · 增量索引 chunk_id 稳定 · Inngest 编排 ingestion
 
@@ -920,13 +934,13 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 | KB ID | 项 | 状态 |
 |-------|-----|------|
-| KB-13 | provenance + evidence confidence | [ ] |
-| KB-14 | supersession chain | [ ] |
-| KB-15 | freshness → retrievalWeight | [ ] |
-| KB-16 | Inngest 8-step ingestion | [ ] |
-| KB-17 | content_hash diff index | [ ] |
-| KB-18 | parsers + advanced chunkers | [ ] |
-| KG-05 | kb_entities / kb_relations | [ ] |
+| KB-13 | provenance + evidence confidence | [x] |
+| KB-14 | supersession chain | [x] |
+| KB-15 | freshness → retrievalWeight | [x] |
+| KB-16 | Inngest 8-step ingestion | [x] |
+| KB-17 | content_hash diff index | [x] |
+| KB-18 | parsers + advanced chunkers | [x] |
+| KG-05 | kb_entities / kb_relations | [x] |
 
 ## KB 优化 · Phase C（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) §五 · I91～I96）
 

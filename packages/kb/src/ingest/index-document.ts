@@ -1,9 +1,15 @@
 import type { KeenaiDb } from "@keenai/storage";
+import type { KbSourceType } from "@keenai/storage/schema";
 import { kbChunkVectors, kbChunks, kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { type KbChunkFtsIndexer, indexKbChunkInFts } from "../chunk-fts-index.js";
+import { computeKbChunkConfidence } from "../lifecycle/confidence.js";
+import { getKbFreshnessHalfLifeDays } from "../lifecycle/freshness.js";
+import { buildKbChunkProvenance } from "../lifecycle/provenance.js";
 import { chunkKbDocument } from "./chunk-document.js";
+import { hashKbChunkContent, planKbDocumentDiffIndex } from "./diff-index.js";
 import { type KbChunkEmbedder, createStubKbChunkEmbedder, embedKbChunk } from "./embedder.js";
+import { extractKbEntitiesFromDocument } from "./extract-kb-entities.js";
 import { parseKbDocument } from "./parse-document.js";
 
 export type IndexKbDocumentInput = {
@@ -12,15 +18,27 @@ export type IndexKbDocumentInput = {
   documentId: string;
   chunkFtsIndexer?: KbChunkFtsIndexer | null;
   chunkEmbedder?: KbChunkEmbedder;
+  /** KB-17: preserve chunk ids when content unchanged. Defaults to true. */
+  diffIndex?: boolean;
+  /** KG-05: write kb_entities after index. Defaults to true. */
+  extractEntities?: boolean;
 };
 
 export type IndexKbDocumentResult = {
   documentId: string;
   chunkCount: number;
   embedded: number;
+  kept: number;
+  removed: number;
+  entityCount: number;
 };
 
-/** Run parse → chunk → embed stub and persist kb_chunks + kb_chunk_vectors. */
+function readContentHash(metadata: Record<string, unknown> | null | undefined): string | null {
+  const value = metadata?.contentHash;
+  return typeof value === "string" ? value : null;
+}
+
+/** Run parse → chunk → embed and persist kb_chunks + kb_chunk_vectors. */
 export async function indexKbDocument(
   db: KeenaiDb,
   input: IndexKbDocumentInput,
@@ -45,6 +63,13 @@ export async function indexKbDocument(
     throw new Error("kb_document_empty");
   }
 
+  const [source] = document.sourceId
+    ? await db.select().from(kbSources).where(eq(kbSources.id, document.sourceId)).limit(1)
+    : [];
+
+  const sourceType = (source?.type ?? "help_center") as KbSourceType;
+  const halfLifeDays = getKbFreshnessHalfLifeDays(sourceType);
+
   const parsed = parseKbDocument({
     title: document.title,
     rawContent: document.rawContent,
@@ -52,49 +77,112 @@ export async function indexKbDocument(
   });
   const drafts = chunkKbDocument(parsed);
   const now = new Date();
+  const useDiff = input.diffIndex !== false;
 
   const existing = await db
-    .select({ id: kbChunks.id })
+    .select({
+      id: kbChunks.id,
+      chunkIndex: kbChunks.chunkIndex,
+      content: kbChunks.content,
+      metadata: kbChunks.metadata,
+      sectionId: kbChunks.sectionId,
+    })
     .from(kbChunks)
-    .where(eq(kbChunks.documentId, input.documentId));
-  const existingIds = existing.map((row) => row.id);
+    .where(and(eq(kbChunks.documentId, input.documentId), eq(kbChunks.status, "active")));
 
-  if (existingIds.length > 0) {
-    await db.delete(kbChunkVectors).where(inArray(kbChunkVectors.chunkId, existingIds));
+  const snapshots = existing.map((row) => ({
+    id: row.id,
+    chunkIndex: row.chunkIndex,
+    contentHash: readContentHash(row.metadata) ?? hashKbChunkContent(row.content),
+  }));
+
+  const plan = useDiff
+    ? planKbDocumentDiffIndex(snapshots, drafts)
+    : {
+        keep: [] as Array<{ id: string; draft: (typeof drafts)[number] }>,
+        insert: drafts,
+        removeIds: existing.map((row) => row.id),
+      };
+
+  if (plan.removeIds.length > 0) {
+    await db.delete(kbChunkVectors).where(inArray(kbChunkVectors.chunkId, plan.removeIds));
     if (input.chunkFtsIndexer) {
-      await input.chunkFtsIndexer.deleteByIds(existingIds);
+      await input.chunkFtsIndexer.deleteByIds(plan.removeIds);
     }
+    await db.delete(kbChunks).where(inArray(kbChunks.id, plan.removeIds));
   }
-  await db.delete(kbChunks).where(eq(kbChunks.documentId, input.documentId));
 
+  const chunkIdsBySection = new Map<string, string[]>();
   let embedded = 0;
 
-  for (const draft of drafts) {
-    const [chunk] = await db
-      .insert(kbChunks)
-      .values({
-        orgId: input.orgId,
-        brandId: input.brandId,
-        documentId: input.documentId,
-        sectionId: draft.sectionId,
-        chunkIndex: draft.chunkIndex,
-        content: draft.content,
-        contextPrefix: draft.contextPrefix,
-        contentSize: draft.content.length,
-        locale: document.canonicalLocale,
-        updatedAt: now,
-      })
-      .returning({ id: kbChunks.id });
+  const persistChunk = async (draft: (typeof drafts)[number], chunkId?: string) => {
+    const provenance = buildKbChunkProvenance({
+      sourceId: document.sourceId,
+      sourceType,
+      documentId: input.documentId,
+      sourceUpdatedAt: document.sourceUpdatedAt,
+    });
+    const confidence = computeKbChunkConfidence({
+      sourceType,
+      sourceUpdatedAt: document.sourceUpdatedAt,
+      provenance,
+      halfLifeDays,
+    });
+    const contentHash = hashKbChunkContent(draft.content);
 
-    const chunkId = chunk?.id;
-    if (!chunkId) continue;
+    let id = chunkId;
+    if (id) {
+      await db
+        .update(kbChunks)
+        .set({
+          sectionId: draft.sectionId,
+          content: draft.content,
+          contextPrefix: draft.contextPrefix,
+          contentSize: draft.content.length,
+          provenance: provenance as unknown as Record<string, unknown>,
+          confidence,
+          metadata: { contentHash },
+          status: "active",
+          updatedAt: now,
+        })
+        .where(eq(kbChunks.id, id));
+    } else {
+      const [chunk] = await db
+        .insert(kbChunks)
+        .values({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          documentId: input.documentId,
+          sectionId: draft.sectionId,
+          chunkIndex: draft.chunkIndex,
+          content: draft.content,
+          contextPrefix: draft.contextPrefix,
+          contentSize: draft.content.length,
+          locale: document.canonicalLocale,
+          provenance: provenance as unknown as Record<string, unknown>,
+          confidence,
+          metadata: { contentHash },
+          status: "active",
+          updatedAt: now,
+        })
+        .returning({ id: kbChunks.id });
+      id = chunk?.id;
+    }
+
+    if (!id) return;
+
+    const sectionKey = draft.sectionId ?? "body";
+    const list = chunkIdsBySection.get(sectionKey) ?? [];
+    list.push(id);
+    chunkIdsBySection.set(sectionKey, list);
 
     const vector = await embedKbChunk(
       draft.content,
       input.chunkEmbedder ?? createStubKbChunkEmbedder(),
     );
+    await db.delete(kbChunkVectors).where(eq(kbChunkVectors.chunkId, id));
     await db.insert(kbChunkVectors).values({
-      chunkId,
+      chunkId: id,
       orgId: input.orgId,
       brandId: input.brandId,
       model: vector.model,
@@ -105,7 +193,7 @@ export async function indexKbDocument(
 
     if (input.chunkFtsIndexer) {
       await indexKbChunkInFts(input.chunkFtsIndexer, {
-        chunkId,
+        chunkId: id,
         orgId: input.orgId,
         brandId: input.brandId,
         content: draft.content,
@@ -114,6 +202,25 @@ export async function indexKbDocument(
     }
 
     embedded += 1;
+  };
+
+  for (const kept of plan.keep) {
+    await persistChunk(kept.draft, kept.id);
+  }
+  for (const draft of plan.insert) {
+    await persistChunk(draft);
+  }
+
+  let entityCount = 0;
+  if (input.extractEntities !== false) {
+    const extracted = await extractKbEntitiesFromDocument(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      documentId: input.documentId,
+      parsed,
+      chunkIdsBySection,
+    });
+    entityCount = extracted.entityCount;
   }
 
   await db
@@ -126,7 +233,13 @@ export async function indexKbDocument(
       .select({ count: sql<number>`count(*)` })
       .from(kbChunks)
       .innerJoin(kbDocuments, eq(kbChunks.documentId, kbDocuments.id))
-      .where(and(eq(kbDocuments.sourceId, document.sourceId), eq(kbDocuments.status, "active")));
+      .where(
+        and(
+          eq(kbDocuments.sourceId, document.sourceId),
+          eq(kbDocuments.status, "active"),
+          eq(kbChunks.status, "active"),
+        ),
+      );
 
     await db
       .update(kbSources)
@@ -136,7 +249,10 @@ export async function indexKbDocument(
 
   return {
     documentId: input.documentId,
-    chunkCount: drafts.length,
+    chunkCount: plan.keep.length + plan.insert.length,
     embedded,
+    kept: plan.keep.length,
+    removed: plan.removeIds.length,
+    entityCount,
   };
 }

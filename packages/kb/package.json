@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./inngest": "./src/inngest/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,6 +15,9 @@
     "@keenai/storage": "workspace:*",
     "@xenova/transformers": "^2.17.2",
     "drizzle-orm": "^0.38.3"
+  },
+  "optionalDependencies": {
+    "inngest": "^3.27.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

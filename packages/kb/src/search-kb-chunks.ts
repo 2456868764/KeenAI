@@ -1,5 +1,6 @@
 import type { FTSStore, KeenaiDb, VectorStore } from "@keenai/storage";
-import { kbChunks, kbDocuments } from "@keenai/storage/schema";
+import type { KbSourceType } from "@keenai/storage/schema";
+import { kbChunks, kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { stubEmbedKbChunk } from "./ingest/embed-chunks-stub.js";
 import { applyKbSearchPostFuse } from "./retriever/fuse.js";
@@ -68,11 +69,14 @@ export type KbSearchHit = {
   sourceId: string;
   /** KB-11: exponential recency multiplier applied to ranking score. */
   recencyBoost?: number;
+  /** KB-13: evidence-based confidence stored on chunk. */
+  confidence?: number;
 };
 
 type KbSearchHitRow = KbSearchHit & {
   parentChunkId: string | null;
   chunkIndex: number;
+  sourceType: KbSourceType;
   sourceUpdatedAt: Date | null;
   updatedAt: Date;
   indexedAt: Date | null;
@@ -205,15 +209,19 @@ export async function searchKbChunks(
       sourceUpdatedAt: kbDocuments.sourceUpdatedAt,
       documentUpdatedAt: kbDocuments.updatedAt,
       indexedAt: kbDocuments.indexedAt,
+      sourceType: kbSources.type,
+      confidence: kbChunks.confidence,
     })
     .from(kbChunks)
     .innerJoin(kbDocuments, eq(kbChunks.documentId, kbDocuments.id))
+    .innerJoin(kbSources, eq(kbDocuments.sourceId, kbSources.id))
     .where(
       and(
         eq(kbChunks.orgId, input.orgId),
         eq(kbChunks.brandId, input.brandId),
         inArray(kbChunks.id, orderedIds),
         eq(kbDocuments.status, "active"),
+        eq(kbChunks.status, "active"),
       ),
     );
 
@@ -234,6 +242,8 @@ export async function searchKbChunks(
       documentId: row.documentId,
       documentTitle: row.documentTitle,
       sourceId: row.sourceId,
+      sourceType: row.sourceType,
+      confidence: row.confidence,
       sectionId: row.sectionId,
       sourceUpdatedAt: row.sourceUpdatedAt,
       updatedAt: row.documentUpdatedAt,
@@ -267,6 +277,7 @@ export async function searchKbChunks(
   const postFused = applyKbSearchPostFuse(hydrated as KbSearchHitRow[], {
     recency: input.recency,
     diversify: input.diversify,
+    confidence: true,
     halfLifeDays: input.recencyHalfLifeDays,
     maxPerSource: input.diversifyMaxPerSource,
     maxPerSection: input.diversifyMaxPerSection,
@@ -291,6 +302,7 @@ export async function searchKbChunks(
       sectionId: hit.sectionId,
       sourceId: hit.sourceId,
       recencyBoost: hit.recencyBoost,
+      confidence: hit.confidence,
     })),
   };
 }

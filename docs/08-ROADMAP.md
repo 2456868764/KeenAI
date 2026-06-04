@@ -350,13 +350,13 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 **KB Phase B — 知识生命周期（并行轨）**
 
-- [ ] **KB-13** · Evidence-based confidence + `provenance` jsonb
-- [ ] **KB-14** · Supersession chain（document/chunk status · 显式取代非 blind decay）
-- [ ] **KB-15** · Freshness rules → `retrievalWeight`（`config/kb-freshness.yaml`）
-- [ ] **KB-16** · Inngest 8 阶段 ingestion（fetch→…→notify · 替换同步 stub）
-- [ ] **KB-17** · `content_hash` diff 增量索引（保留稳定 chunk_id）
-- [ ] **KB-18** · Parsers（unpdf/mammoth/cheerio）+ Chunkers（semantic/hierarchical/contextual）
-- [ ] **KG-05** · `kb_entities` / `kb_relations` + ingest extractor（支撑 KB-09）
+- [x] **KB-13** · Evidence-based confidence + `provenance`（I84 · `computeKbChunkConfidence`）
+- [x] **KB-14** · Supersession chain（I85 · `supersedesDocumentId` · chunk `status`）
+- [x] **KB-15** · Freshness rules（I86 · `config/kb-freshness.yaml` · per-source half-life）
+- [x] **KB-16** · Inngest 8 阶段 ingestion（I87 · `keenai-kb-ingest`）
+- [x] **KB-17** · `content_hash` diff 增量索引（I88 · `planKbDocumentDiffIndex`）
+- [x] **KB-18** · Parsers + Chunkers stub（I89 · markdown/hierarchical）
+- [x] **KG-05** · ingest entity extractor（I90 · `extractKbEntitiesFromDocument`）
 
 **Custom Actions + MCP（主轨）**
 

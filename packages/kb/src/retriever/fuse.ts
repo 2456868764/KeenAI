@@ -1,3 +1,6 @@
+import type { KbSourceType } from "@keenai/storage/schema";
+import { getKbFreshnessHalfLifeDays } from "../lifecycle/freshness.js";
+
 export const KEENI_KB_KB11 = {
   enabled: true,
   target: "kb.search.post_fuse",
@@ -27,9 +30,11 @@ export type KbRecencyScorableHit = {
 };
 
 export type KbRecencyHit = KbRecencyScorableHit & {
+  sourceType?: KbSourceType;
   sourceUpdatedAt?: KbRecencyTimestamp;
   updatedAt?: KbRecencyTimestamp;
   indexedAt?: KbRecencyTimestamp;
+  confidence?: number;
 };
 
 export type KbRecencyAppliedFields = {
@@ -37,7 +42,8 @@ export type KbRecencyAppliedFields = {
 };
 
 export type ApplyKbRecencyOptions = {
-  halfLifeDays?: number;
+  /** When set, overrides per-source KB-15 rules. */
+  halfLifeDays?: number | null;
   nowMs?: number;
 };
 
@@ -49,11 +55,25 @@ export type DiversifyKbHitsOptions = {
 export type ApplyKbSearchPostFuseOptions = {
   recency?: boolean;
   diversify?: boolean;
-  halfLifeDays?: number;
+  confidence?: boolean;
+  halfLifeDays?: number | null;
   maxPerSource?: number;
   maxPerSection?: number;
   nowMs?: number;
 };
+
+/** KB-13: multiply ranking score by stored chunk confidence. */
+export function applyKbChunkConfidence<T extends KbRecencyScorableHit & { confidence?: number }>(
+  hit: T,
+): T {
+  const weight = hit.confidence ?? 1;
+  const baseScore = kbHitRankingScore(hit);
+  const adjusted = baseScore * weight;
+  if (hit.rerankScore != null) {
+    return { ...hit, rerankScore: adjusted };
+  }
+  return { ...hit, fusedScore: adjusted };
+}
 
 /** Exponential decay boost in (0, 1]; missing timestamp → 1. */
 export function kbRecencyBoost(
@@ -67,6 +87,7 @@ export function kbRecencyBoost(
 
   const nowMs = opts?.nowMs ?? Date.now();
   const halfLifeDays = opts?.halfLifeDays ?? KB_RECENCY_HALF_LIFE_DAYS;
+  if (halfLifeDays == null) return 1;
   const daysAgo = Math.max(0, (nowMs - atMs) / MS_PER_DAY);
   return Math.exp((-daysAgo * Math.LN2) / halfLifeDays);
 }
@@ -79,12 +100,25 @@ export function kbHitRankingScore(hit: KbRecencyScorableHit): number {
   return hit.rerankScore ?? hit.fusedScore;
 }
 
+function resolveKbRecencyHalfLifeDays(
+  hit: KbRecencyHit,
+  opts?: ApplyKbRecencyOptions,
+): number | null {
+  if (opts?.halfLifeDays !== undefined) return opts.halfLifeDays;
+  if (hit.sourceType) return getKbFreshnessHalfLifeDays(hit.sourceType);
+  return KB_RECENCY_HALF_LIFE_DAYS;
+}
+
 /** Scale ranking score by recency: `score × (0.7 + 0.3 × boost)`. */
 export function applyKbRecency<T extends KbRecencyHit>(
   hit: T,
   opts?: ApplyKbRecencyOptions,
 ): T & KbRecencyAppliedFields {
-  const recencyBoost = kbRecencyBoost(resolveKbRecencyTimestamp(hit), opts);
+  const halfLifeDays = resolveKbRecencyHalfLifeDays(hit, opts);
+  const recencyBoost = kbRecencyBoost(resolveKbRecencyTimestamp(hit), {
+    ...opts,
+    halfLifeDays,
+  });
   const multiplier = KB_RECENCY_SCORE_FLOOR + KB_RECENCY_SCORE_CEILING * recencyBoost;
   const baseScore = kbHitRankingScore(hit);
   const adjusted = baseScore * multiplier;
@@ -139,6 +173,10 @@ export function applyKbSearchPostFuse<T extends KbDiversifiableHit & KbRecencyHi
         applyKbRecency(hit, { halfLifeDays: opts?.halfLifeDays, nowMs: opts?.nowMs }),
       ),
     );
+  }
+
+  if (opts?.confidence !== false) {
+    processed = sortKbSearchHitsByRankingScore(processed.map((hit) => applyKbChunkConfidence(hit)));
   }
 
   if (opts?.diversify !== false) {

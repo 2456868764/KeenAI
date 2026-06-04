@@ -1,0 +1,16 @@
+# KB-15 · per-source retrieval half-life (days). null = no time decay.
+sources:
+  help_center:
+    halfLifeDays: null
+  file:
+    halfLifeDays: null
+  notion:
+    halfLifeDays: null
+  github:
+    halfLifeDays: 60
+  web:
+    halfLifeDays: 30
+  resolved_conversations:
+    halfLifeDays: 90
+default:
+  halfLifeDays: 90

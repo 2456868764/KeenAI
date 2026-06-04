@@ -30,6 +30,47 @@ export type {
 } from "./connectors/types.js";
 export { chunkKbDocument, type KbChunkDraft } from "./ingest/chunk-document.js";
 export {
+  chunkKbDocumentHierarchical,
+  KEENI_KB_KB18_CHUNKER,
+} from "./ingest/chunkers/hierarchical.js";
+export {
+  hashKbChunkContent,
+  planKbDocumentDiffIndex,
+  KEENI_KB_KB17,
+  type KbDiffIndexPlan,
+  type KbIndexedChunkSnapshot,
+} from "./ingest/diff-index.js";
+export { extractKbEntitiesFromDocument, KEENI_KB_KG05 } from "./ingest/extract-kb-entities.js";
+export { parseKbMarkdownDocument, KEENI_KB_KB18_PARSER } from "./ingest/parsers/markdown.js";
+export {
+  KB_SOURCE_AUTHORITY,
+  clampKbConfidence,
+  computeKbChunkConfidence,
+  resolveKbFeedbackScore,
+  resolveKbSourceAuthority,
+  type ComputeKbChunkConfidenceInput,
+} from "./lifecycle/confidence.js";
+export {
+  getKbFreshnessHalfLifeDays,
+  loadKbFreshnessConfig,
+  parseKbFreshnessYaml,
+  KEENI_KB_KB15,
+  type KbFreshnessConfig,
+} from "./lifecycle/freshness.js";
+export {
+  buildKbChunkProvenance,
+  KEENI_KB_KB13,
+  type BuildKbChunkProvenanceInput,
+  type KbChunkProvenance,
+} from "./lifecycle/provenance.js";
+export {
+  listKbDocumentSupersessionChain,
+  supersedeKbDocument,
+  KEENI_KB_KB14,
+  type KbDocumentSupersessionLink,
+  type SupersedeKbDocumentInput,
+} from "./lifecycle/supersession.js";
+export {
   embedKbChunkStub,
   KB_STUB_EMBED_DIMENSIONS,
   KB_STUB_EMBED_MODEL,
@@ -56,6 +97,7 @@ export {
   KB_DIVERSIFY_MAX_PER_SECTION,
   KB_DIVERSIFY_MAX_PER_SOURCE,
   KB_RECENCY_HALF_LIFE_DAYS,
+  applyKbChunkConfidence,
   applyKbRecency,
   applyKbSearchPostFuse,
   diversifyKbSearchHits,

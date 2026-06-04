@@ -21,6 +21,9 @@ export type KbSourceStatus = (typeof KB_SOURCE_STATUSES)[number];
 export type KbSourceSyncStrategy = (typeof KB_SOURCE_SYNC_STRATEGIES)[number];
 export type KbDocumentStatus = (typeof KB_DOCUMENT_STATUSES)[number];
 
+export const KB_CHUNK_STATUSES = ["active", "superseded", "archived"] as const;
+export type KbChunkStatus = (typeof KB_CHUNK_STATUSES)[number];
+
 export const kbSources = sqliteTable(
   "kb_sources",
   {
@@ -85,10 +88,12 @@ export const kbDocuments = sqliteTable(
     version: integer("version").notNull().default(1),
     sourceUpdatedAt: integer("source_updated_at", { mode: "timestamp_ms" }),
     indexedAt: integer("indexed_at", { mode: "timestamp_ms" }),
+    supersedesDocumentId: text("supersedes_document_id"),
     ...sqliteTimestamps,
   },
   (t) => ({
     brandIdx: index("idx_kb_docs_brand").on(t.orgId, t.brandId, t.status),
+    supersedesIdx: index("idx_kb_docs_supersedes").on(t.supersedesDocumentId),
     hashIdx: index("idx_kb_docs_hash").on(t.contentHash),
     sourceExternalUq: uniqueIndex("uq_kb_docs_source_external").on(t.sourceId, t.externalId),
   }),
@@ -119,6 +124,11 @@ export const kbChunks = sqliteTable(
       .notNull()
       .default({}),
     confidence: real("confidence").notNull().default(1),
+    provenance: text("provenance", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    status: text("status").$type<KbChunkStatus>().notNull().default("active"),
     metadata: text("metadata", { mode: "json" })
       .$type<Record<string, unknown>>()
       .notNull()
