@@ -3,7 +3,7 @@ import { kbChunkVectors, kbChunks, kbDocuments, kbSources } from "@keenai/storag
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { type KbChunkFtsIndexer, indexKbChunkInFts } from "../chunk-fts-index.js";
 import { chunkKbDocument } from "./chunk-document.js";
-import { embedKbChunkStub } from "./embed-chunks-stub.js";
+import { type KbChunkEmbedder, createStubKbChunkEmbedder, embedKbChunk } from "./embedder.js";
 import { parseKbDocument } from "./parse-document.js";
 
 export type IndexKbDocumentInput = {
@@ -11,6 +11,7 @@ export type IndexKbDocumentInput = {
   brandId: string;
   documentId: string;
   chunkFtsIndexer?: KbChunkFtsIndexer | null;
+  chunkEmbedder?: KbChunkEmbedder;
 };
 
 export type IndexKbDocumentResult = {
@@ -88,7 +89,10 @@ export async function indexKbDocument(
     const chunkId = chunk?.id;
     if (!chunkId) continue;
 
-    const vector = embedKbChunkStub(draft.content);
+    const vector = await embedKbChunk(
+      draft.content,
+      input.chunkEmbedder ?? createStubKbChunkEmbedder(),
+    );
     await db.insert(kbChunkVectors).values({
       chunkId,
       orgId: input.orgId,

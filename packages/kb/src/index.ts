@@ -25,6 +25,21 @@ export {
   type KbEmbeddedChunk,
 } from "./ingest/embed-chunks-stub.js";
 export {
+  BGE_M3_DIMENSIONS,
+  BGE_M3_MODEL_ID,
+  createKbChunkEmbedder,
+  createStubKbChunkEmbedder,
+  createXenovaBgeM3KbEmbedder,
+  embedKbChunk,
+  resolveKbEmbedderProvider,
+  type KbChunkEmbedder,
+  type KbEmbedderProvider,
+} from "./ingest/embedder.js";
+export {
+  createBgeM3KbQueryEmbedder,
+  createKbQueryEmbedderFromChunkEmbedder,
+} from "./embed-query.js";
+export {
   indexKbDocument,
   type IndexKbDocumentInput,
   type IndexKbDocumentResult,

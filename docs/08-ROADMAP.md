@@ -333,7 +333,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Embed stub + `kb_chunk_vectors`（KB-03 · 真实 bge-m3 → **KB-07**）
 - [x] Hybrid Retriever stub：FTS + Vector RRF（KB-04 · Graph expansion → **KB-09**）
 - [x] `GET /kb/search` API + Agent KB context 注入（KB-05～06）
-- [ ] **KB-07** · `@xenova/transformers` bge-m3 真实 embedder（替换 embed stub）
+- [x] **KB-07** · `@xenova/transformers` bge-m3 embedder（I78 · `createXenovaBgeM3KbEmbedder` · `KB_EMBED_PROVIDER=xenova`）
 - [ ] **KB-08** · bge-reranker-v2-m3 reranker（RRF top-40 → rerank → top-15）
 - [ ] **KB-09** · KG entity-link expansion 第三检索流（依赖 **KG-05** · 1-hop graph → chunk_ids）
 - [ ] **KB-10** · Hierarchical chunk hydrate（leaf 命中 → parent section 上下文）

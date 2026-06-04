@@ -10,8 +10,8 @@
 | 序 | 迭代 | 轨道 | 交付 | 状态 |
 |----|------|------|------|------|
 | 1 | I77 | Phase 8 · MT-06 | Agent scope 路由 stub（`assembleAgentMemoryContext`） | [x] |
-| 2 | **I78** | KB Phase A · KB-07 | `@xenova/transformers` bge-m3 embedder | [ ] ← **当前** |
-| 3 | I79 | KB-08 | bge-reranker-v2-m3 reranker | [ ] |
+| 2 | I78 | KB Phase A · KB-07 | `@xenova/transformers` bge-m3 embedder | [x] |
+| 3 | **I79** | KB-08 | bge-reranker-v2-m3 reranker | [ ] ← **当前** |
 | 4 | I80 | KB-09 | KG entity-link expansion（第三检索流） | [ ] |
 | 5 | I81 | KB-10 | Hierarchical chunk hydrate | [ ] |
 | 6 | I82 | KB-11 | Diversity + Recency 后置 | [ ] |
@@ -87,12 +87,21 @@
 
 ---
 
-## 当前迭代 · Iteration 78（KB Phase A · KB-07 bge-m3 embedder）
+## 当前迭代 · Iteration 78（KB Phase A · KB-07 bge-m3 embedder）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I78-01 | `@xenova/transformers` bge-m3 真实 embedder | [ ] |
-| I78-02 | tests · roadmap · commit · push | [ ] |
+| I78-01 | `@xenova/transformers` bge-m3 真实 embedder | [x] |
+| I78-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 79（KB Phase A · KB-08 reranker）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I79-01 | bge-reranker-v2-m3 reranker | [ ] |
+| I79-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 
@@ -864,7 +873,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 | KB ID | 项 | 状态 |
 |-------|-----|------|
-| KB-07 | bge-m3 real embedder | [ ] |
+| KB-07 | bge-m3 real embedder | [x] |
 | KB-08 | bge-reranker reranker | [ ] |
 | KB-09 | graph entity-link expansion | [ ] |
 | KB-10 | hierarchical chunk hydrate | [ ] |

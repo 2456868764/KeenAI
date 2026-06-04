@@ -1,4 +1,4 @@
-import { createStubKbQueryEmbedder } from "@keenai/kb";
+import { createBgeM3KbQueryEmbedder } from "@keenai/kb";
 import type { KbContextSearch } from "@keenai/memory-tree";
 import { getKbChunkFtsStore } from "./kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "./kb-chunk-vector-init.js";
@@ -11,7 +11,7 @@ export function getKbContextSearch(limit = 5): KbContextSearch | null {
   return {
     chunkFts,
     chunkVector: getKbChunkVectorStore(),
-    queryEmbedder: createStubKbQueryEmbedder(),
+    queryEmbedder: createBgeM3KbQueryEmbedder(),
     limit,
   };
 }
