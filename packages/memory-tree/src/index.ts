@@ -51,6 +51,16 @@ export {
   conversationMessageSourceRef,
 } from "./canonicalize.js";
 export {
+  KEENI_MEMORY_TREE_MT02,
+  MEMORY_TREE_EXTRACT_CHUNK_EVENT,
+  buildExtractChunkEnqueuePayload,
+  enqueueExtractChunkIfAdmitted,
+  shouldEnqueueExtractChunk,
+  shouldEnqueueExtractChunkAfterPersist,
+  type EnqueueExtractChunkInput,
+  type ExtractChunkEnqueuePayload,
+} from "./post-canonicalize.js";
+export {
   KEENI_MEMORY_TREE_MT01,
   prepareMemoryChunkFromMessage,
   type PrepareMemoryChunkInput,

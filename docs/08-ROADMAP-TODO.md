@@ -23,16 +23,25 @@
 
 ---
 
-## 当前迭代 · Iteration 73（Phase 8 · Sprint 13–14 · Memory Tree MT-02 fast-score stub）
+## 当前迭代 · Iteration 73（Phase 8 · Sprint 13–14 · Memory Tree MT-02 fast-score stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I73-01 | Memory Tree fast-score + extract_chunk enqueue stub | [ ] |
-| I73-02 | tests · roadmap · commit · push | [ ] |
+| I73-01 | Memory Tree fast-score + extract_chunk enqueue stub | [x] |
+| I73-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
-## Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）✓
+## 当前迭代 · Iteration 74（Phase 8 · Sprint 13–14 · Memory Tree MT-03 buffer stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I74-01 | Memory Tree source tree buffer + seal stub | [ ] |
+| I74-02 | tests · roadmap · commit · push | [ ] |
+
+---
+
+## Iteration 72（Phase 8 · Sprint 13–14 · Memory Tree MT-01 stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

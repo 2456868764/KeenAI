@@ -310,6 +310,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Skill system stub（AE-04 · registry / match / runner / discoverer）
 - [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
   - [x] `memory_chunks` canonicalize hot-path stub + Inngest `keenai/memory.canonicalize`（I72）
+  - [x] fast-score + `extract_chunk` enqueue stub（I73 · `enqueueExtractChunkIfAdmitted`）
   - [ ] `memory_chunks` + fast-score + admitted/dropped
   - [ ] source tree seal → 物化 `memory_episodes`
   - [ ] `memory.digest_daily` brand 日摘要

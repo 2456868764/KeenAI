@@ -1,4 +1,4 @@
-import { ingestConversationMessage } from "@keenai/memory-tree";
+import { enqueueExtractChunkIfAdmitted, ingestConversationMessage } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
 import { getMemoryChunkEmbedder } from "./memory-chunk-embed-init.js";
 import { getMemoryChunkFtsIndexer } from "./memory-chunk-fts-init.js";
@@ -39,13 +39,18 @@ export async function ingestMemoryTreeForMessage(
     chunkVectorStore: opts?.chunkVectorStore ?? getMemoryChunkVectorStore(),
   });
 
-  if (result.created && result.lifecycle === "admitted") {
+  if (result.created) {
     const { getMemoryDispatch } = await import("./memory-dispatch-init.js");
-    await getMemoryDispatch().enqueueExtractChunk({
-      orgId: input.orgId,
-      brandId: input.brandId,
-      chunkId: result.id,
-    });
+    await enqueueExtractChunkIfAdmitted(
+      {
+        orgId: input.orgId,
+        brandId: input.brandId,
+        chunkId: result.id,
+        lifecycle: result.lifecycle,
+        created: result.created,
+      },
+      (payload) => getMemoryDispatch().enqueueExtractChunk(payload),
+    );
   }
 
   return result;
