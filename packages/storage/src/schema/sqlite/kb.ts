@@ -160,3 +160,71 @@ export const kbChunkVectors = sqliteTable(
 );
 
 export type KbChunkVectorRow = typeof kbChunkVectors.$inferSelect;
+
+/** Relation types used for KB-09 graph expansion (1-hop). */
+export const KB_GRAPH_EXPAND_RELATION_TYPES = ["documented_in", "depends_on"] as const;
+export type KbGraphExpandRelationType = (typeof KB_GRAPH_EXPAND_RELATION_TYPES)[number];
+
+export const kbEntities = sqliteTable(
+  "kb_entities",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    entityType: text("entity_type").notNull(),
+    name: text("name").notNull(),
+    aliases: text("aliases", { mode: "json" }).$type<string[]>().notNull().default([]),
+    description: text("description"),
+    attributes: text("attributes", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    chunkIds: text("chunk_ids", { mode: "json" }).$type<string[]>().notNull().default([]),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqEntity: uniqueIndex("uq_kb_entities").on(t.orgId, t.brandId, t.entityType, t.name),
+    idxOrgBrand: index("idx_kb_entities_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type KbEntityRow = typeof kbEntities.$inferSelect;
+
+export const kbRelations = sqliteTable(
+  "kb_relations",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    fromEntityId: text("from_entity_id")
+      .notNull()
+      .references(() => kbEntities.id),
+    relationType: text("relation_type").$type<KbGraphExpandRelationType>().notNull(),
+    toEntityId: text("to_entity_id")
+      .notNull()
+      .references(() => kbEntities.id),
+    confidence: real("confidence").notNull().default(1),
+    evidenceChunkIds: text("evidence_chunk_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    uqRelation: uniqueIndex("uq_kb_relations").on(
+      t.orgId,
+      t.fromEntityId,
+      t.relationType,
+      t.toEntityId,
+    ),
+    idxFrom: index("idx_kb_relations_from").on(t.fromEntityId),
+    idxTo: index("idx_kb_relations_to").on(t.toEntityId),
+    idxOrgBrand: index("idx_kb_relations_org_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type KbRelationRow = typeof kbRelations.$inferSelect;

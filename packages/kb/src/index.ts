@@ -40,6 +40,20 @@ export {
   createKbQueryEmbedderFromChunkEmbedder,
 } from "./embed-query.js";
 export {
+  KEENI_KB_KB09,
+  KB_GRAPH_EXPAND_LIMIT,
+  KB_RRF_WEIGHTS_DEFAULT,
+  expandKbChunksFromGraph,
+  fuseKbChunkRankings,
+  scoreKbEntityQueryMatch,
+  tokenizeKbQuery,
+  type ExpandKbGraphChunksInput,
+  type ExpandKbGraphChunksResult,
+  type KbFusedChunkHit,
+  type KbRankedChunkHit,
+  type KbRetrievalSource,
+} from "./retriever/graph-expand.js";
+export {
   BGE_RERANKER_MODEL_ID,
   KB_RERANK_OUTPUT_TOP_K,
   KB_RERANK_RRF_TOP_K,

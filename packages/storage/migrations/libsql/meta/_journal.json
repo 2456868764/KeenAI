@@ -183,6 +183,13 @@
       "when": 1779805600000,
       "tag": "0025_custom_action_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1779810000000,
+      "tag": "0026_kb_entities",
+      "breakpoints": true
     }
   ]
 }

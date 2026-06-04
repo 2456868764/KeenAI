@@ -12,8 +12,8 @@
 | 1 | I77 | Phase 8 · MT-06 | Agent scope 路由 stub（`assembleAgentMemoryContext`） | [x] |
 | 2 | I78 | KB Phase A · KB-07 | `@xenova/transformers` bge-m3 embedder | [x] |
 | 3 | I79 | KB-08 | bge-reranker-v2-m3 reranker | [x] |
-| 4 | **I80** | KB-09 | KG entity-link expansion（第三检索流） | [ ] ← **当前** |
-| 5 | I81 | KB-10 | Hierarchical chunk hydrate | [ ] |
+| 4 | I80 | KB-09 | KG entity-link expansion（第三检索流） | [x] |
+| 5 | **I81** | KB-10 | Hierarchical chunk hydrate | [ ] ← **当前** |
 | 6 | I82 | KB-11 | Diversity + Recency 后置 | [ ] |
 | 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [ ] |
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [ ] |
@@ -611,9 +611,10 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 
 | KB | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **KB-07** | I78 | `@xenova/transformers` bge-m3 真实 embedder | [ ] ← **next（KB 轨）** |
+| **KB-07** | I78 | `@xenova/transformers` bge-m3 真实 embedder | [x] |
+| **KB-09** | I80 | KG entity-link expansion（第三检索流） | [x] ← **next（KB 轨）** · KB-10 I81 |
 | **KB-08** | I79 | bge-reranker-v2-m3 reranker | [x] |
-| **KB-09** | I80 | KG entity-link expansion（第三检索流） | [ ] |
+| **KB-09** | I80 | KG entity-link expansion（第三检索流） | [x] |
 | **KB-10** | I81 | Hierarchical chunk hydrate | [ ] |
 | **KB-11** | I82 | Diversity + Recency 后置 | [ ] |
 | **KB-12** | I83 | `kb_query_logs` + feedback API | [ ] |
@@ -884,7 +885,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 |-------|-----|------|
 | KB-07 | bge-m3 real embedder | [x] |
 | KB-08 | bge-reranker reranker | [x] |
-| KB-09 | graph entity-link expansion | [ ] |
+| KB-09 | graph entity-link expansion | [x] |
 | KB-10 | hierarchical chunk hydrate | [ ] |
 | KB-11 | diversity + recency | [ ] |
 | KB-12 | kb_query_logs + feedback API | [ ] |

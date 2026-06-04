@@ -1,8 +1,13 @@
 import type { FTSStore, KeenaiDb, VectorStore } from "@keenai/storage";
-import { rrfFuse } from "@keenai/storage";
 import { kbChunks, kbDocuments } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { stubEmbedKbChunk } from "./ingest/embed-chunks-stub.js";
+import {
+  KB_RRF_WEIGHTS_DEFAULT,
+  type KbRetrievalSource,
+  expandKbChunksFromGraph,
+  fuseKbChunkRankings,
+} from "./retriever/graph-expand.js";
 import {
   KB_RERANK_OUTPUT_TOP_K,
   KB_RERANK_RRF_TOP_K,
@@ -27,6 +32,9 @@ export type SearchKbChunksInput = {
   reranker?: KbReranker | null;
   rrfTopK?: number;
   rerankTopK?: number;
+  /** When false, skip graph expansion (KB-09). Defaults to true. */
+  graphExpand?: boolean;
+  rrfWeights?: { fts: number; vector: number; graph: number };
 };
 
 export type KbSearchHit = {
@@ -39,7 +47,7 @@ export type KbSearchHit = {
   vectorScore: number | null;
   fusedScore: number;
   rerankScore?: number;
-  sources: Array<"fts" | "vector">;
+  sources: KbRetrievalSource[];
   snippet: string | null;
 };
 
@@ -74,9 +82,12 @@ export async function searchKbChunks(
   const collectLimit = rerankEnabled ? rrfTopK : fetchLimit;
   const canHybrid = input.chunkFts && input.chunkVector && input.queryEmbedder;
 
-  let fused: Array<{ id: string; score: number; sources: Array<"fts" | "vector"> }> = [];
   const ftsMap = new Map<string, { score: number; snippet?: string }>();
   const vectorMap = new Map<string, { score: number }>();
+  const weights = input.rrfWeights ?? KB_RRF_WEIGHTS_DEFAULT;
+  const graphExpand = input.graphExpand !== false;
+
+  let fused: Array<{ id: string; score: number; sources: KbRetrievalSource[] }> = [];
 
   if (canHybrid) {
     const chunkFts = input.chunkFts;
@@ -105,10 +116,29 @@ export async function searchKbChunks(
     for (const hit of ftsHits) ftsMap.set(hit.id, { score: hit.score, snippet: hit.snippet });
     for (const hit of vectorHits) vectorMap.set(hit.id, { score: hit.score });
 
-    fused = rrfFuse(
+    const graphHits = graphExpand
+      ? (
+          await expandKbChunksFromGraph(db, {
+            orgId: input.orgId,
+            brandId: input.brandId,
+            q,
+          })
+        ).hits
+      : [];
+
+    fused = fuseKbChunkRankings(
       [
-        ftsHits.map((hit) => ({ id: hit.id, score: hit.score })),
-        vectorHits.map((hit) => ({ id: hit.id, score: hit.score })),
+        {
+          hits: ftsHits.map((hit) => ({ id: hit.id, score: hit.score })),
+          source: "fts",
+          weight: weights.fts,
+        },
+        {
+          hits: vectorHits.map((hit) => ({ id: hit.id, score: hit.score })),
+          source: "vector",
+          weight: weights.vector,
+        },
+        { hits: graphHits, source: "graph", weight: weights.graph },
       ],
       { topK: fetchLimit },
     );
@@ -120,7 +150,11 @@ export async function searchKbChunks(
       limit: fetchLimit,
     });
     for (const hit of ftsHits) ftsMap.set(hit.id, { score: hit.score, snippet: hit.snippet });
-    fused = ftsHits.map((hit) => ({ id: hit.id, score: hit.score, sources: ["fts"] as const }));
+    fused = ftsHits.map((hit) => ({
+      id: hit.id,
+      score: hit.score,
+      sources: ["fts"] as const,
+    }));
   } else {
     return { q, hits: [] };
   }
