@@ -17,3 +17,28 @@ export const kbSearchFeedbackSchema = z.object({
 });
 
 export type KbSearchFeedback = z.infer<typeof kbSearchFeedbackSchema>;
+
+export const kbEvalMetricsQuerySchema = z.object({
+  brandId: z.string().min(1),
+  since: z.string().datetime().optional(),
+});
+
+export type KbEvalMetricsQuery = z.infer<typeof kbEvalMetricsQuerySchema>;
+
+export const kbGoldenPromoteSchema = z.object({
+  brandId: z.string().min(1),
+  queryLogId: z.string().min(1),
+  expectedChunkIds: z.array(z.string().min(1)).optional(),
+  expectedAnswer: z.string().max(4000).optional(),
+  tags: z.array(z.string().min(1)).max(20).optional(),
+});
+
+export type KbGoldenPromote = z.infer<typeof kbGoldenPromoteSchema>;
+
+export const kbEvalRunSchema = z.object({
+  brandId: z.string().min(1),
+  maxCases: z.coerce.number().int().min(1).max(200).optional(),
+  rerank: z.coerce.boolean().optional(),
+});
+
+export type KbEvalRun = z.infer<typeof kbEvalRunSchema>;

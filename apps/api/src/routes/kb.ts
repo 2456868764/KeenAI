@@ -1,11 +1,21 @@
 import { zValidator } from "@hono/zod-validator";
 import {
+  computeKbEvalMetrics,
   createBgeM3KbQueryEmbedder,
   createKbQueryLog,
+  promoteKbQueryLogToGolden,
+  runKbGoldenEval,
   searchKbChunks,
   setKbQueryLogFeedback,
 } from "@keenai/kb";
-import { API_VERSION, kbSearchFeedbackSchema, kbSearchQuerySchema } from "@keenai/shared";
+import {
+  API_VERSION,
+  kbEvalMetricsQuerySchema,
+  kbEvalRunSchema,
+  kbGoldenPromoteSchema,
+  kbSearchFeedbackSchema,
+  kbSearchQuerySchema,
+} from "@keenai/shared";
 import { kbQueryLogs } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -93,6 +103,93 @@ export function kbRoutes(_ctx: AppContext) {
       return c.json({ ok: true, logId, feedback: body.feedback });
     },
   );
+
+  r.get(
+    `${prefix}/eval/metrics`,
+    requireAuth(),
+    zValidator("query", kbEvalMetricsQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const metrics = await computeKbEvalMetrics(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        since: query.since ? new Date(query.since) : undefined,
+      });
+
+      return c.json({ metrics });
+    },
+  );
+
+  r.post(
+    `${prefix}/eval/golden`,
+    requireAuth(),
+    zValidator("json", kbGoldenPromoteSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      if (!canAccessBrand(auth, body.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      try {
+        const result = await promoteKbQueryLogToGolden(c.get("store").db, {
+          orgId: auth.orgId,
+          brandId: body.brandId,
+          queryLogId: body.queryLogId,
+          expectedChunkIds: body.expectedChunkIds,
+          expectedAnswer: body.expectedAnswer,
+          tags: body.tags,
+          createdBy: auth.sub,
+        });
+        return c.json(result, 201);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "promote_failed";
+        if (message === "kb_query_log_not_found") return c.json({ error: message }, 404);
+        if (message === "kb_query_log_not_failed") return c.json({ error: message }, 400);
+        return c.json({ error: message }, 500);
+      }
+    },
+  );
+
+  r.post(`${prefix}/eval/run`, requireAuth(), zValidator("json", kbEvalRunSchema), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const body = c.req.valid("json");
+    if (!canAccessBrand(auth, body.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+
+    const chunkFts = getKbChunkFtsStore();
+    if (!chunkFts) {
+      return c.json({ error: "kb_fts_unavailable" }, 503);
+    }
+
+    const rerank = body.rerank !== false;
+    const report = await runKbGoldenEval(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: body.brandId,
+      maxCases: body.maxCases,
+      search: {
+        chunkFts,
+        chunkVector: getKbChunkVectorStore(),
+        queryEmbedder: createBgeM3KbQueryEmbedder(),
+        rerank,
+        reranker: rerank ? getKbReranker() : null,
+      },
+    });
+
+    return c.json({ report });
+  });
 
   return r;
 }

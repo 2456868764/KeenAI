@@ -209,11 +209,22 @@ export {
 } from "./schema/brand-kb-schema.js";
 export {
   KEENI_KB_KB23,
+  KEENI_KB_SPRINT18,
+  KEENI_KB_SPRINT18_EVAL,
+  checkKbEvalThresholds,
   computeKbEvalMetrics,
+  listKbGoldenQueries,
+  loadKbEvalConfig,
   promoteKbQueryLogToGolden,
+  runKbEvalSuite,
+  runKbGoldenEval,
+  scoreKbAnswerQuality,
   type ComputeKbEvalMetricsInput,
   type KbEvalMetrics,
+  type KbEvalSuiteReport,
+  type KbGoldenEvalReport,
   type PromoteKbGoldenQueryInput,
+  type RunKbGoldenEvalInput,
 } from "./eval/index.js";
 export type {
   KeenaiKb,

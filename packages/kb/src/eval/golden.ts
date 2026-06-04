@@ -18,6 +18,21 @@ export type PromoteKbGoldenQueryInput = {
   createdBy?: string;
 };
 
+export type ListKbGoldenQueriesInput = {
+  orgId: string;
+  brandId: string;
+  limit?: number;
+};
+
+export async function listKbGoldenQueries(db: KeenaiDb, input: ListKbGoldenQueriesInput) {
+  const limit = input.limit ?? 500;
+  return db
+    .select()
+    .from(kbGoldenQueries)
+    .where(and(eq(kbGoldenQueries.orgId, input.orgId), eq(kbGoldenQueries.brandId, input.brandId)))
+    .limit(limit);
+}
+
 /** Promote a not_helpful query log into golden eval set. */
 export async function promoteKbQueryLogToGolden(
   db: KeenaiDb,

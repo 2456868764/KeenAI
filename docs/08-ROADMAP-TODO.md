@@ -18,9 +18,11 @@
 | 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [x] |
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [x] |
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [x] |
+| 10 | I97～I98 | Sprint 18 · Eval | golden suite + nightly CI | [x] |
+| 11 | I99+ | Sprint 18 · 发布 | 压测 · 文档站 · GA | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**下一主轨**：Sprint 18 · 评测 + 发布准备（Mastra/DeepEval · `kb_golden_queries` CI · GA）。
+**当前主轨**：Sprint 18 后半（压测 · 文档站 · 部署 · GA）。
 
 ---
 
@@ -105,7 +107,16 @@
 
 ---
 
-## 当前迭代 · Iteration 91～96（KB Phase C · Compounding 闭环）✓
+## 当前迭代 · Iteration 97～98（Sprint 18 · KB golden eval）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I97 | Eval scorers stub（faithfulness / relevance / contextual recall） | [x] |
+| I98 | `runKbGoldenEval` + API `/kb/eval/*` + nightly CI | [x] |
+
+---
+
+## Iteration 91～96（KB Phase C · Compounding 闭环）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

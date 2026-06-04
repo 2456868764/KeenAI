@@ -108,8 +108,14 @@ export {
 } from "./memory.js";
 export {
   KB_SEARCH_FEEDBACK,
+  kbEvalMetricsQuerySchema,
+  kbEvalRunSchema,
+  kbGoldenPromoteSchema,
   kbSearchFeedbackSchema,
   kbSearchQuerySchema,
+  type KbEvalMetricsQuery,
+  type KbEvalRun,
+  type KbGoldenPromote,
   type KbSearchFeedback,
   type KbSearchQuery,
 } from "./kb.js";

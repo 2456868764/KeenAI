@@ -157,6 +157,26 @@ describe("kb search API", () => {
     });
     expect(notFoundRes.status).toBe(404);
 
+    const metricsRes = await app.request(`/api/v1/kb/eval/metrics?brandId=${brand.id}`, {
+      headers: auth,
+    });
+    expect(metricsRes.status).toBe(200);
+    const metricsBody = (await metricsRes.json()) as {
+      metrics: { totalQueries: number; helpfulRate: number };
+    };
+    expect(metricsBody.metrics.totalQueries).toBe(1);
+
+    const evalRunRes = await app.request("/api/v1/kb/eval/run", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: brand.id, maxCases: 5, rerank: false }),
+    });
+    expect(evalRunRes.status).toBe(200);
+    const evalBody = (await evalRunRes.json()) as {
+      report: { caseCount: number; passed: boolean };
+    };
+    expect(evalBody.report.caseCount).toBe(0);
+
     await store.close();
   });
 });
