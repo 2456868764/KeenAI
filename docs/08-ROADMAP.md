@@ -313,7 +313,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [x] fast-score + `extract_chunk` enqueue stub（I73 · `enqueueExtractChunkIfAdmitted`）
   - [x] source tree buffer + seal stub（I74 · `runSourceTreeBufferSealStub` → `memory_episodes`）
   - [x] `memory.digest_daily` brand 日摘要 stub（I75 · `runBrandDailyDigestStub`）
-  - [ ] 检索 scope：`conversation` / `customer` / `brand_daily`
+  - [x] 检索 scope stub（I76 · `queryMemoryTreeByScope`）
+  - [ ] Agent scope 路由（09 附录 B）
 - [ ] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
 - [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
 - [ ] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：

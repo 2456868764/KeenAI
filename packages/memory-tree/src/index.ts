@@ -177,6 +177,17 @@ export {
   type ChannelRouteChunkResult,
 } from "./channel-route.js";
 export {
+  KEENI_MEMORY_TREE_MT05,
+  MEMORY_TREE_RETRIEVAL_SCOPES,
+  isMemoryTreeRetrievalScope,
+  memoryScopeToRetrievalScope,
+  queryMemoryTreeByScope,
+  retrievalScopeKey,
+  type MemoryTreeRetrievalResult,
+  type MemoryTreeRetrievalScope,
+  type QueryMemoryTreeByScopeInput,
+} from "./retrieval-scope.js";
+export {
   queryBrandDailyDigest,
   queryChannelMemoryTree,
   queryConversationMemoryTree,

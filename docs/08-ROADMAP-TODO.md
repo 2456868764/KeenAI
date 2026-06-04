@@ -50,12 +50,21 @@
 
 ---
 
-## 当前迭代 · Iteration 76（Phase 8 · Sprint 13–14 · Memory Tree MT-05 retrieval stub）
+## 当前迭代 · Iteration 76（Phase 8 · Sprint 13–14 · Memory Tree MT-05 retrieval stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I76-01 | Memory Tree retrieval scope stub（conversation / customer / brand_daily） | [ ] |
-| I76-02 | tests · roadmap · commit · push | [ ] |
+| I76-01 | Memory Tree retrieval scope stub（conversation / customer / brand_daily） | [x] |
+| I76-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 77（Phase 8 · Sprint 13–14 · Memory Tree MT-06 agent scope stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I77-01 | Agent scope routing stub（09 附录 B · assembleMemoryContext） | [ ] |
+| I77-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

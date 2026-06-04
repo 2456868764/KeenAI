@@ -2,13 +2,11 @@ import { zValidator } from "@hono/zod-validator";
 import {
   assembleMemoryContext,
   listHotTopics,
-  queryBrandDailyDigest,
   queryChannelMemoryTree,
-  queryConversationMemoryTree,
-  queryCustomerMemoryTree,
   queryGraphRelated,
   queryMemoryExplorerStats,
   queryMemoryFacts,
+  queryMemoryTreeByScope,
   resolveMemoryFactsScope,
   searchMemoryChunks,
 } from "@keenai/memory-tree";
@@ -50,7 +48,8 @@ export function memoryRoutes(_ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const tree = await queryConversationMemoryTree(db, {
+      const tree = await queryMemoryTreeByScope(db, {
+        scope: "conversation",
         orgId: auth.orgId,
         brandId: conversation.brandId,
         conversationId: conversation.id,
@@ -67,7 +66,8 @@ export function memoryRoutes(_ctx: AppContext) {
     }
 
     if (query.scope === "customer") {
-      const tree = await queryCustomerMemoryTree(db, {
+      const tree = await queryMemoryTreeByScope(db, {
+        scope: "customer",
         orgId: auth.orgId,
         brandId,
         userId: query.id,
@@ -108,13 +108,16 @@ export function memoryRoutes(_ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const digest = await queryBrandDailyDigest(c.get("store").db, {
+      const digest = await queryMemoryTreeByScope(c.get("store").db, {
+        scope: "brand_daily",
         orgId: auth.orgId,
         brandId,
         dateUtc: date,
       });
 
-      if (!digest) return c.json({ error: "digest_not_found" }, 404);
+      if (!digest || digest.scope !== "brand_daily") {
+        return c.json({ error: "digest_not_found" }, 404);
+      }
       return c.json({ digest });
     },
   );
