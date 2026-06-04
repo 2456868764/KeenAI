@@ -187,6 +187,8 @@ export function conversationRoutes(ctx: AppContext) {
       if (body.subject !== undefined) patch.subject = body.subject;
       if (body.tags !== undefined) patch.tags = body.tags;
       if (body.priority !== undefined) patch.priority = body.priority;
+      if (body.rating !== undefined) patch.rating = body.rating;
+      if (body.ratingComment !== undefined) patch.ratingComment = body.ratingComment;
 
       if (body.snoozedUntil !== undefined) {
         const until = body.snoozedUntil ? new Date(body.snoozedUntil) : null;
@@ -224,7 +226,9 @@ export function conversationRoutes(ctx: AppContext) {
         conversation: serialized,
       });
 
-      if (body.status === "closed" && conversation.status !== "closed") {
+      const justClosed = body.status === "closed" && conversation.status !== "closed";
+      const ratingSet = body.rating !== undefined;
+      if (justClosed || (ratingSet && updated.status === "closed")) {
         try {
           await dispatchKbConversationClosed(getKbDispatch(), c.get("store").db, {
             orgId: auth.orgId,
@@ -232,7 +236,7 @@ export function conversationRoutes(ctx: AppContext) {
             conversationId: conversation.id,
           });
         } catch {
-          // KB crystallize is best-effort on close
+          // KB crystallize is best-effort on close / CSAT
         }
       }
 

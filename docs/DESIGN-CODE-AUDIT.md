@@ -57,8 +57,14 @@ See [GA.md](./GA.md) quality gates: Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95
 
 ## Recommended next work
 
-1. Replace KB-19 heuristic gate with LLM FAQ generation + human candidate queue UI.
-2. Wire `conversation.rating` / CSAT widget → close crystallize eligibility.
-3. Complete KB-16 ingest for URL/PDF connectors and idempotent re-index.
-4. Dashboard Custom Action wizard + MCP Server expose mode.
-5. Help Center portal app or document as KB-only until M7.
+跟踪 [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) **I104～I110**：
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I104 | CSAT `rating` API + widget · crystallize 无隐式默认 CSAT | [x] |
+| I105 | `keenai import zendesk --kb` 实写 `kb_documents` | [x] |
+| I106 | close → `keenai/conversation.closed` 集成测试 | [x] |
+| I107 | `MIGRATION.md` + `04-MODULES` / `06-TECH-STACK` 路径勘误 | [~] |
+| I108 | KB-19 LLM FAQ extract（可选 env） | 待办 |
+| I109 | Dashboard CA 向导 · Help Center Portal | 待办 |
+| I110+ | CHANGELOG 1.0 · Helm · 质量门槛实测 · Release | 待办 |

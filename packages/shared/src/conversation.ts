@@ -72,6 +72,13 @@ export const listMessagesSchema = z.object({
   before: z.string().optional(),
 });
 
+export const conversationRatingSchema = z.object({
+  rating: z.coerce.number().int().min(1).max(5),
+  ratingComment: z.string().max(2000).optional(),
+});
+
+export type ConversationRating = z.infer<typeof conversationRatingSchema>;
+
 export const updateConversationSchema = z
   .object({
     status: conversationStatusSchema.optional(),
@@ -80,6 +87,8 @@ export const updateConversationSchema = z
     tags: z.array(z.string().min(1).max(64)).max(32).optional(),
     snoozedUntil: z.string().datetime().nullable().optional(),
     priority: conversationPrioritySchema.optional(),
+    rating: z.coerce.number().int().min(1).max(5).optional(),
+    ratingComment: z.string().max(2000).nullable().optional(),
   })
   .refine(
     (v) =>
@@ -88,6 +97,8 @@ export const updateConversationSchema = z
       v.subject !== undefined ||
       v.tags !== undefined ||
       v.snoozedUntil !== undefined ||
-      v.priority !== undefined,
+      v.priority !== undefined ||
+      v.rating !== undefined ||
+      v.ratingComment !== undefined,
     { message: "at least one field required" },
   );

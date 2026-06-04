@@ -21,10 +21,17 @@
 | 10 | I97～I98 | Sprint 18 · Eval | golden suite + nightly CI | [x] |
 | 11 | I99～I100 | Sprint 18 · 压测 + 部署文档 | kb:bench · DEPLOYMENT.md | [x] |
 | 12 | I101～I103 | Sprint 18 · GA prep | import CLI · Mastra judge · docs hub | [x] |
-| 13 | I104+ | 1.0 GA | 真实 import · 静态文档站 · release | [ ] |
+| 13 | I104 | GA · CSAT | `rating` API + widget CSAT · crystallize 无默认 5 分 | [x] |
+| 14 | I105 | GA · Import | Zendesk HC JSON → `kb_documents` 实写（`keenai import`） | [x] |
+| 15 | I106 | GA · Hardening | close→`conversation.closed` 集成测试 | [x] |
+| 16 | I107 | GA · Docs | `MIGRATION.md` · worker 路径勘误（04/06） | [~] |
+| 17 | I108 | GA · KB depth | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL` 可选） | [ ] |
+| 18 | I109 | GA · Product | Dashboard CA 向导 · Help Center Portal | [ ] |
+| 19 | I110+ | 1.0 release | CHANGELOG · Helm · 质量门槛实测 · GitHub Release | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：1.0 GA（import 实装 · 静态文档站 · CHANGELOG release）。
+**当前主轨**：I104～I107（CSAT + import + 测试 + 文档）→ I110 GA release。  
+**深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → I108+ 迭代。
 
 ---
 
@@ -106,6 +113,16 @@
 |----|-----|------|
 | I79-01 | bge-reranker-v2-m3 reranker | [x] |
 | I79-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 104～106（GA · CSAT + import + tests）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I104 | PATCH/widget `rating` · crystallize 需显式 CSAT（无默认 5） | [x] |
+| I105 | `keenai import zendesk --kb` → `kb_documents` | [x] |
+| I106 | `kb-dispatch.integration.test.ts` close + CSAT | [x] |
 
 ---
 

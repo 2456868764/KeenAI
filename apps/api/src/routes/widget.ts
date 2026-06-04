@@ -3,10 +3,13 @@ import { randomToken, signWidgetAccessToken, verifyWidgetUserHash } from "@keena
 import {
   API_VERSION,
   presignUploadSchema,
+  widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
 } from "@keenai/shared";
+import { conversations } from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { insertAttachment } from "../lib/attachments.js";
 import {
@@ -15,6 +18,8 @@ import {
   recordConversationEvent,
   serializeConversation,
 } from "../lib/conversations.js";
+import { getKbDispatch } from "../lib/kb-dispatch-init.js";
+import { dispatchKbConversationClosed } from "../lib/kb-dispatch.js";
 import {
   consumePresignedUpload,
   createPresignedUpload,
@@ -230,6 +235,54 @@ export function widgetRoutes() {
       });
 
       return c.json({ message }, 201);
+    },
+  );
+
+  r.post(
+    `${prefix}/conversations/:id/rating`,
+    requireWidgetAuth(),
+    zValidator("json", widgetConversationRatingSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      const denied = assertWidgetConversation(conversation, auth);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
+      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+
+      const body = c.req.valid("json");
+      const now = new Date();
+      const [updated] = await c
+        .get("store")
+        .db.update(conversations)
+        .set({
+          rating: body.rating,
+          ratingComment: body.ratingComment ?? null,
+          updatedAt: now,
+        })
+        .where(eq(conversations.id, conversation.id))
+        .returning();
+
+      if (!updated) return c.json({ error: "update_failed" }, 500);
+
+      if (updated.status === "closed") {
+        try {
+          await dispatchKbConversationClosed(getKbDispatch(), c.get("store").db, {
+            orgId: auth.orgId,
+            brandId: conversation.brandId,
+            conversationId: conversation.id,
+          });
+        } catch {
+          // KB crystallize is best-effort after CSAT
+        }
+      }
+
+      return c.json({ conversation: serializeConversation(updated) });
     },
   );
 

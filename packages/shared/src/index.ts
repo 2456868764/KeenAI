@@ -11,7 +11,9 @@ export {
   listConversationsSchema,
   listMessagesSchema,
   messageContentSchema,
+  conversationRatingSchema,
   updateConversationSchema,
+  type ConversationRating,
   senderTypeSchema,
   type ChannelType,
   type ConversationPriority,
@@ -19,6 +21,7 @@ export {
   type SenderType,
 } from "./conversation.js";
 export {
+  widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,

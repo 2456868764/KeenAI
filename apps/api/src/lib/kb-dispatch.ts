@@ -38,7 +38,17 @@ export async function dispatchKbConversationClosed(
   db: KeenaiDb,
   input: { orgId: string; brandId: string; conversationId: string },
 ): Promise<{ dispatched: boolean; reason?: string }> {
-  const payload = await buildKbCrystallizePayloadFromConversation(db, input);
+  const envDefault = process.env.KEENAI_CRYSTALLIZE_DEFAULT_CSAT;
+  const defaultCsatWhenMissing =
+    envDefault !== undefined && envDefault !== "" ? Number.parseInt(envDefault, 10) : undefined;
+
+  const payload = await buildKbCrystallizePayloadFromConversation(db, {
+    ...input,
+    defaultCsatWhenMissing:
+      defaultCsatWhenMissing !== undefined && !Number.isNaN(defaultCsatWhenMissing)
+        ? defaultCsatWhenMissing
+        : undefined,
+  });
   if (!payload) {
     return { dispatched: false, reason: "crystallize_payload_unavailable" };
   }

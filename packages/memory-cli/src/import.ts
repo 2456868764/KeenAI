@@ -1,5 +1,10 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseApiEnv } from "@keenai/shared";
+import { createLibsqlStore } from "@keenai/storage";
+import { migrate } from "drizzle-orm/libsql/migrator";
+import { importZendeskKbArticles } from "./import-zendesk-kb.js";
 
 export type ImportProvider = "intercom" | "zendesk";
 
@@ -77,18 +82,33 @@ export async function runImportCommand(args: ImportCliArgs): Promise<void> {
     return;
   }
 
-  if (!args.tickets) throw new Error("zendesk import requires --tickets <tickets.json>");
-  const tickets = await assertReadable(args.tickets, "zendesk tickets");
-  const kb = args.kb ? await assertReadable(args.kb, "zendesk kb") : null;
+  if (!args.kb)
+    throw new Error("zendesk import requires --kb <hc-articles.json> (tickets import planned)");
 
-  console.log("[keenai import] Zendesk → KeenAI (stub)");
-  console.log(`  org-slug: ${args.orgSlug}`);
-  console.log(`  tickets:  ${tickets}`);
-  if (kb) console.log(`  kb:       ${kb}`);
-  console.log("  maps:");
-  console.log("    users → accounts");
-  console.log("    tickets → conversations");
-  console.log("    hc articles → kb_sources + kb_documents");
+  const kb = await assertReadable(args.kb, "zendesk kb");
+  const env = parseApiEnv({ DATABASE_URL: process.env.DATABASE_URL ?? ":memory:" });
+  const store = createLibsqlStore({ url: env.DATABASE_URL });
+  const migrationsFolder = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../storage/migrations/libsql",
+  );
+  await migrate(store.db, { migrationsFolder });
+
+  const result = await importZendeskKbArticles({
+    db: store.db,
+    orgSlug: args.orgSlug,
+    kbFilePath: kb,
+    dryRun: args.dryRun,
+  });
+
+  console.log("[keenai import] Zendesk Help Center → KeenAI KB");
+  console.log(`  org-slug:  ${args.orgSlug}`);
+  console.log(`  kb file:   ${kb}`);
+  console.log(`  sourceId:  ${result.sourceId}`);
+  console.log(`  imported:  ${result.imported}`);
+  console.log(`  skipped:   ${result.skipped}`);
   if (args.dryRun) console.log("  mode: dry-run (no database writes)");
-  console.log("\nImport execution is not implemented yet. Track: docs/MIGRATION.md");
+  else console.log("  next: re-index via API ingest or kb.indexDocument per document");
+
+  await store.close();
 }

@@ -8,7 +8,7 @@ export type BuildKbCrystallizePayloadInput = {
   orgId: string;
   brandId: string;
   conversationId: string;
-  /** When conversation.rating is null, use this for crystallize eligibility (default 5). */
+  /** When conversation.rating is null, use only if explicitly set (e.g. dev `KEENAI_CRYSTALLIZE_DEFAULT_CSAT`). */
   defaultCsatWhenMissing?: number;
 };
 
@@ -55,9 +55,10 @@ export async function buildKbCrystallizePayloadFromConversation(
   const answer = agentMessages[agentMessages.length - 1]?.plainText?.trim() ?? "";
   if (!question || !answer) return null;
 
-  const defaultCsat = input.defaultCsatWhenMissing ?? 5;
-  const csatScore = conversation.rating ?? defaultCsat;
-  if (csatScore < KB_CRYSTALLIZE_MIN_CSAT) return null;
+  const csatScore =
+    conversation.rating ??
+    (input.defaultCsatWhenMissing !== undefined ? input.defaultCsatWhenMissing : null);
+  if (csatScore === null || csatScore < KB_CRYSTALLIZE_MIN_CSAT) return null;
 
   return {
     orgId: input.orgId,

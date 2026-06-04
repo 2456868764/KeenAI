@@ -90,6 +90,9 @@ export function serializeConversation(row: typeof conversations.$inferSelect) {
     unreadCount: row.unreadCount,
     messageCount: row.messageCount,
     lastMessageAt: row.lastMessageAt?.toISOString() ?? null,
+    closedAt: row.closedAt?.toISOString() ?? null,
+    rating: row.rating ?? null,
+    ratingComment: row.ratingComment ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

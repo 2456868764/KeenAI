@@ -12,7 +12,7 @@
 - [x] Deployment guide ([DEPLOYMENT.md](./DEPLOYMENT.md))
 - [x] `keenai import` CLI stub ([MIGRATION.md](./MIGRATION.md))
 - [~] Mastra eval judge (`KEENAI_EVAL_JUDGE_MODEL` + `@mastra/evals` optional)
-- [ ] Intercom / Zendesk import (real writes)
+- [~] Intercom / Zendesk import（Zendesk HC → `kb_documents` 已实现；tickets 待做）
 - [~] Public documentation site (`pnpm --filter @keenai/docs dev` · MDX/Fumadocs later)
 - [ ] Helm chart
 

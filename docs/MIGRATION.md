@@ -1,13 +1,14 @@
 # Data Migration (Intercom · Zendesk → KeenAI)
 
-> Sprint 18 · `pnpm keenai import` CLI stub (plan-only; no DB writes yet).
+> Sprint 18+ · `pnpm keenai import zendesk --kb` writes Help Center articles to `kb_documents`.
 
 ## Scope (planned)
 
 | Source | Entities | Status |
 |--------|----------|--------|
 | Intercom | users, conversations, tags, articles | planned |
-| Zendesk | tickets, users, help center articles | planned |
+| Zendesk | help center articles → `kb_documents` | **kb import implemented** |
+| Zendesk | tickets, users → conversations | planned |
 
 ## Recommended flow
 
@@ -17,9 +18,14 @@
 4. Import via future CLI:
 
 ```bash
-# Stub — validates files and prints field mapping (no writes yet)
+# Intercom — plan only (no writes yet)
 pnpm keenai import intercom --file ./export.zip --org-slug acme --dry-run
-pnpm keenai import zendesk --tickets ./tickets.json --kb ./hc-articles.json --org-slug acme
+
+# Zendesk Help Center JSON → kb_documents (requires DATABASE_URL + migrated schema)
+export DATABASE_URL=file:./data/keenai.db
+pnpm db:migrate
+pnpm keenai import zendesk --kb ./hc-articles.json --org-slug acme
+pnpm keenai import zendesk --kb ./hc-articles.json --org-slug acme --dry-run
 ```
 
 ## KB articles

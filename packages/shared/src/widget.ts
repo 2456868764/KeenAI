@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { conversationRatingSchema } from "./conversation.js";
 import { messagePartSchema } from "./message-parts.js";
 
 export const widgetUserSchema = z.object({
@@ -35,6 +36,9 @@ export const widgetPostMessageSchema = z
       (v.attachmentIds !== undefined && v.attachmentIds.length > 0),
     { message: "plainText or attachmentIds required" },
   );
+
+/** Widget CSAT after conversation close (I104). */
+export const widgetConversationRatingSchema = conversationRatingSchema;
 
 export type WidgetUser = z.infer<typeof widgetUserSchema>;
 export type WidgetSessionInput = z.infer<typeof widgetSessionSchema>;

@@ -408,7 +408,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 文档站入口（I103 · [docs/index.md](index.md) · [GA.md](GA.md) · 静态站托管待建）
 - [x] 部署文档（I100 · Docker lite · Bun binary · Vercel/CF 指引 · 见 [DEPLOYMENT.md](DEPLOYMENT.md)）
 - [ ] 视频教程（YouTube + B 站）
-- [~] 迁移工具（I101 · `pnpm keenai import` stub · 真实写入待实现）
+- [~] 迁移工具（I101 · Intercom stub · Zendesk HC → `kb_documents` 已实现 I105）
 - [ ] **1.0 GA 发布**
 
 ### Phase 3 验收
