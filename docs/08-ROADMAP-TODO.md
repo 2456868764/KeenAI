@@ -5,6 +5,25 @@
 
 ---
 
+## 下阶段执行列表（单轨顺序 · 指针随迭代推进）
+
+| 序 | 迭代 | 轨道 | 交付 | 状态 |
+|----|------|------|------|------|
+| 1 | I77 | Phase 8 · MT-06 | Agent scope 路由 stub（`assembleAgentMemoryContext`） | [x] |
+| 2 | **I78** | KB Phase A · KB-07 | `@xenova/transformers` bge-m3 embedder | [ ] ← **当前** |
+| 3 | I79 | KB-08 | bge-reranker-v2-m3 reranker | [ ] |
+| 4 | I80 | KB-09 | KG entity-link expansion（第三检索流） | [ ] |
+| 5 | I81 | KB-10 | Hierarchical chunk hydrate | [ ] |
+| 6 | I82 | KB-11 | Diversity + Recency 后置 | [ ] |
+| 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [ ] |
+| 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [ ] |
+| 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] |
+
+**Phase 8 Sprint 13–14 收尾**：I77 完成后 Memory Tree MT-01～06 全部打勾。  
+**下一主轨**：KB 优化 Phase A（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) · 验收 Recall@5 ≥ 88%）。
+
+---
+
 ## 当前迭代 · Iteration 71（Phase 8 · Sprint 13–14 · Auto-close + CSAT stub）✓
 
 | ID | 项 | 状态 |
@@ -59,12 +78,21 @@
 
 ---
 
-## 当前迭代 · Iteration 77（Phase 8 · Sprint 13–14 · Memory Tree MT-06 agent scope stub）
+## 当前迭代 · Iteration 77（Phase 8 · Sprint 13–14 · Memory Tree MT-06 agent scope stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I77-01 | Agent scope routing stub（09 附录 B · assembleMemoryContext） | [ ] |
-| I77-02 | tests · roadmap · commit · push | [ ] |
+| I77-01 | Agent scope routing stub（09 附录 B · assembleMemoryContext） | [x] |
+| I77-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 78（KB Phase A · KB-07 bge-m3 embedder）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I78-01 | `@xenova/transformers` bge-m3 真实 embedder | [ ] |
+| I78-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

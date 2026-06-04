@@ -6,6 +6,14 @@ export {
   type MemoryContextSection,
 } from "./assemble-context.js";
 export {
+  KEENI_MEMORY_TREE_MT06,
+  assembleAgentMemoryContext,
+  buildAgentScopeContextPlan,
+  type AgentScopeContextLoader,
+  type AgentScopeContextPlan,
+  type AssembleAgentMemoryContextResult,
+} from "./agent-scope-context.js";
+export {
   KEENI_MEMORY_TREE_MT04,
   MEMORY_TREE_DIGEST_DAILY_EVENT,
   brandDailyScopeKeyForDigest,

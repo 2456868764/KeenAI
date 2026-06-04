@@ -308,13 +308,13 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Auto-close + CSAT Inngest timer stub（I71 · `@keenai/workflow` timer functions）
 - [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）
 - [x] Skill system stub（AE-04 · registry / match / runner / discoverer）
-- [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
+- [x] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06 · I72～I77）：
   - [x] `memory_chunks` canonicalize hot-path stub + Inngest `keenai/memory.canonicalize`（I72）
   - [x] fast-score + `extract_chunk` enqueue stub（I73 · `enqueueExtractChunkIfAdmitted`）
   - [x] source tree buffer + seal stub（I74 · `runSourceTreeBufferSealStub` → `memory_episodes`）
   - [x] `memory.digest_daily` brand 日摘要 stub（I75 · `runBrandDailyDigestStub`）
   - [x] 检索 scope stub（I76 · `queryMemoryTreeByScope`）
-  - [ ] Agent scope 路由（09 附录 B）
+  - [x] Agent scope 路由 stub（I77 · `assembleAgentMemoryContext` / 09 附录 B）
 - [ ] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
 - [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
 - [ ] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：

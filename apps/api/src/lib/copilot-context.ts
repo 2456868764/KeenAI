@@ -1,7 +1,7 @@
 import { buildKeeniAgentContext } from "@keenai/agent";
 import type { DraftMessage, DraftRequest } from "@keenai/llm";
 import type { MemoryScope } from "@keenai/memory-tree";
-import { assembleMemoryContext } from "@keenai/memory-tree";
+import { assembleAgentMemoryContext } from "@keenai/memory-tree";
 import type { ApiEnv } from "@keenai/shared";
 import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -94,7 +94,7 @@ export async function buildCopilotDraftRequest(
     draftMessages.push({ role: "user", plainText: input.subject ?? "Hello" });
   }
 
-  const memory = await assembleMemoryContext(db, {
+  const memory = await assembleAgentMemoryContext(db, {
     orgId: input.orgId,
     brandId: input.brandId,
     conversationId: input.conversationId,

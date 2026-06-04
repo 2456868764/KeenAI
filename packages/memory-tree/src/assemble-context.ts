@@ -4,11 +4,7 @@ import type { KeenaiDb } from "@keenai/storage";
 import { memorySummaries } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { buildMemoryL3Section, queryMemoryFacts } from "./query-facts.js";
-import {
-  queryBrandDailyDigest,
-  queryConversationMemoryTree,
-  queryCustomerMemoryTree,
-} from "./query.js";
+import { queryMemoryTreeByScope } from "./retrieval-scope.js";
 import { conversationScopeKey, customerScopeKey } from "./scope-key.js";
 import {
   type MemoryScope,
@@ -94,7 +90,8 @@ async function loadConversationSections(
 ): Promise<MemoryContextSection[]> {
   const sections: MemoryContextSection[] = [];
 
-  const tree = await queryConversationMemoryTree(db, {
+  const tree = await queryMemoryTreeByScope(db, {
+    scope: "conversation",
     orgId: input.orgId,
     brandId: input.brandId,
     conversationId: input.conversationId,
@@ -102,7 +99,10 @@ async function loadConversationSections(
     level: 0,
   });
 
-  const leaves = tree.levels.flatMap((level) => level.nodes.filter((node) => node.kind === "leaf"));
+  const leaves =
+    tree?.scope === "conversation"
+      ? tree.levels.flatMap((level) => level.nodes.filter((node) => node.kind === "leaf"))
+      : [];
 
   if (leaves.length > 0) {
     sections.push({
@@ -121,13 +121,14 @@ async function loadBrandDailySection(
   db: KeenaiDb,
   input: { orgId: string; brandId: string; dateUtc: string },
 ): Promise<MemoryContextSection | null> {
-  const digest = await queryBrandDailyDigest(db, {
+  const digest = await queryMemoryTreeByScope(db, {
+    scope: "brand_daily",
     orgId: input.orgId,
     brandId: input.brandId,
     dateUtc: input.dateUtc,
   });
 
-  if (!digest) return null;
+  if (!digest || digest.scope !== "brand_daily") return null;
 
   const events =
     digest.keyEvents.length > 0
@@ -146,7 +147,8 @@ async function loadCustomerSections(
 ): Promise<MemoryContextSection[]> {
   const sections: MemoryContextSection[] = [];
 
-  const tree = await queryCustomerMemoryTree(db, {
+  const tree = await queryMemoryTreeByScope(db, {
+    scope: "customer",
     orgId: input.orgId,
     brandId: input.brandId,
     userId: input.userId,
@@ -154,7 +156,10 @@ async function loadCustomerSections(
     level: 0,
   });
 
-  const leaves = tree.levels.flatMap((level) => level.nodes.filter((node) => node.kind === "leaf"));
+  const leaves =
+    tree?.scope === "customer"
+      ? tree.levels.flatMap((level) => level.nodes.filter((node) => node.kind === "leaf"))
+      : [];
   if (leaves.length > 0) {
     sections.push({
       title: "Customer topic buffer (L0)",
