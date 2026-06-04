@@ -21,6 +21,8 @@ export type KbSearchFeedback = z.infer<typeof kbSearchFeedbackSchema>;
 export const kbEvalMetricsQuerySchema = z.object({
   brandId: z.string().min(1),
   since: z.string().datetime().optional(),
+  /** When true, run golden retrieval eval and merge recall/precision into metrics (KB-23). */
+  includeGolden: z.coerce.boolean().optional(),
 });
 
 export type KbEvalMetricsQuery = z.infer<typeof kbEvalMetricsQuerySchema>;

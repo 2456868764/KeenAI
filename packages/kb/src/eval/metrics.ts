@@ -1,6 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { kbQueryLogs } from "@keenai/storage/schema";
 import { and, eq, gte } from "drizzle-orm";
+import type { KbGoldenEvalReport } from "./run-golden.js";
 
 export type KbEvalMetrics = {
   totalQueries: number;
@@ -17,7 +18,21 @@ export type ComputeKbEvalMetricsInput = {
   since?: Date;
 };
 
-/** KB-23 lifecycle metrics stub (feedback + placeholder recall/precision). */
+/** Merge golden retrieval eval into lifecycle metrics (KB-23). */
+export function enrichKbEvalMetricsFromGolden(
+  metrics: KbEvalMetrics,
+  golden: KbGoldenEvalReport,
+): KbEvalMetrics {
+  if (golden.caseCount === 0) return metrics;
+  return {
+    ...metrics,
+    recallAt5: golden.recallAt5,
+    precisionAt5: golden.hitRate,
+    graphContributionRate: golden.graphContributionRate,
+  };
+}
+
+/** KB-23 lifecycle metrics from query logs (+ optional golden merge). */
 export async function computeKbEvalMetrics(
   db: KeenaiDb,
   input: ComputeKbEvalMetricsInput,

@@ -29,6 +29,8 @@ import {
 } from "../lib/conversations.js";
 import { indexConversationForSearch } from "../lib/fts-index.js";
 import { planConversationImOutbound } from "../lib/im-outbound.js";
+import { getKbDispatch } from "../lib/kb-dispatch-init.js";
+import { dispatchKbConversationClosed } from "../lib/kb-dispatch.js";
 import { notifyAssignee } from "../lib/notifications.js";
 import { createTicketFromConversation } from "../lib/tickets.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -221,6 +223,18 @@ export function conversationRoutes(ctx: AppContext) {
         conversationId: conversation.id,
         conversation: serialized,
       });
+
+      if (body.status === "closed" && conversation.status !== "closed") {
+        try {
+          await dispatchKbConversationClosed(getKbDispatch(), c.get("store").db, {
+            orgId: auth.orgId,
+            brandId: conversation.brandId,
+            conversationId: conversation.id,
+          });
+        } catch {
+          // KB crystallize is best-effort on close
+        }
+      }
 
       if (
         body.assigneeId !== undefined &&

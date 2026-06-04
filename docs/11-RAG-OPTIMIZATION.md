@@ -117,7 +117,7 @@ Query
 | **KB-13** | Evidence-based confidence + provenance | migration · `kb_chunks.provenance` jsonb | confidence 由 `sourceAuthority × recency × feedback` 计算；非默认 1.0 |
 | **KB-14** | Supersession chain | `kb_documents.supersedesId` · chunk `status` | active/superseded/archived；检索默认仅 active；Admin 可查历史链 |
 | **KB-15** | Freshness rules → retrievalWeight | `config/kb-freshness.yaml` · retriever | help_center 不衰减 · web_crawl 30d · past_conversations 90d 半衰 |
-| **KB-16** | Inngest 8 阶段 ingestion | `apps/worker/src/jobs/kb-ingest.ts` | fetch→parse→clean→chunk→enrich→embed→index→notify；brand 级 concurrency |
+| **KB-16** | Inngest 8 阶段 ingestion | `packages/kb/src/inngest/kb-ingest.ts` · API `apps/api/src/lib/kb-inngest.ts` | fetch→parse→clean→chunk→enrich→embed→index→notify；brand 级 concurrency |
 | **KB-17** | content_hash diff 增量索引 | `packages/kb/src/ingest/diff-index.ts` | 新增/修改/软删；**保留未变 chunk_id** 以稳定 citation |
 | **KB-18** | Parsers + 高级 Chunkers | `packages/kb/src/ingest/parser/*` · `chunker/*` | unpdf/mammoth/cheerio+marked；semantic/hierarchical；Contextual Retrieval 可选（Haiku + prompt caching） |
 
@@ -150,7 +150,7 @@ provenance: {
 
 | ID | 交付 | 包/路径 | 验收标准 |
 |----|------|---------|----------|
-| **KB-19** | Crystallization pipeline | `apps/worker/src/jobs/kb-crystallize.ts` | `conversation/closed` + CSAT≥4 → generateObject FAQ → quality gate → index 或 candidate 池 |
+| **KB-19** | Crystallization pipeline | `packages/kb/src/lifecycle/crystallize.ts` · `keenai/conversation.closed` | API dispatch on close · CSAT≥4 → FAQ → quality gate → `indexDocument` on `auto_index` |
 | **KB-20** | Contradiction reconcile | `packages/kb/src/lifecycle/reconcile.ts` | 写入时与 kb_entities/FAQ 比对；冲突 → supersession **proposal**（非自动覆盖） |
 | **KB-21** | Brand KB Schema | `kb_brand_schemas` 或 `kb_sources.config` | entity_types · ingest_rules · quality_gates · retrieval defaults |
 | **KB-22** | Unified Context Orchestrator | `packages/agent/src/context/assembler.ts` | KB + Memory + Memory Tree dedupe；query intent 路由权重 |

@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import { z } from "zod";
 import { initKbChunkFtsFromStore } from "./lib/kb-chunk-fts-init.js";
 import { initKbChunkVectorFromStore } from "./lib/kb-chunk-vector-init.js";
+import { initKbDispatch } from "./lib/kb-dispatch-init.js";
 import { initMediaDispatch } from "./lib/media-dispatch-init.js";
 import {
   resolveMemoryChunkEmbedder,
@@ -60,6 +61,7 @@ export function createApp(ctx: AppContext) {
     initMemorySummaryFtsFromStore(ctx.store);
     initKbChunkFtsFromStore(ctx.store);
     initKbChunkVectorFromStore(ctx.store);
+    initKbDispatch(ctx);
     setMemoryChunkEmbedder(resolveMemoryChunkEmbedder(ctx.env));
   }
   const app = new Hono<{ Variables: AppVariables }>();

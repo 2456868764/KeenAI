@@ -174,6 +174,10 @@ export {
 } from "./search-kb-chunks.js";
 export { syncKbSource } from "./sync-source.js";
 export {
+  buildKbCrystallizePayloadFromConversation,
+  type BuildKbCrystallizePayloadInput,
+} from "./lifecycle/crystallize-payload.js";
+export {
   KEENI_KB_KB19,
   KB_CRYSTALLIZE_MIN_CSAT,
   gateKbCrystallizeQuality,
@@ -213,6 +217,7 @@ export {
   KEENI_KB_SPRINT18_EVAL,
   checkKbEvalThresholds,
   computeKbEvalMetrics,
+  enrichKbEvalMetricsFromGolden,
   listKbGoldenQueries,
   loadKbEvalConfig,
   promoteKbQueryLogToGolden,
@@ -234,4 +239,5 @@ export type {
   KbDocumentView,
   ListKbDocumentsInput,
 } from "./types.js";
+export { KB_INNGEST_EVENTS } from "./inngest/types.js";
 export type { KbCrystallizePayload, KbIngestPayload } from "./inngest/types.js";

@@ -762,8 +762,8 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 | **CA-02** | I58 | Custom Action REST CRUD API | [x] |
 | **CA-03** | I59 | HMAC signing + `http_direct` executor stub | [x] |
 | **CA-04** | I60 | Vercel AI SDK `tool()` wire into copilot/agent | [x] |
-| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [ ] ← **next** |
-| **CA-06** | I62 | MCP Host mode stub | [ ] |
+| **CA-05** | I61 | Action call logs（Drizzle + OTel span stub） | [x] |
+| **CA-06** | I62 | MCP Host mode stub | [x] |
 
 ---
 
@@ -951,7 +951,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 | KG-02 | relation extractor + persist | [x] |
 | KG-03 | relatedTopics recursive query | [x] |
 | KG-04 | GET /memory/graph/related API | [x] |
-| KG-05 | kb_entities / kb_relations（KB 侧 · 见 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)） | [ ] |
+| KG-05 | kb_entities / kb_relations（KB 侧 · 见 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)） | [x] |
 
 ## Phase 6 · KB / RAG（[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md) · 优化 [11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md)）
 

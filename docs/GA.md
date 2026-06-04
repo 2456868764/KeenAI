@@ -1,10 +1,12 @@
 # KeenAI 1.0 GA Checklist
 
-> Sprint 18 · track remaining GA items in [08-ROADMAP.md](./08-ROADMAP.md).
+> Sprint 18 · track remaining GA items in [08-ROADMAP.md](./08-ROADMAP.md).  
+> Design vs implementation gaps: [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md).
 
 ## Engineering
 
-- [x] KB Phase A–C (KB-07～24)
+- [x] KB Phase A–C (KB-07～24) — see audit for stub/partial items
+- [x] P0 wiring: `keenai/conversation.closed` on close · crystallize `auto_index` FTS · `GET /kb/eval/metrics?includeGolden=true`
 - [x] Golden eval suite + nightly CI (`pnpm kb:eval`)
 - [x] KB search bench (`pnpm kb:bench`)
 - [x] Deployment guide ([DEPLOYMENT.md](./DEPLOYMENT.md))

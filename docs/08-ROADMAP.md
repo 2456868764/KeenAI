@@ -358,16 +358,15 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **KB-18** · Parsers + Chunkers stub（I89 · markdown/hierarchical）
 - [x] **KG-05** · ingest entity extractor（I90 · `extractKbEntitiesFromDocument`）
 
-**Custom Actions + MCP（主轨）**
+**Custom Actions + MCP（主轨 · CA-01～06）**
 
-- [ ] Action 4 步配置 UI（基本信息 / 参数 / 端点 / 数据权限）
-- [ ] HMAC 签名（`crypto.subtle.sign`）
-- [ ] Vercel AI SDK `tool()` 集成
-- [ ] 内置变量（`{{user_id}}` 等）+ Sandbox 三档（http_direct / workers / isolated-vm）
-- [ ] Data Access 字段白名单
-- [ ] Action 调用日志（OTel span + Drizzle）
-- [ ] `@modelcontextprotocol/sdk` Host 模式（外部 MCP server 接入）
-- [ ] MCP Server 暴露 KeenAI 工具（其他 LLM Agent 可调用）
+- [x] **CA-01** · `custom_actions` schema + migration
+- [x] **CA-02** · Custom Action REST CRUD API
+- [x] **CA-03** · HMAC signing + `http_direct` executor（`executeAndLogCustomAction`）
+- [x] **CA-04** · Vercel AI SDK `tool()` in copilot/agent draft path
+- [x] **CA-05** · Action call logs（`custom_action_logs` + OTel span stub）
+- [x] **CA-06** · MCP Host mode stub（`GET /mcp/tools` · copilot tool load）
+- [ ] Dashboard 4-step Action config UI · Sandbox workers/isolated-vm · MCP Server expose（产品面未完成）
 
 #### Sprint 17（W37-W38）：Roadmap + Changelog + 国产化 · KB Phase C 启动
 

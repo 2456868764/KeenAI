@@ -11,6 +11,7 @@
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production profiles, env, `kb:bench` / `kb:eval` |
 | [MIGRATION.md](./MIGRATION.md) | Intercom / Zendesk import (`keenai import`) |
 | [GA.md](./GA.md) | 1.0 release checklist |
+| [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md) | Design vs code gaps (pre-GA) |
 
 ## Product & architecture
 

@@ -7,6 +7,7 @@ export {
 } from "./golden.js";
 export {
   computeKbEvalMetrics,
+  enrichKbEvalMetricsFromGolden,
   type ComputeKbEvalMetricsInput,
   type KbEvalMetrics,
 } from "./metrics.js";

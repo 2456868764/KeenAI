@@ -38,7 +38,7 @@ KeenAI is an **open-source, self-hostable, AI-native** platform that unifies cus
 | **Feedback Portal** | Feedback Portal | 🚧 Planned |
 | **Roadmap** | Roadmap | 🚧 Planned |
 | **Changelog** | Changelog | 🚧 Planned |
-| **Help Center** | Help Center | 🚧 Planned |
+| **Help Center** | Help Center | 🚧 KB `help_center` source + search stub（无独立 Portal UI） |
 | **Surveys** | Surveys | 🔮 Later |
 
 ---

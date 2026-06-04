@@ -4,6 +4,8 @@ import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
 import { type WorkflowDefinition, runWorkflow } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import { buildMessageContent, insertMessage } from "./conversations.js";
+import { getKbDispatch } from "./kb-dispatch-init.js";
+import { dispatchKbConversationClosed } from "./kb-dispatch.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
@@ -50,6 +52,15 @@ export async function executeWorkflow(
           .update(conversations)
           .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
           .where(eq(conversations.id, conversationId));
+        try {
+          await dispatchKbConversationClosed(getKbDispatch(), db, {
+            orgId: workflow.orgId,
+            brandId: conversation.brandId,
+            conversationId,
+          });
+        } catch {
+          // KB crystallize is best-effort on close
+        }
       },
       letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
     },

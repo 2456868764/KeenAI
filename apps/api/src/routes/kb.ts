@@ -3,6 +3,7 @@ import {
   computeKbEvalMetrics,
   createBgeM3KbQueryEmbedder,
   createKbQueryLog,
+  enrichKbEvalMetricsFromGolden,
   promoteKbQueryLogToGolden,
   runKbGoldenEval,
   searchKbChunks,
@@ -117,11 +118,30 @@ export function kbRoutes(_ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const metrics = await computeKbEvalMetrics(c.get("store").db, {
+      const db = c.get("store").db;
+      let metrics = await computeKbEvalMetrics(db, {
         orgId: auth.orgId,
         brandId: query.brandId,
         since: query.since ? new Date(query.since) : undefined,
       });
+
+      if (query.includeGolden) {
+        const chunkFts = getKbChunkFtsStore();
+        if (chunkFts) {
+          const golden = await runKbGoldenEval(db, {
+            orgId: auth.orgId,
+            brandId: query.brandId,
+            search: {
+              chunkFts,
+              chunkVector: getKbChunkVectorStore(),
+              queryEmbedder: createBgeM3KbQueryEmbedder(),
+              rerank: true,
+              reranker: getKbReranker(),
+            },
+          });
+          metrics = enrichKbEvalMetricsFromGolden(metrics, golden);
+        }
+      }
 
       return c.json({ metrics });
     },
