@@ -78,8 +78,15 @@ Bench thresholds: `packages/kb/config/kb-perf.yaml` (`p95_ms_max` default 500ms)
 
 Helm chart is planned for GA; until then use Docker lite or compose `standard` profile with your ingress controller.
 
+## Documentation site
+
+```bash
+pnpm dev:docs   # http://localhost:3001 — links to repo docs/ hub
+```
+
 ## Related
 
-- [MIGRATION.md](./MIGRATION.md) — Intercom / Zendesk import (planned)
+- [index.md](./index.md) — documentation hub
+- [MIGRATION.md](./MIGRATION.md) — Intercom / Zendesk import (`pnpm keenai import`)
 - [08-ROADMAP.md](./08-ROADMAP.md) — Sprint 18 GA items
 - [12-STORAGE-ABSTRACTION.md](./12-STORAGE-ABSTRACTION.md) — Postgres vs SQLite matrix

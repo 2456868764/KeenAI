@@ -1,6 +1,6 @@
 # Data Migration (Intercom · Zendesk → KeenAI)
 
-> Sprint 18 stub · `bunx keenai import` CLI planned for GA.
+> Sprint 18 · `pnpm keenai import` CLI stub (plan-only; no DB writes yet).
 
 ## Scope (planned)
 
@@ -17,9 +17,9 @@
 4. Import via future CLI:
 
 ```bash
-# Planned interface (not yet implemented)
-bunx keenai import intercom --file ./export.zip --org-slug acme
-bunx keenai import zendesk --tickets ./tickets.json --kb ./hc-articles.json
+# Stub — validates files and prints field mapping (no writes yet)
+pnpm keenai import intercom --file ./export.zip --org-slug acme --dry-run
+pnpm keenai import zendesk --tickets ./tickets.json --kb ./hc-articles.json --org-slug acme
 ```
 
 ## KB articles

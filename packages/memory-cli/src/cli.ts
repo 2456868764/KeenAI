@@ -4,10 +4,9 @@ import { exportMemoryVault } from "@keenai/memory";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import { migrate } from "drizzle-orm/libsql/migrator";
+import { parseImportArgv, runImportCommand } from "./import.js";
 
-type CliArgs = {
-  command?: string;
-  subcommand?: string;
+type MemoryExportArgs = {
   vault: boolean;
   orgId?: string;
   brandId?: string;
@@ -15,9 +14,8 @@ type CliArgs = {
   databaseUrl?: string;
 };
 
-function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { vault: false, out: "./memory-vault" };
-  const positional: string[] = [];
+function parseMemoryExportArgv(argv: string[]): MemoryExportArgs | null {
+  const args: MemoryExportArgs = { vault: false, out: "./memory-vault" };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -44,34 +42,29 @@ function parseArgs(argv: string[]): CliArgs {
     if (arg?.startsWith("-")) {
       throw new Error(`unknown flag: ${arg}`);
     }
-    positional.push(arg ?? "");
+    return null;
   }
 
-  args.command = positional[0];
-  args.subcommand = positional[1];
-  return args;
+  return args.vault ? args : null;
 }
 
 function usage(): string {
   return [
+    "KeenAI CLI",
+    "",
     "Usage:",
     "  keenai memory export --vault --org-id <org> --brand-id <brand> [--out ./memory-vault]",
+    "  keenai import intercom --file <export.zip> --org-slug <slug> [--dry-run]",
+    "  keenai import zendesk --tickets <tickets.json> [--kb <articles.json>] --org-slug <slug>",
     "",
     "Environment:",
-    "  DATABASE_URL  LibSQL database URL (or pass --database-url)",
+    "  DATABASE_URL  LibSQL URL for memory export (or --database-url)",
   ].join("\n");
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.command !== "memory" || args.subcommand !== "export" || !args.vault) {
-    console.error(usage());
-    process.exit(1);
-  }
-
+async function runMemoryExport(args: MemoryExportArgs) {
   if (!args.orgId || !args.brandId) {
-    console.error("--org-id and --brand-id are required");
-    process.exit(1);
+    throw new Error("--org-id and --brand-id are required");
   }
 
   const env = parseApiEnv({
@@ -92,6 +85,34 @@ async function main() {
 
   console.log(`Exported ${result.filesWritten} files to ${result.outDir}`);
   await store.close();
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const command = argv[0];
+
+  if (command === "import") {
+    const importArgs = parseImportArgv(argv.slice(1));
+    if (!importArgs) {
+      console.error(usage());
+      process.exit(1);
+    }
+    await runImportCommand(importArgs);
+    return;
+  }
+
+  if (command === "memory" && argv[1] === "export") {
+    const exportArgs = parseMemoryExportArgv(argv.slice(2));
+    if (!exportArgs) {
+      console.error(usage());
+      process.exit(1);
+    }
+    await runMemoryExport(exportArgs);
+    return;
+  }
+
+  console.error(usage());
+  process.exit(1);
 }
 
 main().catch((error) => {

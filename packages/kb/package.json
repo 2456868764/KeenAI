@@ -17,7 +17,8 @@
     "drizzle-orm": "^0.38.3"
   },
   "optionalDependencies": {
-    "inngest": "^3.27.0"
+    "inngest": "^3.27.0",
+    "@mastra/evals": "^1.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

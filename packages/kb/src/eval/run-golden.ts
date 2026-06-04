@@ -1,8 +1,9 @@
 import type { KeenaiDb } from "@keenai/storage";
 import { type SearchKbChunksInput, searchKbChunks } from "../search-kb-chunks.js";
-import { type KbAnswerQualityScores, scoreKbAnswerQuality } from "./answer-scorer.js";
+import type { KbAnswerQualityScores } from "./answer-scorer.js";
 import { listKbGoldenQueries } from "./golden.js";
 import { type KbEvalConfig, checkKbEvalThresholds, loadKbEvalConfig } from "./kb-eval-config.js";
+import { scoreKbAnswerQualityWithJudge } from "./mastra-judge.js";
 import {
   averageRecallAtK,
   hitAtK,
@@ -94,7 +95,7 @@ export async function runKbGoldenEval(
     let answerScores: KbAnswerQualityScores | null = null;
     if (row.expectedAnswer) {
       const contextChunks = hits.map((hit) => hit.content);
-      answerScores = scoreKbAnswerQuality({
+      answerScores = await scoreKbAnswerQualityWithJudge({
         query: row.query,
         answer: row.expectedAnswer,
         contextChunks,

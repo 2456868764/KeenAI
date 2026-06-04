@@ -219,6 +219,8 @@ export {
   runKbEvalSuite,
   runKbGoldenEval,
   scoreKbAnswerQuality,
+  scoreKbAnswerQualityWithJudge,
+  KEENI_KB_I102,
   type ComputeKbEvalMetricsInput,
   type KbEvalMetrics,
   type KbEvalSuiteReport,

@@ -20,10 +20,11 @@
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [x] |
 | 10 | I97～I98 | Sprint 18 · Eval | golden suite + nightly CI | [x] |
 | 11 | I99～I100 | Sprint 18 · 压测 + 部署文档 | kb:bench · DEPLOYMENT.md | [x] |
-| 12 | I101+ | Sprint 18 · GA | 文档站 · 迁移 CLI · 1.0 发布 | [ ] |
+| 12 | I101～I103 | Sprint 18 · GA prep | import CLI · Mastra judge · docs hub | [x] |
+| 13 | I104+ | 1.0 GA | 真实 import · 静态文档站 · release | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：Sprint 18 GA（文档站 · `keenai import` · Mastra judge）。
+**当前主轨**：1.0 GA（import 实装 · 静态文档站 · CHANGELOG release）。
 
 ---
 
@@ -108,7 +109,17 @@
 
 ---
 
-## 当前迭代 · Iteration 99～100（Sprint 18 · perf + deploy docs）✓
+## 当前迭代 · Iteration 101～103（Sprint 18 · GA prep）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I101 | `keenai import` intercom/zendesk stub | [x] |
+| I102 | Mastra eval judge hook (`mastra-judge.ts`) | [x] |
+| I103 | `docs/index.md` + `docs/GA.md` | [x] |
+
+---
+
+## Iteration 99～100（Sprint 18 · perf + deploy docs）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

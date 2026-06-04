@@ -19,6 +19,13 @@ export {
   type KbAnswerQualityScores,
 } from "./answer-scorer.js";
 export {
+  KEENI_KB_I102,
+  scoreKbAnswerQualityWithJudge,
+  type KbAnswerQualityResult,
+  type KbAnswerScoreSource,
+  type ScoreKbAnswerWithJudgeInput,
+} from "./mastra-judge.js";
+export {
   KEENI_KB_SPRINT18,
   loadKbEvalConfig,
   parseKbEvalYaml,

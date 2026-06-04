@@ -1,23 +1,45 @@
+const repo = "https://github.com/2456868764/KeenAI/blob/main";
+
 const sections = [
   {
-    title: "Getting started",
-    description: "Install, migrate, seed, and run the API + Dashboard locally.",
-    href: "https://github.com/keenai/keenai/blob/main/docs/ALPHA.md",
+    title: "Documentation hub",
+    description: "Curated index of all design docs in docs/.",
+    href: `${repo}/docs/index.md`,
   },
   {
-    title: "OpenAPI",
-    description: "Machine-readable API spec at /api/v1/openapi.json when the API is running.",
-    href: "http://localhost:8090/api/v1/openapi.json",
+    title: "Alpha quick start",
+    description: "Install, migrate, seed, Docker lite, demo login.",
+    href: `${repo}/docs/ALPHA.md`,
+  },
+  {
+    title: "Deployment",
+    description: "Docker profiles, Bun binary, kb:eval / kb:bench.",
+    href: `${repo}/docs/DEPLOYMENT.md`,
+  },
+  {
+    title: "Migration (import)",
+    description: "Intercom / Zendesk import via keenai import stub.",
+    href: `${repo}/docs/MIGRATION.md`,
+  },
+  {
+    title: "GA checklist",
+    description: "1.0 release engineering and quality gates.",
+    href: `${repo}/docs/GA.md`,
   },
   {
     title: "Roadmap",
-    description: "Phase plan and iteration tracking for contributors.",
-    href: "https://github.com/keenai/keenai/blob/main/docs/08-ROADMAP.md",
+    description: "Phase plan and Sprint 18 status.",
+    href: `${repo}/docs/08-ROADMAP.md`,
   },
   {
-    title: "Widget embed",
-    description: "Messenger widget bundle and boot script for customer sites.",
-    href: "https://github.com/keenai/keenai/tree/main/apps/widget",
+    title: "RAG optimization",
+    description: "KB-07～24 execution track.",
+    href: `${repo}/docs/11-RAG-OPTIMIZATION.md`,
+  },
+  {
+    title: "OpenAPI",
+    description: "Live spec when API is running locally.",
+    href: "http://localhost:8090/api/v1/openapi.json",
   },
 ];
 
@@ -26,8 +48,8 @@ export default function DocsHomePage() {
     <main>
       <h1>KeenAI Docs</h1>
       <p className="lead">
-        Documentation site skeleton. Full Fumadocs MDX integration is planned — for now, use the
-        links below and the repo docs folder.
+        Documentation site (Sprint 18 · I103). Browse repo markdown via the hub below; MDX
+        integration is planned for GA.
       </p>
 
       <nav aria-label="Documentation sections">
@@ -44,7 +66,12 @@ export default function DocsHomePage() {
       </nav>
 
       <footer>
-        Run locally: <code>pnpm --filter @keenai/docs dev</code> (port 3001)
+        <p>
+          Local dev: <code>pnpm --filter @keenai/docs dev</code> (port 3001)
+        </p>
+        <p>
+          CLI: <code>pnpm keenai import …</code> · Eval: <code>pnpm kb:eval</code>
+        </p>
       </footer>
     </main>
   );

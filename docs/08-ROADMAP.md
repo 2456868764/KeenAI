@@ -403,13 +403,13 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 **评测 + 发布准备（主轨）**
 
-- [~] Mastra Eval + DeepEval-TS 评测集（I97 · 词法 stub `scoreKbAnswerQuality` · Mastra judge 待接）
+- [x] Mastra Eval hook（I102 · `scoreKbAnswerQualityWithJudge` · `KEENAI_EVAL_JUDGE_MODEL` + optional `@mastra/evals`）
 - [x] 黄金问题集 `kb_golden_queries` + CI nightly run（I98 · `runKbGoldenEval` · `kb-eval-nightly.yml`）
 - [x] 性能优化（I99 · `pnpm kb:bench` · `kb-perf.yaml` · `idx_kb_query_logs_feedback`）
-- [~] 文档站完整化（I100 · `DEPLOYMENT.md` · `MIGRATION.md` stub · 全站文档站待建）
+- [x] 文档站入口（I103 · [docs/index.md](index.md) · [GA.md](GA.md) · 静态站托管待建）
 - [x] 部署文档（I100 · Docker lite · Bun binary · Vercel/CF 指引 · 见 [DEPLOYMENT.md](DEPLOYMENT.md)）
 - [ ] 视频教程（YouTube + B 站）
-- [ ] 迁移工具（Intercom / Zendesk → KeenAI · `bunx keenai import`）
+- [~] 迁移工具（I101 · `pnpm keenai import` stub · 真实写入待实现）
 - [ ] **1.0 GA 发布**
 
 ### Phase 3 验收
