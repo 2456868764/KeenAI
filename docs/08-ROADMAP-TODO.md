@@ -17,7 +17,7 @@
 | 6 | I82 | KB-11 | Diversity + Recency 后置 | [x] |
 | 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [x] |
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [x] |
-| 9 | **I91～I96** | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] ← **当前** |
+| 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [x] |
 
 **Phase 8 Sprint 13–14 收尾**：I77 完成后 Memory Tree MT-01～06 全部打勾。  
 **下一主轨**：KB 优化 Phase A（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) · 验收 Recall@5 ≥ 88%）。
@@ -105,7 +105,20 @@
 
 ---
 
-## 当前迭代 · Iteration 84～90（KB Phase B · 知识生命周期）✓
+## 当前迭代 · Iteration 91～96（KB Phase C · Compounding 闭环）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I91 | KB-19 Crystallization pipeline | [x] |
+| I92 | KB-20 Contradiction reconcile | [x] |
+| I93 | KB-21 Brand KB Schema | [x] |
+| I94 | KB-22 Unified Context Orchestrator | [x] |
+| I95 | KB-23 Eval 闭环 + metrics | [x] |
+| I96 | KB-24 hotness → crystallize priority | [x] |
+
+---
+
+## Iteration 84～90（KB Phase B · 知识生命周期）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
@@ -696,12 +709,12 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 | KB | 迭代 | 交付 | 状态 |
 |----|------|------|------|
-| **KB-19** | I91 | Crystallization pipeline | [ ] |
-| **KB-20** | I92 | Contradiction reconcile + supersession propose | [ ] |
-| **KB-21** | I93 | Brand KB Schema | [ ] |
-| **KB-22** | I94 | Unified Context Orchestrator | [ ] |
-| **KB-23** | I95 | Eval 闭环 + lifecycle metrics | [ ] |
-| **KB-24** | I96 | Memory Tree hotness → crystallize 优先级 | [ ] |
+| **KB-19** | I91 | Crystallization pipeline | [x] |
+| **KB-20** | I92 | Contradiction reconcile + supersession propose | [x] |
+| **KB-21** | I93 | Brand KB Schema | [x] |
+| **KB-22** | I94 | Unified Context Orchestrator | [x] |
+| **KB-23** | I95 | Eval 闭环 + lifecycle metrics | [x] |
+| **KB-24** | I96 | Memory Tree hotness → crystallize 优先级 | [x] |
 
 **Phase C 验收**：Recall@5 ≥ 92% · Crystallization accept ≥ 60% · graph contribution ≥ 25%
 
@@ -946,12 +959,12 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 | KB ID | 项 | 状态 |
 |-------|-----|------|
-| KB-19 | crystallization pipeline | [ ] |
-| KB-20 | contradiction reconcile | [ ] |
-| KB-21 | brand KB schema | [ ] |
-| KB-22 | unified context orchestrator | [ ] |
-| KB-23 | eval loop + lifecycle metrics | [ ] |
-| KB-24 | MT hotness → crystallize priority | [ ] |
+| KB-19 | crystallization pipeline | [x] |
+| KB-20 | contradiction reconcile | [x] |
+| KB-21 | brand KB schema | [x] |
+| KB-22 | unified context orchestrator | [x] |
+| KB-23 | eval loop + lifecycle metrics | [x] |
+| KB-24 | MT hotness → crystallize priority | [x] |
 
 ## Phase 7 · Custom Actions + MCP（[08-ROADMAP.md](./08-ROADMAP.md) Sprint 16）
 

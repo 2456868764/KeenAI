@@ -204,6 +204,13 @@
       "when": 1779817200000,
       "tag": "0028_kb_lifecycle_phase_b",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1779820800000,
+      "tag": "0029_kb_phase_c",
+      "breakpoints": true
     }
   ]
 }

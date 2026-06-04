@@ -5,4 +5,9 @@ export {
   runKbIngestPipeline,
   KEENI_KB_KB16,
 } from "./kb-ingest.js";
-export type { KbIngestPayload, KbIngestPipelineResult, KbIngestStepResult } from "./types.js";
+export type {
+  KbCrystallizePayload,
+  KbIngestPayload,
+  KbIngestPipelineResult,
+  KbIngestStepResult,
+} from "./types.js";

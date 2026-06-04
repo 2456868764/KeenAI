@@ -173,9 +173,52 @@ export {
   type SearchKbChunksResult,
 } from "./search-kb-chunks.js";
 export { syncKbSource } from "./sync-source.js";
+export {
+  KEENI_KB_KB19,
+  KB_CRYSTALLIZE_MIN_CSAT,
+  gateKbCrystallizeQuality,
+  runKbCrystallization,
+  scoreKbCrystallizeQuality,
+  type KbCrystallizeExtract,
+  type KbCrystallizeGate,
+  type KbCrystallizeInput,
+  type KbCrystallizeResult,
+} from "./lifecycle/crystallize.js";
+export {
+  KEENI_KB_KB24,
+  rankKbCrystallizeCandidates,
+  type KbCrystallizeQueueItem,
+  type RankKbCrystallizeCandidatesInput,
+} from "./lifecycle/crystallize-priority.js";
+export {
+  KB_RECONCILE_OVERLAP_THRESHOLD,
+  KEENI_KB_KB20,
+  detectKbContradictions,
+  proposeKbSupersession,
+  type DetectKbContradictionsInput,
+  type KbContradictionHit,
+  type ProposeKbSupersessionInput,
+} from "./lifecycle/reconcile.js";
+export {
+  KEENI_KB_KB21,
+  parseKbBrandSchema,
+  resolveKbQualityGates,
+  type KbBrandKbSchema,
+  type KbBrandQualityGates,
+  type KbBrandRetrievalDefaults,
+} from "./schema/brand-kb-schema.js";
+export {
+  KEENI_KB_KB23,
+  computeKbEvalMetrics,
+  promoteKbQueryLogToGolden,
+  type ComputeKbEvalMetricsInput,
+  type KbEvalMetrics,
+  type PromoteKbGoldenQueryInput,
+} from "./eval/index.js";
 export type {
   KeenaiKb,
   KeenaiKbDeps,
   KbDocumentView,
   ListKbDocumentsInput,
 } from "./types.js";
+export type { KbCrystallizePayload, KbIngestPayload } from "./inngest/types.js";

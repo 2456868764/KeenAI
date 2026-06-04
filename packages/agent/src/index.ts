@@ -1,4 +1,16 @@
 export {
+  CONTEXT_WEIGHTS_BY_INTENT,
+  KEENI_KB_KB22,
+  QUERY_INTENTS,
+  assembleUnifiedAgentContext,
+  classifyQueryIntent,
+  type AssembleUnifiedContextInput,
+  type AssembleUnifiedContextResult,
+  type ContextRouteWeights,
+  type QueryIntent,
+  type UnifiedContextSection,
+} from "./context/assembler.js";
+export {
   buildAgentSystemPrompt,
   buildPersonality,
   DEFAULT_KEENI_PERSONALITY,

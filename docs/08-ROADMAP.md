@@ -375,9 +375,9 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 **KB Phase C — Compounding（前半）**
 
-- [ ] **KB-19** · Crystallization pipeline（`conversation/closed` → FAQ → quality gate → index/candidate）
-- [ ] **KB-20** · Contradiction reconcile + supersession propose（写入冲突检测）
-- [ ] **KB-21** · Brand KB Schema（entity_types · ingest_rules · quality_gates）
+- [x] **KB-19** · Crystallization pipeline（I91 · `runKbCrystallization` · Inngest `keenai/kb.crystallize`）
+- [x] **KB-20** · Contradiction reconcile + supersession propose（I92 · `detectKbContradictions`）
+- [x] **KB-21** · Brand KB Schema（I93 · `kb_sources.config.kbSchema`）
 
 **Roadmap + Changelog + 国产化（主轨）**
 
@@ -397,9 +397,9 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 **KB Phase C — Compounding（后半）+ Eval**
 
-- [ ] **KB-22** · Unified Context Orchestrator（KB + Memory + Memory Tree · query intent 路由）
-- [ ] **KB-23** · Eval 闭环（failed query → golden 候选 · lifecycle metrics 趋势）
-- [ ] **KB-24** · Memory Tree hotness → crystallize 优先级（MT-07 联动）
+- [x] **KB-22** · Unified Context Orchestrator（I94 · `assembleUnifiedAgentContext`）
+- [x] **KB-23** · Eval 闭环（I95 · `promoteKbQueryLogToGolden` · `computeKbEvalMetrics`）
+- [x] **KB-24** · Memory Tree hotness → crystallize 优先级（I96 · `rankKbCrystallizeCandidates`）
 
 **评测 + 发布准备（主轨）**
 

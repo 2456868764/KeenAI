@@ -13,6 +13,8 @@ export type KbIngestStep = (typeof KB_INGEST_STEPS)[number];
 
 export const KB_INNGEST_EVENTS = {
   INGEST: "keenai/kb.ingest",
+  CRYSTALLIZE: "keenai/kb.crystallize",
+  CONVERSATION_CLOSED: "keenai/conversation.closed",
 } as const;
 
 export type KbIngestPayload = {
@@ -34,8 +36,20 @@ export type KbIngestPipelineResult = {
   steps: KbIngestStepResult[];
 };
 
+export type KbCrystallizePayload = {
+  orgId: string;
+  brandId: string;
+  conversationId: string;
+  userId: string;
+  csatScore: number;
+  question: string;
+  answer: string;
+  entities?: string[];
+};
+
 export type KbInngestHandlers = {
   runIngest: (payload: KbIngestPayload) => Promise<KbIngestPipelineResult>;
+  runCrystallize: (payload: KbCrystallizePayload) => Promise<unknown>;
 };
 
 export type KbInngestStep = {
@@ -43,7 +57,7 @@ export type KbInngestStep = {
 };
 
 export type KbInngestHandlerContext = {
-  event: { data: KbIngestPayload };
+  event: { data: unknown };
   step: KbInngestStep;
 };
 

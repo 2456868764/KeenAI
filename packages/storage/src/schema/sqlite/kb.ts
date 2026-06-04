@@ -269,3 +269,98 @@ export const kbQueryLogs = sqliteTable(
 );
 
 export type KbQueryLogRow = typeof kbQueryLogs.$inferSelect;
+
+export const KB_CANDIDATE_STATUSES = ["pending", "approved", "rejected"] as const;
+export type KbCandidateStatus = (typeof KB_CANDIDATE_STATUSES)[number];
+
+export const KB_SUPERSESSION_PROPOSAL_STATUSES = ["pending", "accepted", "rejected"] as const;
+export type KbSupersessionProposalStatus = (typeof KB_SUPERSESSION_PROPOSAL_STATUSES)[number];
+
+/** KB-19: crystallization candidates awaiting human review. */
+export const kbCandidates = sqliteTable(
+  "kb_candidates",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    conversationId: text("conversation_id"),
+    question: text("question").notNull(),
+    answer: text("answer").notNull(),
+    qualityScore: real("quality_score").notNull(),
+    entities: text("entities", { mode: "json" }).$type<string[]>().notNull().default([]),
+    status: text("status").$type<KbCandidateStatus>().notNull().default("pending"),
+    metadata: text("metadata", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    brandIdx: index("idx_kb_candidates_brand").on(t.orgId, t.brandId, t.status),
+  }),
+);
+
+export type KbCandidateRow = typeof kbCandidates.$inferSelect;
+
+/** KB-20: supersession proposals (no auto-overwrite). */
+export const kbSupersessionProposals = sqliteTable(
+  "kb_supersession_proposals",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    newDocumentId: text("new_document_id"),
+    conflictsWithDocumentId: text("conflicts_with_document_id")
+      .notNull()
+      .references(() => kbDocuments.id),
+    reason: text("reason").notNull(),
+    status: text("status").$type<KbSupersessionProposalStatus>().notNull().default("pending"),
+    metadata: text("metadata", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    brandIdx: index("idx_kb_supersession_proposals_brand").on(t.orgId, t.brandId, t.status),
+  }),
+);
+
+export type KbSupersessionProposalRow = typeof kbSupersessionProposals.$inferSelect;
+
+/** KB-23: golden eval queries. */
+export const kbGoldenQueries = sqliteTable(
+  "kb_golden_queries",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    query: text("query").notNull(),
+    expectedChunkIds: text("expected_chunk_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    expectedAnswer: text("expected_answer"),
+    tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
+    sourceQueryLogId: text("source_query_log_id").references(() => kbQueryLogs.id),
+    createdBy: text("created_by"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    brandIdx: index("idx_kb_golden_queries_brand").on(t.orgId, t.brandId),
+  }),
+);
+
+export type KbGoldenQueryRow = typeof kbGoldenQueries.$inferSelect;
