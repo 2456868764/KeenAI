@@ -1,10 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
-import { createStubKbQueryEmbedder, searchKbChunks } from "@keenai/kb";
+import { createBgeM3KbQueryEmbedder, searchKbChunks } from "@keenai/kb";
 import { API_VERSION, kbSearchQuerySchema } from "@keenai/shared";
 import { Hono } from "hono";
 import { canAccessBrand } from "../lib/conversations.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "../lib/kb-chunk-vector-init.js";
+import { getKbReranker } from "../lib/kb-search-config.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
@@ -26,6 +27,7 @@ export function kbRoutes(_ctx: AppContext) {
       return c.json({ error: "kb_fts_unavailable" }, 503);
     }
 
+    const rerank = query.rerank !== false;
     const results = await searchKbChunks(c.get("store").db, {
       orgId: auth.orgId,
       brandId: query.brandId,
@@ -33,7 +35,9 @@ export function kbRoutes(_ctx: AppContext) {
       limit: query.limit,
       chunkFts,
       chunkVector: getKbChunkVectorStore(),
-      queryEmbedder: createStubKbQueryEmbedder(),
+      queryEmbedder: createBgeM3KbQueryEmbedder(),
+      rerank,
+      reranker: rerank ? getKbReranker() : null,
     });
 
     return c.json({ results });

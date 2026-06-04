@@ -3,6 +3,12 @@ import { rrfFuse } from "@keenai/storage";
 import { kbChunks, kbDocuments } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { stubEmbedKbChunk } from "./ingest/embed-chunks-stub.js";
+import {
+  KB_RERANK_OUTPUT_TOP_K,
+  KB_RERANK_RRF_TOP_K,
+  type KbReranker,
+  applyKbRerank,
+} from "./retriever/rerank.js";
 
 export type KbQueryEmbedder = {
   embed(text: string): Promise<number[]>;
@@ -16,6 +22,11 @@ export type SearchKbChunksInput = {
   chunkFts?: Pick<FTSStore, "search"> | null;
   chunkVector?: Pick<VectorStore, "query"> | null;
   queryEmbedder?: KbQueryEmbedder | null;
+  /** When false, skip rerank even if `reranker` is set (KB-08). */
+  rerank?: boolean;
+  reranker?: KbReranker | null;
+  rrfTopK?: number;
+  rerankTopK?: number;
 };
 
 export type KbSearchHit = {
@@ -27,6 +38,7 @@ export type KbSearchHit = {
   ftsScore: number | null;
   vectorScore: number | null;
   fusedScore: number;
+  rerankScore?: number;
   sources: Array<"fts" | "vector">;
   snippet: string | null;
 };
@@ -53,7 +65,13 @@ export async function searchKbChunks(
   const limit = input.limit ?? 10;
   if (!q) return { q, hits: [] };
 
-  const fetchLimit = Math.min(Math.max(limit * 10, limit), 100);
+  const rerankEnabled = input.rerank !== false && Boolean(input.reranker);
+  const rrfTopK = input.rrfTopK ?? KB_RERANK_RRF_TOP_K;
+  const rerankTopK = input.rerankTopK ?? KB_RERANK_OUTPUT_TOP_K;
+  const fetchLimit = rerankEnabled
+    ? Math.max(rrfTopK, limit)
+    : Math.min(Math.max(limit * 10, limit), 100);
+  const collectLimit = rerankEnabled ? rrfTopK : fetchLimit;
   const canHybrid = input.chunkFts && input.chunkVector && input.queryEmbedder;
 
   let fused: Array<{ id: string; score: number; sources: Array<"fts" | "vector"> }> = [];
@@ -135,7 +153,7 @@ export async function searchKbChunks(
   const hits: KbSearchHit[] = [];
 
   for (const id of orderedIds) {
-    if (hits.length >= limit) break;
+    if (hits.length >= collectLimit) break;
     const row = rowMap.get(id);
     const fusedHit = fusedMap.get(id);
     if (!row || !fusedHit) continue;
@@ -157,5 +175,25 @@ export async function searchKbChunks(
     });
   }
 
-  return { q, hits };
+  if (rerankEnabled && input.reranker && hits.length > 1) {
+    const reranked = await applyKbRerank(q, hits, input.reranker, { rrfTopK, rerankTopK });
+    return {
+      q,
+      hits: reranked.slice(0, limit).map((hit) => ({
+        chunkId: hit.chunkId,
+        documentId: hit.documentId,
+        documentTitle: hit.documentTitle,
+        content: hit.content,
+        contextPrefix: hit.contextPrefix,
+        ftsScore: hit.ftsScore,
+        vectorScore: hit.vectorScore,
+        fusedScore: hit.fusedScore,
+        rerankScore: hit.rerankScore,
+        sources: hit.sources,
+        snippet: hit.snippet,
+      })),
+    };
+  }
+
+  return { q, hits: hits.slice(0, limit) };
 }

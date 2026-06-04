@@ -334,7 +334,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Hybrid Retriever stub：FTS + Vector RRF（KB-04 · Graph expansion → **KB-09**）
 - [x] `GET /kb/search` API + Agent KB context 注入（KB-05～06）
 - [x] **KB-07** · `@xenova/transformers` bge-m3 embedder（I78 · `createXenovaBgeM3KbEmbedder` · `KB_EMBED_PROVIDER=xenova`）
-- [ ] **KB-08** · bge-reranker-v2-m3 reranker（RRF top-40 → rerank → top-15）
+- [x] **KB-08** · bge-reranker-v2-m3 reranker（I79 · RRF top-40 → rerank → top-15 · `rerank=false` 可关）
 - [ ] **KB-09** · KG entity-link expansion 第三检索流（依赖 **KG-05** · 1-hop graph → chunk_ids）
 - [ ] **KB-10** · Hierarchical chunk hydrate（leaf 命中 → parent section 上下文）
 - [ ] **KB-11** · Diversity + Recency 后置（maxPerSource/section · halfLife 90d）

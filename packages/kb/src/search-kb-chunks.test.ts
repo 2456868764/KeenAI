@@ -4,6 +4,7 @@ import {
   createHelpCenterStubConnector,
   createKeenaiKb,
   createStubKbQueryEmbedder,
+  createStubKbReranker,
 } from "@keenai/kb";
 import {
   createLibsqlKbChunkFtsStore,
@@ -81,6 +82,18 @@ describe("searchKbChunks", () => {
     expect(result.hits.some((hit) => hit.documentTitle === "Billing FAQ")).toBe(true);
     expect(result.hits[0]?.fusedScore).toBeGreaterThan(0);
     expect(result.hits[0]?.sources.length).toBeGreaterThan(0);
+
+    const withRerank = await kb.search({
+      orgId: org.id,
+      brandId: brand.id,
+      q: "billing invoice",
+      chunkFts,
+      chunkVector,
+      queryEmbedder: createStubKbQueryEmbedder(),
+      reranker: createStubKbReranker(),
+      limit: 3,
+    });
+    expect(withRerank.hits[0]?.rerankScore).toBeDefined();
 
     await store.close();
   });

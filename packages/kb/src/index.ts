@@ -40,6 +40,20 @@ export {
   createKbQueryEmbedderFromChunkEmbedder,
 } from "./embed-query.js";
 export {
+  BGE_RERANKER_MODEL_ID,
+  KB_RERANK_OUTPUT_TOP_K,
+  KB_RERANK_RRF_TOP_K,
+  applyKbRerank,
+  createKbReranker,
+  createStubKbReranker,
+  createXenovaBgeReranker,
+  resolveKbRerankProvider,
+  type KbRerankCandidate,
+  type KbRerankProvider,
+  type KbRerankScored,
+  type KbReranker,
+} from "./retriever/rerank.js";
+export {
   indexKbDocument,
   type IndexKbDocumentInput,
   type IndexKbDocumentResult,

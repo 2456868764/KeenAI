@@ -1,4 +1,4 @@
-import { createBgeM3KbQueryEmbedder } from "@keenai/kb";
+import { createBgeM3KbQueryEmbedder, createKbReranker, resolveKbRerankProvider } from "@keenai/kb";
 import type { KbContextSearch } from "@keenai/memory-tree";
 import { getKbChunkFtsStore } from "./kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "./kb-chunk-vector-init.js";
@@ -14,4 +14,9 @@ export function getKbContextSearch(limit = 5): KbContextSearch | null {
     queryEmbedder: createBgeM3KbQueryEmbedder(),
     limit,
   };
+}
+
+/** KB reranker for hybrid search (KB-08). */
+export function getKbReranker() {
+  return createKbReranker(resolveKbRerankProvider());
 }
