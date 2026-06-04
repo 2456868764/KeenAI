@@ -27,7 +27,7 @@ export class McpHost {
       cwd: config.cwd,
       stderr: "ignore",
     });
-    const client = new Client({ name: "keenai-mcp-host", version: "0.0.1" });
+    const client = new Client({ name: "keenai-mcp-host", version: "0.1.0" });
     await client.connect(transport);
     this.servers.set(config.id, { config, client, transport });
   }

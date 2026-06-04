@@ -28,11 +28,21 @@
 | 17 | I108 | GA · KB depth | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL` 可选） | [x] |
 | 18 | I109 | GA · Product | Dashboard CA 向导 · Help Center Portal | [x] |
 | 19 | I110 | GA · Release prep | `CHANGELOG.md` 草案 · Helm · 质量门槛实测 | [x] |
-| 20 | I111+ | 1.0 release | GitHub Release · Docker `1.0.0` tag | [ ] |
+| 20 | I111 | Release **0.1.0** | `v0.1.0` tag · GitHub Release · CHANGELOG | [~] |
+| 21 | I112+ | 1.0 GA | Helm · Intercom · 质量门槛 92% · Docker `1.0.0` | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：I109 产品面 · I110–I111 GA release（质量门槛实测后打 tag）。  
+**当前主轨**：I111 发布 **`v0.1.0`** → I112+ 1.0 GA。  
 **深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → I108+ 迭代。
+
+---
+
+## 当前迭代 · Iteration 111（Release 0.1.0）[~]
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I111-01 | 版本号 `0.1.0` · CHANGELOG · `docs/releases/v0.1.0.md` | [x] |
+| I111-02 | `git tag v0.1.0` · GitHub Release workflow | [ ] |
 
 ---
 

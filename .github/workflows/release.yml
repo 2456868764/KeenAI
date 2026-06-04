@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to publish (e.g. v0.0.1)"
+        description: "Tag to publish (e.g. v0.1.0)"
         required: true
-        default: "v0.0.1"
+        default: "v0.1.0"
 
 permissions:
   contents: write
@@ -49,8 +49,8 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
-          name: ${{ steps.tag.outputs.name }} (Alpha)
+          name: ${{ steps.tag.outputs.name }}
           body: ${{ steps.notes.outputs.file }}
           draft: false
-          prerelease: true
+          prerelease: ${{ contains(steps.tag.outputs.name, '0.0.') || contains(steps.tag.outputs.name, '0.1.') }}
           generate_release_notes: false

@@ -11,8 +11,9 @@
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production profiles, env, `kb:bench` / `kb:eval` |
 | [deploy/helm/README.md](../deploy/helm/README.md) | Helm chart (planned) |
 | [MIGRATION.md](./MIGRATION.md) | Intercom / Zendesk import (`keenai import`) |
-| [GA.md](./GA.md) | 1.0 release checklist |
-| [CHANGELOG.md](../CHANGELOG.md) | Release notes (unreleased / 1.0) |
+| [GA.md](./GA.md) | **0.1.0** release checklist |
+| [releases/v0.1.0.md](./releases/v0.1.0.md) | v0.1.0 release notes |
+| [CHANGELOG.md](../CHANGELOG.md) | Release notes |
 | [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md) | Design vs code gaps (pre-GA) |
 
 ## Product & architecture

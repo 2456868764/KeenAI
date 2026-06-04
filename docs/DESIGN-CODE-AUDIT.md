@@ -1,4 +1,4 @@
-# Design ↔ Code Audit (pre–1.0 GA)
+# Design ↔ Code Audit (pre–0.1.0 / 1.0 GA)
 
 > Last updated: 2026-05-19 · Sprint 18 GA prep.  
 > Roadmap marks many KB/CA items **[x]**; this doc records **implementation depth** vs design docs.
@@ -53,7 +53,7 @@
 
 ## GA blockers (unchanged)
 
-See [GA.md](./GA.md) quality gates: Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95 < 200ms, full CI green. **Do not tag 1.0** until measured on production golden set.
+See [GA.md](./GA.md): **0.1.0** uses relaxed dev gates; **1.0** requires Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95 < 200ms, full CI green on production golden set.
 
 ## Recommended next work
 
@@ -68,4 +68,5 @@ See [GA.md](./GA.md) quality gates: Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95
 | I108 | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL`） | [x] |
 | I109 | Dashboard CA 向导 · Help Center KB search (`/custom-actions`, `/help-center`) | [x] |
 | I110 | `CHANGELOG.md` · `deploy/helm/README.md` 规划 | [x] |
-| I111+ | GitHub Release · Docker `1.0.0` · 质量门槛实测 | 待办 |
+| I111 | GitHub Release **`v0.1.0`** | [~] |
+| I112+ | 1.0 GA · Docker `1.0.0` · 质量门槛实测 | 待办 |

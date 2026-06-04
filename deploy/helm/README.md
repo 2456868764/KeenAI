@@ -1,7 +1,7 @@
-# KeenAI Helm chart (planned · I110)
+# KeenAI Helm chart (planned · post-0.1.0)
 
-> GA track: chart skeleton for Kubernetes `standard` / `full` profiles.  
-> Until published, use [DEPLOYMENT.md](../../docs/DEPLOYMENT.md) Docker Compose.
+> **v0.1.0** ships with Docker Compose only. Chart targets **1.0 GA**.  
+> Until published, use [DEPLOYMENT.md](../../docs/DEPLOYMENT.md).
 
 ## Planned components
 
@@ -17,13 +17,13 @@
 
 ```yaml
 api:
-  image: ghcr.io/keenai/api:1.0.0
+  image: ghcr.io/keenai/api:0.1.0
   env:
     DATABASE_URL: ""
     JWT_SECRET: ""
     INNGEST_EVENT_KEY: ""
 dashboard:
-  image: ghcr.io/keenai/dashboard:1.0.0
+  image: ghcr.io/keenai/dashboard:0.1.0
   env:
     NEXT_PUBLIC_API_URL: https://api.example.com
 ```

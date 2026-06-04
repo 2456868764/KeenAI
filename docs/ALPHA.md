@@ -1,6 +1,6 @@
 # KeenAI Alpha
 
-> **v0.0.1 (Alpha)** — 自托管客服 MVP，可试用、可反馈，API 与数据模型仍可能变更。
+> **v0.0.1 (Alpha)** — 自托管客服 MVP。下一发布：**[v0.1.0](./releases/v0.1.0.md)**（KB/CSAT/import · 见 [GA.md](./GA.md)）。API 与数据模型仍可能变更。
 
 ## 包含功能
 
