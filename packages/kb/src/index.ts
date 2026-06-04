@@ -40,6 +40,18 @@ export {
   createKbQueryEmbedderFromChunkEmbedder,
 } from "./embed-query.js";
 export {
+  KEENI_KB_KB10,
+  KB_SECTION_SUMMARY_MAX_CHARS,
+  buildKbSectionSummary,
+  hydrateKbChunkContext,
+  hydrateKbSearchHits,
+  mergeKbHydratedContextPrefix,
+  type HydrateKbSearchHitsInput,
+  type HydratedKbChunkContext,
+  type HydratedKbSearchHitFields,
+  type KbChunkHydrateRow,
+} from "./retriever/hydrate.js";
+export {
   KEENI_KB_KB09,
   KB_GRAPH_EXPAND_LIMIT,
   KB_RRF_WEIGHTS_DEFAULT,

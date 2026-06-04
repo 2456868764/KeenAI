@@ -8,6 +8,7 @@ import {
   expandKbChunksFromGraph,
   fuseKbChunkRankings,
 } from "./retriever/graph-expand.js";
+import { hydrateKbSearchHits } from "./retriever/hydrate.js";
 import {
   KB_RERANK_OUTPUT_TOP_K,
   KB_RERANK_RRF_TOP_K,
@@ -34,6 +35,8 @@ export type SearchKbChunksInput = {
   rerankTopK?: number;
   /** When false, skip graph expansion (KB-09). Defaults to true. */
   graphExpand?: boolean;
+  /** When false, skip hierarchical hydrate (KB-10). Defaults to true. */
+  hydrate?: boolean;
   rrfWeights?: { fts: number; vector: number; graph: number };
 };
 
@@ -49,6 +52,16 @@ export type KbSearchHit = {
   rerankScore?: number;
   sources: KbRetrievalSource[];
   snippet: string | null;
+  /** KB-10: merged section text from siblings or parent chunk. */
+  sectionSummary?: string | null;
+  /** KB-10: `contextPrefix` + section summary (also copied into `contextPrefix` when hydrate runs). */
+  hydratedContextPrefix?: string | null;
+};
+
+type KbSearchHitRow = KbSearchHit & {
+  sectionId: string | null;
+  parentChunkId: string | null;
+  chunkIndex: number;
 };
 
 export type SearchKbChunksResult = {
@@ -168,6 +181,9 @@ export async function searchKbChunks(
     .select({
       chunkId: kbChunks.id,
       documentId: kbChunks.documentId,
+      sectionId: kbChunks.sectionId,
+      parentChunkId: kbChunks.parentChunkId,
+      chunkIndex: kbChunks.chunkIndex,
       content: kbChunks.content,
       contextPrefix: kbChunks.contextPrefix,
       documentTitle: kbDocuments.title,
@@ -184,7 +200,7 @@ export async function searchKbChunks(
     );
 
   const rowMap = new Map(rows.map((row) => [row.chunkId, row]));
-  const hits: KbSearchHit[] = [];
+  const hits: KbSearchHitRow[] = [];
 
   for (const id of orderedIds) {
     if (hits.length >= collectLimit) break;
@@ -199,6 +215,9 @@ export async function searchKbChunks(
       chunkId: row.chunkId,
       documentId: row.documentId,
       documentTitle: row.documentTitle,
+      sectionId: row.sectionId,
+      parentChunkId: row.parentChunkId,
+      chunkIndex: row.chunkIndex,
       content: row.content,
       contextPrefix: row.contextPrefix,
       ftsScore: fts?.score ?? null,
@@ -209,25 +228,36 @@ export async function searchKbChunks(
     });
   }
 
+  let ranked = hits;
   if (rerankEnabled && input.reranker && hits.length > 1) {
-    const reranked = await applyKbRerank(q, hits, input.reranker, { rrfTopK, rerankTopK });
-    return {
-      q,
-      hits: reranked.slice(0, limit).map((hit) => ({
-        chunkId: hit.chunkId,
-        documentId: hit.documentId,
-        documentTitle: hit.documentTitle,
-        content: hit.content,
-        contextPrefix: hit.contextPrefix,
-        ftsScore: hit.ftsScore,
-        vectorScore: hit.vectorScore,
-        fusedScore: hit.fusedScore,
-        rerankScore: hit.rerankScore,
-        sources: hit.sources,
-        snippet: hit.snippet,
-      })),
-    };
+    ranked = (await applyKbRerank(q, hits, input.reranker, {
+      rrfTopK,
+      rerankTopK,
+    })) as KbSearchHitRow[];
   }
 
-  return { q, hits: hits.slice(0, limit) };
+  const hydrated = await hydrateKbSearchHits(db, ranked, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    hydrate: input.hydrate,
+  });
+
+  return {
+    q,
+    hits: hydrated.slice(0, limit).map((hit) => ({
+      chunkId: hit.chunkId,
+      documentId: hit.documentId,
+      documentTitle: hit.documentTitle,
+      content: hit.content,
+      contextPrefix: hit.contextPrefix,
+      ftsScore: hit.ftsScore,
+      vectorScore: hit.vectorScore,
+      fusedScore: hit.fusedScore,
+      rerankScore: hit.rerankScore,
+      sources: hit.sources,
+      snippet: hit.snippet,
+      sectionSummary: hit.sectionSummary,
+      hydratedContextPrefix: hit.hydratedContextPrefix,
+    })),
+  };
 }

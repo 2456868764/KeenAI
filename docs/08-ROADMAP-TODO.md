@@ -13,8 +13,8 @@
 | 2 | I78 | KB Phase A · KB-07 | `@xenova/transformers` bge-m3 embedder | [x] |
 | 3 | I79 | KB-08 | bge-reranker-v2-m3 reranker | [x] |
 | 4 | I80 | KB-09 | KG entity-link expansion（第三检索流） | [x] |
-| 5 | **I81** | KB-10 | Hierarchical chunk hydrate | [ ] ← **当前** |
-| 6 | I82 | KB-11 | Diversity + Recency 后置 | [ ] |
+| 5 | I81 | KB-10 | Hierarchical chunk hydrate | [x] |
+| 6 | **I82** | KB-11 | Diversity + Recency 后置 | [ ] ← **当前** |
 | 7 | I83 | KB-12 | `kb_query_logs` + feedback API | [ ] |
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [ ] |
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [ ] |
@@ -105,12 +105,21 @@
 
 ---
 
-## 当前迭代 · Iteration 80（KB Phase A · KB-09 graph expand）
+## 当前迭代 · Iteration 81（KB Phase A · KB-10 hierarchical hydrate）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I80-01 | KG entity-link expansion（第三检索流） | [ ] |
-| I80-02 | tests · roadmap · commit · push | [ ] |
+| I81-01 | Hierarchical chunk hydrate（`hydrateKbSearchHits`） | [x] |
+| I81-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## Iteration 80（KB Phase A · KB-09 graph expand）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I80-01 | KG entity-link expansion（第三检索流） | [x] |
+| I80-02 | tests · roadmap · commit · push | [x] |
 
 ---
 
@@ -612,11 +621,10 @@ KG-02 ──► KG-03 relatedTopics query ──► KG-04 graph API
 | KB | 迭代 | 交付 | 状态 |
 |----|------|------|------|
 | **KB-07** | I78 | `@xenova/transformers` bge-m3 真实 embedder | [x] |
-| **KB-09** | I80 | KG entity-link expansion（第三检索流） | [x] ← **next（KB 轨）** · KB-10 I81 |
-| **KB-08** | I79 | bge-reranker-v2-m3 reranker | [x] |
 | **KB-09** | I80 | KG entity-link expansion（第三检索流） | [x] |
-| **KB-10** | I81 | Hierarchical chunk hydrate | [ ] |
-| **KB-11** | I82 | Diversity + Recency 后置 | [ ] |
+| **KB-08** | I79 | bge-reranker-v2-m3 reranker | [x] |
+| **KB-10** | I81 | Hierarchical chunk hydrate | [x] |
+| **KB-11** | I82 | Diversity + Recency 后置 | [ ] ← **next（KB 轨）** |
 | **KB-12** | I83 | `kb_query_logs` + feedback API | [ ] |
 
 **Phase A 验收**：Recall@5 ≥ 88% · Precision@5 ≥ 90% · P95 < 200ms
@@ -886,7 +894,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 | KB-07 | bge-m3 real embedder | [x] |
 | KB-08 | bge-reranker reranker | [x] |
 | KB-09 | graph entity-link expansion | [x] |
-| KB-10 | hierarchical chunk hydrate | [ ] |
+| KB-10 | hierarchical chunk hydrate | [x] |
 | KB-11 | diversity + recency | [ ] |
 | KB-12 | kb_query_logs + feedback API | [ ] |
 
