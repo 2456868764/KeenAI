@@ -1,0 +1,10 @@
+# Sprint 18 · KB search load test thresholds (scripts/kb-search-bench.mjs)
+kb_search:
+  connections: 10
+  duration_sec: 10
+  pipelining: 1
+  p95_ms_max: 500
+  queries:
+    - billing
+    - refund policy
+    - password reset

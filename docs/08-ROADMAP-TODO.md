@@ -19,10 +19,11 @@
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [x] |
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [x] |
 | 10 | I97～I98 | Sprint 18 · Eval | golden suite + nightly CI | [x] |
-| 11 | I99+ | Sprint 18 · 发布 | 压测 · 文档站 · GA | [ ] |
+| 11 | I99～I100 | Sprint 18 · 压测 + 部署文档 | kb:bench · DEPLOYMENT.md | [x] |
+| 12 | I101+ | Sprint 18 · GA | 文档站 · 迁移 CLI · 1.0 发布 | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：Sprint 18 后半（压测 · 文档站 · 部署 · GA）。
+**当前主轨**：Sprint 18 GA（文档站 · `keenai import` · Mastra judge）。
 
 ---
 
@@ -107,7 +108,16 @@
 
 ---
 
-## 当前迭代 · Iteration 97～98（Sprint 18 · KB golden eval）✓
+## 当前迭代 · Iteration 99～100（Sprint 18 · perf + deploy docs）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I99 | autocannon `pnpm kb:bench` + `kb-perf.yaml` + query_logs index | [x] |
+| I100 | `DEPLOYMENT.md` + `MIGRATION.md` stub | [x] |
+
+---
+
+## Iteration 97～98（Sprint 18 · KB golden eval）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|

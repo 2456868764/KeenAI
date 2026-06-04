@@ -105,6 +105,8 @@ Entry points, responsibilities, and boundaries with the Featurebase-style fronte
 | [06-TECH-STACK.md](docs/06-TECH-STACK.md) | Tech stack rationale (TS-first) |
 | [07-DATA-MODEL.md](docs/07-DATA-MODEL.md) | Database schema design |
 | [08-ROADMAP.md](docs/08-ROADMAP.md) | Phased execution roadmap |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Self-host: Docker lite, Bun binary, cloud-shaped deploy |
+| [MIGRATION.md](docs/MIGRATION.md) | Intercom / Zendesk import (planned CLI) |
 
 ### 4.2 AI Core (Agent / Memory / RAG)
 
@@ -135,6 +137,8 @@ pnpm seed         # Demo account: owner@keenai.local / keenai-demo-12
 pnpm dev          # API :8090 + Dashboard :3000/inbox
 pnpm test
 pnpm smoke        # API smoke test: health + login + /me + conversations (requires dev + seed)
+pnpm kb:eval      # KB golden retrieval eval (Vitest)
+pnpm kb:bench     # KB search load test (requires dev + seed; see docs/DEPLOYMENT.md)
 pnpm storybook    # Design system → http://localhost:6006
 ```
 

@@ -265,6 +265,7 @@ export const kbQueryLogs = sqliteTable(
   },
   (t) => ({
     brandIdx: index("idx_kb_query_logs_brand").on(t.orgId, t.brandId, t.createdAt),
+    feedbackIdx: index("idx_kb_query_logs_feedback").on(t.orgId, t.brandId, t.userFeedback),
   }),
 );
 

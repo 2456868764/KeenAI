@@ -405,9 +405,9 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 - [~] Mastra Eval + DeepEval-TS 评测集（I97 · 词法 stub `scoreKbAnswerQuality` · Mastra judge 待接）
 - [x] 黄金问题集 `kb_golden_queries` + CI nightly run（I98 · `runKbGoldenEval` · `kb-eval-nightly.yml`）
-- [ ] 性能优化（autocannon 压测 → 调 Bun 并发 / Drizzle 索引）
-- [ ] 文档站完整化（架构 / API / 部署 / 迁移指南）
-- [ ] 部署文档（Docker Compose / Helm Chart / Vercel + Cloudflare Workers / Bun 单二进制）
+- [x] 性能优化（I99 · `pnpm kb:bench` · `kb-perf.yaml` · `idx_kb_query_logs_feedback`）
+- [~] 文档站完整化（I100 · `DEPLOYMENT.md` · `MIGRATION.md` stub · 全站文档站待建）
+- [x] 部署文档（I100 · Docker lite · Bun binary · Vercel/CF 指引 · 见 [DEPLOYMENT.md](DEPLOYMENT.md)）
 - [ ] 视频教程（YouTube + B 站）
 - [ ] 迁移工具（Intercom / Zendesk → KeenAI · `bunx keenai import`）
 - [ ] **1.0 GA 发布**
