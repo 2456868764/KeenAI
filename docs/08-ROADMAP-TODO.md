@@ -19,8 +19,8 @@
 | 8 | I84～I90 | KB Phase B | KB-13～18 + KG-05 | [x] |
 | 9 | I91～I96 | KB Phase C | KB-19～24 · Compounding 闭环 | [x] |
 
-**Phase 8 Sprint 13–14 收尾**：I77 完成后 Memory Tree MT-01～06 全部打勾。  
-**下一主轨**：KB 优化 Phase A（[11-RAG-OPTIMIZATION.md](./11-RAG-OPTIMIZATION.md) · 验收 Recall@5 ≥ 88%）。
+**KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
+**下一主轨**：Sprint 18 · 评测 + 发布准备（Mastra/DeepEval · `kb_golden_queries` CI · GA）。
 
 ---
 
