@@ -208,6 +208,13 @@ export {
   type ProcessAdmittedChunkInput,
   type ProcessAdmittedChunkResult,
 } from "./process-admitted-chunk.js";
+export {
+  KEENI_MEMORY_TREE_MT03,
+  conversationScopeKeyFromChunk,
+  runSourceTreeBufferSealStub,
+  type RunSourceTreeBufferSealInput,
+  type RunSourceTreeBufferSealResult,
+} from "./source-tree-buffer.js";
 export { sealBuffer, type SealBufferInput, type SealBufferResult } from "./seal-buffer.js";
 export {
   brandDailyScopeKey,

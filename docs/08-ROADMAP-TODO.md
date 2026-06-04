@@ -32,12 +32,21 @@
 
 ---
 
-## 当前迭代 · Iteration 74（Phase 8 · Sprint 13–14 · Memory Tree MT-03 buffer stub）
+## 当前迭代 · Iteration 74（Phase 8 · Sprint 13–14 · Memory Tree MT-03 buffer stub）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I74-01 | Memory Tree source tree buffer + seal stub | [ ] |
-| I74-02 | tests · roadmap · commit · push | [ ] |
+| I74-01 | Memory Tree source tree buffer + seal stub | [x] |
+| I74-02 | tests · roadmap · commit · push | [x] |
+
+---
+
+## 当前迭代 · Iteration 75（Phase 8 · Sprint 13–14 · Memory Tree MT-04 digest stub）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I75-01 | Memory Tree `memory.digest_daily` brand daily stub | [ ] |
+| I75-02 | tests · roadmap · commit · push | [ ] |
 
 ---
 

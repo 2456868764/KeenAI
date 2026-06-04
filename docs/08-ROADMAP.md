@@ -311,8 +311,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] **Memory Tree**（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-01–06）：
   - [x] `memory_chunks` canonicalize hot-path stub + Inngest `keenai/memory.canonicalize`（I72）
   - [x] fast-score + `extract_chunk` enqueue stub（I73 · `enqueueExtractChunkIfAdmitted`）
-  - [ ] `memory_chunks` + fast-score + admitted/dropped
-  - [ ] source tree seal → 物化 `memory_episodes`
+  - [x] source tree buffer + seal stub（I74 · `runSourceTreeBufferSealStub` → `memory_episodes`）
   - [ ] `memory.digest_daily` brand 日摘要
   - [ ] 检索 scope：`conversation` / `customer` / `brand_daily`
 - [ ] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）

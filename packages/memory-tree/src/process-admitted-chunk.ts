@@ -1,12 +1,7 @@
 import type { KeenaiDb } from "@keenai/storage";
-import { memoryChunks } from "@keenai/storage/schema";
-import { and, eq } from "drizzle-orm";
-import { appendBuffer } from "./append-buffer.js";
 import type { BufferConfig } from "./buffer-config.js";
 import { channelRouteChunk, resolveConversationChannel } from "./channel-route.js";
-import { extractChunk } from "./extract-chunk.js";
-import { conversationScopeKey } from "./scope-key.js";
-import { sealBuffer } from "./seal-buffer.js";
+import { runSourceTreeBufferSealStub } from "./source-tree-buffer.js";
 import type { MemorySummaryFtsIndexer } from "./summary-fts-index.js";
 import { resolveConversationUserId, topicRouteChunk } from "./topic-route.js";
 
@@ -44,80 +39,43 @@ export async function processAdmittedChunk(
   db: KeenaiDb,
   input: ProcessAdmittedChunkInput,
 ): Promise<ProcessAdmittedChunkResult> {
-  const extractResult = await extractChunk(db, input.chunkId);
-  if (!extractResult.processed) {
+  const source = await runSourceTreeBufferSealStub(db, input);
+
+  if (!source.extracted) {
     return {
       chunkId: input.chunkId,
       extracted: false,
       appended: false,
       sealed: false,
       summaryIds: [],
-      reason: "extract_skipped",
+      reason: source.reason ?? "extract_skipped",
     };
   }
 
-  const [chunk] = await db
-    .select()
-    .from(memoryChunks)
-    .where(and(eq(memoryChunks.id, input.chunkId), eq(memoryChunks.orgId, input.orgId)))
-    .limit(1);
-
-  const conversationId = chunk?.metadata?.conversationId;
-  if (typeof conversationId !== "string" || conversationId.length === 0) {
+  if (!source.appended) {
     return {
       chunkId: input.chunkId,
       extracted: true,
       appended: false,
       sealed: false,
       summaryIds: [],
-      reason: "no_conversation_scope",
+      reason: source.reason,
     };
   }
 
-  const scopeKey = conversationScopeKey(conversationId);
-  const appendResult = await appendBuffer(db, {
-    orgId: input.orgId,
-    brandId: input.brandId,
-    chunkId: input.chunkId,
-    scopeKey,
-    config: input.config,
-  });
-
-  if (!appendResult.appended) {
-    return {
-      chunkId: input.chunkId,
-      extracted: true,
-      appended: false,
-      sealed: false,
-      summaryIds: [],
-      reason: appendResult.reason,
-    };
-  }
-
-  if (!appendResult.shouldSeal) {
-    const topicResult = await routeTopicIfEligible(db, input, conversationId);
-    const channelResult = await routeChannelIfEligible(db, input, conversationId);
+  const conversationId = source.conversationId;
+  if (!conversationId) {
     return {
       chunkId: input.chunkId,
       extracted: true,
       appended: true,
-      sealed: false,
-      summaryIds: collectSummaryIds(topicResult?.summaryId, channelResult?.summaryId),
-      topicRouted: topicResult?.routed,
-      topicSealed: topicResult?.sealed,
-      topicHotness: topicResult?.hotness,
-      channelRouted: channelResult?.routed,
-      channelSealed: channelResult?.sealed,
-      channelScopeKey: channelResult?.scopeKey,
+      sealed: source.sealed,
+      summaryId: source.summaryId,
+      summaryIds: collectSummaryIds(source.summaryId),
+      episodeId: source.episodeId,
+      reason: source.reason,
     };
   }
-
-  const sealResult = await sealBuffer(db, {
-    orgId: input.orgId,
-    brandId: input.brandId,
-    scopeKey,
-    summaryFtsIndexer: input.summaryFtsIndexer,
-  });
 
   const topicResult = await routeTopicIfEligible(db, input, conversationId);
   const channelResult = await routeChannelIfEligible(db, input, conversationId);
@@ -126,21 +84,21 @@ export async function processAdmittedChunk(
     chunkId: input.chunkId,
     extracted: true,
     appended: true,
-    sealed: sealResult.sealed,
-    summaryId: sealResult.summaryId,
+    sealed: source.sealed,
+    summaryId: source.summaryId,
     summaryIds: collectSummaryIds(
-      sealResult.summaryId,
+      source.summaryId,
       topicResult?.summaryId,
       channelResult?.summaryId,
     ),
-    episodeId: sealResult.episodeId,
+    episodeId: source.episodeId,
     topicRouted: topicResult?.routed,
     topicSealed: topicResult?.sealed,
     topicHotness: topicResult?.hotness,
     channelRouted: channelResult?.routed,
     channelSealed: channelResult?.sealed,
     channelScopeKey: channelResult?.scopeKey,
-    reason: sealResult.sealed ? undefined : sealResult.reason,
+    reason: source.reason,
   };
 }
 
