@@ -225,6 +225,13 @@
       "when": 1779828000000,
       "tag": "0031_feedback_sla",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1779831600000,
+      "tag": "0032_workflow_published",
+      "breakpoints": true
     }
   ]
 }

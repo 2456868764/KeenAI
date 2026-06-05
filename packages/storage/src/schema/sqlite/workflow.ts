@@ -16,6 +16,9 @@ export const workflows = sqliteTable(
     name: text("name").notNull(),
     trigger: text("trigger").notNull(),
     definition: text("definition", { mode: "json" }).$type<WorkflowDefinitionJson>().notNull(),
+    publishedDefinition: text("published_definition", {
+      mode: "json",
+    }).$type<WorkflowDefinitionJson>(),
     status: text("status").notNull().default("draft"),
     ...sqliteTimestamps,
   },

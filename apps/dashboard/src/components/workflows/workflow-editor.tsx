@@ -287,6 +287,21 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "wait", seconds: 60 });
         } else if (type === "http_request") {
           onAdd({ id, type: "http_request", method: "GET", url: "https://example.com/hook" });
+        } else if (type === "branches") {
+          onAdd({
+            id,
+            type: "branches",
+            branches: [
+              {
+                label: "Email channel",
+                condition: { field: "channelType", op: "eq", value: "email" },
+                nextId: null,
+              },
+              { label: "Default", nextId: null },
+            ],
+          });
+        } else if (type === "convert_to_ticket") {
+          onAdd({ id, type: "convert_to_ticket", title: "" });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -298,6 +313,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="let_keeni_answer">Let Keeni answer</option>
       <option value="wait">Wait</option>
       <option value="http_request">HTTP request</option>
+      <option value="branches">Branches</option>
+      <option value="convert_to_ticket">Convert to ticket</option>
     </select>
   );
 }
@@ -427,6 +444,120 @@ function BlockEditor({
               className="mt-2 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
             />
           ) : null}
+        </>
+      ) : null}
+
+      {block.type === "branches" ? (
+        <div className="space-y-3">
+          {block.branches.map((branch, branchIndex) => (
+            <div
+              key={`${block.id}-branch-${branchIndex}`}
+              className="rounded-md border border-[hsl(var(--border))] p-2 space-y-2"
+            >
+              <Input
+                placeholder="Branch label"
+                value={branch.label ?? ""}
+                onChange={(e) => {
+                  const branches = [...block.branches];
+                  branches[branchIndex] = { ...branch, label: e.target.value };
+                  onChange({ ...block, branches });
+                }}
+              />
+              <select
+                value={branch.condition?.field ?? ""}
+                onChange={(e) => {
+                  const field = e.target.value as
+                    | "channelType"
+                    | "priority"
+                    | "conversationStatus"
+                    | "";
+                  const branches = [...block.branches];
+                  branches[branchIndex] = {
+                    ...branch,
+                    condition: field
+                      ? {
+                          field,
+                          op: branch.condition?.op ?? "eq",
+                          value: branch.condition?.value ?? "",
+                        }
+                      : undefined,
+                  };
+                  onChange({ ...block, branches });
+                }}
+                className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+              >
+                <option value="">Default (no condition)</option>
+                <option value="channelType">channelType</option>
+                <option value="priority">priority</option>
+                <option value="conversationStatus">conversationStatus</option>
+              </select>
+              {branch.condition ? (
+                <>
+                  <select
+                    value={branch.condition.op}
+                    onChange={(e) => {
+                      const condition = branch.condition;
+                      if (!condition) return;
+                      const branches = [...block.branches];
+                      branches[branchIndex] = {
+                        ...branch,
+                        condition: { ...condition, op: e.target.value as "eq" | "neq" },
+                      };
+                      onChange({ ...block, branches });
+                    }}
+                    className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+                  >
+                    <option value="eq">equals</option>
+                    <option value="neq">not equals</option>
+                  </select>
+                  <Input
+                    placeholder="Value"
+                    value={branch.condition.value}
+                    onChange={(e) => {
+                      const condition = branch.condition;
+                      if (!condition) return;
+                      const branches = [...block.branches];
+                      branches[branchIndex] = {
+                        ...branch,
+                        condition: { ...condition, value: e.target.value },
+                      };
+                      onChange({ ...block, branches });
+                    }}
+                  />
+                </>
+              ) : null}
+              <Input
+                placeholder="Next block ID"
+                value={branch.nextId ?? ""}
+                onChange={(e) => {
+                  const branches = [...block.branches];
+                  branches[branchIndex] = {
+                    ...branch,
+                    nextId: e.target.value.trim() || null,
+                  };
+                  onChange({ ...block, branches });
+                }}
+              />
+            </div>
+          ))}
+          <Input
+            placeholder="Else next block ID (optional)"
+            value={block.elseNextId ?? ""}
+            onChange={(e) => onChange({ ...block, elseNextId: e.target.value.trim() || null })}
+          />
+        </div>
+      ) : null}
+
+      {block.type === "convert_to_ticket" ? (
+        <>
+          <Input
+            placeholder="Ticket title (optional)"
+            value={block.title ?? ""}
+            onChange={(e) => onChange({ ...block, title: e.target.value })}
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Creates a ticket from the current conversation when this step runs.
+          </p>
         </>
       ) : null}
     </div>

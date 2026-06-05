@@ -5,6 +5,11 @@ import { Hono } from "hono";
 import { getFeedbackBoardBySlug, listFeedbackPosts } from "../lib/feedback.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "../lib/kb-chunk-vector-init.js";
+import {
+  getPublicKbArticle,
+  listPublicKbArticles,
+  listPublicKbCollections,
+} from "../lib/kb-public.js";
 import { getKbReranker } from "../lib/kb-search-config.js";
 import { resolveOrgBrandBySlug } from "../lib/org-brand.js";
 import type { AppContext, AppVariables } from "../types.js";
@@ -65,6 +70,68 @@ export function publicRoutes(ctx: AppContext) {
       },
       logId: log.id,
     });
+  });
+
+  r.get(`${prefix}/:orgSlug/kb/collections`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const items = await listPublicKbCollections(
+      c.get("store").db,
+      resolved.org.id,
+      resolved.brand.id,
+    );
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/:orgSlug/kb/articles`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const collection = c.req.query("collection") ?? undefined;
+    const items = await listPublicKbArticles(c.get("store").db, {
+      orgId: resolved.org.id,
+      brandId: resolved.brand.id,
+      collection,
+    });
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/:orgSlug/kb/articles/:id`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const article = await getPublicKbArticle(c.get("store").db, {
+      orgId: resolved.org.id,
+      brandId: resolved.brand.id,
+      articleId: c.req.param("id"),
+    });
+    if (!article) return c.json({ error: "not_found" }, 404);
+    return c.json({ article });
   });
 
   r.get(`${prefix}/:orgSlug/feedback/:boardSlug/posts`, async (c) => {

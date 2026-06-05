@@ -76,6 +76,65 @@ describe("runWorkflow", () => {
     expect(close).not.toHaveBeenCalled();
   });
 
+  it("follows branches block to the matching next id", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "branch-1",
+            type: "branches",
+            branches: [
+              {
+                condition: { field: "channelType", op: "eq", value: "email" },
+                nextId: "email-msg",
+              },
+              { nextId: "default-msg" },
+            ],
+          },
+          { id: "email-msg", type: "send_message", plainText: "Email path" },
+          { id: "default-msg", type: "send_message", plainText: "Default path" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+      {
+        workflowId: "wf-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+        facts: { channelType: "messenger" },
+      },
+    );
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      plainText: "Default path",
+      attachmentIds: undefined,
+    });
+    expect(result.steps.some((s) => s.type === "branches" && s.status === "ok")).toBe(true);
+  });
+
+  it("runs convert_to_ticket block", async () => {
+    const convertToTicket = vi.fn(async () => ({ ticketId: "ticket-99" }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "t1", type: "convert_to_ticket", title: "From workflow" }],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        convertToTicket,
+      },
+    );
+
+    expect(convertToTicket).toHaveBeenCalledWith({ title: "From workflow" });
+    expect(result.steps[0]?.output).toMatchObject({ ticketId: "ticket-99" });
+  });
+
   it("runs wait and http_request blocks", async () => {
     const wait = vi.fn(async () => {});
     const httpRequest = vi.fn(async () => ({ status: 204, body: "" }));

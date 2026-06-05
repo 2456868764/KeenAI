@@ -374,7 +374,18 @@ export type WorkflowBlock =
       method: "GET" | "POST";
       url: string;
       body?: string;
-    };
+    }
+  | {
+      id: string;
+      type: "branches";
+      branches: {
+        label?: string;
+        condition?: { field: string; op: string; value: string };
+        nextId: string | null;
+      }[];
+      elseNextId?: string | null;
+    }
+  | { id: string; type: "convert_to_ticket"; title?: string };
 
 export type WorkflowDefinition = {
   trigger: "first_message" | "customer_unresponsive";
@@ -390,6 +401,7 @@ export type Workflow = {
   trigger: string;
   definition: WorkflowDefinition;
   status: "draft" | "published";
+  publishedDefinition?: WorkflowDefinition | null;
   createdAt: string;
   updatedAt: string;
 };

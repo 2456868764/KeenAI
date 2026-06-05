@@ -27,8 +27,8 @@ export function HelpCenterShell() {
       <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">
         <p className="mb-4 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
           <BookOpen className="size-4" />
-          KB-backed search stub (no public portal). Uses{" "}
-          <code className="text-xs">GET /kb/search</code>.
+          KB-backed search. Public articles live at portal <code className="text-xs">/help</code>{" "}
+          via <code className="text-xs">GET /api/v1/public/…/kb/articles</code>.
         </p>
 
         <form

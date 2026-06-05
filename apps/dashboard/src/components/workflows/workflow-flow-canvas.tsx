@@ -43,6 +43,10 @@ function blockLabel(block: WorkflowBlock): string {
       return `Wait ${block.seconds}s`;
     case "http_request":
       return `${block.method} ${block.url.length > 40 ? `${block.url.slice(0, 40)}…` : block.url}`;
+    case "branches":
+      return `${block.branches.length} branch(es)`;
+    case "convert_to_ticket":
+      return block.title?.trim() || "Convert conversation to ticket";
   }
 }
 

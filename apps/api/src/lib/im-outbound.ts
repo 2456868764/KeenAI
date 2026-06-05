@@ -35,7 +35,11 @@ export async function planConversationImOutbound(
     .limit(1);
 
   if (!conversation) throw new Error("conversation not found");
-  if (conversation.channelType !== "telegram" && conversation.channelType !== "slack") {
+  if (
+    conversation.channelType !== "telegram" &&
+    conversation.channelType !== "slack" &&
+    conversation.channelType !== "discord"
+  ) {
     return null;
   }
 
@@ -88,8 +92,15 @@ export async function planConversationImOutbound(
     });
   }
 
+  const platform =
+    conversation.channelType === "telegram" ||
+    conversation.channelType === "slack" ||
+    conversation.channelType === "discord"
+      ? conversation.channelType
+      : "slack";
+
   const actions = planImOutbound({
-    platform: conversation.channelType,
+    platform,
     targetId: conversation.channelId,
     parts: normalizeParts(parts, rows),
     attachments: refs,

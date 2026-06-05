@@ -1,10 +1,25 @@
 import { z } from "zod";
+import { branchesBlockSchema } from "./blocks/branches.js";
+import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import {
   type LetKeeniAnswerInput,
   type LetKeeniAnswerResult,
   letKeeniAnswerBlockSchema,
 } from "./blocks/let-keeni-answer.js";
 
+export {
+  branchConditionSchema,
+  branchesBlockSchema,
+  evaluateBranchCondition,
+  resolveBranchesNext,
+  type BranchCondition,
+  type BranchesBlock,
+  type WorkflowFacts,
+} from "./blocks/branches.js";
+export {
+  convertToTicketBlockSchema,
+  type ConvertToTicketBlock,
+} from "./blocks/convert-to-ticket.js";
 export {
   letKeeniAnswerBlockSchema,
   letKeeniAnswerOutcomeRoutingSchema,
@@ -28,6 +43,8 @@ export const WORKFLOW_BLOCK_TYPES = [
   "let_keeni_answer",
   "wait",
   "http_request",
+  "branches",
+  "convert_to_ticket",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -75,6 +92,8 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
   httpRequestBlockSchema,
+  branchesBlockSchema,
+  convertToTicketBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -121,6 +140,7 @@ export type WorkflowRunContext = {
   targetCustomerId?: string | null;
   subject?: string;
   isShadowRun?: boolean;
+  facts?: import("./blocks/branches.js").WorkflowFacts;
 };
 
 export type SendMessageInput = {
@@ -146,6 +166,7 @@ export type WorkflowActionHandlers = {
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
+  convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
 };
 
 export type WorkflowStepResult = {
@@ -159,6 +180,8 @@ export type WorkflowStepResult = {
     nextBlockId?: string | null;
     httpStatus?: number;
     waitMs?: number;
+    ticketId?: string;
+    branchLabel?: string;
   };
 };
 

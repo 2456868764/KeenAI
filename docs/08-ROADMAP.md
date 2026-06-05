@@ -229,7 +229,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 #### Sprint 7-8（W17-W20）：Tickets 系统
 - [x] Drizzle schema：`ticket_types / ticket_statuses / tickets / ticket_conversations / ticket_links / ticket_events`
 - [x] 3 种类型（Customer / Back-office / Tracker）+ 配置 UI
-- [~] Convert / Send / Link Workflow Actions（Convert + Link API；Send 待 workflow action）
+- [~] Convert / Send / Link Workflow Actions（`convert_to_ticket` block + Link API；Send 待 workflow action）
 - [x] Ticket Portal `apps/portal` 列表 + 详情页
 - [x] 自定义字段（Field DSL · Zod-typed）
 - [ ] 邮件通知模板（React Email · 多语言）
@@ -237,9 +237,9 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 #### Sprint 9-10（W21-W24）：Workflow 完整版 + SLA
 - [~] 所有 Block 实现（参见 02-FEATURES）
-- [~] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data`（`wait` + `http_request` 已落地）
+- [~] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data`（`branches` + `wait` + `http_request` + `convert_to_ticket` 已落地）
 - [ ] Inngest `step.waitForEvent` / `step.sleepUntil` 集成
-- [~] Workflow 版本管理（draft → published）+ Trace 查看（runs API + Dashboard）
+- [x] Workflow 版本管理（draft → published · `published_definition` snapshot）+ Trace 查看（runs API + Dashboard）
 - [ ] SLA 策略 + 超时预警（50/80/100% 触发）
 - [ ] Office Hours（多时区 · `date-fns-tz`）
 - [ ] Workflow Builder 完整（React Flow 多层 + 配置面板）
@@ -262,12 +262,12 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
 - [ ] Feedback Board + Post + Vote + Comment
 - [ ] AI 自动去重（embed via `@xenova/transformers` bge-m3 → VectorStore search）
-- [ ] Public Portal（Next.js SSR + ISR）
-- [ ] Help Center Collections + Articles + Tags
+- [~] Public Portal（Next.js SSR + ISR · portal `/help`）
+- [~] Help Center Collections + Articles + Tags（`kb_documents.metadata` · public API）
 - [ ] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
 - [ ] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `@vercel/og`）
 - [ ] AI Search Answers（基础 RAG · 通过 `@keenai/kb` 接口）
-- [~] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站）渠道适配
+- [x] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站 + outbound reply）渠道适配
 - [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
 - [ ] 分析看板（ECharts · Support / Feedback / HC 三大）
 - [ ] **Beta 公开发布**

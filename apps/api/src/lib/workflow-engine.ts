@@ -8,9 +8,19 @@ import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
+import { createTicketFromConversation } from "./tickets.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
+
+export function resolveActiveWorkflowDefinition(
+  workflow: typeof workflows.$inferSelect,
+): WorkflowDefinition {
+  if (workflow.status === "published" && workflow.publishedDefinition) {
+    return workflow.publishedDefinition as WorkflowDefinition;
+  }
+  return workflow.definition as WorkflowDefinition;
+}
 
 export async function executeWorkflow(
   db: Db,
@@ -27,7 +37,7 @@ export async function executeWorkflow(
 
   if (!conversation) return null;
 
-  const definition = workflow.definition as WorkflowDefinition;
+  const definition = resolveActiveWorkflowDefinition(workflow);
   const result = await runWorkflow(
     definition,
     {
@@ -78,6 +88,14 @@ export async function executeWorkflow(
         }
       },
       letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
+      convertToTicket: async ({ title }) => {
+        const ticket = await createTicketFromConversation(db, {
+          orgId: workflow.orgId,
+          conversationId,
+          title,
+        });
+        return { ticketId: ticket.id };
+      },
       wait: async (ms) => {
         await new Promise((resolve) => setTimeout(resolve, ms));
       },
@@ -99,6 +117,11 @@ export async function executeWorkflow(
       conversationId,
       targetCustomerId: conversation.userId,
       subject: conversation.subject ?? undefined,
+      facts: {
+        channelType: conversation.channelType,
+        priority: conversation.priority ?? "normal",
+        conversationStatus: conversation.status,
+      },
     },
   );
 
@@ -164,6 +187,7 @@ export function serializeWorkflow(row: typeof workflows.$inferSelect) {
     name: row.name,
     trigger: row.trigger,
     definition: row.definition,
+    publishedDefinition: row.publishedDefinition ?? null,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

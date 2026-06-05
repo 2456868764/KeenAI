@@ -149,11 +149,24 @@ export function workflowRoutes() {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
+    const [existing] = await c
+      .get("store")
+      .db.select()
+      .from(workflows)
+      .where(and(eq(workflows.id, c.req.param("id")), eq(workflows.orgId, auth.orgId)))
+      .limit(1);
+
+    if (!existing) return c.json({ error: "not_found" }, 404);
+
     const [row] = await c
       .get("store")
       .db.update(workflows)
-      .set({ status: "published", updatedAt: new Date() })
-      .where(and(eq(workflows.id, c.req.param("id")), eq(workflows.orgId, auth.orgId)))
+      .set({
+        status: "published",
+        publishedDefinition: existing.definition,
+        updatedAt: new Date(),
+      })
+      .where(eq(workflows.id, existing.id))
       .returning();
 
     if (!row) return c.json({ error: "not_found" }, 404);

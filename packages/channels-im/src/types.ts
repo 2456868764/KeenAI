@@ -75,7 +75,14 @@ export type SlackOutboundAction =
       title?: string;
     };
 
-export type ImOutboundAction = TelegramOutboundAction | SlackOutboundAction;
+export type DiscordOutboundAction = {
+  platform: "discord";
+  method: "createMessage";
+  channelId: string;
+  content: string;
+};
+
+export type ImOutboundAction = TelegramOutboundAction | SlackOutboundAction | DiscordOutboundAction;
 
 export type PlanImOutboundInput = {
   platform: ImPlatform;

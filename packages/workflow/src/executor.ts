@@ -1,10 +1,23 @@
+import { resolveBranchesNext as resolveBranchNext } from "./blocks/branches.js";
+import { resolveLetKeeniAnswerNext } from "./blocks/let-keeni-answer.js";
 import type {
   WorkflowActionHandlers,
+  WorkflowBlock,
   WorkflowDefinition,
   WorkflowRunContext,
   WorkflowRunResult,
   WorkflowStepResult,
 } from "./schema.js";
+
+function blockById(definition: WorkflowDefinition, id: string): WorkflowBlock | undefined {
+  return definition.blocks.find((b) => b.id === id);
+}
+
+function defaultNextId(definition: WorkflowDefinition, currentId: string): string | null {
+  const index = definition.blocks.findIndex((b) => b.id === currentId);
+  if (index < 0 || index >= definition.blocks.length - 1) return null;
+  return definition.blocks[index + 1]?.id ?? null;
+}
 
 export async function runWorkflow(
   definition: WorkflowDefinition,
@@ -12,8 +25,35 @@ export async function runWorkflow(
   context?: WorkflowRunContext,
 ): Promise<WorkflowRunResult> {
   const steps: WorkflowStepResult[] = [];
+  const facts = context?.facts ?? {};
+  let currentId: string | null = definition.blocks[0]?.id ?? null;
+  const visited = new Set<string>();
 
-  for (const block of definition.blocks) {
+  while (currentId) {
+    if (visited.has(currentId)) {
+      steps.push({
+        blockId: currentId,
+        type: "branches",
+        status: "error",
+        error: "cycle_detected",
+      });
+      break;
+    }
+    visited.add(currentId);
+
+    const block = blockById(definition, currentId);
+    if (!block) {
+      steps.push({
+        blockId: currentId,
+        type: "send_message",
+        status: "error",
+        error: "block_not_found",
+      });
+      break;
+    }
+
+    let nextId: string | null = defaultNextId(definition, currentId);
+
     try {
       switch (block.type) {
         case "send_message":
@@ -56,6 +96,29 @@ export async function runWorkflow(
           });
           break;
         }
+        case "branches": {
+          nextId = resolveBranchNext(block, facts);
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: { nextBlockId: nextId },
+          });
+          break;
+        }
+        case "convert_to_ticket": {
+          if (!handlers.convertToTicket) {
+            throw new Error("convert_to_ticket_handler_missing");
+          }
+          const result = await handlers.convertToTicket({ title: block.title });
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: { ticketId: result.ticketId },
+          });
+          break;
+        }
         case "let_keeni_answer": {
           if (!handlers.letKeeniAnswer) {
             throw new Error("let_keeni_answer_handler_missing");
@@ -74,6 +137,10 @@ export async function runWorkflow(
               isShadowRun: context.isShadowRun,
             },
           });
+          nextId = result.nextBlockId;
+          if (!nextId && block.outcomeRouting) {
+            nextId = resolveLetKeeniAnswerNext(result.resolution.type, block.outcomeRouting);
+          }
           steps.push({
             blockId: block.id,
             type: block.type,
@@ -81,7 +148,7 @@ export async function runWorkflow(
             output: {
               replyText: result.replyText,
               resolutionType: result.resolution.type,
-              nextBlockId: result.nextBlockId,
+              nextBlockId: nextId,
             },
           });
           break;
@@ -96,6 +163,8 @@ export async function runWorkflow(
       steps.push({ blockId: block.id, type: block.type, status: "error", error: message });
       break;
     }
+
+    currentId = nextId;
   }
 
   return { steps };
