@@ -7,9 +7,19 @@ const sections = [
     href: `${repo}/docs/index.md`,
   },
   {
+    title: "Quickstart (5 min)",
+    description: "Local install, migrate, seed, smoke, Docker lite.",
+    href: "/quickstart",
+  },
+  {
     title: "Alpha quick start",
-    description: "Install, migrate, seed, Docker lite, demo login.",
+    description: "Full ALPHA.md on GitHub.",
     href: `${repo}/docs/ALPHA.md`,
+  },
+  {
+    title: "DKIM / deliverability",
+    description: "SPF, DKIM, DMARC setup and DNS check script.",
+    href: `${repo}/docs/DKIM.md`,
   },
   {
     title: "Deployment",

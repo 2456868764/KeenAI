@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "inbox": "收件箱",
+    "workflows": "工作流",
+    "tickets": "工单",
+    "memory": "记忆",
+    "actions": "动作",
+    "help": "帮助",
+    "signOut": "退出"
+  },
+  "locale": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

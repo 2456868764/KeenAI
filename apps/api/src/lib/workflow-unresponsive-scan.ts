@@ -1,3 +1,4 @@
+import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, messages, workflowRuns, workflows } from "@keenai/storage/schema";
@@ -49,7 +50,7 @@ async function hasRunSince(
 
 export async function scanCustomerUnresponsiveWorkflows(
   db: Db,
-  opts: { env: ApiEnv; now?: Date; orgId?: string },
+  opts: { env: ApiEnv; authConfig?: AuthConfig; now?: Date; orgId?: string },
 ): Promise<UnresponsiveScanResult> {
   const now = opts?.now ?? new Date();
   const wfFilters = [
@@ -100,7 +101,7 @@ export async function scanCustomerUnresponsiveWorkflows(
       const alreadyRan = await hasRunSince(db, workflow.id, conversation.id, last.createdAt);
       if (alreadyRan) continue;
 
-      const run = await executeWorkflow(db, workflow, conversation.id, opts.env);
+      const run = await executeWorkflow(db, workflow, conversation.id, opts.env, opts.authConfig);
       if (run) {
         runs.push(run.id);
         triggered += 1;

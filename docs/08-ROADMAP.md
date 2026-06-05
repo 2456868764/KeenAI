@@ -158,9 +158,9 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 邮件 Threading 算法（In-Reply-To / References / Subject normalize）
 - [x] SMTP 出站 + 基础文本/HTML 模板（React Email 待接）
 - [x] Inbound webhook 适配器 + `POST /api/v1/webhooks/email/*` ingest
-- [ ] IMAP Worker（imapflow · Inngest cron `*/30 * * * * *`）
-- [ ] BullMQ 队列 `email:send`（重试 3 次 + DLQ）
-- [ ] DKIM 文档与配置工具
+- [x] IMAP Worker（imapflow · Inngest cron `*/30 * * * * *`）
+- [x] BullMQ 队列 `email:send`（重试 3 次 + DLQ）
+- [x] DKIM 文档与配置工具
 
 #### Sprint 4（W11-W12）：Inbox 增强
 - [x] Conversation Detail（虚拟滚动 · `@tanstack/react-virtual`）
@@ -174,7 +174,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 #### Sprint 5（W13-W14）：AI Copilot 草稿
 - [x] `@keenai/llm` 包：Provider Registry + stub / OpenAI / DeepSeek / Kimi / **Gemini**
-- [ ] Anthropic / Ollama Provider 适配
+- [x] Anthropic / Ollama Provider 适配
 - [x] `POST /copilot/draft` 端点（streamText → SSE）
 - [x] Cmd+K 集成（cmdk）
 - [x] Macros 系统（内置 `/refund` 等 + `GET /macros`）

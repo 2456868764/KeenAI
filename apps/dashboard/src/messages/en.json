@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "inbox": "Inbox",
+    "workflows": "Workflows",
+    "tickets": "Tickets",
+    "memory": "Memory",
+    "actions": "Actions",
+    "help": "Help",
+    "signOut": "Sign out"
+  },
+  "locale": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

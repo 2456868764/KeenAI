@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@keenai/shared": "workspace:*",
+    "bullmq": "^5.34.5",
     "imapflow": "^1.0.184",
+    "ioredis": "^5.4.2",
     "mailparser": "^3.7.2",
     "nodemailer": "^6.9.16",
     "zod": "^3.24.1"

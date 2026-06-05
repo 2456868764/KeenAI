@@ -27,6 +27,7 @@ describe("startWorkflowScanScheduler", () => {
         store: {} as never,
         log: { info: vi.fn(), error: vi.fn() } as never,
         env: {} as never,
+        authConfig: {} as never,
       },
       0,
     );
@@ -38,7 +39,7 @@ describe("startWorkflowScanScheduler", () => {
   it("runs scan on interval", async () => {
     const log = { info: vi.fn(), error: vi.fn() };
     const stop = startWorkflowScanScheduler(
-      { store: {} as never, log: log as never, env: {} as never },
+      { store: {} as never, log: log as never, env: {} as never, authConfig: {} as never },
       1,
     );
 

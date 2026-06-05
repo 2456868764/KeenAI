@@ -1,9 +1,11 @@
+import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
 import { type WorkflowDefinition, runWorkflow } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import { buildMessageContent, insertMessage } from "./conversations.js";
+import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
@@ -15,6 +17,7 @@ export async function executeWorkflow(
   workflow: typeof workflows.$inferSelect,
   conversationId: string,
   env: ApiEnv,
+  authConfig?: AuthConfig,
 ) {
   const [conversation] = await db
     .select()
@@ -29,7 +32,7 @@ export async function executeWorkflow(
     definition,
     {
       sendMessage: async ({ plainText, attachmentIds }) => {
-        await insertMessage(db, {
+        const { message } = await insertMessage(db, {
           orgId: workflow.orgId,
           conversationId,
           senderType: "agent",
@@ -40,6 +43,18 @@ export async function executeWorkflow(
           sentVia: "workflow",
           isAgentReply: true,
         });
+
+        if (plainText && authConfig) {
+          const job = await buildEmailSendJob(db, {
+            orgId: workflow.orgId,
+            conversationId,
+            plainText,
+            messageId: message.id,
+          });
+          if (job) {
+            await dispatchEmailOutbound(db, env, authConfig, job);
+          }
+        }
       },
       assign: async (assigneeId) => {
         await db
@@ -93,6 +108,7 @@ export async function dispatchFirstMessageWorkflows(
   db: Db,
   input: { orgId: string; brandId: string; conversationId: string },
   env: ApiEnv,
+  authConfig?: AuthConfig,
 ) {
   const rows = await db
     .select()
@@ -109,7 +125,7 @@ export async function dispatchFirstMessageWorkflows(
   const runs = [];
   for (const workflow of rows) {
     if (workflow.brandId && workflow.brandId !== input.brandId) continue;
-    const run = await executeWorkflow(db, workflow, input.conversationId, env);
+    const run = await executeWorkflow(db, workflow, input.conversationId, env, authConfig);
     if (run) runs.push(run);
   }
   return runs;

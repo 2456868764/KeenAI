@@ -69,17 +69,17 @@
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| P1-01 | IMAP Worker（imapflow · Inngest cron） | [ ] |
-| P1-02 | BullMQ `email:send`（重试 + DLQ） | [ ] |
-| P1-03 | DKIM 文档与配置工具 | [ ] |
-| P1-04 | Anthropic / Ollama LLM Provider | [ ] |
+| P1-01 | IMAP Worker（imapflow · Inngest cron） | [x] |
+| P1-02 | BullMQ `email:send`（重试 + DLQ） | [x] |
+| P1-03 | DKIM 文档与配置工具 | [x] |
+| P1-04 | Anthropic / Ollama LLM Provider | [x] |
 | P1-05 | `@keenai/workflow` Zod DSL + Inngest 模板（生产级） | [ ] |
-| P1-06 | Trigger Engine（First Message / Unresponsive） | [ ] |
-| P1-07 | Block：`send_message` / `assign` / `close`（生产级） | [ ] |
+| P1-06 | Trigger Engine（First Message / Unresponsive） | [x] |
+| P1-07 | Block：`send_message` / `assign` / `close`（生产级） | [x] |
 | P1-08 | Workflow Builder UI（React Flow 单层 → 完整） | [ ] |
 | P1-09 | Docker Compose `lite` 单容器跑通 | [ ] |
 | P1-10 | `bun build --compile` 单二进制 demo | [ ] |
-| P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [ ] |
+| P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [~] |
 | P1-12 | Alpha 公开发布验收（社区/文档就绪） | [ ] |
 | P1-ACC-01 | 内部客服全程可用 | [ ] |
 | P1-ACC-02 | Widget + Email 客户触达 | [ ] |

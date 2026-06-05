@@ -17,10 +17,14 @@ let inngestHandlers: WorkflowDispatchHandlers | null = null;
 export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
   const handlers: WorkflowDispatchHandlers = {
     dispatchFirstMessage: async (input) => {
-      await dispatchFirstMessageWorkflows(ctx.store.db, input, ctx.env);
+      await dispatchFirstMessageWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
     },
     scanCustomerUnresponsive: (orgId) =>
-      scanCustomerUnresponsiveWorkflows(ctx.store.db, { orgId, env: ctx.env }).then((result) => ({
+      scanCustomerUnresponsiveWorkflows(ctx.store.db, {
+        orgId,
+        env: ctx.env,
+        authConfig: ctx.authConfig,
+      }).then((result) => ({
         scanned: result.scanned,
         triggered: result.triggered,
         runs: result.runs,

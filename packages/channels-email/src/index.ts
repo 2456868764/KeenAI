@@ -18,3 +18,15 @@ export {
   adaptSesNotification,
 } from "./inbound-webhooks.js";
 export { pollImapMailboxes, type ImapPollConfig, type ImapPollResult } from "./imap-poll.js";
+export {
+  EMAIL_SEND_DLQ,
+  EMAIL_SEND_QUEUE,
+  closeEmailSendResources,
+  createEmailSendQueue,
+  createInMemoryEmailSendHandler,
+  enqueueEmailSend,
+  sendEmailNow,
+  startEmailSendWorker,
+  type EmailSendJobData,
+  type EmailSendQueueDeps,
+} from "./email-send-queue.js";

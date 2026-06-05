@@ -78,7 +78,9 @@ export const apiEnvSchema = z.object({
   INNGEST_SCAN_CRON: z.string().default("*/5 * * * *"),
   /** Sync-mode background scan interval in minutes (0 = disabled; ignored when Inngest is enabled) */
   WORKFLOW_SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
-  /** IMAP polling — stub until imapflow worker is wired */
+  /** Redis URL for BullMQ queues (email:send) */
+  REDIS_URL: z.string().url().optional(),
+  /** IMAP polling via imapflow + Inngest cron or sync scheduler */
   EMAIL_IMAP_HOST: z.string().optional(),
   EMAIL_IMAP_PORT: z.coerce.number().int().positive().optional(),
   EMAIL_IMAP_USER: z.string().optional(),

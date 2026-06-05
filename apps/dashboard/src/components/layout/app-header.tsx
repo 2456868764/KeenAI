@@ -1,8 +1,11 @@
 "use client";
 
+import { type AppLocale, getStoredLocale, setStoredLocale } from "@/i18n/locale-store";
 import { clearAccessToken } from "@/lib/auth-store";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function AppHeader({
   title,
@@ -13,6 +16,8 @@ export function AppHeader({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("nav");
+  const tLocale = useTranslations("locale");
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4">
@@ -25,27 +30,28 @@ export function AppHeader({
         </div>
         <nav className="flex items-center gap-1 text-xs">
           <NavLink href="/inbox" active={pathname.startsWith("/inbox")}>
-            Inbox
+            {t("inbox")}
           </NavLink>
           <NavLink href="/workflows" active={pathname.startsWith("/workflows")}>
-            Workflows
+            {t("workflows")}
           </NavLink>
           <NavLink href="/tickets" active={pathname.startsWith("/tickets")}>
-            Tickets
+            {t("tickets")}
           </NavLink>
           <NavLink href="/memory" active={pathname.startsWith("/memory")}>
-            Memory
+            {t("memory")}
           </NavLink>
           <NavLink href="/custom-actions" active={pathname.startsWith("/custom-actions")}>
-            Actions
+            {t("actions")}
           </NavLink>
           <NavLink href="/help-center" active={pathname.startsWith("/help-center")}>
-            Help
+            {t("help")}
           </NavLink>
         </nav>
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         {children}
+        <LocaleSwitcher labels={{ en: tLocale("en"), zh: tLocale("zh") }} />
         <button
           type="button"
           onClick={() => {
@@ -54,10 +60,33 @@ export function AppHeader({
           }}
           className="rounded-md px-2 py-1 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
         >
-          Sign out
+          {t("signOut")}
         </button>
       </div>
     </header>
+  );
+}
+
+function LocaleSwitcher({ labels }: { labels: Record<AppLocale, string> }) {
+  const [locale, setLocale] = useState<AppLocale>("en");
+
+  useEffect(() => {
+    setLocale(getStoredLocale());
+  }, []);
+
+  return (
+    <select
+      className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 py-1 text-xs text-[hsl(var(--foreground))]"
+      value={locale}
+      onChange={(e) => {
+        const next = e.target.value as AppLocale;
+        setStoredLocale(next);
+        window.location.reload();
+      }}
+    >
+      <option value="en">{labels.en}</option>
+      <option value="zh">{labels.zh}</option>
+    </select>
   );
 }
 
