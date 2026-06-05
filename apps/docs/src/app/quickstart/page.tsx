@@ -48,6 +48,22 @@ export default function QuickstartPage() {
         ))}
       </ol>
 
+      <section>
+        <h2>5-minute walkthrough</h2>
+        <p className="lead">
+          Video walkthrough ships with the public Alpha release. Until then, follow the steps above
+          or the{" "}
+          <a
+            href="https://github.com/2456868764/KeenAI/blob/main/docs/ALPHA.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            ALPHA.md
+          </a>{" "}
+          guide.
+        </p>
+      </section>
+
       <footer>
         <p>
           <Link href="/">← Docs hub</Link>

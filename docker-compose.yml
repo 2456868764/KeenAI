@@ -1,7 +1,34 @@
 # KeenAI — deployment profiles (see docs/08-ROADMAP.md · docs/ALPHA.md)
 services:
-  api:
+  keenai:
     profiles: ["lite"]
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.lite
+    ports:
+      - "8090:8090"
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "8090"
+      DATABASE_URL: file:/data/keenai.db
+      JWT_SECRET: change-me-in-production-min-32-chars-long-please
+      APP_URL: http://localhost:3000
+      LOG_FORMAT: json
+      KEENAI_AUTO_SEED: ${KEENAI_AUTO_SEED:-1}
+      WORKFLOW_SCAN_INTERVAL_MINUTES: "5"
+    volumes:
+      - keenai-data:/data
+      - keenai-uploads:/app/data/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api:
+    profiles: ["split"]
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.api
@@ -14,7 +41,6 @@ services:
       JWT_SECRET: change-me-in-production-min-32-chars-long-please
       APP_URL: http://localhost:3000
       LOG_FORMAT: json
-      # Demo seed for lite profile only — set KEENAI_AUTO_SEED=0 in production
       KEENAI_AUTO_SEED: ${KEENAI_AUTO_SEED:-1}
       WORKFLOW_SCAN_INTERVAL_MINUTES: "5"
     volumes:
@@ -28,7 +54,7 @@ services:
       start_period: 30s
 
   dashboard:
-    profiles: ["lite"]
+    profiles: ["split"]
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.dashboard
@@ -45,11 +71,11 @@ services:
   inngest:
     profiles: ["inngest"]
     image: inngest/inngest:latest
-    command: inngest dev -u http://api:8090/api/inngest
+    command: inngest dev -u http://keenai:8090/api/inngest
     ports:
       - "8288:8288"
     depends_on:
-      api:
+      keenai:
         condition: service_healthy
 
   postgres:

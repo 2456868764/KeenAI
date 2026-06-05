@@ -33,6 +33,12 @@ function blockLabel(block: WorkflowBlock): string {
       return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
     case "close":
       return "Close conversation";
+    case "let_keeni_answer":
+      return block.instructions?.trim()
+        ? block.instructions.length > 48
+          ? `${block.instructions.slice(0, 48)}…`
+          : block.instructions
+        : `Keeni answer (max ${block.maxSteps ?? 8} steps)`;
   }
 }
 
@@ -67,6 +73,15 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
             className="mt-1 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
           />
         </>
+      ) : null}
+      {block.type === "let_keeni_answer" ? (
+        <textarea
+          value={block.instructions ?? ""}
+          onChange={(e) => data.onChange({ ...block, instructions: e.target.value })}
+          rows={2}
+          placeholder="Optional instructions for Keeni"
+          className="mt-2 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
+        />
       ) : null}
       <Handle type="source" position={Position.Right} className="!bg-[hsl(var(--primary))]" />
     </div>

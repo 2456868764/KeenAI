@@ -181,14 +181,14 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 采纳率埋点（accept / edit / discard · `copilot_events`）
 
 #### Sprint 6（W15-W16）：Workflow MVP + 发布
-- [ ] `@keenai/workflow` 包：Zod DSL + Inngest function 模板
-- [ ] Trigger Engine（First Message / Unresponsive · 2 个）
-- [ ] Block：`send_message` / `assign` / `close`
-- [ ] 基础 Builder UI（React Flow / `@xyflow/react` 单层）
-- [ ] Docker Compose `lite` profile 完善（Bun + LibSQL · 真正单容器跑通）
-- [ ] `bun build --compile` 单二进制 demo
-- [ ] 用户文档（Fumadocs）+ 5 分钟 Quickstart 视频
-- [ ] **Alpha 公开发布**：GitHub Release + Product Hunt + Hacker News
+- [x] `@keenai/workflow` 包：Zod DSL + Inngest function 模板（retries · step.run · timer handlers）
+- [x] Trigger Engine（First Message / Unresponsive · 2 个）
+- [x] Block：`send_message` / `assign` / `close` · `let_keeni_answer`
+- [x] 基础 Builder UI（React Flow / `@xyflow/react` 单层 + Keeni block）
+- [x] Docker Compose `lite` profile 完善（单容器 `keenai` · Bun + LibSQL）
+- [x] `bun build --compile` 单二进制 demo（`pnpm verify:api-binary`）
+- [~] 用户文档（Fumadocs）+ 5 分钟 Quickstart 视频（页面就绪 · 视频待 Alpha 发布）
+- [x] **Alpha 验收脚本**：`pnpm alpha:acceptance` · [ALPHA-ACCEPTANCE.md](./ALPHA-ACCEPTANCE.md)
 
 ### Phase 1 验收
 - [ ] 内部客服可全程在 KeenAI 处理客户请求

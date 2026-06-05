@@ -249,6 +249,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "assign", assigneeId: null });
         } else if (type === "close") {
           onAdd({ id, type: "close" });
+        } else if (type === "let_keeni_answer") {
+          onAdd({ id, type: "let_keeni_answer", maxSteps: 8, instructions: "" });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -257,6 +259,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="send_message">Send message</option>
       <option value="assign">Assign</option>
       <option value="close">Close conversation</option>
+      <option value="let_keeni_answer">Let Keeni answer</option>
     </select>
   );
 }
@@ -324,6 +327,28 @@ function BlockEditor({
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
           Closes the conversation when this step runs.
         </p>
+      ) : null}
+
+      {block.type === "let_keeni_answer" ? (
+        <>
+          <textarea
+            value={block.instructions ?? ""}
+            onChange={(e) => onChange({ ...block, instructions: e.target.value })}
+            rows={3}
+            placeholder="Optional instructions for the AI agent"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            placeholder="Max agent steps"
+            value={block.maxSteps ?? 8}
+            onChange={(e) =>
+              onChange({ ...block, maxSteps: Number.parseInt(e.target.value, 10) || 8 })
+            }
+          />
+        </>
       ) : null}
     </div>
   );

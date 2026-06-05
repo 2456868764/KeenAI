@@ -28,32 +28,32 @@ export function createWorkflowInngestFunctions(
   };
 
   const firstMessage = client.createFunction(
-    { id: "keenai-workflow-first-message" },
+    { id: "keenai-workflow-first-message", retries: 3, concurrency: { limit: 20 } },
     { event: WORKFLOW_INNGEST_EVENTS.FIRST_MESSAGE },
-    async ({ event }) => {
-      await handlers.dispatchFirstMessage(
-        event.data as {
-          orgId: string;
-          brandId: string;
-          conversationId: string;
-        },
-      );
+    async ({ event, step }) => {
+      const data = event.data as {
+        orgId: string;
+        brandId: string;
+        conversationId: string;
+      };
+      await step.run("dispatch-first-message", () => handlers.dispatchFirstMessage(data));
     },
   );
 
   const scanUnresponsive = client.createFunction(
-    { id: "keenai-workflow-scan-unresponsive" },
+    { id: "keenai-workflow-scan-unresponsive", retries: 2, concurrency: { limit: 5 } },
     { event: WORKFLOW_INNGEST_EVENTS.SCAN_UNRESPONSIVE },
-    async ({ event }) => {
+    async ({ event, step }) => {
       const orgId = (event.data as { orgId?: string }).orgId;
-      return handlers.scanCustomerUnresponsive(orgId);
+      return step.run("scan-unresponsive", () => handlers.scanCustomerUnresponsive(orgId));
     },
   );
 
   const scanUnresponsiveCron = client.createFunction(
-    { id: "keenai-workflow-scan-unresponsive-cron" },
+    { id: "keenai-workflow-scan-unresponsive-cron", retries: 2, concurrency: { limit: 1 } },
     { cron: scanCron },
-    async () => handlers.scanCustomerUnresponsive(undefined),
+    async ({ step }) =>
+      step.run("scan-unresponsive-cron", () => handlers.scanCustomerUnresponsive(undefined)),
   );
 
   const timerFunctions = createWorkflowTimerInngestFunctions(client, timerHandlers);

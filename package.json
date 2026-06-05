@@ -31,6 +31,9 @@
     "verify:lockfiles": "node scripts/verify-lockfiles.mjs",
     "verify:p0": "node scripts/verify-toolchains.mjs && node scripts/verify-monorepo-layout.mjs && node scripts/verify-lockfiles.mjs",
     "check:dkim": "node scripts/check-dkim-dns.mjs",
+    "verify:api-binary": "bash scripts/verify-api-binary.sh",
+    "alpha:acceptance": "bash scripts/alpha-acceptance.sh",
+    "bootstrap:local": "node scripts/bootstrap-local.mjs",
     "storybook": "pnpm --filter @keenai/ui storybook",
     "prepare": "node scripts/install-githooks.mjs"
   },

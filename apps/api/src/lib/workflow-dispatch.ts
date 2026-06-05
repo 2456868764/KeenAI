@@ -1,6 +1,6 @@
 import {
   type WorkflowDispatchAdapter,
-  type WorkflowDispatchHandlers,
+  type WorkflowInngestHandlers,
   createInngestWorkflowDispatch,
   createSyncWorkflowDispatch,
   createWorkflowInngestFunctions,
@@ -8,14 +8,17 @@ import {
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { dispatchFirstMessageWorkflows } from "./workflow-engine.js";
+import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
 let adapter: WorkflowDispatchAdapter | null = null;
 let inngestClient: Inngest | null = null;
-let inngestHandlers: WorkflowDispatchHandlers | null = null;
+let inngestHandlers: WorkflowInngestHandlers | null = null;
 
 export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
-  const handlers: WorkflowDispatchHandlers = {
+  const timerHandlers = createWorkflowTimerHandlers(ctx.store.db, ctx.env);
+
+  const handlers: WorkflowInngestHandlers = {
     dispatchFirstMessage: async (input) => {
       await dispatchFirstMessageWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
     },
@@ -29,6 +32,8 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
         triggered: result.triggered,
         runs: result.runs,
       })),
+    runAutoCloseTimer: timerHandlers.runAutoCloseTimer,
+    runCsatTimer: timerHandlers.runCsatTimer,
   };
 
   inngestHandlers = handlers;

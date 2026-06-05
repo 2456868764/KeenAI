@@ -33,7 +33,7 @@
 | 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
 | 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [x] |
-| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [ ] |
+| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [~] |
 | 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [ ] |
 | 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [ ] |
 | 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [ ] |
@@ -73,20 +73,20 @@
 | P1-02 | BullMQ `email:send`（重试 + DLQ） | [x] |
 | P1-03 | DKIM 文档与配置工具 | [x] |
 | P1-04 | Anthropic / Ollama LLM Provider | [x] |
-| P1-05 | `@keenai/workflow` Zod DSL + Inngest 模板（生产级） | [ ] |
+| P1-05 | `@keenai/workflow` Zod DSL + Inngest 模板（生产级） | [x] |
 | P1-06 | Trigger Engine（First Message / Unresponsive） | [x] |
 | P1-07 | Block：`send_message` / `assign` / `close`（生产级） | [x] |
-| P1-08 | Workflow Builder UI（React Flow 单层 → 完整） | [ ] |
-| P1-09 | Docker Compose `lite` 单容器跑通 | [ ] |
-| P1-10 | `bun build --compile` 单二进制 demo | [ ] |
+| P1-08 | Workflow Builder UI（React Flow 单层 → 完整） | [x] |
+| P1-09 | Docker Compose `lite` 单容器跑通 | [x] |
+| P1-10 | `bun build --compile` 单二进制 demo | [x] |
 | P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [~] |
-| P1-12 | Alpha 公开发布验收（社区/文档就绪） | [ ] |
+| P1-12 | Alpha 公开发布验收（社区/文档就绪） | [x] |
 | P1-ACC-01 | 内部客服全程可用 | [ ] |
 | P1-ACC-02 | Widget + Email 客户触达 | [ ] |
 | P1-ACC-03 | Copilot 采纳率 ≥ 30% | [ ] |
 | P1-ACC-04 | `docker compose --profile lite up` < 30s | [ ] |
-| P1-ACC-05 | `bun create keenai` 本地启动 < 2min | [ ] |
-| P1-ACC-06 | 测试覆盖率 ≥ 70% · CI 绿率 ≥ 95% | [ ] |
+| P1-ACC-05 | `bun create keenai` 本地启动 < 2min | [x] |
+| P1-ACC-06 | 测试覆盖率 ≥ 70% · CI 绿率 ≥ 95% | [~] |
 
 ### Phase 2 · 核心闭环（I117）
 

@@ -34,14 +34,17 @@ pnpm test
 pnpm smoke
 ```
 
-### Docker Lite（单容器 API + Dashboard）
+### Docker Lite（单容器 · P1-09）
 
 ```bash
 docker compose --profile lite up --build -d
-# Dashboard → http://localhost:3000
-# API       → http://localhost:8090
-# 演示账号   → owner@keenai.local / keenai-demo-12（首次自动 seed）
+# 单容器 `keenai`：Dashboard :3000 + API :8090
+# 演示账号 → owner@keenai.local / keenai-demo-12（KEENAI_AUTO_SEED=1 时自动 seed）
 ```
+
+双容器（调试用）：`docker compose --profile split up --build -d`
+
+验收清单：[ALPHA-ACCEPTANCE.md](./ALPHA-ACCEPTANCE.md) · `pnpm alpha:acceptance`
 
 可选 Inngest Dev Server（需 `.env` 中设置 `INNGEST_EVENT_KEY`）：
 

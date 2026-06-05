@@ -1,0 +1,25 @@
+# P1-09: single-container lite profile (API + Dashboard)
+FROM oven/bun:1.2-alpine AS base
+WORKDIR /app
+
+RUN apk add --no-cache wget nodejs npm
+
+COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json biome.json pnpm-lock.yaml ./
+COPY apps ./apps
+COPY packages ./packages
+COPY infra/docker/lite-entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh \
+  && bun install -g pnpm \
+  && pnpm install --filter @keenai/api... --filter @keenai/dashboard...
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:8090
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NODE_ENV=production
+
+WORKDIR /app/apps/dashboard
+RUN pnpm build
+
+WORKDIR /app
+EXPOSE 8090 3000
+ENTRYPOINT ["/entrypoint.sh"]

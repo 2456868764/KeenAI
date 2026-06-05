@@ -35,6 +35,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm --filter @keenai/docs build
       - run: pnpm --filter @keenai/auth test
+      - run: pnpm verify:api-binary
+      - run: pnpm alpha:acceptance
 
   postgres:
     runs-on: ubuntu-latest

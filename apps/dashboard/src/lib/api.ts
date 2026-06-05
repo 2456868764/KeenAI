@@ -354,7 +354,19 @@ export async function searchConversations(
 export type WorkflowBlock =
   | { id: string; type: "send_message"; plainText?: string; attachmentIds?: string[] }
   | { id: string; type: "assign"; assigneeId?: string | null }
-  | { id: string; type: "close" };
+  | { id: string; type: "close" }
+  | {
+      id: string;
+      type: "let_keeni_answer";
+      instructions?: string;
+      maxSteps?: number;
+      toolFilter?: string[];
+      outcomeRouting?: {
+        resolvedNext: string | null;
+        unresolvedNext: string | null;
+        escalatedNext: string | null;
+      };
+    };
 
 export type WorkflowDefinition = {
   trigger: "first_message" | "customer_unresponsive";
