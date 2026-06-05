@@ -16,6 +16,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Public KB articles | `kb-public.integration.test.ts` | Collections + articles list |
 | Discord inbound | `im.integration.test.ts` | 202 accepted |
 | Discord outbound | `outbound.discord.test.ts` | Plan includes discord channel |
+| Workflow graph layout | `workflow-graph.test.ts` | Branch + outcome edges |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 
 ## Manual (P2-ACC)
@@ -27,7 +28,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 ## Product smoke
 
 1. Dashboard → Tickets: three types visible; create + link tracker → child sync on Done.
-2. Dashboard → Workflows: add Branches / Convert to ticket / Wait / HTTP; publish; verify Recent runs.
+2. Dashboard → Workflows (Flow view): dagre layout, branch edges, click block → Sheet config; publish.
 3. Dashboard → Settings → Brands: create second brand slug.
 4. Portal: magic link → ticket list → ticket detail page.
 5. Webhook: `POST /api/v1/webhooks/im/discord?org={slug}` with MESSAGE_CREATE payload.
@@ -49,6 +50,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 4 smoke (I117 continued)
+
+1. Flow canvas: trigger node + dagre layout; purple labeled branch/outcome edges.
+2. Click block → right Sheet opens with full config (branch targets as dropdowns).
+3. `let_keeni_answer` outcome routing: Resolved / Unresolved / Escalated paths on canvas.
+
 ## Still open (Phase 2 remainder)
 
-Full ECharts dashboards, React Email components, Tiptap HC editor, workflow builder layers — `08-ROADMAP-TODO.md` §P2.
+Full ECharts dashboards, React Email components, Tiptap HC editor, Playwright e2e — `08-ROADMAP-TODO.md` §P2.

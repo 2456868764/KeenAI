@@ -9,11 +9,12 @@ import {
   publishWorkflow,
   updateWorkflow,
 } from "@/lib/api";
-import { Button, Input } from "@keenai/ui";
+import { Button, Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { WorkflowBlockEditor } from "./workflow-block-editor";
 import { WorkflowFlowCanvas } from "./workflow-flow-canvas";
 
 function newBlockId() {
@@ -35,6 +36,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
   const [view, setView] = useState<"list" | "flow">("flow");
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.workflow) {
@@ -63,6 +65,21 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   });
 
   const workflow = data?.workflow;
+  const selectedBlock =
+    definition && selectedBlockId
+      ? (definition.blocks.find((b) => b.id === selectedBlockId) ?? null)
+      : null;
+  const selectedIndex =
+    definition && selectedBlock
+      ? definition.blocks.findIndex((b) => b.id === selectedBlock.id)
+      : -1;
+
+  const updateBlock = (next: WorkflowBlock) => {
+    if (!definition || selectedIndex < 0) return;
+    const blocks = [...definition.blocks];
+    blocks[selectedIndex] = next;
+    setDefinition({ ...definition, blocks });
+  };
 
   return (
     <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
@@ -184,7 +201,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                           ? "rounded px-2 py-0.5 bg-[hsl(var(--surface-2))] font-medium"
                           : "rounded px-2 py-0.5 text-[hsl(var(--muted-foreground))]"
                       }
-                      onClick={() => setView("list")}
+                      onClick={() => {
+                        setView("list");
+                        setSelectedBlockId(null);
+                      }}
                     >
                       List
                     </button>
@@ -197,7 +217,11 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 />
               </div>
               {view === "flow" ? (
-                <WorkflowFlowCanvas definition={definition} onDefinitionChange={setDefinition} />
+                <WorkflowFlowCanvas
+                  definition={definition}
+                  selectedBlockId={selectedBlockId}
+                  onSelectBlock={setSelectedBlockId}
+                />
               ) : (
                 <ol className="space-y-3">
                   {definition.blocks.map((block, index) => (
@@ -205,9 +229,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                       key={block.id}
                       className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4"
                     >
-                      <BlockEditor
+                      <WorkflowBlockEditor
                         block={block}
                         index={index}
+                        allBlocks={definition.blocks}
                         onChange={(next) => {
                           const blocks = [...definition.blocks];
                           blocks[index] = next;
@@ -262,6 +287,37 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
           </div>
         )}
       </main>
+
+      <Sheet
+        open={view === "flow" && selectedBlock !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBlockId(null);
+        }}
+      >
+        <SheetContent side="right" className="overflow-y-auto">
+          {selectedBlock && selectedIndex >= 0 ? (
+            <>
+              <SheetHeader>
+                <SheetTitle>{selectedBlock.type.replaceAll("_", " ")}</SheetTitle>
+              </SheetHeader>
+              <WorkflowBlockEditor
+                block={selectedBlock}
+                index={selectedIndex}
+                allBlocks={definition?.blocks ?? []}
+                onChange={updateBlock}
+                onRemove={() => {
+                  if (!definition || definition.blocks.length <= 1) return;
+                  setDefinition({
+                    ...definition,
+                    blocks: definition.blocks.filter((b) => b.id !== selectedBlock.id),
+                  });
+                  setSelectedBlockId(null);
+                }}
+              />
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -316,250 +372,5 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="branches">Branches</option>
       <option value="convert_to_ticket">Convert to ticket</option>
     </select>
-  );
-}
-
-function BlockEditor({
-  block,
-  index,
-  onChange,
-  onRemove,
-}: {
-  block: WorkflowBlock;
-  index: number;
-  onChange: (block: WorkflowBlock) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-          {index + 1}. {block.type.replace("_", " ")}
-        </span>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="rounded p-1 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-red-400"
-          title="Remove block"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
-      </div>
-
-      {block.type === "send_message" ? (
-        <>
-          <textarea
-            value={block.plainText ?? ""}
-            onChange={(e) => onChange({ ...block, plainText: e.target.value })}
-            rows={3}
-            placeholder="Message text (optional if attachments are set)"
-            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
-          />
-          <Input
-            placeholder="Attachment IDs (comma-separated)"
-            value={(block.attachmentIds ?? []).join(", ")}
-            onChange={(e) => {
-              const ids = e.target.value
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean);
-              onChange({ ...block, attachmentIds: ids.length > 0 ? ids : undefined });
-            }}
-            className="mt-2"
-          />
-        </>
-      ) : null}
-
-      {block.type === "assign" ? (
-        <Input
-          placeholder="Assignee member ID (optional)"
-          value={block.assigneeId ?? ""}
-          onChange={(e) => onChange({ ...block, assigneeId: e.target.value.trim() || null })}
-        />
-      ) : null}
-
-      {block.type === "close" ? (
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          Closes the conversation when this step runs.
-        </p>
-      ) : null}
-
-      {block.type === "let_keeni_answer" ? (
-        <>
-          <textarea
-            value={block.instructions ?? ""}
-            onChange={(e) => onChange({ ...block, instructions: e.target.value })}
-            rows={3}
-            placeholder="Optional instructions for the AI agent"
-            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
-          />
-          <Input
-            type="number"
-            min={1}
-            max={20}
-            placeholder="Max agent steps"
-            value={block.maxSteps ?? 8}
-            onChange={(e) =>
-              onChange({ ...block, maxSteps: Number.parseInt(e.target.value, 10) || 8 })
-            }
-          />
-        </>
-      ) : null}
-
-      {block.type === "wait" ? (
-        <Input
-          type="number"
-          min={1}
-          max={86400}
-          placeholder="Seconds to wait"
-          value={block.seconds}
-          onChange={(e) =>
-            onChange({ ...block, seconds: Number.parseInt(e.target.value, 10) || 60 })
-          }
-        />
-      ) : null}
-
-      {block.type === "http_request" ? (
-        <>
-          <select
-            value={block.method}
-            onChange={(e) => onChange({ ...block, method: e.target.value as "GET" | "POST" })}
-            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
-          >
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
-          </select>
-          <Input
-            placeholder="URL"
-            value={block.url}
-            onChange={(e) => onChange({ ...block, url: e.target.value })}
-            className="mt-2"
-          />
-          {block.method === "POST" ? (
-            <textarea
-              value={block.body ?? ""}
-              onChange={(e) => onChange({ ...block, body: e.target.value })}
-              rows={3}
-              placeholder="JSON body (optional)"
-              className="mt-2 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
-            />
-          ) : null}
-        </>
-      ) : null}
-
-      {block.type === "branches" ? (
-        <div className="space-y-3">
-          {block.branches.map((branch, branchIndex) => (
-            <div
-              key={`${block.id}-branch-${branchIndex}`}
-              className="rounded-md border border-[hsl(var(--border))] p-2 space-y-2"
-            >
-              <Input
-                placeholder="Branch label"
-                value={branch.label ?? ""}
-                onChange={(e) => {
-                  const branches = [...block.branches];
-                  branches[branchIndex] = { ...branch, label: e.target.value };
-                  onChange({ ...block, branches });
-                }}
-              />
-              <select
-                value={branch.condition?.field ?? ""}
-                onChange={(e) => {
-                  const field = e.target.value as
-                    | "channelType"
-                    | "priority"
-                    | "conversationStatus"
-                    | "";
-                  const branches = [...block.branches];
-                  branches[branchIndex] = {
-                    ...branch,
-                    condition: field
-                      ? {
-                          field,
-                          op: branch.condition?.op ?? "eq",
-                          value: branch.condition?.value ?? "",
-                        }
-                      : undefined,
-                  };
-                  onChange({ ...block, branches });
-                }}
-                className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
-              >
-                <option value="">Default (no condition)</option>
-                <option value="channelType">channelType</option>
-                <option value="priority">priority</option>
-                <option value="conversationStatus">conversationStatus</option>
-              </select>
-              {branch.condition ? (
-                <>
-                  <select
-                    value={branch.condition.op}
-                    onChange={(e) => {
-                      const condition = branch.condition;
-                      if (!condition) return;
-                      const branches = [...block.branches];
-                      branches[branchIndex] = {
-                        ...branch,
-                        condition: { ...condition, op: e.target.value as "eq" | "neq" },
-                      };
-                      onChange({ ...block, branches });
-                    }}
-                    className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
-                  >
-                    <option value="eq">equals</option>
-                    <option value="neq">not equals</option>
-                  </select>
-                  <Input
-                    placeholder="Value"
-                    value={branch.condition.value}
-                    onChange={(e) => {
-                      const condition = branch.condition;
-                      if (!condition) return;
-                      const branches = [...block.branches];
-                      branches[branchIndex] = {
-                        ...branch,
-                        condition: { ...condition, value: e.target.value },
-                      };
-                      onChange({ ...block, branches });
-                    }}
-                  />
-                </>
-              ) : null}
-              <Input
-                placeholder="Next block ID"
-                value={branch.nextId ?? ""}
-                onChange={(e) => {
-                  const branches = [...block.branches];
-                  branches[branchIndex] = {
-                    ...branch,
-                    nextId: e.target.value.trim() || null,
-                  };
-                  onChange({ ...block, branches });
-                }}
-              />
-            </div>
-          ))}
-          <Input
-            placeholder="Else next block ID (optional)"
-            value={block.elseNextId ?? ""}
-            onChange={(e) => onChange({ ...block, elseNextId: e.target.value.trim() || null })}
-          />
-        </div>
-      ) : null}
-
-      {block.type === "convert_to_ticket" ? (
-        <>
-          <Input
-            placeholder="Ticket title (optional)"
-            value={block.title ?? ""}
-            onChange={(e) => onChange({ ...block, title: e.target.value })}
-          />
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Creates a ticket from the current conversation when this step runs.
-          </p>
-        </>
-      ) : null}
-    </div>
   );
 }

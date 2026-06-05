@@ -3,183 +3,278 @@
 import type { WorkflowBlock, WorkflowDefinition } from "@/lib/api";
 import {
   Background,
+  BaseEdge,
   Controls,
   type Edge,
+  type EdgeProps,
   Handle,
   type Node,
   type NodeProps,
   Position,
   ReactFlow,
-  useEdgesState,
-  useNodesState,
+  getBezierPath,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect } from "react";
+import { Zap } from "lucide-react";
+import { useMemo } from "react";
+import {
+  blockCategory,
+  blockLabel,
+  collectWorkflowEdges,
+  layoutWorkflowNodes,
+  workflowNodeSize,
+} from "./workflow-graph";
 
 type BlockNodeData = {
   block: WorkflowBlock;
-  onChange: (block: WorkflowBlock) => void;
+  selected: boolean;
 };
 
-function blockLabel(block: WorkflowBlock): string {
-  switch (block.type) {
-    case "send_message": {
-      const text = block.plainText?.trim();
-      if (text) return text.length > 48 ? `${text.slice(0, 48)}…` : text;
-      const count = block.attachmentIds?.length ?? 0;
-      return count > 0 ? `${count} attachment(s)` : "(empty message)";
-    }
-    case "assign":
-      return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
-    case "close":
-      return "Close conversation";
-    case "let_keeni_answer":
-      return block.instructions?.trim()
-        ? block.instructions.length > 48
-          ? `${block.instructions.slice(0, 48)}…`
-          : block.instructions
-        : `Keeni answer (max ${block.maxSteps ?? 8} steps)`;
-    case "wait":
-      return `Wait ${block.seconds}s`;
-    case "http_request":
-      return `${block.method} ${block.url.length > 40 ? `${block.url.slice(0, 40)}…` : block.url}`;
-    case "branches":
-      return `${block.branches.length} branch(es)`;
-    case "convert_to_ticket":
-      return block.title?.trim() || "Convert conversation to ticket";
-  }
-}
+type TriggerNodeData = {
+  trigger: WorkflowDefinition["trigger"];
+  selected: boolean;
+};
+
+const categoryStyles: Record<
+  ReturnType<typeof blockCategory> | "trigger",
+  { border: string; badge: string }
+> = {
+  trigger: {
+    border: "border-violet-500/60",
+    badge: "text-violet-400",
+  },
+  message: {
+    border: "border-sky-500/50",
+    badge: "text-sky-400",
+  },
+  condition: {
+    border: "border-amber-500/50",
+    badge: "text-amber-400",
+  },
+  action: {
+    border: "border-[hsl(var(--border))]",
+    badge: "text-[hsl(var(--primary))]",
+  },
+};
 
 function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const block = data.block;
+  const category = blockCategory(block);
+  const styles = categoryStyles[category];
+
   return (
-    <div className="min-w-[180px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm">
-      <Handle type="target" position={Position.Left} className="!bg-[hsl(var(--primary))]" />
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--primary))]">
-        {block.type.replace("_", " ")}
+    <div
+      className={[
+        "min-w-[180px] max-w-[220px] rounded-lg border bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm transition-shadow",
+        styles.border,
+        data.selected
+          ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
+          : "",
+      ].join(" ")}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!bg-violet-500 !border-violet-300"
+      />
+      <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+        {block.type.replaceAll("_", " ")}
       </p>
-      <p className="mt-1 text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
-      {block.type === "send_message" ? (
-        <>
-          <textarea
-            value={block.plainText ?? ""}
-            onChange={(e) => data.onChange({ ...block, plainText: e.target.value })}
-            rows={2}
-            placeholder="Message text (optional if attachments are set)"
-            className="mt-2 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
-          />
-          <input
-            value={(block.attachmentIds ?? []).join(", ")}
-            onChange={(e) => {
-              const ids = e.target.value
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean);
-              data.onChange({ ...block, attachmentIds: ids.length > 0 ? ids : undefined });
-            }}
-            placeholder="Attachment IDs (comma-separated)"
-            className="mt-1 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
-          />
-        </>
-      ) : null}
-      {block.type === "let_keeni_answer" ? (
-        <textarea
-          value={block.instructions ?? ""}
-          onChange={(e) => data.onChange({ ...block, instructions: e.target.value })}
-          rows={2}
-          placeholder="Optional instructions for Keeni"
-          className="mt-2 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-xs"
-        />
-      ) : null}
-      <Handle type="source" position={Position.Right} className="!bg-[hsl(var(--primary))]" />
+      <p className="mt-1 line-clamp-2 text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!bg-violet-500 !border-violet-300"
+      />
     </div>
   );
 }
 
-const nodeTypes = { workflowBlock: WorkflowBlockNode };
+function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
+  const styles = categoryStyles.trigger;
+  const label =
+    data.trigger === "first_message" ? "First customer message" : "Customer unresponsive";
 
-function blocksToFlow(
-  definition: WorkflowDefinition,
-  onBlockChange: (id: string, block: WorkflowBlock) => void,
-): { nodes: Node<BlockNodeData>[]; edges: Edge[] } {
-  const nodes: Node<BlockNodeData>[] = definition.blocks.map((block, index) => ({
-    id: block.id,
-    type: "workflowBlock",
-    position: { x: index * 240, y: 80 },
-    data: {
-      block,
-      onChange: (next) => onBlockChange(block.id, next),
-    },
-  }));
+  return (
+    <div
+      className={[
+        "flex min-w-[150px] items-center gap-2 rounded-lg border bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm",
+        styles.border,
+        data.selected
+          ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
+          : "",
+      ].join(" ")}
+    >
+      <Zap className={`size-4 shrink-0 ${styles.badge}`} />
+      <div>
+        <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+          Trigger
+        </p>
+        <p className="text-xs text-[hsl(var(--foreground))]">{label}</p>
+      </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!bg-violet-500 !border-violet-300"
+      />
+    </div>
+  );
+}
 
-  const edges: Edge[] = definition.blocks.slice(1).flatMap((block, index) => {
-    const source = definition.blocks[index]?.id;
-    if (!source) return [];
-    return [
-      {
-        id: `e-${source}-${block.id}`,
-        source,
-        target: block.id,
-        animated: true,
-      },
-    ];
+function PurpleWorkflowEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  label,
+  data,
+}: EdgeProps) {
+  const [path, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
   });
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        style={{
+          stroke: "hsl(262 83% 58%)",
+          strokeWidth: data?.kind === "branch" || data?.kind === "outcome" ? 2 : 1.5,
+        }}
+      />
+      {label ? (
+        <text
+          x={labelX}
+          y={labelY}
+          className="fill-[hsl(var(--muted-foreground))] text-[10px]"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          {label}
+        </text>
+      ) : null}
+    </>
+  );
+}
+
+const nodeTypes = {
+  workflowBlock: WorkflowBlockNode,
+  workflowTrigger: WorkflowTriggerNode,
+};
+
+const edgeTypes = {
+  purple: PurpleWorkflowEdge,
+};
+
+function definitionToFlow(
+  definition: WorkflowDefinition,
+  selectedBlockId: string | null,
+): { nodes: Node[]; edges: Edge[] } {
+  const graphEdges = collectWorkflowEdges(definition);
+  const layoutInput = [
+    {
+      id: "__trigger__",
+      width: workflowNodeSize.trigger.width,
+      height: workflowNodeSize.trigger.height,
+    },
+    ...definition.blocks.map((block) => ({
+      id: block.id,
+      width: workflowNodeSize.block.width,
+      height: workflowNodeSize.block.height,
+    })),
+  ];
+
+  const positioned = layoutWorkflowNodes(layoutInput, graphEdges);
+
+  const nodes: Node[] = [
+    {
+      id: "__trigger__",
+      type: "workflowTrigger",
+      position: {
+        x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
+        y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
+      },
+      data: { trigger: definition.trigger, selected: false },
+      draggable: false,
+      selectable: false,
+    },
+    ...definition.blocks.map((block) => ({
+      id: block.id,
+      type: "workflowBlock",
+      position: {
+        x: positioned.find((n) => n.id === block.id)?.x ?? 0,
+        y: positioned.find((n) => n.id === block.id)?.y ?? 0,
+      },
+      data: {
+        block,
+        selected: selectedBlockId === block.id,
+      },
+      draggable: false,
+    })),
+  ];
+
+  const edges: Edge[] = graphEdges.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: "purple",
+    label: edge.label,
+    animated: edge.kind === "branch" || edge.kind === "outcome",
+    data: { kind: edge.kind },
+  }));
 
   return { nodes, edges };
 }
 
-function flowToBlocks(nodes: Node<BlockNodeData>[]): WorkflowBlock[] {
-  return [...nodes].sort((a, b) => a.position.x - b.position.x).map((node) => node.data.block);
-}
-
 export function WorkflowFlowCanvas({
   definition,
-  onDefinitionChange,
+  selectedBlockId,
+  onSelectBlock,
 }: {
   definition: WorkflowDefinition;
-  onDefinitionChange: (definition: WorkflowDefinition) => void;
+  selectedBlockId: string | null;
+  onSelectBlock: (blockId: string | null) => void;
 }) {
-  const onBlockChange = useCallback(
-    (id: string, block: WorkflowBlock) => {
-      onDefinitionChange({
-        ...definition,
-        blocks: definition.blocks.map((b) => (b.id === id ? block : b)),
-      });
-    },
-    [definition, onDefinitionChange],
+  const { nodes, edges } = useMemo(
+    () => definitionToFlow(definition, selectedBlockId),
+    [definition, selectedBlockId],
   );
 
-  const initial = blocksToFlow(definition, onBlockChange);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
-
-  useEffect(() => {
-    const next = blocksToFlow(definition, onBlockChange);
-    setNodes(next.nodes);
-    setEdges(next.edges);
-  }, [definition, onBlockChange, setNodes, setEdges]);
-
   return (
-    <div className="h-[420px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+    <div className="h-[520px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        edgeTypes={edgeTypes}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
+        nodesDraggable={false}
         nodesConnectable={false}
-        onNodeDragStop={() => {
-          onDefinitionChange({
-            ...definition,
-            blocks: flowToBlocks(nodes),
-          });
+        elementsSelectable
+        onNodeClick={(_, node) => {
+          if (node.id === "__trigger__") return;
+          onSelectBlock(node.id);
         }}
+        onPaneClick={() => onSelectBlock(null)}
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={16} size={1} color="hsl(var(--border))" />
-        <Controls showInteractive={false} />
+        <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
+      <p className="border-t border-[hsl(var(--border))] px-3 py-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+        Click a block to open the configuration panel. Branch and outcome paths are shown as labeled
+        edges.
+      </p>
     </div>
   );
 }
