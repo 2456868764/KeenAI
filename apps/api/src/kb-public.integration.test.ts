@@ -88,9 +88,10 @@ describe("public help center integration", () => {
     const detail = await app.request(`/api/v1/public/hc/kb/articles/${doc.id}`);
     expect(detail.status).toBe(200);
     const detailBody = (await detail.json()) as {
-      article: { body: string; seoTitle: string | null };
+      article: { body: string; content: Record<string, unknown>; seoTitle: string | null };
     };
     expect(detailBody.article.body).toContain("reset password");
+    expect(detailBody.article.content).toBeDefined();
     expect(detailBody.article.seoTitle).toBe("Reset your password");
 
     await store.close();

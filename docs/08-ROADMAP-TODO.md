@@ -96,7 +96,7 @@
 | P2-02 | Convert / Send / Link Workflow Actions | [~] |
 | P2-03 | Ticket Portal `apps/portal` RSC | [x] |
 | P2-04 | 自定义字段 Field DSL | [x] |
-| P2-05 | 邮件通知模板（React Email · 多语言） | [~] |
+| P2-05 | 邮件通知模板（React Email · 多语言） | [x] |
 | P2-06 | Tracker fan-out 状态同步 | [x] |
 | P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [~] |
 | P2-08 | Workflow 版本 draft→published + Trace | [x] |

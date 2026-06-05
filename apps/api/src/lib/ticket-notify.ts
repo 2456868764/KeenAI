@@ -30,7 +30,7 @@ export async function notifyTicketStatusChange(
     ? `${portalBase}/tickets/${input.ticket.id}?org=${encodeURIComponent(org.slug)}`
     : undefined;
 
-  const rendered = renderTicketStatusEmail({
+  const rendered = await renderTicketStatusEmail({
     ticketTitle: input.ticket.title,
     statusName: input.statusName,
     portalUrl,

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./help-center-seo": "./src/help-center-seo.ts",
+    "./tiptap-hc-render": "./src/tiptap-hc-render.ts",
     "./paths": "./src/paths.ts"
   },
   "scripts": {

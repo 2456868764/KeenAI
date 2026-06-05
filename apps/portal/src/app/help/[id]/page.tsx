@@ -1,6 +1,7 @@
 import { fetchPublicArticle } from "@/lib/kb-public";
 import { getPortalOrgSlug, getPortalSiteUrl } from "@/lib/portal-config";
 import { buildArticleJsonLd } from "@keenai/shared/help-center-seo";
+import { renderTiptapHcToHtml } from "@keenai/shared/tiptap-hc-render";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -68,6 +69,7 @@ export default async function HelpArticlePage({
   }
 
   const pageUrl = `${siteUrl}/help/${id}`;
+  const bodyHtml = renderTiptapHcToHtml(article.content);
   const jsonLd = buildArticleJsonLd({
     url: pageUrl,
     title: article.seoTitle ?? article.title,
@@ -85,7 +87,14 @@ export default async function HelpArticlePage({
         <p className="muted">{article.collection}</p>
         <h1>{article.title}</h1>
         <p className="muted">Updated {new Date(article.updatedAt).toLocaleString()}</p>
-        <div style={{ whiteSpace: "pre-wrap", marginTop: "1rem" }}>{article.body}</div>
+        {bodyHtml ? (
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: server-rendered HC HTML from published article content
+          <div className="article-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+        ) : (
+          <div className="article-body" style={{ whiteSpace: "pre-wrap" }}>
+            {article.body}
+          </div>
+        )}
       </article>
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
     </main>

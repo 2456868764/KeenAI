@@ -131,6 +131,7 @@ export {
   type SerializedAttachment,
 } from "./message-parts.js";
 export { extractAttachmentIdsFromTiptapDoc } from "./tiptap-attachments.js";
+export { renderTiptapHcToHtml } from "./tiptap-hc-render.js";
 export {
   listPortalTicketsSchema,
   portalMagicLinkRequestSchema,

@@ -25,6 +25,8 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Workflow send_message attachments | `workflow.integration.test.ts` | attachmentIds on outbound |
 | Tiptap attachment extract | `tiptap-attachments.test.ts` | image node IDs |
 | Help Center sitemap + JSON-LD | `help-center-seo.test.ts` | sitemap entries + schema.org |
+| HC Tiptap block render | `tiptap-hc-render.test.ts` | callout / steps / details HTML |
+| Ticket status React Email | `ticket-status.test.ts` | en/zh HTML via @react-email/render |
 | Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 
@@ -59,6 +61,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 9 smoke (I117 continued)
+
+1. Dashboard Help Center editor: insert Info / Warning / Tip / Steps / Collapse blocks.
+2. Publish article → Portal `/help/{id}` renders styled HC blocks.
+3. Ticket status change with SMTP → customer receives React Email HTML (en/zh).
+
 ## Batch 8 smoke (I117 continued)
 
 1. Portal `/help` SSR lists published articles (ISR 60s).
@@ -92,4 +100,4 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Still open (Phase 2 remainder)
 
-React Email components, Tiptap HC extensions (callout/steps), Playwright e2e — `08-ROADMAP-TODO.md` §P2.
+Playwright e2e, P2-19 Beta gate — `08-ROADMAP-TODO.md` §P2.

@@ -9,6 +9,8 @@ import StarterKit from "@tiptap/starter-kit";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { HelpArticleToolbar } from "./help-article-toolbar";
+import { hcTiptapExtensions } from "./tiptap-hc-extensions";
 
 export function HelpArticleEditor({ articleId }: { articleId: string }) {
   const queryClient = useQueryClient();
@@ -26,7 +28,11 @@ export function HelpArticleEditor({ articleId }: { articleId: string }) {
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [StarterKit, Placeholder.configure({ placeholder: "Write your help article…" })],
+    extensions: [
+      StarterKit,
+      ...hcTiptapExtensions,
+      Placeholder.configure({ placeholder: "Write your help article…" }),
+    ],
     editorProps: {
       attributes: {
         class:
@@ -136,6 +142,7 @@ export function HelpArticleEditor({ articleId }: { articleId: string }) {
         placeholder="Short excerpt (portal + SEO)"
       />
 
+      <HelpArticleToolbar editor={editor} />
       <EditorContent editor={editor} />
 
       <div className="space-y-2 rounded-lg border border-[hsl(var(--border))] p-4">

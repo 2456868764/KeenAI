@@ -13,6 +13,7 @@ export type PublicKbArticle = {
 
 export type PublicKbArticleDetail = PublicKbArticle & {
   body: string;
+  content: Record<string, unknown>;
   seoTitle?: string | null;
   seoDescription?: string | null;
 };

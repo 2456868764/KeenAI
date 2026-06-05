@@ -36,6 +36,7 @@ export type PublicKbArticle = {
 
 export type PublicKbArticleDetail = PublicKbArticle & {
   body: string;
+  content: Record<string, unknown>;
   url: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -241,6 +242,7 @@ async function getPublicArticleFromHelp(
     excerpt: row.article.excerpt,
     updatedAt: row.article.updatedAt.toISOString(),
     body: row.article.plainText,
+    content: (row.article.content as Record<string, unknown>) ?? {},
     url: null,
     seoTitle: row.article.seoTitle,
     seoDescription: row.article.seoDescription,
@@ -279,6 +281,7 @@ export async function getPublicKbArticle(
     excerpt: meta.excerpt ?? null,
     updatedAt: row.updatedAt.toISOString(),
     body: row.rawContent ?? "",
+    content: {},
     url: row.url ?? null,
     seoTitle: null,
     seoDescription: null,

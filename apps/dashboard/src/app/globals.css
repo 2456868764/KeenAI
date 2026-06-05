@@ -16,3 +16,41 @@ body {
 body {
   @apply bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))] antialiased;
 }
+
+.hc-callout {
+  border-left: 4px solid hsl(var(--primary));
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  background: hsl(var(--surface-2));
+}
+
+.hc-callout--warning {
+  border-left-color: #f59e0b;
+}
+
+.hc-callout--tip {
+  border-left-color: #10b981;
+}
+
+.hc-steps {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.hc-step {
+  margin-bottom: 0.5rem;
+}
+
+.hc-details {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.hc-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
