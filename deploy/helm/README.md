@@ -1,31 +1,40 @@
-# KeenAI Helm chart (planned · post-0.1.0)
+# KeenAI Helm chart
 
-> **v0.1.0** ships with Docker Compose only. Chart targets **1.0 GA**.  
-> Until published, use [DEPLOYMENT.md](../../docs/DEPLOYMENT.md).
+> **v0.1.0** ships Docker Compose. Chart skeleton **I114**; image tags track **0.2.0** next.
 
-## Planned components
+## Install (local dry-run)
 
-| Release | Workloads |
-|---------|-----------|
-| `keenai-api` | Hono API · migrations init Job |
-| `keenai-dashboard` | Next.js Dashboard |
-| `keenai-inngest` | Optional Inngest dev relay (or external cloud) |
-| `postgresql` | Subchart or external DSN |
-| `redis` | Workflow scan / cache |
-
-## Values (draft)
-
-```yaml
-api:
-  image: ghcr.io/keenai/api:0.1.0
-  env:
-    DATABASE_URL: ""
-    JWT_SECRET: ""
-    INNGEST_EVENT_KEY: ""
-dashboard:
-  image: ghcr.io/keenai/dashboard:0.1.0
-  env:
-    NEXT_PUBLIC_API_URL: https://api.example.com
+```bash
+helm lint deploy/helm/keenai
+helm template keenai deploy/helm/keenai
 ```
 
-Track progress in [08-ROADMAP-TODO.md](../../docs/08-ROADMAP-TODO.md) I110.
+## Chart layout
+
+```
+deploy/helm/keenai/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+    ├── api-deployment.yaml
+    ├── api-service.yaml
+    ├── dashboard-deployment.yaml
+    └── dashboard-service.yaml
+```
+
+## Values (defaults)
+
+| Key | Default |
+|-----|---------|
+| `api.image.tag` | `0.1.0` |
+| `api.env.KEENAI_AUTO_SEED` | `0` |
+| `dashboard.env.NEXT_PUBLIC_API_URL` | in-cluster API service |
+
+## Planned for v0.2.0 (I116)
+
+- Init Job for `db:migrate`
+- Ingress + TLS
+- External PostgreSQL / Redis subcharts or `externalDatabase.url`
+- GHCR image publish workflow (`0.2.0` tags)
+
+Track: [docs/08-ROADMAP-TODO.md](../../docs/08-ROADMAP-TODO.md) I114～I117 · [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md)

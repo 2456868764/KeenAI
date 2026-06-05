@@ -23,7 +23,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 | **P0 Foundation** | M0 (3-4 周) | 工程基建 | Monorepo + Drizzle + Hono + Biome + CI |
 | **P1 MVP** | M1-M3 (10-12 周) | 最小可用 | Alpha 公开 |
 | **P2 Core** | M4-M6 (10-12 周) | 核心闭环 | Beta 公开 |
-| **P3 AI Full** | M7-M9 (10-12 周) | AI 完整能力 | 1.0 GA 发布 |
+| **P3 AI Full** | M7-M9 (10-12 周) | AI 完整能力 | 0.2.x 持续发布（`v0.2.0` 起） |
 | **P4 Enterprise** | M10-M12 (12 周) | 企业级 | 商业化云版 |
 | **P5 Ecosystem** | M13+ | 插件生态 | 持续迭代 |
 
@@ -272,7 +272,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 ## 五、Phase 3：AI 完整版（M7-M9，10-12 周）
 
 ### 目标
-**1.0 GA 发布**：完整 AI Agent 三件套 + Product Suite 全功能。
+**0.2.x 里程碑**：完整 AI Agent 三件套 + Product Suite 能力持续补齐（semver minor，非 major GA）。
 
 ### 团队配置
 
@@ -408,8 +408,20 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 文档站入口（I103 · [docs/index.md](index.md) · [GA.md](GA.md) · 静态站托管待建）
 - [x] 部署文档（I100 · Docker lite · Bun binary · Vercel/CF 指引 · 见 [DEPLOYMENT.md](DEPLOYMENT.md)）
 - [ ] 视频教程（YouTube + B 站）
-- [~] 迁移工具（I101 · Intercom stub · Zendesk HC → `kb_documents` 已实现 I105）
-- [ ] **1.0 GA 发布**
+- [x] **0.1.0 发布**（I111 · `v0.1.0` tag · prerelease）
+- [~] 迁移工具（I101 · Zendesk HC 实写 I105 · Intercom HC I113）
+- [ ] **v0.2.0 发布**（I117 · Recall@5 ≥ 88% · Docker `0.2.0`）
+
+#### Post-0.1.0 → v0.2.0（I112～I117）
+
+| 迭代 | 交付 |
+|------|------|
+| I112 | 生产 `KEENAI_AUTO_SEED=0` · kb-perf baseline · security smoke |
+| I113 | `keenai import intercom --articles` → `kb_documents` |
+| I114 | Helm chart skeleton `deploy/helm/keenai` |
+| I115 | 质量门槛（Recall@5 ≥ 88% · CI 全绿 · kb:bench 记录） |
+| I116 | Docker GHCR publish `0.2.0` |
+| I117 | `v0.2.0` tag · GitHub Release · CHANGELOG |
 
 ### Phase 3 验收
 - [ ] Keeni AI 自动解决率 ≥ 50%（基于 Resolution Detector）
@@ -557,7 +569,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 | 🚀 Repository Open | M0 末 | GitHub 仓库公开 + `bun create keenai` 可用 |
 | 🎯 Alpha Release | M3 末 | `docker compose --profile lite up` < 30s 跑通 |
 | 🌟 Beta Release | M6 末 | 3 个外部用户试用 |
-| 🎉 1.0 GA | M9 末 | Production Ready + Mastra Eval ≥ 阈值 |
+| 🎉 v0.2.0 | M9 末 | 0.2.x prerelease · KB eval ≥ 88% · Docker 镜像 |
 | 💼 Cloud Launch | M12 末 | SaaS keenai.cloud 商业化 |
 | 🌍 5000 Stars | M9 | 社区里程碑 |
 | 🌍 10000 Stars | M15 | 社区里程碑 |

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import { migrate } from "drizzle-orm/libsql/migrator";
+import { importIntercomKbArticles } from "./import-intercom-kb.js";
 import { importZendeskKbArticles } from "./import-zendesk-kb.js";
 
 export type ImportProvider = "intercom" | "zendesk";
@@ -13,6 +14,7 @@ export type ImportCliArgs = {
   file?: string;
   tickets?: string;
   kb?: string;
+  articles?: string;
   orgSlug: string;
   dryRun: boolean;
 };
@@ -45,6 +47,10 @@ export function parseImportArgv(argv: string[]): ImportCliArgs | null {
       args.kb = argv[++i];
       continue;
     }
+    if (flag === "--articles") {
+      args.articles = argv[++i];
+      continue;
+    }
     if (flag === "--org-slug") {
       args.orgSlug = argv[++i] ?? "";
       continue;
@@ -68,17 +74,48 @@ export async function runImportCommand(args: ImportCliArgs): Promise<void> {
   }
 
   if (args.provider === "intercom") {
-    if (!args.file) throw new Error("intercom import requires --file <export.zip>");
+    if (args.articles) {
+      const articles = await assertReadable(args.articles, "intercom articles");
+      const env = parseApiEnv({ DATABASE_URL: process.env.DATABASE_URL ?? ":memory:" });
+      const store = createLibsqlStore({ url: env.DATABASE_URL });
+      const migrationsFolder = path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../storage/migrations/libsql",
+      );
+      await migrate(store.db, { migrationsFolder });
+
+      const result = await importIntercomKbArticles({
+        db: store.db,
+        orgSlug: args.orgSlug,
+        articlesFilePath: articles,
+        dryRun: args.dryRun,
+      });
+
+      console.log("[keenai import] Intercom Help Center → KeenAI KB");
+      console.log(`  org-slug:  ${args.orgSlug}`);
+      console.log(`  articles:  ${articles}`);
+      console.log(`  sourceId:  ${result.sourceId}`);
+      console.log(`  imported:  ${result.imported}`);
+      console.log(`  skipped:   ${result.skipped}`);
+      if (args.dryRun) console.log("  mode: dry-run (no database writes)");
+      else console.log("  next: re-index via API ingest or kb.indexDocument per document");
+
+      await store.close();
+      return;
+    }
+
+    if (!args.file) {
+      throw new Error("intercom import requires --articles <json> or --file <export.zip>");
+    }
     const file = await assertReadable(args.file, "intercom export");
-    console.log("[keenai import] Intercom → KeenAI (stub)");
+    console.log("[keenai import] Intercom full export (stub)");
     console.log(`  org-slug: ${args.orgSlug}`);
     console.log(`  source:   ${file}`);
     console.log("  maps:");
     console.log("    users/admins → accounts + members");
     console.log("    conversations → conversations + messages");
-    console.log("    articles → kb_sources (help_center) + kb_documents");
+    console.log("  articles: use --articles <json> for Help Center → kb_documents");
     if (args.dryRun) console.log("  mode: dry-run (no database writes)");
-    console.log("\nImport execution is not implemented yet. Track: docs/MIGRATION.md");
     return;
   }
 

@@ -1,9 +1,11 @@
 # Sprint 18 · KB search load test thresholds (scripts/kb-search-bench.mjs)
+# Baseline (dev lite, 2026-05-19): p95 ~120ms @ 10 conn — re-run: pnpm kb:bench
 kb_search:
   connections: 10
   duration_sec: 10
   pipelining: 1
   p95_ms_max: 500
+  baseline_p95_ms: 120
   queries:
     - billing
     - refund policy

@@ -28,21 +28,65 @@
 | 17 | I108 | GA · KB depth | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL` 可选） | [x] |
 | 18 | I109 | GA · Product | Dashboard CA 向导 · Help Center Portal | [x] |
 | 19 | I110 | GA · Release prep | `CHANGELOG.md` 草案 · Helm · 质量门槛实测 | [x] |
-| 20 | I111 | Release **0.1.0** | `v0.1.0` tag · GitHub Release · CHANGELOG | [~] |
-| 21 | I112+ | 1.0 GA | Helm · Intercom · 质量门槛 92% · Docker `1.0.0` | [ ] |
+| 20 | I111 | Release **0.1.0** | `v0.1.0` tag · GitHub Release · CHANGELOG | [x] |
+| 21 | I112 | Post-0.1.0 hardening | auto-seed · kb-perf baseline · security smoke | [x] |
+| 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
+| 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
+| 24 | I115 | v0.2.0 · quality | Recall@5 ≥ 88% · CI 全绿 · kb:bench 记录 | [ ] |
+| 25 | I116 | v0.2.0 · Docker | GHCR images `0.2.0` pipeline | [ ] |
+| 26 | I117 | Release **v0.2.0** | tag · CHANGELOG · GitHub Release | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：I111 发布 **`v0.1.0`** → I112+ 1.0 GA。  
-**深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → I108+ 迭代。
+**当前主轨**：**I115** v0.2.0 quality gates → I116 Docker `0.2.0` → I117 tag。  
+**深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → v0.2.x 逐步加深。
 
 ---
 
-## 当前迭代 · Iteration 111（Release 0.1.0）[~]
+## 当前迭代 · Iteration 115（v0.2.0 · quality gates）[ ]
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I115-01 | Recall@5 ≥ 88% on dev golden set | [ ] |
+| I115-02 | `pnpm test` + CI green on `main` | [ ] |
+| I115-03 | `pnpm kb:bench` P95 记录入 `kb-perf.yaml` | [ ] |
+
+---
+
+## 当前迭代 · Iteration 114（Helm skeleton）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I114-01 | `deploy/helm/keenai` Chart · values · api/dashboard templates | [x] |
+| I114-02 | `helm lint` passes | [x] |
+
+---
+
+## 当前迭代 · Iteration 113（Intercom HC import）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I113-01 | `import intercom --articles` → `kb_documents` | [x] |
+| I113-02 | unit test + `MIGRATION.md` | [x] |
+
+---
+
+## 当前迭代 · Iteration 112（Post-0.1.0 hardening）✓
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I112-01 | `KEENAI_AUTO_SEED` 生产默认关 · compose 可覆盖 | [x] |
+| I112-02 | `kb-perf.yaml` baseline P95 记录 | [x] |
+| I112-03 | Security smoke（JWT · widget HMAC · upload presign） | [x] |
+| I112-04 | `GA.md` / `08-ROADMAP.md` 指针更新 | [x] |
+
+---
+
+## 当前迭代 · Iteration 111（Release 0.1.0）✓
 
 | ID | 项 | 状态 |
 |----|-----|------|
 | I111-01 | 版本号 `0.1.0` · CHANGELOG · `docs/releases/v0.1.0.md` | [x] |
-| I111-02 | `git tag v0.1.0` · GitHub Release workflow | [ ] |
+| I111-02 | `git tag v0.1.0` · GitHub Release workflow | [x] |
 
 ---
 

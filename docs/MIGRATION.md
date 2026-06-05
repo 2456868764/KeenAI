@@ -6,7 +6,8 @@
 
 | Source | Entities | Status |
 |--------|----------|--------|
-| Intercom | users, conversations, tags, articles | planned |
+| Intercom | help center articles → `kb_documents` | **articles import implemented** |
+| Intercom | users, conversations, tags | planned |
 | Zendesk | help center articles → `kb_documents` | **kb import implemented** |
 | Zendesk | tickets, users → conversations | planned |
 
@@ -18,7 +19,11 @@
 4. Import via future CLI:
 
 ```bash
-# Intercom — plan only (no writes yet)
+# Intercom Help Center JSON → kb_documents
+pnpm keenai import intercom --articles ./articles.json --org-slug acme
+pnpm keenai import intercom --articles ./articles.json --org-slug acme --dry-run
+
+# Intercom full zip export — conversations/users still stub
 pnpm keenai import intercom --file ./export.zip --org-slug acme --dry-run
 
 # Zendesk Help Center JSON → kb_documents (requires DATABASE_URL + migrated schema)

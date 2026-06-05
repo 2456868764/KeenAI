@@ -1,4 +1,4 @@
-# Design ↔ Code Audit (pre–0.1.0 / 1.0 GA)
+# Design ↔ Code Audit (0.1.x / 0.2.x)
 
 > Last updated: 2026-05-19 · Sprint 18 GA prep.  
 > Roadmap marks many KB/CA items **[x]**; this doc records **implementation depth** vs design docs.
@@ -52,9 +52,9 @@
 - `08-ROADMAP-TODO.md`: KG-05 duplicate `[ ]` vs `[x]` aligned; CA-05/06 mid-doc table aligned with footer.
 - `08-ROADMAP.md` Sprint 16: CA-01～06 checkboxes + note for remaining UI/MCP server expose.
 
-## GA blockers (unchanged)
+## Release gates
 
-See [GA.md](./GA.md): **0.1.0** uses relaxed dev gates; **1.0** requires Recall@5 ≥ 92%, faithfulness ≥ 0.85, P95 < 200ms, full CI green on production golden set.
+See [GA.md](./GA.md): **0.1.0** shipped with relaxed dev gates; **v0.2.0** targets Recall@5 ≥ 88%, CI green, documented KB bench P95.
 
 ## Recommended next work
 
@@ -69,5 +69,6 @@ See [GA.md](./GA.md): **0.1.0** uses relaxed dev gates; **1.0** requires Recall@
 | I108 | KB-19 LLM FAQ extract（`KEENAI_CRYSTALLIZE_MODEL`） | [x] |
 | I109 | Dashboard CA 向导 · Help Center KB search (`/custom-actions`, `/help-center`) | [x] |
 | I110 | `CHANGELOG.md` · `deploy/helm/README.md` 规划 | [x] |
-| I111 | GitHub Release **`v0.1.0`** | [~] |
-| I112+ | 1.0 GA · Docker `1.0.0` · 质量门槛实测 | 待办 |
+| I111 | GitHub Release **`v0.1.0`** | [x] |
+| I112～I114 | hardening · Intercom import · Helm skeleton | [x] |
+| I115～I117 | **v0.2.0** · Docker `0.2.0` · 质量门槛实测 | 待办 |

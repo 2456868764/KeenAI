@@ -1,0 +1,11 @@
+KeenAI {{ .Chart.AppVersion }} (skeleton chart — I114)
+
+API:       {{ include "keenai.fullname" . }}-api:{{ .Values.api.service.port }}
+Dashboard: {{ include "keenai.fullname" . }}-dashboard:{{ .Values.dashboard.service.port }}
+
+Before production:
+  - Set JWT_SECRET, DATABASE_URL, INNGEST_EVENT_KEY via secrets
+  - KEENAI_AUTO_SEED=0 (default in values.yaml)
+  - Publish images to GHCR tag 0.2.0 (I116)
+
+See docs/DEPLOYMENT.md and deploy/helm/README.md

@@ -1,0 +1,51 @@
+# I114 skeleton — extend for v0.2.0. See deploy/helm/README.md
+
+global:
+  imagePullSecrets: []
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/keenai/api
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8090
+  env:
+    NODE_ENV: production
+    PORT: "8090"
+    KEENAI_AUTO_SEED: "0"
+  resources: {}
+
+dashboard:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/keenai/dashboard
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    NEXT_PUBLIC_API_URL: http://keenai-api:8090
+  resources: {}
+
+ingress:
+  enabled: false
+  className: ""
+  hosts:
+    - host: keenai.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+externalDatabase:
+  enabled: false
+  url: ""
+
+externalRedis:
+  enabled: false
+  url: ""
