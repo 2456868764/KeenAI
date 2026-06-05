@@ -552,9 +552,6 @@ importers:
       '@keenai/shared':
         specifier: workspace:*
         version: link:../shared
-      '@keenai/workflow':
-        specifier: workspace:*
-        version: link:../workflow
       '@libsql/client':
         specifier: ^0.15.15
         version: 0.15.15
