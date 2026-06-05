@@ -248,15 +248,15 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 > 完整设计：[14-MULTIMODAL.md](14-MULTIMODAL.md) · 跟踪 [08-ROADMAP-TODO.md](08-ROADMAP-TODO.md) Iteration 15+
 
-- [ ] `@keenai/shared`：`MessagePart` / `MessageKind` Zod schema（MM-01）
-- [ ] `insertMessage` + `attachments` 关联；API/WS 返回 `attachments[]`（MM-02）
-- [ ] `GET /api/v1/attachments/:id/content` 鉴权下载（MM-05）
-- [ ] Widget 发图 + Inbox/Dashboard inbound 图片 bubble（MM-03）
-- [ ] Dashboard Composer 拖拽/粘贴上传（MM-03）
-- [ ] Email 附件 ingest（mailparser → attachments）（MM-04）
-- [ ] Copilot vision：对话含图时 native multimodal draft（MM-06）
-- [ ] Workflow `send_message` 支持 `attachmentIds`（MM-07）
-- [ ] `@keenai/channels-core`：`parseAgentResponse` 骨架（Markdown 图 · 为出站预留）
+- [x] `@keenai/shared`：`MessagePart` / `MessageKind` Zod schema（MM-01）
+- [x] `insertMessage` + `attachments` 关联；API/WS 返回 `attachments[]`（MM-02）
+- [x] `GET /api/v1/attachments/:id/content` 鉴权下载（MM-05）
+- [x] Widget 发图 + Inbox/Dashboard inbound 图片 bubble（MM-03）
+- [x] Dashboard Composer 拖拽/粘贴上传 + `attachmentIds` 出站（MM-03）
+- [x] Email 附件 ingest（mailparser → attachments）（MM-04）
+- [x] Copilot vision：对话含图时 native multimodal draft（MM-06）
+- [x] Workflow `send_message` 支持 `attachmentIds`（MM-07）
+- [x] `@keenai/channels-core`：`parseAgentResponse` 骨架（Markdown 图 · 为出站预留）
 
 #### Sprint 11-12（W25-W28）：Feedback + Help Center
 - [ ] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`

@@ -1,7 +1,8 @@
 "use client";
 
 import type { Macro } from "@/lib/api";
-import { uploadFile, uploadFileUrl } from "@/lib/api";
+import { uploadFile } from "@/lib/api";
+import { extractAttachmentIdsFromTiptapDoc } from "@keenai/shared";
 import { Button } from "@keenai/ui";
 import Image from "@tiptap/extension-image";
 import Mention from "@tiptap/extension-mention";
@@ -16,11 +17,28 @@ import { createMentionSuggestion, createSlashSuggestion } from "./tiptap-suggest
 export type RichTextPayload = {
   plainText: string;
   doc: Record<string, unknown>;
+  attachmentIds: string[];
 };
 
 type Member = { id: string; name: string };
 
 const MacroSlash = Mention.extend({ name: "macroSlash" });
+
+const ComposerImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      attachmentId: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-attachment-id"),
+        renderHTML: (attributes) => {
+          if (!attributes.attachmentId) return {};
+          return { "data-attachment-id": attributes.attachmentId };
+        },
+      },
+    };
+  },
+});
 
 export function RichTextComposer({
   placeholder,
@@ -49,9 +67,11 @@ export function RichTextComposer({
   const submit = useCallback(
     (ed: Editor) => {
       if (disabled) return;
+      const doc = ed.getJSON() as Record<string, unknown>;
+      const attachmentIds = extractAttachmentIdsFromTiptapDoc(doc);
       const plainText = ed.getText().trim();
-      if (!plainText) return;
-      onSubmit({ plainText, doc: ed.getJSON() as Record<string, unknown> });
+      if (!plainText && attachmentIds.length === 0) return;
+      onSubmit({ plainText, doc, attachmentIds });
       ed.commands.clearContent();
     },
     [disabled, onSubmit],
@@ -62,10 +82,15 @@ export function RichTextComposer({
     if (!ed || !file.type.startsWith("image/")) return;
     setUploading(true);
     try {
-      const { storageKey } = await uploadFile(file);
-      const src = uploadFileUrl(storageKey);
-      if (!src) return;
-      ed.chain().focus().setImage({ src, alt: file.name }).run();
+      const { attachmentId } = await uploadFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      ed.chain()
+        .focus()
+        .insertContent({
+          type: "image",
+          attrs: { src: previewUrl, alt: file.name, attachmentId },
+        })
+        .run();
     } finally {
       setUploading(false);
     }
@@ -77,7 +102,7 @@ export function RichTextComposer({
     extensions: [
       StarterKit.configure({ heading: false }),
       Placeholder.configure({ placeholder }),
-      Image.configure({ inline: true }),
+      ComposerImage.configure({ inline: true }),
       Mention.configure({
         HTMLAttributes: {
           class: "rounded bg-[hsl(var(--primary)/0.15)] px-1 text-[hsl(var(--primary))]",
@@ -130,6 +155,11 @@ export function RichTextComposer({
     }
   }, [editor, externalText, onExternalTextApplied]);
 
+  const hasContent =
+    editor &&
+    (editor.getText().trim().length > 0 ||
+      extractAttachmentIdsFromTiptapDoc(editor.getJSON()).length > 0);
+
   return (
     <div className="flex flex-1 gap-2">
       <div className="flex min-h-[2.75rem] flex-1 flex-col rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm focus-within:ring-1 focus-within:ring-[hsl(var(--primary))]">
@@ -166,7 +196,7 @@ export function RichTextComposer({
       </div>
       <Button
         type="button"
-        disabled={disabled || !editor?.getText().trim()}
+        disabled={disabled || !hasContent || uploading}
         onClick={() => {
           if (editor) submit(editor);
         }}

@@ -102,7 +102,7 @@
 | P2-08 | Workflow 版本 draft→published + Trace | [x] |
 | P2-09 | SLA 50/80/100% + Office Hours | [~] |
 | P2-10 | Workflow Builder 多层 + 配置面板 | [~] |
-| P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [ ] |
+| P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [x] |
 | P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [~] |
 | P2-13 | Public Portal SSR/ISR | [~] |
 | P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [~] |

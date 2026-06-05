@@ -71,11 +71,13 @@ export function MessageThread({
       plainText: string;
       isInternal: boolean;
       doc?: Record<string, unknown>;
+      attachmentIds?: string[];
     }) => {
       if (!conversationId) throw new Error("no conversation");
       return sendMessage(conversationId, input.plainText, {
         isInternal: input.isInternal,
         content: input.doc ? { type: "tiptap", doc: input.doc } : undefined,
+        attachmentIds: input.attachmentIds,
       });
     },
     onMutate: async (input) => {
@@ -209,6 +211,7 @@ export function MessageThread({
                 plainText: payload.plainText,
                 isInternal: false,
                 doc: payload.doc,
+                attachmentIds: payload.attachmentIds.length > 0 ? payload.attachmentIds : undefined,
               });
             }}
           />

@@ -176,7 +176,9 @@ export async function presignUpload(input: {
   });
 }
 
-export async function uploadFile(file: File): Promise<{ storageKey: string; contentType: string }> {
+export async function uploadFile(
+  file: File,
+): Promise<{ attachmentId: string; storageKey: string; contentType: string }> {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
@@ -200,8 +202,16 @@ export async function uploadFile(file: File): Promise<{ storageKey: string; cont
     throw new Error(parseApiError(body, `Upload failed (${putRes.status})`));
   }
 
-  const result = (await putRes.json()) as { storageKey: string; contentType: string };
-  return { storageKey: result.storageKey, contentType: result.contentType };
+  const result = (await putRes.json()) as {
+    attachmentId: string;
+    storageKey: string;
+    contentType: string;
+  };
+  return {
+    attachmentId: result.attachmentId,
+    storageKey: result.storageKey,
+    contentType: result.contentType,
+  };
 }
 
 export function uploadFileUrl(storageKey: string): string | null {

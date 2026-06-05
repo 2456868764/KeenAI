@@ -1,0 +1,21 @@
+From: customer@example.com
+To: support@keenai.local
+Subject: Screenshot of error
+Message-ID: <msg3@example.com>
+Date: Mon, 19 May 2026 11:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="keenai-boundary"
+
+--keenai-boundary
+Content-Type: text/plain; charset=utf-8
+
+Please see the attached screenshot of the error dialog.
+
+--keenai-boundary
+Content-Type: image/png; name="error.png"
+Content-Disposition: attachment; filename="error.png"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+
+--keenai-boundary--

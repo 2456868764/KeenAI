@@ -122,6 +122,7 @@ export {
   type MessagePart,
   type SerializedAttachment,
 } from "./message-parts.js";
+export { extractAttachmentIdsFromTiptapDoc } from "./tiptap-attachments.js";
 export {
   listPortalTicketsSchema,
   portalMagicLinkRequestSchema,

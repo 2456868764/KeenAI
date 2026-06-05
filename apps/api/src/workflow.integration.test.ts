@@ -219,4 +219,143 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("send_message workflow block delivers attachmentIds on first message", async () => {
+    const PNG_1X1 = Uint8Array.from(
+      atob(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      ),
+      (c) => c.charCodeAt(0),
+    );
+
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      UPLOAD_DIR: path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../data/test-workflow-attachments",
+      ),
+    });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const presignRes = await app.request("/api/v1/uploads/presign", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: "guide.png",
+        contentType: "image/png",
+        sizeBytes: PNG_1X1.byteLength,
+      }),
+    });
+    const presigned = (await presignRes.json()) as { uploadUrl: string };
+    const uploadPath = new URL(presigned.uploadUrl).pathname;
+    const uploadRes = await app.request(uploadPath, {
+      method: "PUT",
+      headers: { ...auth, "Content-Type": "image/png" },
+      body: PNG_1X1,
+    });
+    expect(uploadRes.status).toBe(200);
+    const uploaded = (await uploadRes.json()) as { attachmentId: string };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Screenshot reply",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "reply",
+              type: "send_message",
+              plainText: "Here is the guide",
+              attachmentIds: [uploaded.attachmentId],
+            },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    const published = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(published.status).toBe(200);
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "w-attach",
+        subject: "Need guide",
+        initialMessage: { plainText: "Can you send the guide?" },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    expect(messages.status).toBe(200);
+    const body = (await messages.json()) as {
+      items: { plainText: string; sentVia?: string; attachments?: { id: string }[] }[];
+    };
+    const workflowMsg = body.items.find(
+      (m) => m.sentVia === "workflow" && m.plainText === "Here is the guide",
+    );
+    expect(workflowMsg).toBeTruthy();
+    expect(workflowMsg?.attachments?.some((a) => a.id === uploaded.attachmentId)).toBe(true);
+
+    await store.close();
+  });
 });

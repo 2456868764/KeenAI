@@ -17,6 +17,13 @@ const fixture = readFileSync(
   ),
 );
 
+const attachmentFixture = readFileSync(
+  path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../../packages/channels-email/tests/fixtures/with-attachment.eml",
+  ),
+);
+
 describe("email webhook integration", () => {
   it("ingests raw MIME and threads by In-Reply-To", async () => {
     const env = parseApiEnv({ NODE_ENV: "test" });
@@ -73,6 +80,53 @@ First email
     expect(secondBody.created).toBe(false);
     expect(secondBody.conversation.id).toBe(firstBody.conversation.id);
     expect(secondBody.thread.matchReason).toBe("in-reply-to");
+
+    await store.close();
+  });
+
+  it("ingests MIME attachments into conversation messages", async () => {
+    const uploadDir = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../data/test-email-attachments",
+    );
+    const env = parseApiEnv({ NODE_ENV: "test", UPLOAD_DIR: uploadDir });
+    const store = createLibsqlStore({ url: ":memory:" });
+    await migrate(store.db, {
+      migrationsFolder: path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../../packages/storage/migrations/libsql",
+      ),
+    });
+
+    const [org] = await store.db
+      .insert(organizations)
+      .values({ slug: "demo", name: "Demo", plan: "free" })
+      .returning();
+    if (!org) throw new Error("org");
+
+    await store.db.insert(brands).values({ orgId: org.id, slug: "default", name: "Default" });
+
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: toAuthConfig(env),
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const res = await app.request("/api/v1/webhooks/email/inbound?org=demo", {
+      method: "POST",
+      body: attachmentFixture,
+    });
+    expect(res.status).toBe(202);
+    const body = (await res.json()) as {
+      conversation: { id: string };
+      message: { messageKind: string; attachments: { fileName: string | null }[] };
+    };
+    expect(body.message.messageKind).toBe("photo");
+    expect(body.message.attachments).toHaveLength(1);
+    expect(body.message.attachments[0]?.fileName).toBe("error.png");
 
     await store.close();
   });

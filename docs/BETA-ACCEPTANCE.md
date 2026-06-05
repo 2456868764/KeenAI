@@ -19,6 +19,11 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Workflow graph layout | `workflow-graph.test.ts` | Branch + outcome edges |
 | Help center CRUD + publish | `help-center.integration.test.ts` | KB doc synced |
 | Analytics dashboard | `analytics.integration.test.ts` | 14-day series + breakdowns |
+| Multimodal upload + list | `multimodal.integration.test.ts` | photo message + content proxy |
+| Copilot vision context | `copilot.integration.test.ts` | image in draft request |
+| Email attachment ingest | `email-webhook.integration.test.ts` | MIME → photo message |
+| Workflow send_message attachments | `workflow.integration.test.ts` | attachmentIds on outbound |
+| Tiptap attachment extract | `tiptap-attachments.test.ts` | image node IDs |
 | Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 
@@ -53,6 +58,13 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 7 smoke (I117 continued)
+
+1. Dashboard Inbox: paste/drag image → send with `attachmentIds`; bubble shows image.
+2. Widget: attach image → customer message appears as photo in Inbox.
+3. Email inbound with PNG attachment → conversation message `messageKind: photo`.
+4. Copilot draft on image thread includes vision context (non-stub providers).
+
 ## Batch 6 smoke (I117 continued)
 
 1. Dashboard → Analytics: Support/Feedback/HC sections with ECharts pie, bar, line charts.
@@ -72,4 +84,4 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Still open (Phase 2 remainder)
 
-React Email components, Tiptap HC extensions, Playwright e2e — `08-ROADMAP-TODO.md` §P2.
+React Email components, Tiptap HC extensions/sitemap, Playwright e2e — `08-ROADMAP-TODO.md` §P2.
