@@ -269,7 +269,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] AI Search Answers（基础 RAG · 通过 `@keenai/kb` 接口）
 - [x] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站 + outbound reply）渠道适配
 - [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
-- [ ] 分析看板（ECharts · Support / Feedback / HC 三大）
+- [x] 分析看板（ECharts · Support / Feedback / HC 三大 · `/analytics/dashboard`）
 - [ ] **Beta 公开发布**
 
 ### Phase 2 验收

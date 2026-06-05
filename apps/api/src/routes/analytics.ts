@@ -1,7 +1,6 @@
 import { API_VERSION } from "@keenai/shared";
-import { feedbackPosts, kbQueryLogs, tickets } from "@keenai/storage/schema";
-import { count, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { getAnalyticsDashboard } from "../lib/analytics.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -13,20 +12,30 @@ export function analyticsRoutes() {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
-    const db = c.get("store").db;
-    const orgId = auth.orgId;
-
-    const [[ticketRow], [feedbackRow], [kbRow]] = await Promise.all([
-      db.select({ n: count() }).from(tickets).where(eq(tickets.orgId, orgId)),
-      db.select({ n: count() }).from(feedbackPosts).where(eq(feedbackPosts.orgId, orgId)),
-      db.select({ n: count() }).from(kbQueryLogs).where(eq(kbQueryLogs.orgId, orgId)),
-    ]);
-
+    const dashboard = await getAnalyticsDashboard(c.get("store").db, auth.orgId);
     return c.json({
-      support: { ticketCount: ticketRow?.n ?? 0 },
-      feedback: { postCount: feedbackRow?.n ?? 0 },
-      helpCenter: { searchCount: kbRow?.n ?? 0 },
+      support: {
+        ticketCount: dashboard.support.ticketCount,
+        openCount: dashboard.support.openCount,
+        doneCount: dashboard.support.doneCount,
+      },
+      feedback: {
+        postCount: dashboard.feedback.postCount,
+        totalUpvotes: dashboard.feedback.totalUpvotes,
+      },
+      helpCenter: {
+        searchCount: dashboard.helpCenter.searchCount,
+        publishedArticles: dashboard.helpCenter.publishedArticles,
+      },
     });
+  });
+
+  r.get(`${prefix}/dashboard`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const dashboard = await getAnalyticsDashboard(c.get("store").db, auth.orgId);
+    return c.json({ dashboard });
   });
 
   return r;

@@ -662,12 +662,42 @@ export async function listSlaPolicies(): Promise<{ items: SlaPolicy[] }> {
   return apiFetch("/api/v1/sla/policies");
 }
 
+export type AnalyticsDailyPoint = { day: string; count: number };
+export type AnalyticsLabelCount = { label: string; count: number };
+
+export type AnalyticsDashboard = {
+  support: {
+    ticketCount: number;
+    openCount: number;
+    doneCount: number;
+    byStatus: AnalyticsLabelCount[];
+    byType: AnalyticsLabelCount[];
+    createdDaily: AnalyticsDailyPoint[];
+  };
+  feedback: {
+    postCount: number;
+    totalUpvotes: number;
+    byStatus: AnalyticsLabelCount[];
+    topPosts: { title: string; upvotes: number }[];
+  };
+  helpCenter: {
+    searchCount: number;
+    publishedArticles: number;
+    searchesDaily: AnalyticsDailyPoint[];
+    searchFeedback: AnalyticsLabelCount[];
+  };
+};
+
 export async function getAnalyticsSummary(): Promise<{
-  support: { ticketCount: number };
-  feedback: { postCount: number };
-  helpCenter: { searchCount: number };
+  support: { ticketCount: number; openCount: number; doneCount: number };
+  feedback: { postCount: number; totalUpvotes: number };
+  helpCenter: { searchCount: number; publishedArticles: number };
 }> {
   return apiFetch("/api/v1/analytics/summary");
+}
+
+export async function getAnalyticsDashboard(): Promise<{ dashboard: AnalyticsDashboard }> {
+  return apiFetch("/api/v1/analytics/dashboard");
 }
 
 export async function listTicketEvents(id: string): Promise<{ items: TicketEvent[] }> {

@@ -18,6 +18,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Discord outbound | `outbound.discord.test.ts` | Plan includes discord channel |
 | Workflow graph layout | `workflow-graph.test.ts` | Branch + outcome edges |
 | Help center CRUD + publish | `help-center.integration.test.ts` | KB doc synced |
+| Analytics dashboard | `analytics.integration.test.ts` | 14-day series + breakdowns |
 | Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 
@@ -52,6 +53,11 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 6 smoke (I117 continued)
+
+1. Dashboard → Analytics: Support/Feedback/HC sections with ECharts pie, bar, line charts.
+2. `GET /api/v1/analytics/dashboard` returns `createdDaily` (14 points) and status breakdowns.
+
 ## Batch 5 smoke (I117 continued)
 
 1. Dashboard → Help Center: create collection, new article, Tiptap edit, Publish.
@@ -66,4 +72,4 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Still open (Phase 2 remainder)
 
-Full ECharts dashboards, React Email components, Tiptap HC editor, Playwright e2e — `08-ROADMAP-TODO.md` §P2.
+React Email components, Tiptap HC extensions, Playwright e2e — `08-ROADMAP-TODO.md` §P2.

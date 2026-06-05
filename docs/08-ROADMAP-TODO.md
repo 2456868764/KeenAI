@@ -109,7 +109,7 @@
 | P2-15 | AI Search Answers（`@keenai/kb`） | [~] |
 | P2-16 | Slack / Discord 渠道 | [x] |
 | P2-17 | Multi-brand 配置 UI | [x] |
-| P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [~] |
+| P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [x] |
 | P2-19 | Beta 公开发布验收 | [ ] |
 | P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
 | P2-ACC-02 | ≥3 外部团队试用 | [ ] |
