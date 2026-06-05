@@ -72,7 +72,7 @@ KeenAI 的 Agent 执行核心 **Keeni Agent Engine**，借鉴 Hermes Agent 的�
                           │                                └────────────┘
                 ┌─────────▼────────┐
                 │  Knowledge Base  │  ← RAG
-                │  (@mastra/rag    │
+                │  (@keenai/kb     │
                 │  + Hybrid)       │
                 │ BM25 + Vec + KG  │
                 └──────────────────┘
@@ -294,7 +294,7 @@ Mastra Memory 自动负责大部分组装，KeenAI 再叠加 RAG 与品牌上下
 │     - tool_guidelines                             │
 │     - session_patterns                            │
 ├──────────────────────────────────────────────────┤
-│  5. RAG Retrieved Knowledge（Top-K chunks）       │   ~1500 tok  ← @mastra/rag + custom hybrid
+│  5. RAG Retrieved Knowledge（Top-K chunks）       │   ~1500 tok  ← @keenai/kb hybrid retriever
 ├──────────────────────────────────────────────────┤
 │  6. Conversation History（压缩后）                │   ~2000 tok  ← Memory + TokenLimiter processor
 ├──────────────────────────────────────────────────┤
@@ -915,38 +915,44 @@ export const SandboxPolicy = z.object({
 ### 11.1 KeenAI 系统级 Cron
 
 ```ts
-// apps/worker/src/cron.ts
-import { inngest } from '@keenai/workflow/inngest';
-import * as jobs from './jobs/index.js';
-
-export const memoryConsolidate = inngest.createFunction(
-  { id: 'memory-consolidate' },
-  { cron: '0 * * * *' },                          // 每小时
-  jobs.consolidateMemory,
+// Cron / scheduled jobs live in domain packages; API registers them via apps/api/src/routes/inngest.ts
+// packages/memory/src/inngest/functions.ts
+export const consolidateCron = client.createFunction(
+  { id: 'keenai-memory-consolidate-cron' },
+  { cron: '0 * * * *' },
+  async () => handlers.consolidate(),
 );
 
-export const memoryDecaySweep = inngest.createFunction(
-  { id: 'memory-decay-sweep' },
-  { cron: '0 3 * * *' },                          // 每天 03:00
-  jobs.decayMemory,
+export const decaySweepCron = client.createFunction(
+  { id: 'keenai-memory-decay-sweep-cron' },
+  { cron: '0 3 * * *' },
+  async () => handlers.decaySweep(),
 );
 
-export const kbReindex = inngest.createFunction(
+// packages/workflow/src/inngest/functions.ts
+export const scanUnresponsiveCron = client.createFunction(
+  { id: 'keenai-workflow-scan-unresponsive-cron' },
+  { cron: '*/5 * * * *' },
+  async () => handlers.scanCustomerUnresponsive(undefined),
+);
+
+// Planned (not yet wired):
+export const kbReindex = client.createFunction(
   { id: 'kb-reindex-changed' },
-  { cron: '*/15 * * * *' },                       // 每 15 分钟
-  jobs.reindexChangedKb,
+  { cron: '*/15 * * * *' },
+  async () => jobs.reindexChangedKb(),
 );
 
-export const slaCheck = inngest.createFunction(
+export const slaCheck = client.createFunction(
   { id: 'sla-check-breaches' },
-  { cron: '* * * * *' },                          // 每分钟
-  jobs.checkSlaBreaches,
+  { cron: '* * * * *' },
+  async () => jobs.checkSlaBreaches(),
 );
 
-export const skillRefine = inngest.createFunction(
+export const skillRefine = client.createFunction(
   { id: 'skill-refine' },
-  { cron: '0 4 * * 0' },                          // 每周日 04:00
-  jobs.refineSkills,
+  { cron: '0 4 * * 0' },
+  async () => jobs.refineSkills(),
 );
 ```
 

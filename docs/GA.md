@@ -1,7 +1,7 @@
 # KeenAI 0.1.0 Release Checklist
 
 > Target tag: **`v0.1.0`** (semver minor after Alpha `0.0.1`). Full **1.0 GA** remains a later milestone — see [08-ROADMAP.md](./08-ROADMAP.md).  
-> Design vs implementation gaps: [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md).
+> Design gaps: [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md). Open items: [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) I111.
 
 ## Engineering (0.1.0 scope)
 

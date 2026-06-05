@@ -42,8 +42,9 @@
 
 ## Non-KB doc mismatches
 
-- **[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)** — describes `@mastra/rag`; implementation uses `@keenai/kb` hybrid retriever + optional Mastra **eval** judge only.
-- **[04-MODULES.md](./04-MODULES.md) / [06-TECH-STACK.md](./06-TECH-STACK.md)** — still reference `apps/worker` for jobs; worker app may not exist in monorepo layout.
+- **[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)** — aligned to `@keenai/kb` + optional `@mastra/evals` judge.
+- **[04-MODULES.md](./04-MODULES.md) / [06-TECH-STACK.md](./06-TECH-STACK.md)** — aligned: jobs via API `lib/*-inngest.ts` + domain packages (no `apps/worker`).
+- **[03-ARCHITECTURE.md](./03-ARCHITECTURE.md) / [09-AGENT-ENGINE.md](./09-AGENT-ENGINE.md) / [10-AGENT-MEMORY.md](./10-AGENT-MEMORY.md) / [13-WORKFLOW.md](./13-WORKFLOW.md) / [05-FRONTEND.md](./05-FRONTEND.md)** — `@mastra/rag` → `@keenai/kb`; worker paths → `packages/*/inngest` + `apps/api` (2026-05-19).
 - **Sprint 16 UI bullets** in [08-ROADMAP.md](./08-ROADMAP.md) — superseded by CA-01～06 table; product UI items remain open.
 
 ## Doc hygiene (fixed)

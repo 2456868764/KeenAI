@@ -190,34 +190,23 @@ export const TriggerConfig = z.object({
 「客户 N 时间未回复」/「客服 N 时间未回复」是 **派生事件**，由 Inngest 计时器实现：
 
 ```ts
-// apps/worker/src/jobs/unresponsive-watch.ts
+// packages/workflow/src/inngest/functions.ts — scan cron + event
+// apps/api/src/lib/workflow-unresponsive-scan.ts — DB scan + dispatch
+// apps/api/src/lib/workflow-scan-scheduler.ts — optional interval when Inngest off
 import { inngest } from '@keenai/workflow/inngest';
 
-export const customerUnresponsiveWatch = inngest.createFunction(
-  { id: 'customer-unresponsive-watch' },
-  { event: 'conversation/message.sent' },          // 客服发完消息后 → 启计时器
-  async ({ event, step }) => {
-    const { conversationId, senderType } = event.data;
-    if (senderType !== 'member') return;            // 仅客服回复后才计时
-
-    // 监听本组织所有「customer_unresponsive」Workflow → 取最短 inactivity
-    const minMs = await step.run('load-min', () => triggerRegistry.minInactivityForOrg('customer_unresponsive', event.data.orgId));
-    if (!minMs) return;
-
-    const replied = await step.waitForEvent('customer-replied', {
-      event: 'conversation/message.received',
-      match: 'data.conversationId',
-      timeout: `${Math.floor(minMs / 1000)}s`,
-    });
-    if (replied) return;                            // 客户回复了 → 不触发
-
-    // 客户超时未回 → 发派生事件，触发所有匹配的 Workflow
-    await step.sendEvent('trigger', {
-      name: 'derived/customer.unresponsive',
-      data: { conversationId, orgId: event.data.orgId, inactivityMs: minMs },
-    });
-  },
+export const scanUnresponsive = inngest.createFunction(
+  { id: 'keenai-workflow-scan-unresponsive' },
+  { event: 'keenai/workflow.scan_unresponsive' },
+  async ({ event }) => handlers.scanCustomerUnresponsive(event.data.orgId),
 );
+
+export const scanUnresponsiveCron = inngest.createFunction(
+  { id: 'keenai-workflow-scan-unresponsive-cron' },
+  { cron: '*/5 * * * *' },
+  async () => handlers.scanCustomerUnresponsive(undefined),
+);
+// Manual fallback: POST /api/v1/workflows/jobs/scan-unresponsive
 ```
 
 `teammate_unresponsive` 完全对称（监听 `conversation/message.received` 且 `lastSender === 'member'`）。
@@ -893,11 +882,11 @@ export async function refreshEarliestCustomer(ctx: BlockContext, current: any) {
 > 「Auto-close incomplete Workflows conversations」配置可选 1 / 3 / 5 / 7 / 10 / 15 / 30 / 60 分钟；客户进入「等输入」类 step 后开始计时，未交互即自动 close。
 
 ```ts
-// apps/worker/src/jobs/wf-auto-close.ts
+// packages/workflow/src/inngest/timers.ts — registered via apps/api workflow Inngest bundle
 import { inngest } from '@keenai/workflow/inngest';
 
 export const wfAutoClose = inngest.createFunction(
-  { id: 'wf-auto-close' },
+  { id: 'keenai-workflow-auto-close-timer' },
   { event: 'workflow/step.awaiting_input' },             // reply_buttons / collect_data / 类 step 进入挂起时由 executor 发
   async ({ event, step }) => {
     const { workflowRunId, conversationId, autoCloseMs } = event.data;

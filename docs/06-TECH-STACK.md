@@ -109,17 +109,11 @@ keenai/
 │   │       ├── index.ts      # Hono app entry
 │   │       ├── routes/       # REST 路由（conversations / tickets / ai）
 │   │       ├── ws/           # WebSocket handlers
+│   │       ├── lib/          # Inngest 注册（kb-inngest、workflow-dispatch、email-imap-poll）
 │   │       └── middleware/
-│   ├── worker/               # 后台任务进程（BullMQ + Inngest）
-│   │   └── src/
-│   │       ├── memory.ts     # Memory 巩固
-│   │       ├── kb-ingest.ts  # KB 摄入
-│   │       ├── email-poll.ts # IMAP 拉取
-│   │       └── cron.ts       # 定时
 │   ├── dashboard/            # Next.js 15 后台
 │   ├── portal/               # Next.js 反馈门户
-│   ├── help-center/          # Next.js Help Center
-│   ├── changelog/            # Next.js Changelog
+│   ├── docs/                 # Next.js 文档站（Fumadocs 规划）
 │   └── widget/               # Preact + Vite Messenger
 ├── packages/
 │   ├── db/                   # Drizzle schema + migrations（双方言）
@@ -193,7 +187,6 @@ keenai/
     "@mastra/memory": "^0.10.0",
     "@mastra/libsql": "^0.10.0",
     "@mastra/pg": "^0.10.0",
-    "@mastra/rag": "^0.10.0",
     "@mastra/mcp": "^0.10.0",
 
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -310,7 +303,7 @@ keenai/
 |------|--------|--------------|---------------------|
 | 心智模型 | Opinionated，开箱即用 | 抽象层多 | 自由度最高 |
 | Agent + Memory + Workflow + Eval | **一体化** | 分散包 | 自建 |
-| RAG 模块 | `@mastra/rag`（开箱） | ✅ | 自建 |
+| RAG 模块 | `@keenai/kb`（自建 hybrid）；`@mastra/evals` 可选 judge | ✅ | 自建 |
 | MCP 集成 | `@mastra/mcp` 原生 | 半官方 | 手接 SDK |
 | 评估（Eval） | 内置 Scorers | 外置 LangSmith | 自建 |
 | Observability | 内置 OTel | 外置 LangSmith | 自建 |
@@ -318,7 +311,7 @@ keenai/
 | Solo 开发友好度 | **高**（脚手架 `create-mastra`） | 中 | 低 |
 | 与 Vercel AI SDK 关系 | **基于 AI SDK 构建** | 独立体系 | 直接用 |
 
-**结论**：**Mastra**（核心 Agent / Memory / Workflow / RAG）+ **Vercel AI SDK**（底层 LLM 调用、流式、UI 集成）。两者是叠加关系而非互斥。
+**结论**：**Mastra**（Agent / Memory / Workflow / Eval）+ **`@keenai/kb`**（RAG 检索管线）+ **Vercel AI SDK**（底层 LLM 调用、流式、UI 集成）。
 
 #### 3.2.5 LLM SDK：Vercel AI SDK v4
 
@@ -626,12 +619,8 @@ services:
     command: ["bun", "run", "apps/api/src/index.ts"]
     ports: ["8080:8080"]
 
-  # worker: reserved — background jobs run in API process + Inngest (`packages/kb`, `packages/workflow`)
-  # worker:
-  #   <<: *keenai-image
-  #   profiles: ["standard", "full"]
-  #   depends_on: [api, redis]
-  #   command: ["bun", "run", "apps/worker/src/index.ts"]
+  # Background jobs: API process registers Inngest fns from `packages/kb` + `packages/workflow`
+  # (`apps/api/src/lib/kb-inngest.ts`, `workflow-dispatch.ts`). No separate worker container.
 
   dashboard:
     profiles: ["standard", "full"]

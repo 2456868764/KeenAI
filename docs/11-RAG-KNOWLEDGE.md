@@ -1,7 +1,7 @@
-# KeenAI RAG / 知识库设计（TypeScript · Mastra RAG）
+# KeenAI RAG / 知识库设计（TypeScript · `@keenai/kb`）
 
 > **设计参考**：AgentMemory 的三流检索 + RRF Fusion + 4-tier Memory；Hermes Agent 的 Skill / MCP 集成；Anthropic Contextual Retrieval；LlamaIndex 父子分层；RAGAS / DeepEval 评估范式；[LLM Wiki v2 优化路线](11-RAG-OPTIMIZATION.md)（KB-07～24 执行跟踪）。  
-> **落地框架**：[`@mastra/rag`](https://mastra.ai/docs/rag) （`MDocument` chunker、embed、graphRAG）+ [Vercel AI SDK v4](https://sdk.vercel.ai/) （embed / rerank / generateObject）+ [`@keenai/storage`](12-STORAGE-ABSTRACTION.md)（双后端 VectorStore / FTSStore）。
+> **落地框架**：[`@keenai/kb`](../../packages/kb)（ingest / hybrid retriever / crystallize）+ [Vercel AI SDK v4](https://sdk.vercel.ai/) （embed / rerank / generateObject）+ [`@keenai/storage`](12-STORAGE-ABSTRACTION.md)（双后端 VectorStore / FTSStore）。评估可选 [`@mastra/evals`](https://mastra.ai/docs/evals) judge（`KEENAI_EVAL_JUDGE_MODEL`）；**未使用** `@mastra/rag`。
 
 ---
 
@@ -14,7 +14,7 @@ KeenAI Knowledge Base（KB）是 **集体性、长期、可版本化** 的产品
 | 能力 | 说明 |
 |------|------|
 | **多源摄入** | Help Center / 文档 / 网页 / Notion / GitHub / Slack / 对话沉淀 |
-| **智能切片** | 语义切片 + 滑动窗口 + 层级保留（Mastra `MDocument`） |
+| **智能切片** | 标题感知切片 + 滑动窗口 + 层级保留（`chunkKbDocument` / KB-18 stub） |
 | **多模态** | 文本 / 图片 / 视频字幕 / 代码 / 表格 |
 | **混合检索** | BM25 + Vector + Knowledge Graph + RRF Fusion |
 | **重排** | bge-reranker (`@xenova/transformers`) / Cohere Rerank / Jina（可选） |
@@ -46,8 +46,8 @@ KeenAI Knowledge Base（KB）是 **集体性、长期、可版本化** 的产品
        │  Confidence  │        │  Versioned    │
        │  Decays      │        │  Long-lived   │
        │              │        │              │
-       │ @mastra/     │        │ @mastra/rag  │
-       │  memory      │        │ + @keenai/kb │
+       │ @mastra/     │        │ @keenai/kb   │
+       │  memory      │        │ + ai SDK     │
        └──────────────┘        └──────────────┘
 ```
 
@@ -237,7 +237,7 @@ export type ConnectorType =
 │       - 修复 Markdown 嵌套                                       │
 │       - 提取标题层级                                             │
 ├───────────────────────────────────────────────────────────────┤
-│  4. Chunk（切片 · Mastra MDocument）                             │
+│  4. Chunk（切片 · `@keenai/kb` chunkers）                        │
 │       - 主策略：semantic（基于标题层级）                          │
 │       - 备策略：recursive（512 tok，overlap 64）                  │
 │       - 代码块：preserveCode: true                               │
@@ -270,19 +270,15 @@ export type ConnectorType =
 
 ### 4.1 切片策略详解
 
-#### A. 语义切片（首选 · Mastra MDocument）
+#### A. 语义切片（首选 · `@keenai/kb`）
 
 ```ts
-import { MDocument } from '@mastra/rag';
+// packages/kb/src/ingest/chunk-document.ts
+import { parseKbDocument } from './parse-document.js';
+import { chunkKbDocument } from './chunk-document.js';
 
-const doc = MDocument.fromMarkdown(rawMarkdown, { metadata: { sourceId } });
-
-const chunks = await doc.chunk({
-  strategy: 'markdown',                // 基于 H1/H2/H3 切分
-  size:     512,
-  overlap:  64,
-  preserveHeaders: true,
-});
+const parsed = parseKbDocument({ title: 'FAQ', rawContent: rawMarkdown });
+const chunks = chunkKbDocument(parsed, 800); // heading-aware; KB-18 hierarchical stub
 ```
 
 #### B. 父子结构（Hierarchical Chunking）
@@ -346,26 +342,19 @@ export async function addContext(fullDoc: string, chunks: string[]) {
 ### 4.2 Inngest Pipeline 实现
 
 ```ts
-// apps/worker/src/jobs/kb-ingest.ts
-import { inngest } from '@keenai/workflow/inngest';
-import { fetchDocument, parse, clean, chunk, enrich, embed, index } from '@keenai/kb/pipeline';
+// packages/kb/src/inngest/kb-ingest.ts — registered in apps/api/src/lib/kb-inngest.ts
+import { createKbInngestFunctions } from '@keenai/kb/inngest';
 
-export const kbIngest = inngest.createFunction(
-  { id: 'kb-ingest-document', retries: 3, concurrency: { limit: 8, key: 'event.data.brandId' } },
-  { event: 'kb/document.fetch' },
-  async ({ event, step }) => {
-    const { sourceId, externalRef } = event.data;
-
-    const raw      = await step.run('fetch',  () => fetchDocument(sourceId, externalRef));
-    const parsed   = await step.run('parse',  () => parse(raw));
-    const cleaned  = await step.run('clean',  () => clean(parsed));
-    const chunks   = await step.run('chunk',  () => chunk(cleaned));
-    const enriched = await step.run('enrich', () => enrich(chunks, cleaned));
-    const embedded = await step.run('embed',  () => embed(enriched));
-    await step.run('index', () => index(embedded));
-    await step.sendEvent('kb-indexed', { name: 'kb/document.indexed', data: { sourceId, count: chunks.length } });
-  },
-);
+export function createKbInngestFunctions(client, handlers) {
+  return [
+    client.createFunction(
+      { id: 'keenai-kb-ingest', concurrency: { limit: 1, key: 'event.data.brandId' } },
+      { event: 'keenai/kb.ingest' },
+      async ({ event, step }) => step.run('kb-ingest-pipeline', () => handlers.runIngest(event.data)),
+    ),
+    // crystallize + conversation.closed handlers …
+  ];
+}
 ```
 
 ---
@@ -659,7 +648,7 @@ export async function relatedChunks(store: Store, brandId: string, entityName: s
 
 **场景 3：「报错 E001 怎么办？」** — 实体匹配 + `solution_for` 关系 → 直接定位答案。
 
-> 也可使用 [`@mastra/rag` `graphRAG`](https://mastra.ai/docs/rag/graph-rag) 接管 KG 流，与 Mastra Memory 共享同一图谱实例。
+> KG 扩展检索见 `packages/kb/src/retriever/graph-expand.ts`（`kb_entities` / `kb_relations`）；未来可与 Mastra Memory 图谱对齐，当前未接 `@mastra/rag` graphRAG。
 
 ---
 
@@ -1407,8 +1396,8 @@ packages/kb/
 │   │   │   └── markdown.ts     # marked / remark
 │   │   ├── cleaner.ts          # sanitize-html
 │   │   ├── chunker/
-│   │   │   ├── semantic.ts     # MDocument markdown strategy
-│   │   │   ├── recursive.ts    # MDocument recursive strategy
+│   │   │   ├── semantic.ts     # heading-aware chunk (planned)
+│   │   │   ├── recursive.ts    # fixed-size overlap chunk (planned)
 │   │   │   └── hierarchical.ts
 │   │   ├── enricher/
 │   │   │   ├── contextual.ts   # Anthropic Contextual Retrieval（prompt caching）

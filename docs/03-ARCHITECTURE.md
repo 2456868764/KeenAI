@@ -69,12 +69,10 @@ KeenAI 采用 **「Modular Monolith + pnpm workspaces」** 架构（Monorepo + D
 ```
 keenai/
 ├── apps/
-│   ├── api/           # Hono HTTP/WS 入口
-│   ├── worker/        # Inngest/BullMQ worker 入口
-│   ├── dashboard/     # Next.js 后台
+│   ├── api/           # Hono HTTP/WS 入口 + Inngest fn 注册（kb / memory / workflow）
+│   ├── dashboard/     # Next.js 后台（含 /help-center、/custom-actions）
 │   ├── portal/        # Next.js 公开门户
-│   ├── help-center/   # Next.js Help Center
-│   ├── changelog/     # Next.js Changelog
+│   ├── docs/          # Next.js 文档站（Fumadocs 规划）
 │   └── widget/        # Preact + Vite Messenger
 └── packages/
     ├── inbox/         # 收件箱
@@ -266,7 +264,7 @@ KeenAI 的 AI 内核由 **三个深度耦合但职责清晰** 的子系统组成
 │   │  Agent Engine   │◀──▶│  Memory System  │    │  KB / RAG    │ │
 │   │  (Keeni Agent)  │    │  (Keeni Memory) │    │  (Hybrid     │ │
 │   │  Mastra Agent   │    │  Mastra Memory  │    │  Retrieval)  │ │
-│   │                 │    │                 │    │  @mastra/rag │ │
+│   │                 │    │                 │    │  @keenai/kb  │ │
 │   │  执行：Plan→Act │    │  记忆：4 层巩固 │    │  知识：       │ │
 │   │  →Observe→      │    │  Working /      │    │  BM25+Vec+   │ │
 │   │  Reflect        │    │  Episodic /     │    │  Graph + RRF │ │
@@ -294,7 +292,7 @@ KeenAI 的 AI 内核由 **三个深度耦合但职责清晰** 的子系统组成
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-> 设计参考：[NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)（Agent 执行核心、Skill 自学习、多平台 Gateway、Subagent 并行）+ [rohitg00/agentmemory](https://github.com/rohitg00/agentmemory)（4 层记忆、Hook Pipeline、三流 RRF 检索）。落地框架 [Mastra](https://mastra.ai/) 已经把 Agent + Memory + Workflow + RAG + Eval + MCP 封装到位。本地克隆与读码入口见 [00-REFERENCE-REPOS.md](00-REFERENCE-REPOS.md)。
+> 设计参考：[NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)（Agent 执行核心、Skill 自学习、多平台 Gateway、Subagent 并行）+ [rohitg00/agentmemory](https://github.com/rohitg00/agentmemory)（4 层记忆、Hook Pipeline、三流 RRF 检索）。落地：**Mastra**（Agent / Memory / Workflow / Eval / MCP）+ **`@keenai/kb`**（RAG 管线，未用 `@mastra/rag`）。本地克隆与读码入口见 [00-REFERENCE-REPOS.md](00-REFERENCE-REPOS.md)。
 
 详细设计：
 - **执行核心** → [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md)
@@ -342,7 +340,7 @@ const result = await streamText({
 |--------|-----------|--------------|----------|--------|
 | **Agent Engine** | 「Plan-Act-Observe-Reflect」主循环，让 LLM 能干活 | Conversation / UserAgent / Brand State | Redis + Store | `@mastra/core` + `ai` |
 | **Memory System** | per-Customer 个体记忆，让 Agent 「记住人」 | Observations / Episodes / Facts / Patterns / Slots | VectorStore + FTSStore + Store | `@mastra/memory` + `@keenai/memory` |
-| **KB / RAG** | per-Brand 集体知识，让 Agent 「答得准」 | Sources / Documents / Chunks / Entities | VectorStore + FTSStore + Store + S3 | `@mastra/rag` + `@keenai/kb` |
+| **KB / RAG** | per-Brand 集体知识，让 Agent 「答得准」 | Sources / Documents / Chunks / Entities | VectorStore + FTSStore + Store + S3 | `@keenai/kb`（可选 `@mastra/evals` judge） |
 
 #### 检索范式：三流融合（Triple-stream Retrieval）
 

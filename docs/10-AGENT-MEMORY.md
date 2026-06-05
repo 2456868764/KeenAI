@@ -37,7 +37,7 @@ KeenAI 同时拥有「记忆」与「知识库」，二者职责不同：
 | 用途 | 「这个客户是谁、Ta 喜欢什么」 | 「这个产品怎么用」 |
 | 检索粒度 | 单 Slot / 单 Episode | Chunk |
 | 隔离 | per-Customer / per-Brand | per-Brand / Global |
-| 落地框架 | `@mastra/memory` + `@keenai/memory` | `@mastra/rag` + `@keenai/kb` |
+| 落地框架 | `@mastra/memory` + `@keenai/memory` | `@keenai/kb` + Vercel AI SDK |
 
 **协同**：
 > Agent 同时检索两者 — Memory 提供「人」的上下文，KB 提供「事」的答案。
@@ -325,7 +325,7 @@ export async function buildVector() {
 ### 6.1 Hook 实现（Inngest function）
 
 ```ts
-// apps/worker/src/jobs/memory-on-message.ts
+// packages/memory/src/inngest/functions.ts — registered in apps/api/src/lib/memory-inngest.ts
 import { inngest } from '@keenai/workflow/inngest';
 import { buildKeeniMemory } from '@keenai/memory';
 import { dedup, sanitize } from '@keenai/memory/pipeline';
@@ -708,9 +708,9 @@ export function memoryStrength(
 每天 03:00 由 Inngest scheduled job 扫描：
 
 ```ts
-// apps/worker/src/cron.ts
+// packages/memory/src/inngest/functions.ts (`keenai-memory-decay-sweep-cron`)
 export const memoryDecaySweep = inngest.createFunction(
-  { id: 'memory-decay-sweep' },
+  { id: 'keenai-memory-decay-sweep-cron' },
   { cron: '0 3 * * *' },
   async ({ step }) => {
     await step.run('sweep-facts', () => sweepDecay('memory_facts'));
@@ -1155,14 +1155,14 @@ export async function onConversationStart(p: {
 Mastra Memory 在 `agent.stream(messages, { resourceId, threadId })` 中已自动完成「写入 L1 + 检索相关记忆」。KeenAI 仅在 Hook 中追加业务侧逻辑：
 
 ```ts
-// apps/worker/src/jobs/memory-on-message-received.ts （承前 §6.1）
+// packages/memory/src/inngest/functions.ts (`keenai-memory-canonicalize` 等) — 承前 §6.1
 // 已展示完整 Inngest function 实现
 ```
 
 ### 15.3 出会话（SessionEnd / ConversationClosed）
 
 ```ts
-// apps/worker/src/jobs/memory-consolidate.ts
+// packages/memory/src/inngest/functions.ts (`keenai-memory-consolidate`)
 import { inngest } from '@keenai/workflow/inngest';
 import { generateObject } from 'ai';
 import { z } from 'zod';

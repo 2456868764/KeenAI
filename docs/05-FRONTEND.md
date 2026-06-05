@@ -576,14 +576,14 @@ Portal / Help：`<768px` 右侧边栏移到底部。
 apps/
 ├── dashboard/                 # 内部 Dashboard（Inbox/Directory/Settings/Workflow）
 │   └── app/
-│       ├── (inbox)/inbox/     # 四栏 Inbox
-│       ├── directory/
-│       ├── automations/workflows/
-│       └── settings/
-├── portal/                    # 公开 Feedback（board12 布局）
-├── help/                      # Help Center（help2 布局）
-├── changelog/
-└── widget/                    # Messenger（fibi 布局）
+│       ├── inbox/             # 四栏 Inbox
+│       ├── workflows/
+│       ├── custom-actions/    # CA 四步向导（stub）
+│       ├── help-center/       # KB 搜索（无独立 Portal）
+│       └── login/
+├── portal/                    # 公开 Feedback Portal
+├── docs/                      # 文档站（Fumadocs 规划）
+└── widget/                    # Messenger embed
 
 packages/
 ├── ui/                        # Shadcn 扩展 + 上表业务组件
