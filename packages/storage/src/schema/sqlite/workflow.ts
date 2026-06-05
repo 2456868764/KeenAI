@@ -1,7 +1,7 @@
-import type { WorkflowDefinition } from "@keenai/workflow";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
+import type { WorkflowDefinitionJson } from "../_shared/workflow-definition-json.js";
 import { conversations } from "./conversation";
 import { brands, organizations } from "./core";
 
@@ -15,7 +15,7 @@ export const workflows = sqliteTable(
     brandId: text("brand_id").references(() => brands.id),
     name: text("name").notNull(),
     trigger: text("trigger").notNull(),
-    definition: text("definition", { mode: "json" }).$type<WorkflowDefinition>().notNull(),
+    definition: text("definition", { mode: "json" }).$type<WorkflowDefinitionJson>().notNull(),
     status: text("status").notNull().default("draft"),
     ...sqliteTimestamps,
   },
