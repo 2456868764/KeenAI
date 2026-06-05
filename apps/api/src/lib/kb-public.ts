@@ -1,5 +1,5 @@
 import type { createLibsqlStore } from "@keenai/storage";
-import { kbDocuments } from "@keenai/storage/schema";
+import { helpArticles, helpCollections, kbDocuments } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
@@ -37,9 +37,74 @@ export type PublicKbArticle = {
 export type PublicKbArticleDetail = PublicKbArticle & {
   body: string;
   url: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
 };
 
+async function usesHelpCenterTables(db: Db, orgId: string, brandId: string) {
+  const [row] = await db
+    .select({ id: helpArticles.id })
+    .from(helpArticles)
+    .where(and(eq(helpArticles.orgId, orgId), eq(helpArticles.brandId, brandId)))
+    .limit(1);
+  return Boolean(row);
+}
+
+async function listPublicCollectionsFromHelp(
+  db: Db,
+  orgId: string,
+  brandId: string,
+): Promise<{ slug: string; name: string; articleCount: number }[]> {
+  const collections = await db
+    .select()
+    .from(helpCollections)
+    .where(
+      and(
+        eq(helpCollections.orgId, orgId),
+        eq(helpCollections.brandId, brandId),
+        eq(helpCollections.public, true),
+      ),
+    )
+    .orderBy(helpCollections.sortOrder, helpCollections.name);
+
+  const articles = await db
+    .select({
+      collectionId: helpArticles.collectionId,
+      collectionSlug: helpCollections.slug,
+    })
+    .from(helpArticles)
+    .innerJoin(helpCollections, eq(helpArticles.collectionId, helpCollections.id))
+    .where(
+      and(
+        eq(helpArticles.orgId, orgId),
+        eq(helpArticles.brandId, brandId),
+        eq(helpArticles.status, "published"),
+        eq(helpCollections.public, true),
+      ),
+    );
+
+  const counts = new Map<string, { slug: string; name: string; articleCount: number }>();
+  for (const collection of collections) {
+    counts.set(collection.id, {
+      slug: collection.slug,
+      name: collection.name,
+      articleCount: 0,
+    });
+  }
+  for (const article of articles) {
+    if (!article.collectionId) continue;
+    const entry = counts.get(article.collectionId);
+    if (entry) entry.articleCount += 1;
+  }
+
+  return [...counts.values()].filter((entry) => entry.articleCount > 0);
+}
+
 export async function listPublicKbCollections(db: Db, orgId: string, brandId: string) {
+  if (await usesHelpCenterTables(db, orgId, brandId)) {
+    return listPublicCollectionsFromHelp(db, orgId, brandId);
+  }
+
   const rows = await db
     .select()
     .from(kbDocuments)
@@ -65,10 +130,52 @@ export async function listPublicKbCollections(db: Db, orgId: string, brandId: st
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
+async function listPublicArticlesFromHelp(
+  db: Db,
+  input: { orgId: string; brandId: string; collection?: string; limit?: number },
+) {
+  const rows = await db
+    .select({
+      article: helpArticles,
+      collectionSlug: helpCollections.slug,
+    })
+    .from(helpArticles)
+    .innerJoin(helpCollections, eq(helpArticles.collectionId, helpCollections.id))
+    .where(
+      and(
+        eq(helpArticles.orgId, input.orgId),
+        eq(helpArticles.brandId, input.brandId),
+        eq(helpArticles.status, "published"),
+        eq(helpCollections.public, true),
+      ),
+    )
+    .orderBy(desc(helpArticles.updatedAt))
+    .limit(input.limit ?? 100);
+
+  const items: PublicKbArticle[] = [];
+  for (const row of rows) {
+    const collection = row.collectionSlug ?? "general";
+    if (input.collection && collection !== input.collection) continue;
+    items.push({
+      id: row.article.id,
+      title: row.article.title,
+      slug: row.article.slug,
+      collection,
+      excerpt: row.article.excerpt ?? row.article.plainText.slice(0, 240) ?? null,
+      updatedAt: row.article.updatedAt.toISOString(),
+    });
+  }
+  return items;
+}
+
 export async function listPublicKbArticles(
   db: Db,
   input: { orgId: string; brandId: string; collection?: string; limit?: number },
 ) {
+  if (await usesHelpCenterTables(db, input.orgId, input.brandId)) {
+    return listPublicArticlesFromHelp(db, input);
+  }
+
   const rows = await db
     .select()
     .from(kbDocuments)
@@ -101,10 +208,52 @@ export async function listPublicKbArticles(
   return items;
 }
 
+async function getPublicArticleFromHelp(
+  db: Db,
+  input: { orgId: string; brandId: string; articleId: string },
+) {
+  const [row] = await db
+    .select({
+      article: helpArticles,
+      collectionSlug: helpCollections.slug,
+      collectionPublic: helpCollections.public,
+    })
+    .from(helpArticles)
+    .leftJoin(helpCollections, eq(helpArticles.collectionId, helpCollections.id))
+    .where(
+      and(
+        eq(helpArticles.id, input.articleId),
+        eq(helpArticles.orgId, input.orgId),
+        eq(helpArticles.brandId, input.brandId),
+        eq(helpArticles.status, "published"),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return null;
+  if (row.collectionPublic === false) return null;
+
+  return {
+    id: row.article.id,
+    title: row.article.title,
+    slug: row.article.slug,
+    collection: row.collectionSlug ?? "general",
+    excerpt: row.article.excerpt,
+    updatedAt: row.article.updatedAt.toISOString(),
+    body: row.article.plainText,
+    url: null,
+    seoTitle: row.article.seoTitle,
+    seoDescription: row.article.seoDescription,
+  } satisfies PublicKbArticleDetail;
+}
+
 export async function getPublicKbArticle(
   db: Db,
   input: { orgId: string; brandId: string; articleId: string },
 ) {
+  const fromHelp = await getPublicArticleFromHelp(db, input);
+  if (fromHelp) return fromHelp;
+
   const [row] = await db
     .select()
     .from(kbDocuments)
@@ -131,5 +280,7 @@ export async function getPublicKbArticle(
     updatedAt: row.updatedAt.toISOString(),
     body: row.rawContent ?? "",
     url: row.url ?? null,
+    seoTitle: null,
+    seoDescription: null,
   } satisfies PublicKbArticleDetail;
 }

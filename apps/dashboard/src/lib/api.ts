@@ -852,3 +852,102 @@ export async function searchKb(input: {
   });
   return apiFetch(`/api/v1/kb/search?${qs}`);
 }
+
+export type HelpCollection = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  public: boolean;
+  articleCount?: number;
+};
+
+export type HelpArticle = {
+  id: string;
+  brandId: string;
+  collectionId: string | null;
+  collectionSlug: string | null;
+  slug: string;
+  title: string;
+  content: Record<string, unknown>;
+  plainText: string;
+  excerpt: string | null;
+  status: "draft" | "published" | "archived";
+  tags: string[];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  updatedAt: string;
+};
+
+export async function listHelpCollections(brandId: string): Promise<{ items: HelpCollection[] }> {
+  const qs = new URLSearchParams({ brandId });
+  return apiFetch(`/api/v1/help-center/collections?${qs}`);
+}
+
+export async function ensureDefaultHelpCollection(
+  brandId: string,
+): Promise<{ collection: HelpCollection }> {
+  const qs = new URLSearchParams({ brandId });
+  return apiFetch(`/api/v1/help-center/collections/ensure-default?${qs}`, { method: "POST" });
+}
+
+export async function createHelpCollection(input: {
+  brandId: string;
+  slug: string;
+  name: string;
+  description?: string;
+}): Promise<{ collection: HelpCollection }> {
+  return apiFetch("/api/v1/help-center/collections", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listHelpArticles(input: {
+  brandId: string;
+  collectionId?: string;
+  status?: HelpArticle["status"];
+}): Promise<{ items: HelpArticle[] }> {
+  const qs = new URLSearchParams({ brandId: input.brandId });
+  if (input.collectionId) qs.set("collectionId", input.collectionId);
+  if (input.status) qs.set("status", input.status);
+  return apiFetch(`/api/v1/help-center/articles?${qs}`);
+}
+
+export async function getHelpArticle(id: string): Promise<{ article: HelpArticle }> {
+  return apiFetch(`/api/v1/help-center/articles/${id}`);
+}
+
+export async function createHelpArticle(input: {
+  brandId: string;
+  collectionId?: string;
+  slug: string;
+  title: string;
+  plainText?: string;
+  content?: Record<string, unknown>;
+}): Promise<{ article: HelpArticle }> {
+  return apiFetch("/api/v1/help-center/articles", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateHelpArticle(
+  id: string,
+  patch: Partial<{
+    title: string;
+    slug: string;
+    collectionId: string | null;
+    plainText: string;
+    content: Record<string, unknown>;
+    excerpt: string | null;
+    seoTitle: string | null;
+    seoDescription: string | null;
+    status: HelpArticle["status"];
+  }>,
+): Promise<{ article: HelpArticle }> {
+  return apiFetch(`/api/v1/help-center/articles/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}

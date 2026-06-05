@@ -17,6 +17,8 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Discord inbound | `im.integration.test.ts` | 202 accepted |
 | Discord outbound | `outbound.discord.test.ts` | Plan includes discord channel |
 | Workflow graph layout | `workflow-graph.test.ts` | Branch + outcome edges |
+| Help center CRUD + publish | `help-center.integration.test.ts` | KB doc synced |
+| Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 
 ## Manual (P2-ACC)
@@ -49,6 +51,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 3. Portal `/help` lists public articles; article page has `<title>` / meta from `generateMetadata`.
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
+
+## Batch 5 smoke (I117 continued)
+
+1. Dashboard → Help Center: create collection, new article, Tiptap edit, Publish.
+2. Public portal `/help` shows published article; article page uses `seoTitle` / `seoDescription`.
+3. KB search returns indexed content after publish.
 
 ## Batch 4 smoke (I117 continued)
 

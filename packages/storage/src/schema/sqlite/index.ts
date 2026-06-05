@@ -101,6 +101,14 @@ export {
   feedbackVotes,
 } from "./feedback";
 export {
+  HELP_ARTICLE_STATUSES,
+  helpArticles,
+  helpCollections,
+  type HelpArticleRow,
+  type HelpArticleStatus,
+  type HelpCollectionRow,
+} from "./help-center";
+export {
   officeHours,
   slaBreachEvents,
   slaPolicies,

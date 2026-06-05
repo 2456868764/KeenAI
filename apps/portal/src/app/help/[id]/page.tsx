@@ -9,6 +9,8 @@ type Article = {
   collection: string;
   excerpt: string | null;
   updatedAt: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
 };
 
 async function fetchArticle(orgSlug: string, id: string): Promise<Article | null> {
@@ -32,10 +34,12 @@ export async function generateMetadata({
   const { org = "demo" } = await searchParams;
   const article = await fetchArticle(org, id);
   if (!article) return { title: "Article not found" };
+  const title = article.seoTitle ?? article.title;
+  const description = article.seoDescription ?? article.excerpt ?? article.body.slice(0, 160);
   return {
-    title: article.title,
-    description: article.excerpt ?? article.body.slice(0, 160),
-    openGraph: { title: article.title, description: article.excerpt ?? undefined },
+    title,
+    description,
+    openGraph: { title, description },
   };
 }
 

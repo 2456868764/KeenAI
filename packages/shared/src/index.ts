@@ -90,6 +90,13 @@ export {
   updateSlaPolicySchema,
   upsertOfficeHoursSchema,
 } from "./sla.js";
+export {
+  createHelpArticleSchema,
+  createHelpCollectionSchema,
+  listHelpArticlesSchema,
+  updateHelpArticleSchema,
+  updateHelpCollectionSchema,
+} from "./help-center.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
   attachmentMetadataSchema,

@@ -36,6 +36,7 @@ import { customActionRoutes } from "./routes/custom-actions.js";
 import { emailJobRoutes } from "./routes/email-jobs.js";
 import { emailWebhookRoutes } from "./routes/email-webhooks.js";
 import { feedbackRoutes } from "./routes/feedback.js";
+import { helpCenterRoutes } from "./routes/help-center.js";
 import { imWebhookRoutes } from "./routes/im-webhooks.js";
 import { inngestRoutes } from "./routes/inngest.js";
 import { kbRoutes } from "./routes/kb.js";
@@ -127,6 +128,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", copilotRoutes(ctx));
   app.route("/", ticketRoutes());
   app.route("/", feedbackRoutes());
+  app.route("/", helpCenterRoutes());
   app.route("/", slaRoutes());
   app.route("/", analyticsRoutes());
   app.route("/", workflowRoutes());
