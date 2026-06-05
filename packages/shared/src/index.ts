@@ -97,6 +97,14 @@ export {
   updateHelpArticleSchema,
   updateHelpCollectionSchema,
 } from "./help-center.js";
+export {
+  buildArticleJsonLd,
+  buildHelpCenterSitemapEntries,
+  getPortalOrgSlugFromEnv,
+  getPortalSiteUrlFromEnv,
+  type HelpCenterSitemapArticle,
+  type HelpCenterSitemapEntry,
+} from "./help-center-seo.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
   attachmentMetadataSchema,

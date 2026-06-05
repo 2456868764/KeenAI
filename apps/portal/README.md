@@ -19,3 +19,12 @@ Set `PORTAL_APP_URL=http://localhost:3002` on the API. Without SMTP, the API log
 ## Dev fallback
 
 With `PORTAL_PUBLIC_READ=true` on the API, use **Dev: view without login** to list tickets by email query (no JWT).
+
+## Help Center SEO
+
+Public help articles at `/help` and `/help/{id}` (ISR). Configure:
+
+- `NEXT_PUBLIC_PORTAL_ORG_SLUG` — workspace slug for sitemap/OG (default `demo`)
+- `NEXT_PUBLIC_PORTAL_URL` — canonical site URL for sitemap and JSON-LD
+
+Sitemap: `/sitemap.xml` · OG images: `next/og` on article routes.

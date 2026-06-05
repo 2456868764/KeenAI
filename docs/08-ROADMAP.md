@@ -265,7 +265,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [~] Public Portal（Next.js SSR + ISR · portal `/help`）
 - [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
 - [ ] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
-- [ ] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `@vercel/og`）
+- [x] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `next/og`）
 - [ ] AI Search Answers（基础 RAG · 通过 `@keenai/kb` 接口）
 - [x] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站 + outbound reply）渠道适配
 - [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）

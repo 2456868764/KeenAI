@@ -105,7 +105,7 @@
 | P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [x] |
 | P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [~] |
 | P2-13 | Public Portal SSR/ISR | [~] |
-| P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [~] |
+| P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [x] |
 | P2-15 | AI Search Answers（`@keenai/kb`） | [~] |
 | P2-16 | Slack / Discord 渠道 | [x] |
 | P2-17 | Multi-brand 配置 UI | [x] |
