@@ -5,7 +5,7 @@ import { loadEnv, toAuthConfig } from "./config.js";
 import { startEmailImapPollScheduler } from "./lib/email-imap-scheduler.js";
 import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 import { createLogger } from "./logger.js";
-import { initOtel } from "./otel.js";
+import { initOtel, initSentry } from "./otel.js";
 
 const env = loadEnv();
 const startedAt = new Date();
@@ -15,7 +15,8 @@ await ensureFtsSchema(store.client);
 const fts = createLibsqlFtsStore(store.client);
 const authConfig = toAuthConfig(env);
 
-initOtel(env, log);
+initSentry(env, log);
+await initOtel(env, log);
 
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
 

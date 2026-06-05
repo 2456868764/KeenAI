@@ -17,6 +17,9 @@ export const apiEnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "1" || v === "true"),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+  OTEL_SERVICE_NAME: z.string().default("keenai-api"),
+  SENTRY_DSN: z.string().url().optional(),
   MCP_HOST_ENABLED: z
     .string()
     .optional()

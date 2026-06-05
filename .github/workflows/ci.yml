@@ -26,10 +26,14 @@ jobs:
         continue-on-error: true
       - run: pnpm install
 
+      - run: pnpm verify:p0
       - run: pnpm lint
+      - run: echo "feat: ci smoke" | pnpm exec commitlint
       - run: pnpm db:migrate
       - run: pnpm test
+      - run: pnpm kb:eval
       - run: pnpm typecheck
+      - run: pnpm --filter @keenai/docs build
       - run: pnpm --filter @keenai/auth test
 
   postgres:

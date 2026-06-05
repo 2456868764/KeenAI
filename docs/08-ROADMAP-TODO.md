@@ -32,7 +32,7 @@
 | 21 | I112 | Post-0.1.0 hardening | auto-seed · kb-perf baseline · security smoke | [x] |
 | 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
-| 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [ ] |
+| 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [x] |
 | 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [ ] |
 | 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [ ] |
 | 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [ ] |
@@ -40,7 +40,7 @@
 | 29 | I120 | Release **v0.2.0** | Phase 0～3 全 `[x]` 后打 tag | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24  roadmap 已打勾；**实现深度**见 [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)（v0.2.0 前须达标，非 stub）。  
-**当前主轨**：**I115** Phase 0 → I116 P1 → I117 P2 → I118 P3 → I119 → I120 tag。  
+**当前主轨**：**I116** Phase 1 → I117 P2 → I118 P3 → I119 → I120 tag。  
 **发布门禁**：`08-ROADMAP.md` Phase 0～3 内 **所有** `- [ ]` 项完成 + 各 Phase 验收。
 
 ---
@@ -53,17 +53,17 @@
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| P0-01 | 包结构：`apps` + `packages` 按路线图齐备（无 `apps/worker`） | [ ] |
-| P0-02 | Bun 1.2+ + Node 22 fallback 双工具链验证 | [ ] |
-| P0-03 | GitHub Actions CI/CD（PG + LibSQL 双矩阵） | [ ] |
-| P0-04 | Fumadocs 文档站（`apps/docs` 生产可托管） | [ ] |
-| P0-05 | `keenai` CLI 骨架（`bunx keenai` / `pnpm keenai`） | [ ] |
-| P0-06 | Bun + Node 双 lockfile 兼容性 | [ ] |
-| P0-07 | Conventional Commits + `commitlint` | [ ] |
-| P0-08 | CI：Biome → Vitest → 双方言 migrate → API smoke | [ ] |
-| P0-09 | Sentry / OTel SDK 完整导出 | [ ] |
-| P0-10 | pino logging（控制台 + JSON 生产） | [ ] |
-| P0-11 | OTel SDK 完整导出（非 `OTEL_ENABLED` 占位） | [ ] |
+| P0-01 | 包结构：`apps` + `packages` 按路线图齐备（无 `apps/worker`） | [x] |
+| P0-02 | Bun 1.2+ + Node 22 fallback 双工具链验证 | [x] |
+| P0-03 | GitHub Actions CI/CD（PG + LibSQL 双矩阵） | [x] |
+| P0-04 | Fumadocs 文档站（`apps/docs` 生产可托管） | [x] |
+| P0-05 | `keenai` CLI 骨架（`bunx keenai` / `pnpm keenai`） | [x] |
+| P0-06 | Bun + Node 双 lockfile 兼容性 | [x] |
+| P0-07 | Conventional Commits + `commitlint` | [x] |
+| P0-08 | CI：Biome → Vitest → 双方言 migrate → API smoke | [x] |
+| P0-09 | Sentry / OTel SDK 完整导出 | [x] |
+| P0-10 | pino logging（控制台 + JSON 生产） | [x] |
+| P0-11 | OTel SDK 完整导出（非 `OTEL_ENABLED` 占位） | [x] |
 
 ### Phase 1 · MVP（I116）
 

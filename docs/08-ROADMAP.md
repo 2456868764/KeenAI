@@ -58,7 +58,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] 包结构：`apps/{api,dashboard,portal,widget,docs}` + `packages/{shared,storage,auth,llm,agent,memory,kb,channels,workflow,…}`（**进行中**：核心包已有；`inbox/ticket/feedback/helpcenter` 等待拆或实装）
 - [ ] Bun 1.2+ 运行时 + Node 22 fallback 双工具链验证
 - [x] Docker Compose 开发环境（`lite` / `standard` / `full` profiles）骨架 → [`docker-compose.yml`](../docker-compose.yml)
-- [ ] GitHub Actions CI/CD（PG + LibSQL 双矩阵）
+- [x] GitHub Actions CI/CD（PG + LibSQL 双矩阵）
 - [x] **Biome** 统一 lint + format
 - [x] **Vitest** 测试基础设施
 - [x] **Drizzle Kit** LibSQL 迁移流水线（PG 矩阵待 Week 2）→ `@keenai/storage`
@@ -66,26 +66,26 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **OpenAPI** 初版（`GET /api/v1/openapi.json` 静态文档；`hono/zod-openapi` 全量生成待续）
 - [x] **shadcn/ui + Tailwind v4** 设计系统初版 → `@keenai/ui`
 - [x] **Storybook** 启动 → `pnpm storybook`
-- [ ] 文档站（[Fumadocs](https://fumadocs.vercel.app/) on Next.js 15）
+- [x] 文档站（[Fumadocs](https://fumadocs.vercel.app/) on Next.js 15）
 - [x] LICENSE（AGPL-3.0）、CONTRIBUTING（CoC 待补）
-- [ ] **`bunx keenai`** CLI 骨架
+- [x] **`bunx keenai`** CLI 骨架
 
 ### Week 详细计划
 
 **Week 1：仓库与工具链**
 - [x] 仓库初始化、目录约定（根目录 `apps/` · `packages/`，见 [06-TECH-STACK.md](06-TECH-STACK.md) §二）
 - [x] pnpm workspace + Turborepo 配置
-- [ ] Bun + Node 双 lockfile 兼容性验证（`bun install` 主，`npm install` fallback）
+- [x] Bun + Node 双 lockfile 兼容性验证（`bun install` 主，`npm install` fallback）
 - [x] Biome 配置（`biome.json`）
-- [ ] 提交规范（Conventional Commits + `commitlint`）
+- [x] 提交规范（Conventional Commits + `commitlint`）
 - [x] 包：`@keenai/shared`（Zod schemas + types）骨架
 
 **Week 2：基础设施 + DB**
 - [x] Docker Compose（PG + pgvector、Redis、MinIO profiles 骨架）
 - [x] LibSQL embedded 本地启动（`@libsql/client` file / `:memory:`）
-- [ ] GitHub Actions：Biome check → Vitest → 双方言 Drizzle migrate → API smoke test
-- [ ] Sentry / OpenTelemetry Node SDK 接入（`@opentelemetry/sdk-node`）
-- [ ] pino logging（控制台 + JSON）
+- [x] GitHub Actions：Biome check → Vitest → 双方言 Drizzle migrate → API smoke test
+- [x] Sentry / OpenTelemetry Node SDK 接入（`@opentelemetry/sdk-node`）
+- [x] pino logging（控制台 + JSON）
 - [x] `@keenai/storage` 包：`Store / VectorStore / FTSStore` 接口 + LibSQL 实现骨架 + `organizations…members` schema
 
 **Week 3：设计系统**（`@keenai/ui` · `packages/ui`）
@@ -102,7 +102,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Magic Link：`POST /api/v1/auth/magic-link` · `magic-link/verify`（SMTP 可选，dev 打日志）
 - [x] `GET /api/v1/me` + 中间件（request-id · rate-limit · optional/required auth · pino）
 - [x] `pnpm seed` 演示账号（`owner@keenai.local`）
-- [ ] OTel SDK 完整导出（当前为 `OTEL_ENABLED` 占位日志）
+- [x] OTel SDK 完整导出（`OTEL_EXPORTER_OTLP_ENDPOINT` + `@opentelemetry/sdk-node`）
 
 ---
 

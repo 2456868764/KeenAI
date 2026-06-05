@@ -23,7 +23,7 @@ const sections = [
   },
   {
     title: "GA checklist",
-    description: "1.0 release engineering and quality gates.",
+    description: "v0.2.0 release engineering and quality gates.",
     href: `${repo}/docs/GA.md`,
   },
   {
@@ -48,8 +48,8 @@ export default function DocsHomePage() {
     <main>
       <h1>KeenAI Docs</h1>
       <p className="lead">
-        Documentation site (Sprint 18 · I103). Browse repo markdown via the hub below; MDX
-        integration is planned for GA.
+        Documentation site (Fumadocs UI · v0.2.0 Phase 0). Browse repo markdown via the hub below;
+        full MDX content sync lands in later phases.
       </p>
 
       <nav aria-label="Documentation sections">
