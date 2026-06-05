@@ -32,23 +32,129 @@
 | 21 | I112 | Post-0.1.0 hardening | auto-seed · kb-perf baseline · security smoke | [x] |
 | 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
-| 24 | I115 | v0.2.0 · quality | Recall@5 ≥ 88% · CI 全绿 · kb:bench 记录 | [ ] |
-| 25 | I116 | v0.2.0 · Docker | GHCR images `0.2.0` pipeline | [ ] |
-| 26 | I117 | Release **v0.2.0** | tag · CHANGELOG · GitHub Release | [ ] |
+| 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [ ] |
+| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [ ] |
+| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [ ] |
+| 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [ ] |
+| 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [ ] |
+| 29 | I120 | Release **v0.2.0** | Phase 0～3 全 `[x]` 后打 tag | [ ] |
 
-**KB Phase A–C（I78～I96）**：KB-07～24 已全部打勾（`d6ccb5f`）。  
-**当前主轨**：**I115** v0.2.0 quality gates → I116 Docker `0.2.0` → I117 tag。  
-**深度债**（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)）：KB-16/18/19/20/22 stub → v0.2.x 逐步加深。
+**KB Phase A–C（I78～I96）**：KB-07～24  roadmap 已打勾；**实现深度**见 [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)（v0.2.0 前须达标，非 stub）。  
+**当前主轨**：**I115** Phase 0 → I116 P1 → I117 P2 → I118 P3 → I119 → I120 tag。  
+**发布门禁**：`08-ROADMAP.md` Phase 0～3 内 **所有** `- [ ]` 项完成 + 各 Phase 验收。
 
 ---
 
-## 当前迭代 · Iteration 115（v0.2.0 · quality gates）[ ]
+## v0.2.0 发布门禁（Phase 0～3 全量 · 强制）
+
+> 与 [08-ROADMAP.md](./08-ROADMAP.md) 各 Phase 未勾选项一一对应。全部 `[x]` 后方可 I120 打 `v0.2.0`。
+
+### Phase 0 · 工程地基（I115）
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I115-01 | Recall@5 ≥ 88% on dev golden set | [ ] |
-| I115-02 | `pnpm test` + CI green on `main` | [ ] |
-| I115-03 | `pnpm kb:bench` P95 记录入 `kb-perf.yaml` | [ ] |
+| P0-01 | 包结构：`apps` + `packages` 按路线图齐备（无 `apps/worker`） | [ ] |
+| P0-02 | Bun 1.2+ + Node 22 fallback 双工具链验证 | [ ] |
+| P0-03 | GitHub Actions CI/CD（PG + LibSQL 双矩阵） | [ ] |
+| P0-04 | Fumadocs 文档站（`apps/docs` 生产可托管） | [ ] |
+| P0-05 | `keenai` CLI 骨架（`bunx keenai` / `pnpm keenai`） | [ ] |
+| P0-06 | Bun + Node 双 lockfile 兼容性 | [ ] |
+| P0-07 | Conventional Commits + `commitlint` | [ ] |
+| P0-08 | CI：Biome → Vitest → 双方言 migrate → API smoke | [ ] |
+| P0-09 | Sentry / OTel SDK 完整导出 | [ ] |
+| P0-10 | pino logging（控制台 + JSON 生产） | [ ] |
+| P0-11 | OTel SDK 完整导出（非 `OTEL_ENABLED` 占位） | [ ] |
+
+### Phase 1 · MVP（I116）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| P1-01 | IMAP Worker（imapflow · Inngest cron） | [ ] |
+| P1-02 | BullMQ `email:send`（重试 + DLQ） | [ ] |
+| P1-03 | DKIM 文档与配置工具 | [ ] |
+| P1-04 | Anthropic / Ollama LLM Provider | [ ] |
+| P1-05 | `@keenai/workflow` Zod DSL + Inngest 模板（生产级） | [ ] |
+| P1-06 | Trigger Engine（First Message / Unresponsive） | [ ] |
+| P1-07 | Block：`send_message` / `assign` / `close`（生产级） | [ ] |
+| P1-08 | Workflow Builder UI（React Flow 单层 → 完整） | [ ] |
+| P1-09 | Docker Compose `lite` 单容器跑通 | [ ] |
+| P1-10 | `bun build --compile` 单二进制 demo | [ ] |
+| P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [ ] |
+| P1-12 | Alpha 公开发布验收（社区/文档就绪） | [ ] |
+| P1-ACC-01 | 内部客服全程可用 | [ ] |
+| P1-ACC-02 | Widget + Email 客户触达 | [ ] |
+| P1-ACC-03 | Copilot 采纳率 ≥ 30% | [ ] |
+| P1-ACC-04 | `docker compose --profile lite up` < 30s | [ ] |
+| P1-ACC-05 | `bun create keenai` 本地启动 < 2min | [ ] |
+| P1-ACC-06 | 测试覆盖率 ≥ 70% · CI 绿率 ≥ 95% | [ ] |
+
+### Phase 2 · 核心闭环（I117）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| P2-01 | Tickets schema + 3 类型 + 配置 UI | [ ] |
+| P2-02 | Convert / Send / Link Workflow Actions | [ ] |
+| P2-03 | Ticket Portal `apps/portal` RSC | [ ] |
+| P2-04 | 自定义字段 Field DSL | [ ] |
+| P2-05 | 邮件通知模板（React Email · 多语言） | [ ] |
+| P2-06 | Tracker fan-out 状态同步 | [ ] |
+| P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [ ] |
+| P2-08 | Workflow 版本 draft→published + Trace | [ ] |
+| P2-09 | SLA 50/80/100% + Office Hours | [ ] |
+| P2-10 | Workflow Builder 多层 + 配置面板 | [ ] |
+| P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [ ] |
+| P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [ ] |
+| P2-13 | Public Portal SSR/ISR | [ ] |
+| P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [ ] |
+| P2-15 | AI Search Answers（`@keenai/kb`） | [ ] |
+| P2-16 | Slack / Discord 渠道 | [ ] |
+| P2-17 | Multi-brand 配置 UI | [ ] |
+| P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [ ] |
+| P2-19 | Beta 公开发布验收 | [ ] |
+| P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
+| P2-ACC-02 | ≥3 外部团队试用 | [ ] |
+| P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [ ] |
+
+### Phase 3 · AI 完整版（I118）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| P3-01 | `@keenai/memory` 4 层生产实现（非 stub） | [ ] |
+| P3-02 | Knowledge Graph extractor（`generateObject`） | [ ] |
+| P3-03 | Personality & Branding UI | [ ] |
+| P3-04 | Multimodal MM-10～15 Agent 完整版 | [ ] |
+| P3-05 | Memory Tree MT-07～09 + Explorer UI | [ ] |
+| P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [ ] |
+| P3-07 | Roadmap Kanban / Timeline | [ ] |
+| P3-08 | Changelog 编辑器 + 受众分群 | [ ] |
+| P3-09 | Telegram · 钉钉/飞书渠道 | [ ] |
+| P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [ ] |
+| P3-11 | 10+ 语言 next-intl | [ ] |
+| P3-12 | 视频教程（YouTube / B 站） | [ ] |
+| P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
+| P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [ ] |
+| P3-ACC-01 | 自动解决率 ≥ 50% | [ ] |
+| P3-ACC-02 | Ollama 完全离线 demo | [ ] |
+| P3-ACC-03 | Featurebase 90% 对齐 | [ ] |
+| P3-ACC-04 | Mastra Eval faithfulness ≥ 0.85 | [ ] |
+| P3-ACC-05 | Recall@5 ≥ 88% · Stale answer < 2% | [ ] |
+
+### 发布仪式（I119～I120）
+
+| ID | 项 | 状态 |
+|----|-----|------|
+| I119-01 | Recall@5 ≥ 88%（`pnpm kb:eval`） | [ ] |
+| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [ ] |
+| I119-03 | GHCR Docker `0.2.0` publish pipeline | [ ] |
+| I119-04 | Helm chart 可安装（超越 I114 skeleton） | [ ] |
+| I120-01 | `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md` | [ ] |
+| I120-02 | `git tag v0.2.0` · GitHub Release（prerelease） | [ ] |
+
+---
+
+## 当前迭代 · Iteration 115（v0.2.0 · Phase 0）[ ]
+
+见上表 **§ Phase 0**（P0-01～P0-11）。
 
 ---
 

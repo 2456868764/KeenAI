@@ -109,7 +109,7 @@ Entry points, responsibilities, and boundaries with the Featurebase-style fronte
 | [docs/index.md](docs/index.md) | Documentation hub |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Self-host: Docker lite, Bun binary, cloud-shaped deploy |
 | [MIGRATION.md](docs/MIGRATION.md) | Intercom / Zendesk import (`keenai import` stub) |
-| [GA.md](docs/GA.md) | Release checklist (0.1.0 shipped · v0.2.0 next) |
+| [GA.md](docs/GA.md) | Release checklist (v0.2.0 = Phase 0～3 complete) |
 
 ### 4.2 AI Core (Agent / Memory / RAG)
 

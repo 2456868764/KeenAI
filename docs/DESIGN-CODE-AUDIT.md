@@ -71,4 +71,4 @@ See [GA.md](./GA.md): **0.1.0** shipped with relaxed dev gates; **v0.2.0** targe
 | I110 | `CHANGELOG.md` · `deploy/helm/README.md` 规划 | [x] |
 | I111 | GitHub Release **`v0.1.0`** | [x] |
 | I112～I114 | hardening · Intercom import · Helm skeleton | [x] |
-| I115～I117 | **v0.2.0** · Docker `0.2.0` · 质量门槛实测 | 待办 |
+| I115～I120 | **v0.2.0** · Phase 0～3 全量 + Docker `0.2.0` | 待办（见 [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) § v0.2.0 发布门禁） |

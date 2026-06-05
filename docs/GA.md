@@ -1,30 +1,23 @@
 # KeenAI Release Checklists
 
-> **0.1.0** shipped (`v0.1.0` · prerelease). **Next target: `v0.2.0`** — see [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) I115～I117.  
+> **0.1.0** shipped (`v0.1.0`). **`v0.2.0`** = [08-ROADMAP.md](./08-ROADMAP.md) **Phase 0～3 全功能完成** — 见 [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) § v0.2.0 发布门禁。  
 > Design gaps: [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md).
 
 ## 0.1.0 (shipped)
 
-- [x] KB Phase A–C (KB-07～24) — see audit for stub/partial items
-- [x] P0 wiring: `keenai/conversation.closed` · crystallize `auto_index` · `includeGolden` metrics
-- [x] CSAT · Zendesk HC import · close integration tests
-- [x] `CHANGELOG.md` + [releases/v0.1.0.md](./releases/v0.1.0.md)
+- [x] KB Phase A–C roadmap items · P0 wiring · CSAT · import stubs
 - [x] `git tag v0.1.0` + GitHub Release (prerelease)
-- [x] I112～I114: hardening · Intercom import · Helm skeleton
+- [x] I112～I114: hardening · Intercom articles · Helm skeleton
 
-## v0.2.0 (planned · I115～I117)
+## v0.2.0 (blocked until Phase 0～3 complete)
 
-### I115 · Quality gates
+**Do not tag until** all items in [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) § v0.2.0 发布门禁 are `[x]`.
 
-- [ ] Recall@5 ≥ **88%** on dev golden set (`pnpm kb:eval`)
-- [ ] `pnpm test` + CI green on `main`
-- [ ] KB P95 documented (`pnpm kb:bench` · `kb-perf.yaml`)
-
-### I116 · Docker
-
-- [ ] GHCR publish pipeline · images tagged **`0.2.0`**
-
-### I117 · Release
-
-- [ ] `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md`
-- [ ] `git tag v0.2.0` · GitHub Release (prerelease)
+| 迭代 | 范围 |
+|------|------|
+| I115 | Phase 0 工程地基 |
+| I116 | Phase 1 MVP + 验收 |
+| I117 | Phase 2 Beta + 验收 |
+| I118 | Phase 3 AI 完整版 + 验收 |
+| I119 | 质量门槛 · Docker `0.2.0` · Helm 可安装 |
+| I120 | CHANGELOG · `v0.2.0` tag · GitHub Release |
