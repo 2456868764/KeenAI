@@ -1,7 +1,7 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { type Ticket, createTicket, listTickets } from "@/lib/api";
+import { type Ticket, createTicket, listTicketTypes, listTickets } from "@/lib/api";
 import { Button } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
@@ -13,6 +13,11 @@ export function TicketListShell() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => listTickets(),
+  });
+
+  const { data: typesData } = useQuery({
+    queryKey: ["ticket-types"],
+    queryFn: listTicketTypes,
   });
 
   const create = useMutation({
@@ -38,6 +43,23 @@ export function TicketListShell() {
       </AppHeader>
 
       <main className="mx-auto w-full max-w-4xl flex-1 overflow-y-auto p-6">
+        {(typesData?.items ?? []).length > 0 ? (
+          <section className="mb-6 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
+            <h2 className="mb-2 text-sm font-medium">Ticket types</h2>
+            <ul className="grid gap-2 sm:grid-cols-3">
+              {typesData?.items.map((type) => (
+                <li
+                  key={type.id}
+                  className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-xs"
+                >
+                  <p className="font-medium">{type.name}</p>
+                  <p className="text-[hsl(var(--muted-foreground))]">{type.kind}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {isLoading ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading tickets…</p>
         ) : error ? (

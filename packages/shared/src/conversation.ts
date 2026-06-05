@@ -7,7 +7,7 @@ export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 export const CONVERSATION_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export type ConversationPriority = (typeof CONVERSATION_PRIORITIES)[number];
 
-export const CHANNEL_TYPES = ["messenger", "email", "api", "slack", "telegram"] as const;
+export const CHANNEL_TYPES = ["messenger", "email", "api", "slack", "discord", "telegram"] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
 export const SENDER_TYPES = ["user", "agent", "ai", "bot", "system"] as const;

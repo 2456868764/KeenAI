@@ -50,7 +50,9 @@ export async function ingestInboundIm(
     const subject =
       channelType === "telegram"
         ? `Telegram ${input.parsed.channelId}`
-        : `Slack ${input.parsed.channelId}`;
+        : channelType === "discord"
+          ? `Discord ${input.parsed.channelId}`
+          : `Slack ${input.parsed.channelId}`;
 
     const [row] = await db
       .insert(conversations)

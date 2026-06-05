@@ -33,14 +33,14 @@
 | 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
 | 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [x] |
-| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [~] |
-| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [ ] |
+| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [x] |
+| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [~] |
 | 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [ ] |
 | 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [ ] |
 | 29 | I120 | Release **v0.2.0** | Phase 0～3 全 `[x]` 后打 tag | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24  roadmap 已打勾；**实现深度**见 [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)（v0.2.0 前须达标，非 stub）。  
-**当前主轨**：**I116** Phase 1 → I117 P2 → I118 P3 → I119 → I120 tag。  
+**当前主轨**：**I117** Phase 2 → I118 P3 → I119 → I120 tag。  
 **发布门禁**：`08-ROADMAP.md` Phase 0～3 内 **所有** `- [ ]` 项完成 + 各 Phase 验收。
 
 ---
@@ -92,14 +92,14 @@
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| P2-01 | Tickets schema + 3 类型 + 配置 UI | [ ] |
-| P2-02 | Convert / Send / Link Workflow Actions | [ ] |
-| P2-03 | Ticket Portal `apps/portal` RSC | [ ] |
-| P2-04 | 自定义字段 Field DSL | [ ] |
+| P2-01 | Tickets schema + 3 类型 + 配置 UI | [x] |
+| P2-02 | Convert / Send / Link Workflow Actions | [~] |
+| P2-03 | Ticket Portal `apps/portal` RSC | [x] |
+| P2-04 | 自定义字段 Field DSL | [x] |
 | P2-05 | 邮件通知模板（React Email · 多语言） | [ ] |
-| P2-06 | Tracker fan-out 状态同步 | [ ] |
-| P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [ ] |
-| P2-08 | Workflow 版本 draft→published + Trace | [ ] |
+| P2-06 | Tracker fan-out 状态同步 | [x] |
+| P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [~] |
+| P2-08 | Workflow 版本 draft→published + Trace | [~] |
 | P2-09 | SLA 50/80/100% + Office Hours | [ ] |
 | P2-10 | Workflow Builder 多层 + 配置面板 | [ ] |
 | P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [ ] |
@@ -107,8 +107,8 @@
 | P2-13 | Public Portal SSR/ISR | [ ] |
 | P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [ ] |
 | P2-15 | AI Search Answers（`@keenai/kb`） | [ ] |
-| P2-16 | Slack / Discord 渠道 | [ ] |
-| P2-17 | Multi-brand 配置 UI | [ ] |
+| P2-16 | Slack / Discord 渠道 | [~] |
+| P2-17 | Multi-brand 配置 UI | [x] |
 | P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [ ] |
 | P2-19 | Beta 公开发布验收 | [ ] |
 | P2-ACC-01 | Featurebase 60% 对齐 | [ ] |

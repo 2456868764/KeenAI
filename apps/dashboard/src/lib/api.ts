@@ -366,6 +366,14 @@ export type WorkflowBlock =
         unresolvedNext: string | null;
         escalatedNext: string | null;
       };
+    }
+  | { id: string; type: "wait"; seconds: number }
+  | {
+      id: string;
+      type: "http_request";
+      method: "GET" | "POST";
+      url: string;
+      body?: string;
     };
 
 export type WorkflowDefinition = {
@@ -417,6 +425,66 @@ export async function updateWorkflow(
 
 export async function publishWorkflow(id: string): Promise<{ workflow: Workflow }> {
   return apiFetch(`/api/v1/workflows/${id}/publish`, { method: "POST" });
+}
+
+export type WorkflowRunStep = {
+  blockId: string;
+  type: string;
+  status: string;
+  error?: string;
+  output?: Record<string, unknown>;
+};
+
+export type WorkflowRun = {
+  id: string;
+  workflowId: string;
+  conversationId: string;
+  status: string;
+  steps: WorkflowRunStep[];
+  createdAt: string;
+};
+
+export async function listWorkflowRuns(workflowId: string): Promise<{ items: WorkflowRun[] }> {
+  return apiFetch(`/api/v1/workflows/${workflowId}/runs`);
+}
+
+export type Brand = {
+  id: string;
+  orgId: string;
+  slug: string;
+  name: string;
+  domain: string | null;
+  locale: string;
+  emailFrom: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listBrands(): Promise<{ items: Brand[] }> {
+  return apiFetch("/api/v1/brands");
+}
+
+export async function createBrand(input: {
+  slug: string;
+  name: string;
+  domain?: string;
+  locale?: string;
+  emailFrom?: string;
+}): Promise<{ brand: Brand }> {
+  return apiFetch("/api/v1/brands", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateBrand(
+  id: string,
+  patch: { name?: string; domain?: string | null; locale?: string; emailFrom?: string | null },
+): Promise<{ brand: Brand }> {
+  return apiFetch(`/api/v1/brands/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
 }
 
 export type Ticket = {
@@ -511,6 +579,18 @@ export type TicketEvent = {
 
 export async function listTicketStatuses(): Promise<{ items: TicketStatus[] }> {
   return apiFetch("/api/v1/tickets/meta/statuses");
+}
+
+export type TicketType = {
+  id: string;
+  name: string;
+  kind: string;
+  fields: { key: string; label: string; type: string; required?: boolean }[];
+  statusIds: string[];
+};
+
+export async function listTicketTypes(): Promise<{ items: TicketType[] }> {
+  return apiFetch("/api/v1/tickets/meta/types");
 }
 
 export async function listTicketEvents(id: string): Promise<{ items: TicketEvent[] }> {

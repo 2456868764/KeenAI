@@ -76,6 +76,44 @@ describe("runWorkflow", () => {
     expect(close).not.toHaveBeenCalled();
   });
 
+  it("runs wait and http_request blocks", async () => {
+    const wait = vi.fn(async () => {});
+    const httpRequest = vi.fn(async () => ({ status: 204, body: "" }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          { id: "w1", type: "wait", seconds: 2 },
+          {
+            id: "h1",
+            type: "http_request",
+            method: "POST",
+            url: "https://example.com/hook",
+            body: "{}",
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        wait,
+        httpRequest,
+      },
+    );
+
+    expect(wait).toHaveBeenCalledWith(2000);
+    expect(httpRequest).toHaveBeenCalledWith({
+      method: "POST",
+      url: "https://example.com/hook",
+      body: "{}",
+    });
+    expect(result.steps).toHaveLength(2);
+    expect(result.steps[0]?.output).toMatchObject({ waitMs: 2000 });
+    expect(result.steps[1]?.output).toMatchObject({ httpStatus: 204 });
+  });
+
   it("records agent output from let_keeni_answer block", async () => {
     const letKeeniAnswer = vi.fn(async () => ({
       replyText: "Issue is resolved.",

@@ -227,19 +227,19 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 ### Sprint 分解
 
 #### Sprint 7-8（W17-W20）：Tickets 系统
-- [ ] Drizzle schema：`ticket_types / ticket_statuses / tickets / ticket_conversations / ticket_links / ticket_events`
-- [ ] 3 种类型（Customer / Back-office / Tracker）+ 配置 UI
-- [ ] Convert / Send / Link Workflow Actions
-- [ ] Ticket Portal `apps/portal/app/tickets`（Next.js 15 + RSC）
-- [ ] 自定义字段（Field DSL · Zod-typed）
+- [x] Drizzle schema：`ticket_types / ticket_statuses / tickets / ticket_conversations / ticket_links / ticket_events`
+- [x] 3 种类型（Customer / Back-office / Tracker）+ 配置 UI
+- [~] Convert / Send / Link Workflow Actions（Convert + Link API；Send 待 workflow action）
+- [x] Ticket Portal `apps/portal` 列表 + 详情页
+- [x] 自定义字段（Field DSL · Zod-typed）
 - [ ] 邮件通知模板（React Email · 多语言）
-- [ ] Tracker fan-out（一个 Tracker → N 个 Customer ticket 状态同步）
+- [x] Tracker fan-out（一个 Tracker → N 个 Customer ticket 状态同步）
 
 #### Sprint 9-10（W21-W24）：Workflow 完整版 + SLA
-- [ ] 所有 Block 实现（参见 02-FEATURES）
-- [ ] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data`
+- [~] 所有 Block 实现（参见 02-FEATURES）
+- [~] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data`（`wait` + `http_request` 已落地）
 - [ ] Inngest `step.waitForEvent` / `step.sleepUntil` 集成
-- [ ] Workflow 版本管理（draft → published）+ Trace 查看
+- [~] Workflow 版本管理（draft → published）+ Trace 查看（runs API + Dashboard）
 - [ ] SLA 策略 + 超时预警（50/80/100% 触发）
 - [ ] Office Hours（多时区 · `date-fns-tz`）
 - [ ] Workflow Builder 完整（React Flow 多层 + 配置面板）
@@ -267,8 +267,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
 - [ ] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `@vercel/og`）
 - [ ] AI Search Answers（基础 RAG · 通过 `@keenai/kb` 接口）
-- [ ] Slack（`@slack/bolt`）/ Discord（`discord.js`）渠道适配
-- [ ] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
+- [~] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站）渠道适配
+- [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
 - [ ] 分析看板（ECharts · Support / Feedback / HC 三大）
 - [ ] **Beta 公开发布**
 
@@ -432,7 +432,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 | I112～I114 | 0.1.0 后 hardening · Intercom · Helm skeleton | [x] |
 | I115 | **Phase 0** 剩余项全完成 | [ ] |
 | I116 | **Phase 1** 剩余项 + Phase 1 验收 | [ ] |
-| I117 | **Phase 2** 剩余项 + Phase 2 验收 | [ ] |
+| I117 | **Phase 2** 剩余项 + Phase 2 验收 | [~] |
 | I118 | **Phase 3** 剩余项 + Phase 3 验收 | [ ] |
 | I119 | 质量门槛 · Docker GHCR `0.2.0` | [ ] |
 | I120 | `CHANGELOG [0.2.0]` · `git tag v0.2.0` · GitHub Release | [ ] |

@@ -59,10 +59,23 @@ export {
   ticketPrioritySchema,
   transitionTicketStatusSchema,
   updateTicketSchema,
+  linkTicketsSchema,
+  TICKET_LINK_TYPES,
   TICKET_STATUS_CATEGORIES,
+  type TicketLinkType,
   type TicketPriority,
   type TicketStatusCategory,
 } from "./ticket.js";
+export {
+  parseTicketFields,
+  ticketFieldListSchema,
+  ticketFieldSchema,
+  ticketFieldTypeSchema,
+  validateTicketCustomFields,
+  type TicketField,
+  type TicketFieldType,
+} from "./ticket-field.js";
+export { createBrandSchema, updateBrandSchema } from "./brand.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
   attachmentMetadataSchema,

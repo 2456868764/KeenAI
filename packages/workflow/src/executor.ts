@@ -31,6 +31,31 @@ export async function runWorkflow(
           await handlers.close();
           steps.push({ blockId: block.id, type: block.type, status: "ok" });
           break;
+        case "wait": {
+          const ms = block.seconds * 1000;
+          if (handlers.wait) {
+            await handlers.wait(ms);
+          }
+          steps.push({ blockId: block.id, type: block.type, status: "ok", output: { waitMs: ms } });
+          break;
+        }
+        case "http_request": {
+          if (!handlers.httpRequest) {
+            throw new Error("http_request_handler_missing");
+          }
+          const result = await handlers.httpRequest({
+            method: block.method,
+            url: block.url,
+            body: block.body,
+          });
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: { httpStatus: result.status },
+          });
+          break;
+        }
         case "let_keeni_answer": {
           if (!handlers.letKeeniAnswer) {
             throw new Error("let_keeni_answer_handler_missing");

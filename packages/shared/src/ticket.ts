@@ -58,3 +58,11 @@ export const transitionTicketStatusSchema = z.object({
 export const listTicketEventsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
+
+export const TICKET_LINK_TYPES = ["tracks", "relates", "blocks"] as const;
+export type TicketLinkType = (typeof TICKET_LINK_TYPES)[number];
+
+export const linkTicketsSchema = z.object({
+  childId: z.string().min(1),
+  linkType: z.enum(TICKET_LINK_TYPES).default("tracks"),
+});

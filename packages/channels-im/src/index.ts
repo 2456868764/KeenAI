@@ -7,6 +7,7 @@ export function planImOutbound(input: PlanImOutboundInput): ImOutboundAction[] {
   return planSlackOutbound(input);
 }
 
+export { adaptDiscordEvent, type DiscordGatewayPayload } from "./inbound/discord.js";
 export { adaptSlackEvent, slackUrlVerificationChallenge } from "./inbound/slack.js";
 export { adaptTelegramUpdate, type TelegramUpdate } from "./inbound/telegram.js";
 export { defaultFileName, extensionForMime, isAllowedImMime } from "./mime.js";

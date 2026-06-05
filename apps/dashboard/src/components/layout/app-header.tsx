@@ -47,6 +47,9 @@ export function AppHeader({
           <NavLink href="/help-center" active={pathname.startsWith("/help-center")}>
             {t("help")}
           </NavLink>
+          <NavLink href="/settings/brands" active={pathname.startsWith("/settings")}>
+            {t("settings")}
+          </NavLink>
         </nav>
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">

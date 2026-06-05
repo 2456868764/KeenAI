@@ -7,6 +7,7 @@ export type PortalTicket = {
   title: string;
   statusName: string | null;
   priority: string | null;
+  createdAt: string;
   updatedAt: string;
   closedAt: string | null;
 };
@@ -49,6 +50,20 @@ export async function verifyPortalMagicLink(
     body: JSON.stringify({ token }),
     token: null,
   });
+}
+
+export async function getPortalTicket(
+  orgSlug: string,
+  ticketId: string,
+  opts?: { customerId?: string; token?: string | null },
+): Promise<{ ticket: PortalTicket }> {
+  const qs = new URLSearchParams();
+  if (opts?.customerId) qs.set("customerId", opts.customerId);
+  const query = qs.toString();
+  return portalFetch(
+    `/api/v1/portal/${encodeURIComponent(orgSlug)}/tickets/${encodeURIComponent(ticketId)}${query ? `?${query}` : ""}`,
+    { token: opts?.token },
+  );
 }
 
 export async function listPortalTickets(

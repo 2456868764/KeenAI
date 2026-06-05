@@ -1,6 +1,6 @@
 import type { MessageKind, MessagePart, OutboundDirectives } from "@keenai/shared";
 
-export type ImPlatform = "telegram" | "slack";
+export type ImPlatform = "telegram" | "slack" | "discord";
 
 export type ImPendingAttachment = {
   fileName: string;

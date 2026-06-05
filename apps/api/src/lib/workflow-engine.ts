@@ -78,6 +78,19 @@ export async function executeWorkflow(
         }
       },
       letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
+      wait: async (ms) => {
+        await new Promise((resolve) => setTimeout(resolve, ms));
+      },
+      httpRequest: async ({ method, url, body }) => {
+        const res = await fetch(url, {
+          method,
+          headers: body ? { "Content-Type": "application/json" } : undefined,
+          body: body ?? undefined,
+          signal: AbortSignal.timeout(30_000),
+        });
+        const text = await res.text();
+        return { status: res.status, body: text.slice(0, 4000) };
+      },
     },
     {
       workflowId: workflow.id,
@@ -129,6 +142,18 @@ export async function dispatchFirstMessageWorkflows(
     if (run) runs.push(run);
   }
   return runs;
+}
+
+export function serializeWorkflowRun(row: typeof workflowRuns.$inferSelect) {
+  return {
+    id: row.id,
+    orgId: row.orgId,
+    workflowId: row.workflowId,
+    conversationId: row.conversationId,
+    status: row.status,
+    steps: row.steps,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 export function serializeWorkflow(row: typeof workflows.$inferSelect) {

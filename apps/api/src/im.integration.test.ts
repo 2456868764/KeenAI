@@ -289,4 +289,65 @@ describe("IM multimodal integration", () => {
 
     await store.close();
   });
+
+  it("ingests Discord MESSAGE_CREATE webhook", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "discord", name: "Discord" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    requireRow(brandRow, "brand");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: {
+        jwtSecret: "test-secret-at-least-32-characters-long!!",
+        accessTtlSec: 900,
+        refreshTtlSec: 604_800,
+        appUrl: "http://localhost:3000",
+      },
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const webhookRes = await app.request("/api/v1/webhooks/im/discord?org=discord", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        t: "MESSAGE_CREATE",
+        d: {
+          id: "discord-msg-1",
+          channel_id: "777888999",
+          author: { id: "user-42", bot: false },
+          content: "Hello from Discord",
+        },
+      }),
+    });
+    expect(webhookRes.status).toBe(202);
+    const body = (await webhookRes.json()) as {
+      accepted: boolean;
+      created: boolean;
+      message: { plainText: string };
+    };
+    expect(body.accepted).toBe(true);
+    expect(body.created).toBe(true);
+    expect(body.message.plainText).toBe("Hello from Discord");
+
+    await store.close();
+  });
 });

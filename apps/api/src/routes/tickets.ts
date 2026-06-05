@@ -3,6 +3,7 @@ import {
   API_VERSION,
   createTicketFromConversationBodySchema,
   createTicketSchema,
+  linkTicketsSchema,
   listTicketEventsSchema,
   listTicketsSchema,
   transitionTicketStatusSchema,
@@ -15,8 +16,10 @@ import {
   createTicketFromConversation,
   ensureOrgTicketDefaults,
   getTicketForOrg,
+  linkTickets,
   listTicketEventsForTicket,
   listTicketStatusesForOrg,
+  listTicketTypesForOrg,
   listTicketsForOrg,
   loadTicketMeta,
   transitionTicketStatus,
@@ -44,6 +47,14 @@ export function ticketRoutes() {
     const db = c.get("store").db;
     await ensureOrgTicketDefaults(db, auth.orgId);
     const items = await listTicketStatusesForOrg(db, auth.orgId);
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/meta/types`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const items = await listTicketTypesForOrg(c.get("store").db, auth.orgId);
     return c.json({ items });
   });
 
@@ -156,6 +167,29 @@ export function ticketRoutes() {
       return c.json({ items });
     },
   );
+
+  r.post(`${prefix}/:id/link`, requireAuth(), zValidator("json", linkTicketsSchema), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const body = c.req.valid("json");
+    try {
+      const ticket = await linkTickets(c.get("store").db, {
+        orgId: auth.orgId,
+        parentId: c.req.param("id"),
+        childId: body.childId,
+        linkType: body.linkType,
+        actorId: auth.memberId,
+      });
+      if (!ticket) return c.json({ error: "not_found" }, 404);
+      return c.json({ ticket });
+    } catch (err) {
+      if (err instanceof Error && err.message === "self_link") {
+        return c.json({ error: "self_link" }, 400);
+      }
+      throw err;
+    }
+  });
 
   r.post(
     `${prefix}/:id/status`,

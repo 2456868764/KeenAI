@@ -5,6 +5,7 @@ import {
   type WorkflowBlock,
   type WorkflowDefinition,
   getWorkflow,
+  listWorkflowRuns,
   publishWorkflow,
   updateWorkflow,
 } from "@/lib/api";
@@ -24,6 +25,11 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["workflow", workflowId],
     queryFn: () => getWorkflow(workflowId),
+  });
+
+  const { data: runsData } = useQuery({
+    queryKey: ["workflow-runs", workflowId],
+    queryFn: () => listWorkflowRuns(workflowId),
   });
 
   const [name, setName] = useState("");
@@ -227,6 +233,32 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 {new Date(workflow.updatedAt).toLocaleString()}
               </p>
             ) : null}
+
+            <section className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
+              <h2 className="mb-3 text-sm font-medium">Recent runs</h2>
+              {(runsData?.items ?? []).length === 0 ? (
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">No runs recorded yet.</p>
+              ) : (
+                <ul className="space-y-2 text-xs">
+                  {(runsData?.items ?? []).slice(0, 8).map((run) => (
+                    <li
+                      key={run.id}
+                      className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{run.status}</span>
+                        <span className="text-[hsl(var(--muted-foreground))]">
+                          {new Date(run.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[hsl(var(--muted-foreground))]">
+                        {run.steps.map((s) => `${s.type}:${s.status}`).join(" → ")}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         )}
       </main>
@@ -251,6 +283,10 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "close" });
         } else if (type === "let_keeni_answer") {
           onAdd({ id, type: "let_keeni_answer", maxSteps: 8, instructions: "" });
+        } else if (type === "wait") {
+          onAdd({ id, type: "wait", seconds: 60 });
+        } else if (type === "http_request") {
+          onAdd({ id, type: "http_request", method: "GET", url: "https://example.com/hook" });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -260,6 +296,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="assign">Assign</option>
       <option value="close">Close conversation</option>
       <option value="let_keeni_answer">Let Keeni answer</option>
+      <option value="wait">Wait</option>
+      <option value="http_request">HTTP request</option>
     </select>
   );
 }
@@ -348,6 +386,47 @@ function BlockEditor({
               onChange({ ...block, maxSteps: Number.parseInt(e.target.value, 10) || 8 })
             }
           />
+        </>
+      ) : null}
+
+      {block.type === "wait" ? (
+        <Input
+          type="number"
+          min={1}
+          max={86400}
+          placeholder="Seconds to wait"
+          value={block.seconds}
+          onChange={(e) =>
+            onChange({ ...block, seconds: Number.parseInt(e.target.value, 10) || 60 })
+          }
+        />
+      ) : null}
+
+      {block.type === "http_request" ? (
+        <>
+          <select
+            value={block.method}
+            onChange={(e) => onChange({ ...block, method: e.target.value as "GET" | "POST" })}
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+          </select>
+          <Input
+            placeholder="URL"
+            value={block.url}
+            onChange={(e) => onChange({ ...block, url: e.target.value })}
+            className="mt-2"
+          />
+          {block.method === "POST" ? (
+            <textarea
+              value={block.body ?? ""}
+              onChange={(e) => onChange({ ...block, body: e.target.value })}
+              rows={3}
+              placeholder="JSON body (optional)"
+              className="mt-2 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+            />
+          ) : null}
         </>
       ) : null}
     </div>

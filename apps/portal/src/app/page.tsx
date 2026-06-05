@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { type PortalTicket, listPortalTickets, requestPortalMagicLink } from "../lib/api";
 import { clearPortalSession, getPortalSession } from "../lib/auth-store";
@@ -137,7 +138,9 @@ export default function PortalTicketsPage() {
           <ul>
             {items.map((ticket) => (
               <li key={ticket.id}>
-                <strong>{ticket.title}</strong>
+                <Link href={`/tickets/${ticket.id}`}>
+                  <strong>{ticket.title}</strong>
+                </Link>
                 <div className="muted">
                   {ticket.statusName ?? "No status"}
                   {ticket.priority ? ` · ${ticket.priority}` : ""}

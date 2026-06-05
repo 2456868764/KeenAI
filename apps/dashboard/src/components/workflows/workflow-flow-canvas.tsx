@@ -39,6 +39,10 @@ function blockLabel(block: WorkflowBlock): string {
           ? `${block.instructions.slice(0, 48)}…`
           : block.instructions
         : `Keeni answer (max ${block.maxSteps ?? 8} steps)`;
+    case "wait":
+      return `Wait ${block.seconds}s`;
+    case "http_request":
+      return `${block.method} ${block.url.length > 40 ? `${block.url.slice(0, 40)}…` : block.url}`;
   }
 }
 

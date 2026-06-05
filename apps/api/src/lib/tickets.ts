@@ -1,13 +1,15 @@
+import { type TicketField, parseTicketFields, validateTicketCustomFields } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import {
   conversations,
   ticketConversations,
   ticketEvents,
+  ticketLinks,
   ticketStatuses,
   ticketTypes,
   tickets,
 } from "@keenai/storage/schema";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
 
@@ -17,6 +19,20 @@ const DEFAULT_STATUSES = [
   { name: "Waiting on customer", category: "waiting", isDefault: false, sortOrder: 2 },
   { name: "Done", category: "done", isDefault: false, sortOrder: 3 },
 ] as const;
+
+const DEFAULT_TYPE_DEFS = [
+  { name: "Customer request", kind: "customer" as const },
+  { name: "Internal task", kind: "back_office" as const },
+  { name: "Tracker", kind: "tracker" as const },
+];
+
+export type SerializedTicketType = {
+  id: string;
+  name: string;
+  kind: string;
+  fields: TicketField[];
+  statusIds: string[];
+};
 
 export type SerializedTicketStatus = {
   id: string;
@@ -87,63 +103,20 @@ export function serializeTicket(
   };
 }
 
-export async function ensureOrgTicketDefaults(
-  db: Db,
-  orgId: string,
-): Promise<{ typeId: string; statusId: string }> {
-  const [existingType] = await db
-    .select()
-    .from(ticketTypes)
-    .where(eq(ticketTypes.orgId, orgId))
-    .limit(1);
+function serializeTicketType(row: typeof ticketTypes.$inferSelect): SerializedTicketType {
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    fields: parseTicketFields(row.fields),
+    statusIds: row.statusIds ?? [],
+  };
+}
 
-  if (existingType) {
-    const [defaultStatus] = await db
-      .select()
-      .from(ticketStatuses)
-      .where(and(eq(ticketStatuses.orgId, orgId), eq(ticketStatuses.isDefault, true)))
-      .limit(1);
+async function ensureTicketStatuses(db: Db, orgId: string, typeIds: string[]) {
+  const existing = await db.select().from(ticketStatuses).where(eq(ticketStatuses.orgId, orgId));
 
-    if (defaultStatus) {
-      return { typeId: existingType.id, statusId: defaultStatus.id };
-    }
-
-    const [anyStatus] = await db
-      .select()
-      .from(ticketStatuses)
-      .where(eq(ticketStatuses.orgId, orgId))
-      .limit(1);
-
-    if (anyStatus) return { typeId: existingType.id, statusId: anyStatus.id };
-
-    const [createdStatus] = await db
-      .insert(ticketStatuses)
-      .values({
-        orgId,
-        name: "Open",
-        category: "active",
-        isDefault: true,
-        ticketTypeIds: [existingType.id],
-        sortOrder: 0,
-      })
-      .returning();
-
-    if (!createdStatus) throw new Error("ticket status insert failed");
-    return { typeId: existingType.id, statusId: createdStatus.id };
-  }
-
-  const [typeRow] = await db
-    .insert(ticketTypes)
-    .values({
-      orgId,
-      name: "Customer request",
-      kind: "customer",
-      fields: [],
-      statusIds: [],
-    })
-    .returning();
-
-  if (!typeRow) throw new Error("ticket type insert failed");
+  if (existing.length > 0) return existing;
 
   const statusRows = await db
     .insert(ticketStatuses)
@@ -153,21 +126,170 @@ export async function ensureOrgTicketDefaults(
         name: s.name,
         category: s.category,
         isDefault: s.isDefault,
-        ticketTypeIds: [typeRow.id],
+        ticketTypeIds: typeIds,
         sortOrder: s.sortOrder,
       })),
     )
     .returning();
 
-  const defaultStatus = statusRows.find((s) => s.isDefault) ?? statusRows[0];
-  if (!defaultStatus) throw new Error("ticket status insert failed");
+  return statusRows;
+}
+
+async function ensureAllTicketTypes(db: Db, orgId: string) {
+  const existing = await db.select().from(ticketTypes).where(eq(ticketTypes.orgId, orgId));
+  const byKind = new Map(existing.map((row) => [row.kind, row]));
+
+  const created: (typeof ticketTypes.$inferSelect)[] = [...existing];
+
+  for (const def of DEFAULT_TYPE_DEFS) {
+    if (byKind.has(def.kind)) continue;
+    const [row] = await db
+      .insert(ticketTypes)
+      .values({ orgId, name: def.name, kind: def.kind, fields: [], statusIds: [] })
+      .returning();
+    if (row) {
+      created.push(row);
+      byKind.set(def.kind, row);
+    }
+  }
+
+  const typeIds = created.map((t) => t.id);
+  const statuses = await ensureTicketStatuses(db, orgId, typeIds);
+  const statusIdList = statuses.map((s) => s.id);
+
+  for (const type of created) {
+    if ((type.statusIds ?? []).length === 0) {
+      await db
+        .update(ticketTypes)
+        .set({ statusIds: statusIdList, updatedAt: new Date() })
+        .where(eq(ticketTypes.id, type.id));
+    }
+  }
+
+  return created;
+}
+
+export async function ensureOrgTicketDefaults(
+  db: Db,
+  orgId: string,
+): Promise<{ typeId: string; statusId: string }> {
+  const types = await ensureAllTicketTypes(db, orgId);
+  const customerType = types.find((t) => t.kind === "customer") ?? types[0];
+  if (!customerType) throw new Error("ticket type insert failed");
+
+  const [defaultStatus] = await db
+    .select()
+    .from(ticketStatuses)
+    .where(and(eq(ticketStatuses.orgId, orgId), eq(ticketStatuses.isDefault, true)))
+    .limit(1);
+
+  const [anyStatus] = defaultStatus
+    ? [defaultStatus]
+    : await db.select().from(ticketStatuses).where(eq(ticketStatuses.orgId, orgId)).limit(1);
+
+  if (!anyStatus) throw new Error("ticket status insert failed");
+  return { typeId: customerType.id, statusId: anyStatus.id };
+}
+
+export async function listTicketTypesForOrg(db: Db, orgId: string) {
+  await ensureAllTicketTypes(db, orgId);
+  const rows = await db
+    .select()
+    .from(ticketTypes)
+    .where(eq(ticketTypes.orgId, orgId))
+    .orderBy(ticketTypes.name);
+  return rows.map(serializeTicketType);
+}
+
+export async function getTicketTypeForOrg(db: Db, typeId: string, orgId: string) {
+  const [row] = await db
+    .select()
+    .from(ticketTypes)
+    .where(and(eq(ticketTypes.id, typeId), eq(ticketTypes.orgId, orgId)))
+    .limit(1);
+  return row ? serializeTicketType(row) : null;
+}
+
+export async function validateCustomFieldsForTicket(
+  db: Db,
+  typeId: string,
+  orgId: string,
+  values: Record<string, unknown>,
+) {
+  const type = await getTicketTypeForOrg(db, typeId, orgId);
+  if (!type) return { ok: false as const, error: "type_not_found" };
+  const result = validateTicketCustomFields(type.fields, values);
+  if (!result.ok)
+    return { ok: false as const, error: "invalid_custom_fields", details: result.errors };
+  return { ok: true as const };
+}
+
+async function fanOutTrackerStatus(
+  db: Db,
+  trackerId: string,
+  orgId: string,
+  statusId: string,
+  nextStatus: typeof ticketStatuses.$inferSelect,
+  actorId?: string,
+) {
+  const links = await db
+    .select({ childId: ticketLinks.childId })
+    .from(ticketLinks)
+    .where(and(eq(ticketLinks.parentId, trackerId), eq(ticketLinks.linkType, "tracks")));
+
+  if (links.length === 0) return;
+
+  const childIds = links.map((l) => l.childId);
+  const closedAt = nextStatus.category === "done" ? new Date() : null;
 
   await db
-    .update(ticketTypes)
-    .set({ statusIds: statusRows.map((s) => s.id), updatedAt: new Date() })
-    .where(eq(ticketTypes.id, typeRow.id));
+    .update(tickets)
+    .set({ statusId, closedAt, updatedAt: new Date() })
+    .where(and(eq(tickets.orgId, orgId), inArray(tickets.id, childIds)));
 
-  return { typeId: typeRow.id, statusId: defaultStatus.id };
+  for (const childId of childIds) {
+    await db.insert(ticketEvents).values({
+      ticketId: childId,
+      eventType: "tracker_status_sync",
+      actorId: actorId ?? null,
+      payload: { trackerId, statusId, category: nextStatus.category },
+    });
+  }
+}
+
+export async function linkTickets(
+  db: Db,
+  input: {
+    orgId: string;
+    parentId: string;
+    childId: string;
+    linkType: string;
+    actorId?: string;
+  },
+): Promise<SerializedTicket | null> {
+  if (input.parentId === input.childId) throw new Error("self_link");
+
+  const parent = await getTicketForOrg(db, input.parentId, input.orgId);
+  const child = await getTicketForOrg(db, input.childId, input.orgId);
+  if (!parent || !child) return null;
+
+  await db
+    .insert(ticketLinks)
+    .values({
+      parentId: input.parentId,
+      childId: input.childId,
+      linkType: input.linkType,
+    })
+    .onConflictDoNothing();
+
+  await db.insert(ticketEvents).values({
+    ticketId: input.parentId,
+    eventType: "ticket_linked",
+    actorId: input.actorId ?? null,
+    payload: { childId: input.childId, linkType: input.linkType },
+  });
+
+  return loadTicketMeta(db, parent);
 }
 
 export function ticketCursorWhere(cursor: string | undefined) {
@@ -446,6 +568,16 @@ export async function transitionTicketStatus(
       toCategory: nextStatus.category,
     },
   });
+
+  const [typeRow] = await db
+    .select({ kind: ticketTypes.kind })
+    .from(ticketTypes)
+    .where(eq(ticketTypes.id, row.typeId))
+    .limit(1);
+
+  if (typeRow?.kind === "tracker") {
+    await fanOutTrackerStatus(db, row.id, input.orgId, input.statusId, nextStatus, input.actorId);
+  }
 
   return loadTicketMeta(db, row);
 }

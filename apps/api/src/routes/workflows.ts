@@ -1,11 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
 import { API_VERSION } from "@keenai/shared";
-import { workflows } from "@keenai/storage/schema";
+import { workflowRuns, workflows } from "@keenai/storage/schema";
 import { createWorkflowBodySchema, updateWorkflowBodySchema } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { assertBrandInOrg } from "../lib/conversations.js";
-import { serializeWorkflow } from "../lib/workflow-engine.js";
+import { serializeWorkflow, serializeWorkflowRun } from "../lib/workflow-engine.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -53,6 +53,21 @@ export function workflowRoutes() {
 
     if (!row) return c.json({ error: "create_failed" }, 500);
     return c.json({ workflow: serializeWorkflow(row) }, 201);
+  });
+
+  r.get(`${prefix}/runs/:runId`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const [row] = await c
+      .get("store")
+      .db.select()
+      .from(workflowRuns)
+      .where(and(eq(workflowRuns.id, c.req.param("runId")), eq(workflowRuns.orgId, auth.orgId)))
+      .limit(1);
+
+    if (!row) return c.json({ error: "not_found" }, 404);
+    return c.json({ run: serializeWorkflowRun(row) });
   });
 
   r.get(`${prefix}/:id`, requireAuth(), async (c) => {
@@ -104,6 +119,31 @@ export function workflowRoutes() {
       return c.json({ workflow: serializeWorkflow(row) });
     },
   );
+
+  r.get(`${prefix}/:id/runs`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const workflowId = c.req.param("id");
+    const [workflow] = await c
+      .get("store")
+      .db.select({ id: workflows.id })
+      .from(workflows)
+      .where(and(eq(workflows.id, workflowId), eq(workflows.orgId, auth.orgId)))
+      .limit(1);
+
+    if (!workflow) return c.json({ error: "not_found" }, 404);
+
+    const rows = await c
+      .get("store")
+      .db.select()
+      .from(workflowRuns)
+      .where(and(eq(workflowRuns.workflowId, workflowId), eq(workflowRuns.orgId, auth.orgId)))
+      .orderBy(desc(workflowRuns.createdAt))
+      .limit(50);
+
+    return c.json({ items: rows.map(serializeWorkflowRun) });
+  });
 
   r.post(`${prefix}/:id/publish`, requireAuth(), async (c) => {
     const auth = c.get("auth");

@@ -182,6 +182,60 @@ describe("tickets integration", () => {
     const eventsBody = (await events.json()) as { items: { eventType: string }[] };
     expect(eventsBody.items.some((e) => e.eventType === "status_changed")).toBe(true);
 
+    const types = await app.request("/api/v1/tickets/meta/types", { headers: auth });
+    expect(types.status).toBe(200);
+    const typesBody = (await types.json()) as {
+      items: { id: string; name: string; kind: string }[];
+    };
+    expect(typesBody.items).toHaveLength(3);
+    expect(typesBody.items.map((t) => t.kind).sort()).toEqual([
+      "back_office",
+      "customer",
+      "tracker",
+    ]);
+
+    const trackerType = typesBody.items.find((t) => t.kind === "tracker");
+    const customerType = typesBody.items.find((t) => t.kind === "customer");
+    expect(trackerType).toBeTruthy();
+    expect(customerType).toBeTruthy();
+
+    const trackerRes = await app.request("/api/v1/tickets", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Release tracker", typeId: trackerType?.id }),
+    });
+    expect(trackerRes.status).toBe(201);
+    const { ticket: tracker } = (await trackerRes.json()) as { ticket: { id: string } };
+
+    const childRes = await app.request("/api/v1/tickets", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Child task", typeId: customerType?.id }),
+    });
+    expect(childRes.status).toBe(201);
+    const { ticket: child } = (await childRes.json()) as { ticket: { id: string } };
+
+    const linkRes = await app.request(`/api/v1/tickets/${tracker.id}/link`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ childId: child.id, linkType: "tracks" }),
+    });
+    expect(linkRes.status).toBe(200);
+
+    const trackerDone = await app.request(`/api/v1/tickets/${tracker.id}/status`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ statusId: doneStatus?.id }),
+    });
+    expect(trackerDone.status).toBe(200);
+
+    const childAfter = await app.request(`/api/v1/tickets/${child.id}`, { headers: auth });
+    const { ticket: syncedChild } = (await childAfter.json()) as {
+      ticket: { statusName: string | null; closedAt: string | null };
+    };
+    expect(syncedChild.statusName).toBe("Done");
+    expect(syncedChild.closedAt).toBeTruthy();
+
     await store.close();
   });
 });

@@ -28,6 +28,7 @@ import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
 import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
+import { brandRoutes } from "./routes/brands.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { customActionRoutes } from "./routes/custom-actions.js";
@@ -116,6 +117,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", imWebhookRoutes());
   app.route("/", notificationRoutes());
   app.route("/", memberRoutes());
+  app.route("/", brandRoutes());
   app.route("/", macroRoutes());
   app.route("/", copilotRoutes(ctx));
   app.route("/", ticketRoutes());

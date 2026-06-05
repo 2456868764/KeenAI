@@ -26,6 +26,8 @@ export const WORKFLOW_BLOCK_TYPES = [
   "assign",
   "close",
   "let_keeni_answer",
+  "wait",
+  "http_request",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -52,11 +54,27 @@ export const closeBlockSchema = z.object({
   type: z.literal("close"),
 });
 
+export const waitBlockSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.literal("wait"),
+  seconds: z.number().int().min(1).max(86_400),
+});
+
+export const httpRequestBlockSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.literal("http_request"),
+  method: z.enum(["GET", "POST"]).default("GET"),
+  url: z.string().url(),
+  body: z.string().max(10_000).optional(),
+});
+
 export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendMessageBlockObjectSchema,
   assignBlockSchema,
   closeBlockSchema,
   letKeeniAnswerBlockSchema,
+  waitBlockSchema,
+  httpRequestBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -110,11 +128,24 @@ export type SendMessageInput = {
   attachmentIds?: string[];
 };
 
+export type HttpRequestInput = {
+  method: "GET" | "POST";
+  url: string;
+  body?: string;
+};
+
+export type HttpRequestResult = {
+  status: number;
+  body: string;
+};
+
 export type WorkflowActionHandlers = {
   sendMessage: (input: SendMessageInput) => Promise<void>;
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
+  wait?: (milliseconds: number) => Promise<void>;
+  httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
 };
 
 export type WorkflowStepResult = {
@@ -126,6 +157,8 @@ export type WorkflowStepResult = {
     replyText?: string;
     resolutionType?: string;
     nextBlockId?: string | null;
+    httpStatus?: number;
+    waitMs?: number;
   };
 };
 
