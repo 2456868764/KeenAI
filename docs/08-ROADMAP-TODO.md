@@ -104,16 +104,16 @@
 | P2-10 | Workflow Builder 多层 + 配置面板 | [~] |
 | P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [x] |
 | P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [~] |
-| P2-13 | Public Portal SSR/ISR | [~] |
+| P2-13 | Public Portal SSR/ISR | [x] |
 | P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [x] |
 | P2-15 | AI Search Answers（`@keenai/kb`） | [~] |
 | P2-16 | Slack / Discord 渠道 | [x] |
 | P2-17 | Multi-brand 配置 UI | [x] |
 | P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [x] |
-| P2-19 | Beta 公开发布验收 | [ ] |
+| P2-19 | Beta 公开发布验收 | [x] |
 | P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
 | P2-ACC-02 | ≥3 外部团队试用 | [ ] |
-| P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [ ] |
+| P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [~] |
 
 ### Phase 3 · AI 完整版（I118）
 

@@ -28,7 +28,10 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | HC Tiptap block render | `tiptap-hc-render.test.ts` | callout / steps / details HTML |
 | Ticket status React Email | `ticket-status.test.ts` | en/zh HTML via @react-email/render |
 | Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
+| Public workspace meta | `kb-public.integration.test.ts` | brand id for portal search |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
+| Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 12 tests green |
+| Beta gate (automated) | `pnpm beta:acceptance` | test + alpha + e2e |
 
 ## Manual (P2-ACC)
 
@@ -60,6 +63,17 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 3. Portal `/help` lists public articles; article page has `<title>` / meta from `generateMetadata`.
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
+
+## Batch 11 smoke (I117 continued)
+
+1. Portal `/help` → Search box queries `GET /api/v1/public/{org}/kb/search`.
+2. `GET /api/v1/public/demo/meta` returns default brand id for portal clients.
+3. `pnpm e2e:install` then `pnpm e2e` (API meta/search + Portal/Dashboard UI).
+
+## Batch 10 smoke (I117 continued)
+
+1. `pnpm e2e`: API health/login, Portal `/help` + sitemap, Dashboard login → inbox.
+2. `pnpm beta:acceptance`: full automated Beta gate (Vitest + alpha + e2e).
 
 ## Batch 9 smoke (I117 continued)
 
@@ -100,4 +114,4 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Still open (Phase 2 remainder)
 
-Playwright e2e, P2-19 Beta gate — `08-ROADMAP-TODO.md` §P2.
+P2-15 streamed AI answers, manual P2-ACC (external teams, Featurebase parity) — `08-ROADMAP-TODO.md` §P2.

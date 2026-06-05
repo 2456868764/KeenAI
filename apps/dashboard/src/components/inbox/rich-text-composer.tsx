@@ -2,7 +2,7 @@
 
 import type { Macro } from "@/lib/api";
 import { uploadFile } from "@/lib/api";
-import { extractAttachmentIdsFromTiptapDoc } from "@keenai/shared";
+import { extractAttachmentIdsFromTiptapDoc } from "@keenai/shared/tiptap-attachments";
 import { Button } from "@keenai/ui";
 import Image from "@tiptap/extension-image";
 import Mention from "@tiptap/extension-mention";

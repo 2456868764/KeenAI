@@ -262,15 +262,15 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
 - [ ] Feedback Board + Post + Vote + Comment
 - [ ] AI 自动去重（embed via `@xenova/transformers` bge-m3 → VectorStore search）
-- [~] Public Portal（Next.js SSR + ISR · portal `/help`）
+- [x] Public Portal（Next.js SSR + ISR · portal `/help` + KB search）
 - [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
 - [x] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
 - [x] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `next/og`）
-- [ ] AI Search Answers（基础 RAG · 通过 `@keenai/kb` 接口）
+- [~] AI Search Answers（公开 KB search + Portal UI；流式 AI 答案待接）
 - [x] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站 + outbound reply）渠道适配
 - [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
 - [x] 分析看板（ECharts · Support / Feedback / HC 三大 · `/analytics/dashboard`）
-- [ ] **Beta 公开发布**
+- [x] **Beta 公开发布**（自动化门禁：`pnpm beta:acceptance`）
 
 ### Phase 2 验收
 - [ ] Featurebase 60% 核心功能对齐
@@ -278,7 +278,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] GitHub Stars ≥ 2000
 - [ ] 文档站访问 ≥ 1000 PV/月
 - [ ] Vitest 单元 + e2e 覆盖率 ≥ 65%
-- [ ] Playwright e2e 主路径全绿
+- [x] Playwright e2e 主路径全绿（API · Portal · Dashboard login）
 
 ---
 

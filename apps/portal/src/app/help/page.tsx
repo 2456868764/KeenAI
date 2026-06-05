@@ -3,6 +3,7 @@ import { getPortalOrgSlug, getPortalSiteUrl } from "@/lib/portal-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { HelpSearch } from "./help-search";
 import { OrgSwitcher } from "./org-switcher";
 
 export const revalidate = 60;
@@ -43,6 +44,8 @@ export default async function HelpCenterPage({
       </Suspense>
 
       {error ? <p className="error">{error}</p> : null}
+
+      <HelpSearch orgSlug={orgSlug} />
 
       {collections.length > 0 ? (
         <section>

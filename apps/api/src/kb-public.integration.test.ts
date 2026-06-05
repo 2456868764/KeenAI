@@ -75,6 +75,11 @@ describe("public help center integration", () => {
       startedAt: new Date(),
     });
 
+    const meta = await app.request("/api/v1/public/hc/meta");
+    expect(meta.status).toBe(200);
+    const metaBody = (await meta.json()) as { brand: { id: string } };
+    expect(metaBody.brand.id).toBe(brand.id);
+
     const collections = await app.request("/api/v1/public/hc/kb/collections");
     expect(collections.status).toBe(200);
     const colBody = (await collections.json()) as { items: { slug: string }[] };

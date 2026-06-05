@@ -27,5 +27,8 @@ hermes-agent/
 openhuman/
 fbapp/
 .next/
+playwright-report/
+test-results/
+blob-report/
 data/uploads/
 

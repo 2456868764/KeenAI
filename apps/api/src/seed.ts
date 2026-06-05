@@ -1,10 +1,13 @@
 import { createWidgetUserHash, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
-import { createLibsqlStore } from "@keenai/storage";
+import { createLibsqlFtsStore, createLibsqlStore, ensureFtsSchema } from "@keenai/storage";
 import { accounts, brands, conversations, members, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
+import { createApp } from "./app.js";
+import { toAuthConfig } from "./config.js";
 import { buildMessageContent, insertMessage } from "./lib/conversations.js";
 import { ensureBuiltinMacros } from "./lib/macros-store.js";
+import { createLogger } from "./logger.js";
 
 const DEMO = {
   orgSlug: "demo",
@@ -20,6 +23,12 @@ export async function seed() {
   const env = parseApiEnv(process.env, { fromModuleUrl: import.meta.url });
   const store = createLibsqlStore({ url: env.DATABASE_URL });
   const db = store.db;
+  await ensureFtsSchema(store.client);
+  const fts = createLibsqlFtsStore(store.client);
+  const startedAt = new Date();
+  const log = createLogger(env);
+  const authConfig = toAuthConfig(env);
+  createApp({ store, fts, authConfig, env, log, startedAt });
 
   const [existingOrg] = await db
     .select()

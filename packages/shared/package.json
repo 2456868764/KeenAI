@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./help-center-seo": "./src/help-center-seo.ts",
     "./tiptap-hc-render": "./src/tiptap-hc-render.ts",
+    "./tiptap-attachments": "./src/tiptap-attachments.ts",
     "./paths": "./src/paths.ts"
   },
   "scripts": {

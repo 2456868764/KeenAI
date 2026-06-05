@@ -18,6 +18,32 @@ export function publicRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/public`;
 
+  r.get(`${prefix}/:orgSlug/meta`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    return c.json({
+      org: {
+        id: resolved.org.id,
+        slug: resolved.org.slug,
+        name: resolved.org.name,
+      },
+      brand: {
+        id: resolved.brand.id,
+        slug: resolved.brand.slug,
+        name: resolved.brand.name,
+      },
+    });
+  });
+
   r.get(`${prefix}/:orgSlug/kb/search`, zValidator("query", kbSearchQuerySchema), async (c) => {
     if (!ctx.env.PORTAL_PUBLIC_READ) {
       return c.json({ error: "public_read_disabled" }, 403);
