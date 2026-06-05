@@ -12,6 +12,7 @@ import {
 import { ticketEvents, tickets } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { notifyTicketStatusChange } from "../lib/ticket-notify.js";
 import {
   createTicketFromConversation,
   ensureOrgTicketDefaults,
@@ -208,6 +209,19 @@ export function ticketRoutes() {
           actorId: auth.memberId,
         });
         if (!ticket) return c.json({ error: "not_found" }, 404);
+
+        if (ticket.statusName && ticket.customerId) {
+          try {
+            await notifyTicketStatusChange(c.get("store").db, c.get("authConfig"), {
+              orgId: auth.orgId,
+              ticket,
+              statusName: ticket.statusName,
+            });
+          } catch {
+            // notification is best-effort
+          }
+        }
+
         return c.json({ ticket });
       } catch (err) {
         if (err instanceof Error && err.message === "status_not_found") {

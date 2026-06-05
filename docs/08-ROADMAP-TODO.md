@@ -96,20 +96,20 @@
 | P2-02 | Convert / Send / Link Workflow Actions | [~] |
 | P2-03 | Ticket Portal `apps/portal` RSC | [x] |
 | P2-04 | 自定义字段 Field DSL | [x] |
-| P2-05 | 邮件通知模板（React Email · 多语言） | [ ] |
+| P2-05 | 邮件通知模板（React Email · 多语言） | [~] |
 | P2-06 | Tracker fan-out 状态同步 | [x] |
 | P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [~] |
 | P2-08 | Workflow 版本 draft→published + Trace | [~] |
-| P2-09 | SLA 50/80/100% + Office Hours | [ ] |
+| P2-09 | SLA 50/80/100% + Office Hours | [~] |
 | P2-10 | Workflow Builder 多层 + 配置面板 | [ ] |
 | P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [ ] |
-| P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [ ] |
-| P2-13 | Public Portal SSR/ISR | [ ] |
+| P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [~] |
+| P2-13 | Public Portal SSR/ISR | [~] |
 | P2-14 | Help Center Collections/Articles + 公开 HC + SEO | [ ] |
-| P2-15 | AI Search Answers（`@keenai/kb`） | [ ] |
+| P2-15 | AI Search Answers（`@keenai/kb`） | [~] |
 | P2-16 | Slack / Discord 渠道 | [~] |
 | P2-17 | Multi-brand 配置 UI | [x] |
-| P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [ ] |
+| P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [~] |
 | P2-19 | Beta 公开发布验收 | [ ] |
 | P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
 | P2-ACC-02 | ≥3 外部团队试用 | [ ] |

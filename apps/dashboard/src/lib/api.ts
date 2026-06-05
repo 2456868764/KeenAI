@@ -593,6 +593,71 @@ export async function listTicketTypes(): Promise<{ items: TicketType[] }> {
   return apiFetch("/api/v1/tickets/meta/types");
 }
 
+export type FeedbackBoard = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  brandId: string;
+};
+
+export type FeedbackPost = {
+  id: string;
+  boardId: string;
+  title: string;
+  plainText: string;
+  statusName: string | null;
+  upvoteCount: number;
+  commentCount: number;
+  createdAt: string;
+};
+
+export async function ensureDefaultFeedbackBoard(
+  brandId: string,
+): Promise<{ board: FeedbackBoard }> {
+  return apiFetch(`/api/v1/feedback/boards/ensure-default?brandId=${encodeURIComponent(brandId)}`, {
+    method: "POST",
+  });
+}
+
+export async function listFeedbackPosts(slug: string): Promise<{
+  board: FeedbackBoard;
+  items: FeedbackPost[];
+}> {
+  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/posts`);
+}
+
+export async function createFeedbackPost(
+  slug: string,
+  input: { title: string; plainText: string },
+): Promise<{ post: FeedbackPost }> {
+  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/posts`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export type SlaPolicy = {
+  id: string;
+  name: string;
+  firstResponseSec: number | null;
+  resolutionSec: number | null;
+  operationalHoursOnly: boolean;
+  enabled: boolean;
+};
+
+export async function listSlaPolicies(): Promise<{ items: SlaPolicy[] }> {
+  return apiFetch("/api/v1/sla/policies");
+}
+
+export async function getAnalyticsSummary(): Promise<{
+  support: { ticketCount: number };
+  feedback: { postCount: number };
+  helpCenter: { searchCount: number };
+}> {
+  return apiFetch("/api/v1/analytics/summary");
+}
+
 export async function listTicketEvents(id: string): Promise<{ items: TicketEvent[] }> {
   return apiFetch(`/api/v1/tickets/${id}/events`);
 }

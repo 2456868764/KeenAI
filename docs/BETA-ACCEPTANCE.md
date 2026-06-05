@@ -28,6 +28,15 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. Portal: magic link → ticket list → ticket detail page.
 5. Webhook: `POST /api/v1/webhooks/im/discord?org={slug}` with MESSAGE_CREATE payload.
 
-## Not in this batch (Phase 2 remainder)
+## Batch 2 smoke (I117 continued)
 
-SLA, Feedback board, public HC SSR, analytics ECharts, email React templates, workflow branches UI — tracked in `08-ROADMAP-TODO.md` §P2.
+1. Dashboard → Feedback: submit idea, see upvotes.
+2. Dashboard → Analytics: ticket / feedback / HC search counts.
+3. `POST /api/v1/sla/policies` + `PUT /api/v1/sla/office-hours`.
+4. `GET /api/v1/public/{org}/feedback/ideas/posts` (PORTAL_PUBLIC_READ).
+5. `GET /api/v1/public/{org}/kb/search?brandId=…&q=…` (public HC search).
+6. Ticket status change emails customer when SMTP + customerId set.
+
+## Still open (Phase 2 remainder)
+
+Full ECharts dashboards, React Email components, workflow branches, public HC SSR pages — `08-ROADMAP-TODO.md` §P2.

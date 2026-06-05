@@ -283,6 +283,18 @@ export async function insertMessage(
     .where(eq(conversations.id, input.conversationId))
     .returning();
 
+  if (input.isAgentReply && !input.isInternal) {
+    try {
+      const { evaluateConversationSla } = await import("./sla.js");
+      await evaluateConversationSla(db, {
+        orgId: input.orgId,
+        conversationId: input.conversationId,
+      });
+    } catch {
+      // SLA evaluation is best-effort
+    }
+  }
+
   let [serialized] = await serializeMessagesWithAttachments(db, [message]);
 
   if (prepared.attachmentIds.length > 0) {

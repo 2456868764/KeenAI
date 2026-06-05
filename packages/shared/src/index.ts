@@ -76,6 +76,20 @@ export {
   type TicketFieldType,
 } from "./ticket-field.js";
 export { createBrandSchema, updateBrandSchema } from "./brand.js";
+export {
+  createFeedbackBoardSchema,
+  createFeedbackCommentSchema,
+  createFeedbackPostSchema,
+  feedbackDedupQuerySchema,
+  feedbackVoteSchema,
+  listFeedbackPostsSchema,
+} from "./feedback.js";
+export {
+  createSlaPolicySchema,
+  officeHoursScheduleSchema,
+  updateSlaPolicySchema,
+  upsertOfficeHoursSchema,
+} from "./sla.js";
 export { APP_NAME, API_VERSION } from "./constants.js";
 export {
   attachmentMetadataSchema,

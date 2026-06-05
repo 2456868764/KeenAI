@@ -94,6 +94,19 @@ export {
   type MemoryTreeBufferRow,
 } from "./memory-tree";
 export {
+  feedbackBoards,
+  feedbackComments,
+  feedbackPosts,
+  feedbackStatuses,
+  feedbackVotes,
+} from "./feedback";
+export {
+  officeHours,
+  slaBreachEvents,
+  slaPolicies,
+  type OfficeHoursSchedule,
+} from "./sla";
+export {
   ticketConversations,
   ticketEvents,
   ticketLinks,

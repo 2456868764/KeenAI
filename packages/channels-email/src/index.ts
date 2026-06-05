@@ -11,6 +11,7 @@ export { parseMimeSource } from "./parse.js";
 export { normalizeSubject, resolveThreadChannelId, type ExistingThread } from "./threading.js";
 export { createSmtpTransport, sendAgentReply, sendOutboundEmail } from "./outbound.js";
 export { renderAgentReplyHtml, renderAgentReplyText, type ReplyTemplateVars } from "./templates.js";
+export { renderTicketStatusEmail, type TicketStatusEmailInput } from "./templates/ticket-status.js";
 export {
   adaptMailgunInbound,
   adaptRawMimeBody,
