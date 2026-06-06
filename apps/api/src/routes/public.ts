@@ -1,8 +1,22 @@
 import { zValidator } from "@hono/zod-validator";
-import { createBgeM3KbQueryEmbedder, createKbQueryLog, searchKbChunks } from "@keenai/kb";
-import { API_VERSION, kbSearchQuerySchema } from "@keenai/shared";
+import {
+  createBgeM3KbQueryEmbedder,
+  createKbQueryLog,
+  searchKbChunks,
+  setKbQueryLogFeedback,
+} from "@keenai/kb";
+import {
+  API_VERSION,
+  kbSearchFeedbackSchema,
+  kbSearchQuerySchema,
+  publicKbAnswerQuerySchema,
+} from "@keenai/shared";
+import { kbQueryLogs } from "@keenai/storage/schema";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import { getFeedbackBoardBySlug, listFeedbackPosts } from "../lib/feedback.js";
+import { preparePublicKbAnswerStream } from "../lib/kb-answer-stream.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "../lib/kb-chunk-vector-init.js";
 import {
@@ -97,6 +111,97 @@ export function publicRoutes(ctx: AppContext) {
       logId: log.id,
     });
   });
+
+  r.get(
+    `${prefix}/:orgSlug/kb/answer`,
+    zValidator("query", publicKbAnswerQuerySchema),
+    async (c) => {
+      if (!ctx.env.PORTAL_PUBLIC_READ) {
+        return c.json({ error: "public_read_disabled" }, 403);
+      }
+
+      const resolved = await resolveOrgBrandBySlug(
+        c.get("store").db,
+        c.req.param("orgSlug"),
+        c.req.query("brand") ?? "default",
+      );
+      if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+      const query = c.req.valid("query");
+      if (query.brandId !== resolved.brand.id) {
+        return c.json({ error: "brand_mismatch" }, 400);
+      }
+
+      const prepared = await preparePublicKbAnswerStream(c.get("store").db, ctx.env, {
+        orgId: resolved.org.id,
+        brandId: resolved.brand.id,
+        q: query.q,
+        limit: query.limit,
+        rerank: query.rerank !== false,
+      });
+
+      if ("error" in prepared) {
+        const status = prepared.error === "kb_fts_unavailable" ? 503 : 503;
+        return c.json({ error: prepared.error }, status);
+      }
+
+      return streamSSE(c, async (stream) => {
+        await stream.writeSSE({
+          event: "meta",
+          data: JSON.stringify({
+            logId: prepared.logId,
+            providerId: prepared.providerId,
+            citations: prepared.citations,
+          }),
+        });
+
+        for await (const chunk of prepared.stream) {
+          if (chunk.type === "text-delta") {
+            await stream.writeSSE({ data: JSON.stringify({ text: chunk.text }) });
+          }
+        }
+
+        await stream.writeSSE({ event: "done", data: "{}" });
+      });
+    },
+  );
+
+  r.post(
+    `${prefix}/:orgSlug/kb/search/:id/feedback`,
+    zValidator("json", kbSearchFeedbackSchema),
+    async (c) => {
+      if (!ctx.env.PORTAL_PUBLIC_READ) {
+        return c.json({ error: "public_read_disabled" }, 403);
+      }
+
+      const resolved = await resolveOrgBrandBySlug(
+        c.get("store").db,
+        c.req.param("orgSlug"),
+        c.req.query("brand") ?? "default",
+      );
+      if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+      const logId = c.req.param("id");
+      const body = c.req.valid("json");
+      const db = c.get("store").db;
+
+      const [existing] = await db
+        .select({ id: kbQueryLogs.id })
+        .from(kbQueryLogs)
+        .where(and(eq(kbQueryLogs.id, logId), eq(kbQueryLogs.orgId, resolved.org.id)))
+        .limit(1);
+
+      if (!existing) return c.json({ error: "not_found" }, 404);
+
+      const updated = await setKbQueryLogFeedback(db, {
+        orgId: resolved.org.id,
+        logId,
+        feedback: body.feedback,
+      });
+
+      return c.json({ ok: Boolean(updated) });
+    },
+  );
 
   r.get(`${prefix}/:orgSlug/kb/collections`, async (c) => {
     if (!ctx.env.PORTAL_PUBLIC_READ) {

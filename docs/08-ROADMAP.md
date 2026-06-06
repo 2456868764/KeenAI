@@ -266,7 +266,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
 - [x] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
 - [x] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `next/og`）
-- [~] AI Search Answers（公开 KB search + Portal UI；流式 AI 答案待接）
+- [x] AI Search Answers（公开 KB search + Portal Ask AI SSE + 反馈）
 - [x] Slack（`@slack/bolt`）/ Discord（Gateway webhook 入站 + outbound reply）渠道适配
 - [x] Multi-brand 配置 UI（域名 / 主题 / Locale / Email From）
 - [x] 分析看板（ECharts · Support / Feedback / HC 三大 · `/analytics/dashboard`）

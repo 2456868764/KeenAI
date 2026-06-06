@@ -22,6 +22,13 @@ export {
 export { buildDraftToolSet, formatDraftToolSummary } from "./draft-tools.js";
 export { streamDraftText, type DraftLanguageModel } from "./run-draft-stream.js";
 export {
+  buildKbAnswerPrompt,
+  buildKbDraftRequest,
+  streamKbAnswerFromProvider,
+  streamKbAnswerText,
+  type KbAnswerContextChunk,
+} from "./kb-answer.js";
+export {
   draftImageSchema,
   draftMessageSchema,
   draftRequestSchema,

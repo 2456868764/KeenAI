@@ -160,6 +160,8 @@ export {
   kbGoldenPromoteSchema,
   kbSearchFeedbackSchema,
   kbSearchQuerySchema,
+  publicKbAnswerQuerySchema,
+  type PublicKbAnswerQuery,
   type KbEvalMetricsQuery,
   type KbEvalRun,
   type KbGoldenPromote,

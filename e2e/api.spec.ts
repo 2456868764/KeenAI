@@ -51,6 +51,24 @@ test.describe("API smoke @smoke", () => {
     }
   });
 
+  test("public kb answer streams SSE", async ({ request }) => {
+    const metaRes = await request.get(`${apiUrl}/api/v1/public/demo/meta`);
+    const meta = (await metaRes.json()) as { brand: { id: string } };
+    const params = new URLSearchParams({
+      brandId: meta.brand.id,
+      q: "KeenAI",
+      limit: "3",
+      rerank: "false",
+    });
+    const res = await request.get(`${apiUrl}/api/v1/public/demo/kb/answer?${params}`);
+    expect([200, 503]).toContain(res.status());
+    if (res.status() === 200) {
+      const body = await res.text();
+      expect(body).toContain("event: meta");
+      expect(body).toContain("event: done");
+    }
+  });
+
   test("auth login with seeded demo user", async ({ request }) => {
     const res = await request.post(`${apiUrl}/api/v1/auth/login`, {
       data: {

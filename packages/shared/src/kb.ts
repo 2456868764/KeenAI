@@ -10,6 +10,16 @@ export const kbSearchQuerySchema = z.object({
 
 export type KbSearchQuery = z.infer<typeof kbSearchQuerySchema>;
 
+/** Public help center AI answer (KB retrieve + streamText). */
+export const publicKbAnswerQuerySchema = z.object({
+  brandId: z.string().min(1),
+  q: z.string().min(1).max(500),
+  limit: z.coerce.number().int().min(1).max(10).default(5),
+  rerank: z.coerce.boolean().optional(),
+});
+
+export type PublicKbAnswerQuery = z.infer<typeof publicKbAnswerQuerySchema>;
+
 export const KB_SEARCH_FEEDBACK = ["helpful", "not_helpful"] as const;
 
 export const kbSearchFeedbackSchema = z.object({
