@@ -1,4 +1,6 @@
+import { resolveApplyRulesMatches } from "./blocks/apply-rules.js";
 import { resolveBranchesNext as resolveBranchNext } from "./blocks/branches.js";
+import type { WorkflowFacts } from "./blocks/branches.js";
 import { resolveLetKeeniAnswerNext } from "./blocks/let-keeni-answer.js";
 import type {
   WorkflowActionHandlers,
@@ -19,15 +21,174 @@ function defaultNextId(definition: WorkflowDefinition, currentId: string): strin
   return definition.blocks[index + 1]?.id ?? null;
 }
 
-export async function runWorkflow(
+async function executeBlock(
+  block: WorkflowBlock,
   definition: WorkflowDefinition,
   handlers: WorkflowActionHandlers,
-  context?: WorkflowRunContext,
-): Promise<WorkflowRunResult> {
-  const steps: WorkflowStepResult[] = [];
-  const facts = context?.facts ?? {};
-  let currentId: string | null = definition.blocks[0]?.id ?? null;
-  const visited = new Set<string>();
+  context: WorkflowRunContext | undefined,
+  facts: WorkflowFacts,
+): Promise<{ step: WorkflowStepResult; nextId: string | null; forkTargets?: string[] }> {
+  let nextId: string | null = defaultNextId(definition, block.id);
+  const blockIds = new Set(definition.blocks.map((b) => b.id));
+
+  switch (block.type) {
+    case "send_message":
+      await handlers.sendMessage({
+        plainText: block.plainText,
+        attachmentIds: block.attachmentIds,
+      });
+      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "assign":
+      await handlers.assign(block.assigneeId ?? null);
+      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "close":
+      await handlers.close();
+      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "wait": {
+      const ms = block.seconds * 1000;
+      if (handlers.wait) await handlers.wait(ms);
+      return {
+        step: { blockId: block.id, type: block.type, status: "ok", output: { waitMs: ms } },
+        nextId,
+      };
+    }
+    case "http_request": {
+      if (!handlers.httpRequest) throw new Error("http_request_handler_missing");
+      const result = await handlers.httpRequest({
+        method: block.method,
+        url: block.url,
+        body: block.body,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { httpStatus: result.status },
+        },
+        nextId,
+      };
+    }
+    case "branches": {
+      nextId = resolveBranchNext(block, facts);
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { nextBlockId: nextId },
+        },
+        nextId,
+      };
+    }
+    case "apply_rules": {
+      const matched = resolveApplyRulesMatches(block, facts, blockIds);
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { matchedBranches: matched },
+        },
+        nextId,
+        forkTargets: matched,
+      };
+    }
+    case "convert_to_ticket": {
+      if (!handlers.convertToTicket) throw new Error("convert_to_ticket_handler_missing");
+      const result = await handlers.convertToTicket({ title: block.title });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { ticketId: result.ticketId },
+        },
+        nextId,
+      };
+    }
+    case "link_ticket": {
+      if (!handlers.linkTicket) throw new Error("link_ticket_handler_missing");
+      const result = await handlers.linkTicket({
+        parentTicketId: block.parentTicketId,
+        childTicketId: block.childTicketId,
+        linkType: block.linkType,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            parentTicketId: result.parentTicketId,
+            childTicketId: result.childTicketId,
+          },
+        },
+        nextId,
+      };
+    }
+    case "send_ticket_update": {
+      if (!handlers.sendTicketUpdate) throw new Error("send_ticket_update_handler_missing");
+      const result = await handlers.sendTicketUpdate({ ticketId: block.ticketId });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { notificationSent: result.sent },
+        },
+        nextId,
+      };
+    }
+    case "let_keeni_answer": {
+      if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
+      if (!context) throw new Error("workflow_context_required");
+      const result = await handlers.letKeeniAnswer({
+        block,
+        context: {
+          orgId: context.orgId,
+          brandId: context.brandId,
+          conversationId: context.conversationId,
+          targetCustomerId: context.targetCustomerId,
+          subject: context.subject,
+          isShadowRun: context.isShadowRun,
+        },
+      });
+      nextId = result.nextBlockId;
+      if (!nextId && block.outcomeRouting) {
+        nextId = resolveLetKeeniAnswerNext(result.resolution.type, block.outcomeRouting);
+      }
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            replyText: result.replyText,
+            resolutionType: result.resolution.type,
+            nextBlockId: nextId,
+          },
+        },
+        nextId,
+      };
+    }
+    default: {
+      const _exhaustive: never = block;
+      throw new Error(`unknown_block:${String(_exhaustive)}`);
+    }
+  }
+}
+
+async function runBlockChain(
+  startId: string | null,
+  definition: WorkflowDefinition,
+  handlers: WorkflowActionHandlers,
+  context: WorkflowRunContext | undefined,
+  facts: WorkflowFacts,
+  visited: Set<string>,
+  steps: WorkflowStepResult[],
+): Promise<void> {
+  let currentId = startId;
 
   while (currentId) {
     if (visited.has(currentId)) {
@@ -37,7 +198,7 @@ export async function runWorkflow(
         status: "error",
         error: "cycle_detected",
       });
-      break;
+      return;
     }
     visited.add(currentId);
 
@@ -49,156 +210,45 @@ export async function runWorkflow(
         status: "error",
         error: "block_not_found",
       });
-      break;
+      return;
     }
 
-    let nextId: string | null = defaultNextId(definition, currentId);
-
     try {
-      switch (block.type) {
-        case "send_message":
-          await handlers.sendMessage({
-            plainText: block.plainText,
-            attachmentIds: block.attachmentIds,
-          });
-          steps.push({ blockId: block.id, type: block.type, status: "ok" });
-          break;
-        case "assign":
-          await handlers.assign(block.assigneeId ?? null);
-          steps.push({ blockId: block.id, type: block.type, status: "ok" });
-          break;
-        case "close":
-          await handlers.close();
-          steps.push({ blockId: block.id, type: block.type, status: "ok" });
-          break;
-        case "wait": {
-          const ms = block.seconds * 1000;
-          if (handlers.wait) {
-            await handlers.wait(ms);
-          }
-          steps.push({ blockId: block.id, type: block.type, status: "ok", output: { waitMs: ms } });
-          break;
-        }
-        case "http_request": {
-          if (!handlers.httpRequest) {
-            throw new Error("http_request_handler_missing");
-          }
-          const result = await handlers.httpRequest({
-            method: block.method,
-            url: block.url,
-            body: block.body,
-          });
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: { httpStatus: result.status },
-          });
-          break;
-        }
-        case "branches": {
-          nextId = resolveBranchNext(block, facts);
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: { nextBlockId: nextId },
-          });
-          break;
-        }
-        case "convert_to_ticket": {
-          if (!handlers.convertToTicket) {
-            throw new Error("convert_to_ticket_handler_missing");
-          }
-          const result = await handlers.convertToTicket({ title: block.title });
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: { ticketId: result.ticketId },
-          });
-          break;
-        }
-        case "link_ticket": {
-          if (!handlers.linkTicket) {
-            throw new Error("link_ticket_handler_missing");
-          }
-          const result = await handlers.linkTicket({
-            parentTicketId: block.parentTicketId,
-            childTicketId: block.childTicketId,
-            linkType: block.linkType,
-          });
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: {
-              parentTicketId: result.parentTicketId,
-              childTicketId: result.childTicketId,
-            },
-          });
-          break;
-        }
-        case "send_ticket_update": {
-          if (!handlers.sendTicketUpdate) {
-            throw new Error("send_ticket_update_handler_missing");
-          }
-          const result = await handlers.sendTicketUpdate({ ticketId: block.ticketId });
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: { notificationSent: result.sent },
-          });
-          break;
-        }
-        case "let_keeni_answer": {
-          if (!handlers.letKeeniAnswer) {
-            throw new Error("let_keeni_answer_handler_missing");
-          }
-          if (!context) {
-            throw new Error("workflow_context_required");
-          }
-          const result = await handlers.letKeeniAnswer({
-            block,
-            context: {
-              orgId: context.orgId,
-              brandId: context.brandId,
-              conversationId: context.conversationId,
-              targetCustomerId: context.targetCustomerId,
-              subject: context.subject,
-              isShadowRun: context.isShadowRun,
-            },
-          });
-          nextId = result.nextBlockId;
-          if (!nextId && block.outcomeRouting) {
-            nextId = resolveLetKeeniAnswerNext(result.resolution.type, block.outcomeRouting);
-          }
-          steps.push({
-            blockId: block.id,
-            type: block.type,
-            status: "ok",
-            output: {
-              replyText: result.replyText,
-              resolutionType: result.resolution.type,
-              nextBlockId: nextId,
-            },
-          });
-          break;
-        }
-        default: {
-          const _exhaustive: never = block;
-          throw new Error(`unknown_block:${String(_exhaustive)}`);
+      const { step, nextId, forkTargets } = await executeBlock(
+        block,
+        definition,
+        handlers,
+        context,
+        facts,
+      );
+      steps.push(step);
+
+      if (forkTargets && forkTargets.length > 0) {
+        for (const target of forkTargets) {
+          await runBlockChain(target, definition, handlers, context, facts, visited, steps);
         }
       }
+
+      currentId = nextId;
     } catch (e) {
       const message = e instanceof Error ? e.message : "unknown_error";
       steps.push({ blockId: block.id, type: block.type, status: "error", error: message });
-      break;
+      return;
     }
-
-    currentId = nextId;
   }
+}
+
+export async function runWorkflow(
+  definition: WorkflowDefinition,
+  handlers: WorkflowActionHandlers,
+  context?: WorkflowRunContext,
+): Promise<WorkflowRunResult> {
+  const steps: WorkflowStepResult[] = [];
+  const facts = context?.facts ?? {};
+  const visited = new Set<string>();
+  const startId = definition.blocks[0]?.id ?? null;
+
+  await runBlockChain(startId, definition, handlers, context, facts, visited, steps);
 
   return { steps };
 }

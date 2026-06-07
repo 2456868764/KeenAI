@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { applyRulesBlockSchema } from "./blocks/apply-rules.js";
 import { branchesBlockSchema } from "./blocks/branches.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import {
@@ -10,8 +11,11 @@ import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 
 export {
-  branchConditionSchema,
-  branchesBlockSchema,
+  applyRulesBlockSchema,
+  resolveApplyRulesMatches,
+  type ApplyRulesBlock,
+} from "./blocks/apply-rules.js";
+export {
   evaluateBranchCondition,
   resolveBranchesNext,
   type BranchCondition,
@@ -55,6 +59,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "wait",
   "http_request",
   "branches",
+  "apply_rules",
   "convert_to_ticket",
   "link_ticket",
   "send_ticket_update",
@@ -106,6 +111,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   waitBlockSchema,
   httpRequestBlockSchema,
   branchesBlockSchema,
+  applyRulesBlockSchema,
   convertToTicketBlockSchema,
   linkTicketBlockSchema,
   sendTicketUpdateBlockSchema,
@@ -202,6 +208,7 @@ export type WorkflowStepResult = {
     httpStatus?: number;
     waitMs?: number;
     ticketId?: string;
+    matchedBranches?: string[];
     branchLabel?: string;
     parentTicketId?: string;
     childTicketId?: string;

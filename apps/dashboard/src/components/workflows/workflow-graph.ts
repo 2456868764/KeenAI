@@ -23,6 +23,8 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
       return "message";
     case "branches":
       return "condition";
+    case "apply_rules":
+      return "condition";
     default:
       return "action";
   }
@@ -68,6 +70,21 @@ export function collectWorkflowEdges(definition: WorkflowDefinition): WorkflowGr
           label: "Else",
           kind: "branch",
         });
+      }
+      continue;
+    }
+
+    if (block.type === "apply_rules") {
+      for (const [ruleIndex, rule] of block.rules.entries()) {
+        if (rule.nextId && blockIds.has(rule.nextId)) {
+          edges.push({
+            id: `${block.id}-rule-${ruleIndex}`,
+            source: block.id,
+            target: rule.nextId,
+            label: rule.label ?? `Rule ${ruleIndex + 1}`,
+            kind: "branch",
+          });
+        }
       }
       continue;
     }
@@ -164,6 +181,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return `${block.method} ${block.url.length > 40 ? `${block.url.slice(0, 40)}…` : block.url}`;
     case "branches":
       return `${block.branches.length} branch(es)`;
+    case "apply_rules":
+      return `${block.rules.length} rule(s) · all-match`;
     case "convert_to_ticket":
       return block.title?.trim() || "Convert conversation to ticket";
     case "link_ticket":

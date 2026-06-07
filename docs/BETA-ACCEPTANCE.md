@@ -12,6 +12,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Field DSL | `packages/shared` ticket-field tests | Validation passes |
 | Workflow wait/http/branches | `packages/workflow` executor tests | Blocks execute + branch jumps |
 | Workflow convert_to_ticket | `executor.test.ts` | Returns ticketId |
+| Workflow apply_rules all-match | `executor.test.ts` | parallel rule branches |
 | Workflow link_ticket / send_ticket_update | `workflow.integration.test.ts` | Link + notify steps |
 | Workflow publish snapshot | `workflows` route + migration 0032 | `publishedDefinition` set on publish |
 | Public KB articles | `kb-public.integration.test.ts` | Collections + articles list |
@@ -66,6 +67,11 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 3. Portal `/help` lists public articles; article page has `<title>` / meta from `generateMetadata`.
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
+
+## Batch 16 smoke (I117 continued)
+
+1. Workflow **Apply rules** block runs all matching branches (e.g. channel + priority).
+2. Dashboard editor configures rule conditions and target blocks.
 
 ## Batch 15 smoke (I117 continued)
 

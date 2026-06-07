@@ -135,6 +135,46 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output).toMatchObject({ ticketId: "ticket-99" });
   });
 
+  it("runs apply_rules block for all matching branches", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "rules",
+            type: "apply_rules",
+            rules: [
+              {
+                condition: { field: "channelType", op: "eq", value: "messenger" },
+                nextId: "msg-a",
+              },
+              {
+                condition: { field: "priority", op: "eq", value: "normal" },
+                nextId: "msg-b",
+              },
+            ],
+          },
+          { id: "msg-a", type: "send_message", plainText: "Channel path" },
+          { id: "msg-b", type: "send_message", plainText: "Priority path" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+      {
+        workflowId: "wf-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+        facts: { channelType: "messenger", priority: "normal" },
+      },
+    );
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(result.steps.some((s) => s.type === "apply_rules" && s.status === "ok")).toBe(true);
+    expect(result.steps.filter((s) => s.type === "send_message")).toHaveLength(2);
+  });
+
   it("runs link_ticket block", async () => {
     const linkTicket = vi.fn(async () => ({
       parentTicketId: "parent-1",

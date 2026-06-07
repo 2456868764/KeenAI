@@ -356,6 +356,18 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
               { label: "Default", nextId: null },
             ],
           });
+        } else if (type === "apply_rules") {
+          onAdd({
+            id,
+            type: "apply_rules",
+            rules: [
+              {
+                label: "Messenger",
+                condition: { field: "channelType", op: "eq", value: "messenger" },
+                nextId: `next-${id}`,
+              },
+            ],
+          });
         } else if (type === "convert_to_ticket") {
           onAdd({ id, type: "convert_to_ticket", title: "" });
         } else if (type === "link_ticket") {
@@ -379,6 +391,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="wait">Wait</option>
       <option value="http_request">HTTP request</option>
       <option value="branches">Branches</option>
+      <option value="apply_rules">Apply rules (all-match)</option>
       <option value="convert_to_ticket">Convert to ticket</option>
       <option value="link_ticket">Link tickets</option>
       <option value="send_ticket_update">Send ticket update email</option>

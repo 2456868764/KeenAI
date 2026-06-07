@@ -395,6 +395,15 @@ export type WorkflowBlock =
       }[];
       elseNextId?: string | null;
     }
+  | {
+      id: string;
+      type: "apply_rules";
+      rules: {
+        label?: string;
+        condition: { field: string; op: string; value: string };
+        nextId: string;
+      }[];
+    }
   | { id: string; type: "convert_to_ticket"; title?: string }
   | {
       id: string;

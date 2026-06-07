@@ -325,6 +325,107 @@ export function WorkflowBlockEditor({
         </div>
       ) : null}
 
+      {block.type === "apply_rules" ? (
+        <div className="space-y-3">
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Runs every matching rule branch (all-match). Each rule needs a condition and target
+            block.
+          </p>
+          {block.rules.map((rule, ruleIndex) => (
+            <div
+              key={`${block.id}-rule-${ruleIndex}`}
+              className="space-y-2 rounded-md border border-[hsl(var(--border))] p-3"
+            >
+              <Input
+                placeholder="Rule label"
+                value={rule.label ?? ""}
+                onChange={(e) => {
+                  const rules = [...block.rules];
+                  rules[ruleIndex] = { ...rule, label: e.target.value };
+                  onChange({ ...block, rules });
+                }}
+              />
+              <select
+                value={rule.condition.field}
+                onChange={(e) => {
+                  const rules = [...block.rules];
+                  rules[ruleIndex] = {
+                    ...rule,
+                    condition: {
+                      ...rule.condition,
+                      field: e.target.value as "channelType" | "priority" | "conversationStatus",
+                    },
+                  };
+                  onChange({ ...block, rules });
+                }}
+                className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+              >
+                <option value="channelType">channelType</option>
+                <option value="priority">priority</option>
+                <option value="conversationStatus">conversationStatus</option>
+              </select>
+              <select
+                value={rule.condition.op}
+                onChange={(e) => {
+                  const rules = [...block.rules];
+                  rules[ruleIndex] = {
+                    ...rule,
+                    condition: { ...rule.condition, op: e.target.value as "eq" | "neq" },
+                  };
+                  onChange({ ...block, rules });
+                }}
+                className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+              >
+                <option value="eq">equals</option>
+                <option value="neq">not equals</option>
+              </select>
+              <Input
+                placeholder="Value"
+                value={rule.condition.value}
+                onChange={(e) => {
+                  const rules = [...block.rules];
+                  rules[ruleIndex] = {
+                    ...rule,
+                    condition: { ...rule.condition, value: e.target.value },
+                  };
+                  onChange({ ...block, rules });
+                }}
+              />
+              <NextBlockSelect
+                value={rule.nextId}
+                blocks={allBlocks}
+                currentId={block.id}
+                onChange={(nextId) => {
+                  const rules = [...block.rules];
+                  rules[ruleIndex] = { ...rule, nextId: nextId ?? rule.nextId };
+                  onChange({ ...block, rules });
+                }}
+                placeholder="Target block"
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            className="text-xs text-[hsl(var(--primary))]"
+            onClick={() =>
+              onChange({
+                ...block,
+                rules: [
+                  ...block.rules,
+                  {
+                    label: "",
+                    condition: { field: "channelType", op: "eq", value: "" },
+                    nextId: allBlocks.find((b) => b.id !== block.id)?.id ?? block.id,
+                  },
+                ],
+              })
+            }
+          >
+            + Add rule
+          </button>
+        </div>
+      ) : null}
+
       {block.type === "convert_to_ticket" ? (
         <>
           <Input
