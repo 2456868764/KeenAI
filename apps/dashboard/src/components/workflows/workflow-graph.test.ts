@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorkflowDefinition } from "../../lib/api";
-import { blockCategory, collectWorkflowEdges } from "./workflow-graph";
+import { blockCategory, collectWorkflowEdges, highlightBlocksFromRunSteps } from "./workflow-graph";
 
 const base: WorkflowDefinition = {
   trigger: "first_message",
@@ -63,5 +63,16 @@ describe("blockCategory", () => {
       "condition",
     );
     expect(blockCategory({ id: "3", type: "wait", seconds: 1 })).toBe("action");
+  });
+});
+
+describe("highlightBlocksFromRunSteps", () => {
+  it("collects executed and failed block ids from run steps", () => {
+    const highlight = highlightBlocksFromRunSteps([
+      { blockId: "a", type: "send_message", status: "completed" },
+      { blockId: "b", type: "branches", status: "failed", error: "timeout" },
+    ]);
+    expect([...highlight.executed]).toEqual(["a", "b"]);
+    expect([...highlight.failed]).toEqual(["b"]);
   });
 });

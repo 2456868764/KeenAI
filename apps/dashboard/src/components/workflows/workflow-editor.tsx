@@ -13,9 +13,11 @@ import { Button, Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@ke
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { WorkflowBlockEditor } from "./workflow-block-editor";
 import { WorkflowFlowCanvas } from "./workflow-flow-canvas";
+import { highlightBlocksFromRunSteps } from "./workflow-graph";
+import { WorkflowRunTrace } from "./workflow-run-trace";
 
 function newBlockId() {
   return `block-${Date.now().toString(36)}`;
@@ -37,6 +39,8 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
   const [view, setView] = useState<"list" | "flow">("flow");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [triggerSheetOpen, setTriggerSheetOpen] = useState(false);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.workflow) {
@@ -81,6 +85,69 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     setDefinition({ ...definition, blocks });
   };
 
+  const runs = runsData?.items ?? [];
+  const runHighlight = useMemo(() => {
+    const run = runs.find((item) => item.id === selectedRunId);
+    return run
+      ? highlightBlocksFromRunSteps(run.steps)
+      : { executed: new Set<string>(), failed: new Set<string>() };
+  }, [runs, selectedRunId]);
+
+  const clearFlowSelection = () => {
+    setSelectedBlockId(null);
+    setTriggerSheetOpen(false);
+  };
+
+  const triggerFields = definition ? (
+    <>
+      <section className="space-y-2">
+        <label
+          htmlFor="workflow-trigger"
+          className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+        >
+          Trigger
+        </label>
+        <select
+          id="workflow-trigger"
+          value={definition.trigger}
+          onChange={(e) =>
+            setDefinition({
+              ...definition,
+              trigger: e.target.value as WorkflowDefinition["trigger"],
+            })
+          }
+          className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 text-sm"
+        >
+          <option value="first_message">First customer message</option>
+          <option value="customer_unresponsive">Customer unresponsive</option>
+        </select>
+      </section>
+
+      {definition.trigger === "customer_unresponsive" ? (
+        <section className="space-y-2">
+          <label
+            htmlFor="workflow-inactivity"
+            className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+          >
+            Inactivity (minutes after agent reply)
+          </label>
+          <Input
+            id="workflow-inactivity"
+            type="number"
+            min={0}
+            value={definition.inactivityMinutes ?? 30}
+            onChange={(e) =>
+              setDefinition({
+                ...definition,
+                inactivityMinutes: Number.parseInt(e.target.value, 10) || 0,
+              })
+            }
+          />
+        </section>
+      ) : null}
+    </>
+  ) : null;
+
   return (
     <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Workflow editor">
@@ -115,7 +182,12 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         </Button>
       </AppHeader>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-6">
+      <main
+        className={[
+          "mx-auto w-full flex-1 overflow-y-auto p-6",
+          view === "flow" ? "max-w-7xl" : "max-w-5xl",
+        ].join(" ")}
+      >
         {isLoading || !definition ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
         ) : error ? (
@@ -132,51 +204,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               <Input id="workflow-name" value={name} onChange={(e) => setName(e.target.value)} />
             </section>
 
-            <section className="space-y-2">
-              <label
-                htmlFor="workflow-trigger"
-                className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
-              >
-                Trigger
-              </label>
-              <select
-                id="workflow-trigger"
-                value={definition.trigger}
-                onChange={(e) =>
-                  setDefinition({
-                    ...definition,
-                    trigger: e.target.value as WorkflowDefinition["trigger"],
-                  })
-                }
-                className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 text-sm"
-              >
-                <option value="first_message">First customer message</option>
-                <option value="customer_unresponsive">Customer unresponsive</option>
-              </select>
-            </section>
-
-            {definition.trigger === "customer_unresponsive" ? (
-              <section className="space-y-2">
-                <label
-                  htmlFor="workflow-inactivity"
-                  className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
-                >
-                  Inactivity (minutes after agent reply)
-                </label>
-                <Input
-                  id="workflow-inactivity"
-                  type="number"
-                  min={0}
-                  value={definition.inactivityMinutes ?? 30}
-                  onChange={(e) =>
-                    setDefinition({
-                      ...definition,
-                      inactivityMinutes: Number.parseInt(e.target.value, 10) || 0,
-                    })
-                  }
-                />
-              </section>
-            ) : null}
+            {view === "list" ? triggerFields : null}
 
             <section className="space-y-3">
               <div className="flex items-center justify-between">
@@ -203,7 +231,8 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                       }
                       onClick={() => {
                         setView("list");
-                        setSelectedBlockId(null);
+                        clearFlowSelection();
+                        setSelectedRunId(null);
                       }}
                     >
                       List
@@ -217,11 +246,27 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 />
               </div>
               {view === "flow" ? (
-                <WorkflowFlowCanvas
-                  definition={definition}
-                  selectedBlockId={selectedBlockId}
-                  onSelectBlock={setSelectedBlockId}
-                />
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <WorkflowFlowCanvas
+                    definition={definition}
+                    selectedBlockId={selectedBlockId}
+                    triggerSelected={triggerSheetOpen}
+                    runHighlight={runHighlight}
+                    onSelectBlock={(blockId) => {
+                      setSelectedBlockId(blockId);
+                      setTriggerSheetOpen(false);
+                    }}
+                    onSelectTrigger={() => {
+                      setTriggerSheetOpen(true);
+                      setSelectedBlockId(null);
+                    }}
+                  />
+                  <WorkflowRunTrace
+                    runs={runs}
+                    selectedRunId={selectedRunId}
+                    onSelectRun={setSelectedRunId}
+                  />
+                </div>
               ) : (
                 <ol className="space-y-3">
                   {definition.blocks.map((block, index) => (
@@ -254,36 +299,52 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
             {workflow ? (
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Status: <span className="font-medium">{workflow.status}</span> · Updated{" "}
-                {new Date(workflow.updatedAt).toLocaleString()}
+                Status: <span className="font-medium">{workflow.status}</span>
+                {workflow.publishedDefinition ? (
+                  <>
+                    {" "}
+                    · Published snapshot differs from draft:{" "}
+                    <span className="font-medium">
+                      {workflow.publishedDefinition.blocks.length !== definition.blocks.length ||
+                      JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition)
+                        ? "yes"
+                        : "no"}
+                    </span>
+                  </>
+                ) : null}{" "}
+                · Updated {new Date(workflow.updatedAt).toLocaleString()}
               </p>
             ) : null}
 
-            <section className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
-              <h2 className="mb-3 text-sm font-medium">Recent runs</h2>
-              {(runsData?.items ?? []).length === 0 ? (
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">No runs recorded yet.</p>
-              ) : (
-                <ul className="space-y-2 text-xs">
-                  {(runsData?.items ?? []).slice(0, 8).map((run) => (
-                    <li
-                      key={run.id}
-                      className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{run.status}</span>
-                        <span className="text-[hsl(var(--muted-foreground))]">
-                          {new Date(run.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[hsl(var(--muted-foreground))]">
-                        {run.steps.map((s) => `${s.type}:${s.status}`).join(" → ")}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            {view === "list" ? (
+              <section className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
+                <h2 className="mb-3 text-sm font-medium">Recent runs</h2>
+                {runs.length === 0 ? (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    No runs recorded yet.
+                  </p>
+                ) : (
+                  <ul className="space-y-2 text-xs">
+                    {runs.slice(0, 8).map((run) => (
+                      <li
+                        key={run.id}
+                        className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{run.status}</span>
+                          <span className="text-[hsl(var(--muted-foreground))]">
+                            {new Date(run.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[hsl(var(--muted-foreground))]">
+                          {run.steps.map((s) => `${s.type}:${s.status}`).join(" → ")}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ) : null}
           </div>
         )}
       </main>
@@ -314,6 +375,24 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                   setSelectedBlockId(null);
                 }}
               />
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet
+        open={view === "flow" && triggerSheetOpen && definition !== null}
+        onOpenChange={(open) => {
+          if (!open) setTriggerSheetOpen(false);
+        }}
+      >
+        <SheetContent side="right" className="overflow-y-auto">
+          {definition ? (
+            <>
+              <SheetHeader>
+                <SheetTitle>Trigger</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-4">{triggerFields}</div>
             </>
           ) : null}
         </SheetContent>

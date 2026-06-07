@@ -242,7 +242,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Workflow 版本管理（draft → published · `published_definition` snapshot）+ Trace 查看（runs API + Dashboard）
 - [x] SLA 策略 + 超时预警（50/80/100% 触发 · API + Inbox badge）
 - [x] Office Hours（多时区 schedule · Dashboard `/settings/sla`）
-- [~] Workflow Builder 完整（dagre 自动布局 + 分支/结果多层边 + Sheet 配置面板）
+- [x] Workflow Builder 完整（dagre 自动布局 + 分支/结果多层边 + Sheet 配置面板 + Run trace 高亮）
 
 #### Sprint 10b（W24-W25）：Multimodal MVP
 

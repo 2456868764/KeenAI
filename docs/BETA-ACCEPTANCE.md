@@ -68,6 +68,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 17 smoke (I117 continued)
+
+1. Dashboard Workflow editor **Flow** view → click **Trigger** node → Sheet opens for trigger/inactivity.
+2. Select a recent run in **Run trace** panel → executed blocks highlight green on canvas (failed = red).
+3. Draft vs published snapshot indicator shows under workflow status.
+
 ## Batch 16 smoke (I117 continued)
 
 1. Workflow **Apply rules** block runs all matching branches (e.g. channel + priority).

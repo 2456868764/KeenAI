@@ -28,6 +28,8 @@ import {
 type BlockNodeData = {
   block: WorkflowBlock;
   selected: boolean;
+  executed: boolean;
+  failed: boolean;
 };
 
 type TriggerNodeData = {
@@ -67,9 +69,13 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       className={[
         "min-w-[180px] max-w-[220px] rounded-lg border bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm transition-shadow",
         styles.border,
-        data.selected
-          ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
-          : "",
+        data.failed
+          ? "ring-2 ring-red-500 ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
+          : data.executed
+            ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
+            : data.selected
+              ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
+              : "",
       ].join(" ")}
     >
       <Handle
@@ -178,6 +184,8 @@ const edgeTypes = {
 function definitionToFlow(
   definition: WorkflowDefinition,
   selectedBlockId: string | null,
+  triggerSelected: boolean,
+  runHighlight: { executed: Set<string>; failed: Set<string> },
 ): { nodes: Node[]; edges: Edge[] } {
   const graphEdges = collectWorkflowEdges(definition);
   const layoutInput = [
@@ -203,9 +211,9 @@ function definitionToFlow(
         x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
         y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
       },
-      data: { trigger: definition.trigger, selected: false },
+      data: { trigger: definition.trigger, selected: triggerSelected },
       draggable: false,
-      selectable: false,
+      selectable: true,
     },
     ...definition.blocks.map((block) => ({
       id: block.id,
@@ -217,6 +225,8 @@ function definitionToFlow(
       data: {
         block,
         selected: selectedBlockId === block.id,
+        executed: runHighlight.executed.has(block.id),
+        failed: runHighlight.failed.has(block.id),
       },
       draggable: false,
     })),
@@ -238,19 +248,25 @@ function definitionToFlow(
 export function WorkflowFlowCanvas({
   definition,
   selectedBlockId,
+  triggerSelected,
+  runHighlight,
   onSelectBlock,
+  onSelectTrigger,
 }: {
   definition: WorkflowDefinition;
   selectedBlockId: string | null;
+  triggerSelected: boolean;
+  runHighlight: { executed: Set<string>; failed: Set<string> };
   onSelectBlock: (blockId: string | null) => void;
+  onSelectTrigger: () => void;
 }) {
   const { nodes, edges } = useMemo(
-    () => definitionToFlow(definition, selectedBlockId),
-    [definition, selectedBlockId],
+    () => definitionToFlow(definition, selectedBlockId, triggerSelected, runHighlight),
+    [definition, selectedBlockId, triggerSelected, runHighlight],
   );
 
   return (
-    <div className="h-[520px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+    <div className="h-[560px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -262,18 +278,23 @@ export function WorkflowFlowCanvas({
         nodesConnectable={false}
         elementsSelectable
         onNodeClick={(_, node) => {
-          if (node.id === "__trigger__") return;
+          if (node.id === "__trigger__") {
+            onSelectTrigger();
+            return;
+          }
           onSelectBlock(node.id);
         }}
-        onPaneClick={() => onSelectBlock(null)}
+        onPaneClick={() => {
+          onSelectBlock(null);
+        }}
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={16} size={1} color="hsl(var(--border))" />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
       <p className="border-t border-[hsl(var(--border))] px-3 py-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-        Click a block to open the configuration panel. Branch and outcome paths are shown as labeled
-        edges.
+        Click the trigger or a block to configure it. Select a run in the trace panel to highlight
+        executed steps.
       </p>
     </div>
   );

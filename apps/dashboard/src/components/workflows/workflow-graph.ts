@@ -1,4 +1,4 @@
-import type { WorkflowBlock, WorkflowDefinition } from "@/lib/api";
+import type { WorkflowBlock, WorkflowDefinition, WorkflowRunStep } from "@/lib/api";
 import dagre from "dagre";
 
 export type WorkflowGraphEdge = {
@@ -198,3 +198,20 @@ export const workflowNodeSize = {
   block: { width: NODE_WIDTH, height: NODE_HEIGHT },
   trigger: { width: TRIGGER_WIDTH, height: TRIGGER_HEIGHT },
 };
+
+export type WorkflowRunBlockHighlight = {
+  executed: Set<string>;
+  failed: Set<string>;
+};
+
+export function highlightBlocksFromRunSteps(steps: WorkflowRunStep[]): WorkflowRunBlockHighlight {
+  const executed = new Set<string>();
+  const failed = new Set<string>();
+  for (const step of steps) {
+    executed.add(step.blockId);
+    if (step.status === "failed" || step.error) {
+      failed.add(step.blockId);
+    }
+  }
+  return { executed, failed };
+}
