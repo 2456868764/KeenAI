@@ -16,6 +16,7 @@ import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
   patchCollectDataStep,
+  patchCsatStep,
   patchReplyButtonsStep,
   resolveActiveWorkflowDefinition,
 } from "./workflow-handlers.js";
@@ -46,6 +47,25 @@ function resolveRunStatus(steps: WorkflowStepResult[], suspended?: boolean): str
   return "completed";
 }
 
+async function emitCsatRequest(payload: {
+  workflowRunId: string;
+  conversationId: string;
+  orgId: string;
+  brandId: string;
+  stepId: string;
+  waitForRating: boolean;
+  waitForRatingMs?: number;
+}): Promise<void> {
+  try {
+    const { getInngestClient } = await import("./workflow-dispatch.js");
+    const client = getInngestClient();
+    if (!client) return;
+    await client.send({ name: WORKFLOW_INNGEST_EVENTS.CSAT_REQUEST, data: payload });
+  } catch {
+    // Inngest is optional in dev/test
+  }
+}
+
 function autoCloseMsForBlock(definition: WorkflowDefinition, blockId: string): number {
   const block = definition.blocks.find((item) => item.id === blockId);
   if (!block || (block.type !== "collect_data" && block.type !== "reply_buttons")) return 0;
@@ -62,7 +82,7 @@ async function finalizeResumedRun(
     orgId: string;
     brandId: string;
     steps: WorkflowStepResult[];
-    suspended?: { blockId: string; type: "collect_data" | "reply_buttons" };
+    suspended?: { blockId: string; type: "collect_data" | "reply_buttons" | "csat" };
   },
 ): Promise<string> {
   const status = resolveRunStatus(input.steps, Boolean(input.suspended));
@@ -72,15 +92,28 @@ async function finalizeResumedRun(
     .where(eq(workflowRuns.id, input.runId));
 
   if (input.suspended) {
-    const autoCloseMs = autoCloseMsForBlock(input.definition, input.suspended.blockId);
-    if (autoCloseMs > 0) {
-      await emitWorkflowAwaitingInput({
+    const block = input.definition.blocks.find((item) => item.id === input.suspended?.blockId);
+    if (input.suspended.type === "csat" && block?.type === "csat" && block.waitForRatingMinutes) {
+      await emitCsatRequest({
         workflowRunId: input.runId,
         conversationId: input.conversationId,
         orgId: input.orgId,
         brandId: input.brandId,
-        autoCloseMs,
+        stepId: block.id,
+        waitForRating: true,
+        waitForRatingMs: block.waitForRatingMinutes * 60_000,
       });
+    } else {
+      const autoCloseMs = autoCloseMsForBlock(input.definition, input.suspended.blockId);
+      if (autoCloseMs > 0) {
+        await emitWorkflowAwaitingInput({
+          workflowRunId: input.runId,
+          conversationId: input.conversationId,
+          orgId: input.orgId,
+          brandId: input.brandId,
+          autoCloseMs,
+        });
+      }
     }
   }
 
@@ -93,7 +126,7 @@ async function resumeFromSuspendedBlock(
     orgId: string;
     workflowRunId: string;
     blockId: string;
-    expectedType: "collect_data" | "reply_buttons";
+    expectedType: "collect_data" | "reply_buttons" | "csat";
     resumeFrom: string | null;
     patchedSteps: WorkflowStepResult[];
   },
@@ -262,4 +295,51 @@ export async function resumeReplyButtonsWorkflow(
   );
 }
 
-export { autoCloseMsForBlock, emitWorkflowAwaitingInput, resolveRunStatus };
+export async function resumeCsatWorkflow(
+  db: Db,
+  input: {
+    orgId: string;
+    workflowRunId: string;
+    blockId: string;
+    rating: number;
+    ratingComment?: string;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string }> {
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, input.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "run_not_found" };
+
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+
+  const definition = resolveActiveWorkflowDefinition(workflow);
+  const patchedSteps = patchCsatStep(run.steps as WorkflowStepResult[], input.blockId, {
+    rating: input.rating,
+    ratingComment: input.ratingComment,
+  });
+
+  return resumeFromSuspendedBlock(
+    db,
+    {
+      orgId: input.orgId,
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      expectedType: "csat",
+      resumeFrom: nextBlockAfter(definition, input.blockId),
+      patchedSteps,
+    },
+    env,
+    authConfig,
+  );
+}
+
+export { autoCloseMsForBlock, emitCsatRequest, emitWorkflowAwaitingInput, resolveRunStatus };

@@ -489,6 +489,51 @@ describe("runWorkflow", () => {
     expect(sendMessage).toHaveBeenCalledWith({ plainText: "Great!", attachmentIds: undefined });
     expect(result.suspended).toBeUndefined();
   });
+
+  it("snoozes conversation via snooze block", async () => {
+    const snooze = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "snooze", type: "snooze", minutes: 30 }],
+      },
+      { sendMessage: vi.fn(), assign: vi.fn(), close: vi.fn(), snooze },
+    );
+
+    expect(snooze).toHaveBeenCalledWith({ minutes: 30 });
+    expect(result.steps[0]?.output?.snoozeMinutes).toBe(30);
+  });
+
+  it("suspends csat workflow when waitForRating is enabled", async () => {
+    const csat = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "csat",
+            type: "csat",
+            prompt: "Rate us",
+            allowComment: true,
+            waitForRating: true,
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), assign: vi.fn(), close: vi.fn(), csat },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+    );
+
+    expect(csat).toHaveBeenCalledOnce();
+    expect(result.suspended).toEqual({ blockId: "csat", type: "csat" });
+  });
 });
 
 describe("resolveLetKeeniAnswerNext", () => {

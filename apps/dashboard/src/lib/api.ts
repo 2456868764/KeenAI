@@ -428,6 +428,15 @@ export type WorkflowBlock =
       allowFreeText?: boolean;
       buttons: { id: string; label: string; nextId: string | null }[];
       autoCloseMinutes?: number;
+    }
+  | { id: string; type: "snooze"; minutes: number }
+  | {
+      id: string;
+      type: "csat";
+      prompt: string;
+      allowComment?: boolean;
+      waitForRating?: boolean;
+      waitForRatingMinutes?: number;
     };
 
 export type WorkflowDefinition = {

@@ -3,6 +3,7 @@ import { applyRulesBlockSchema } from "./blocks/apply-rules.js";
 import { branchesBlockSchema } from "./blocks/branches.js";
 import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
+import { type CsatInput, csatBlockSchema } from "./blocks/csat.js";
 import {
   type LetKeeniAnswerInput,
   type LetKeeniAnswerResult,
@@ -11,6 +12,7 @@ import {
 import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
+import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
 
 export {
   applyRulesBlockSchema,
@@ -49,6 +51,17 @@ export {
   type LinkTicketBlock,
 } from "./blocks/link-ticket.js";
 export {
+  csatBlockSchema,
+  type CsatBlock,
+  type CsatInput,
+  type CsatSubmission,
+} from "./blocks/csat.js";
+export {
+  snoozeBlockSchema,
+  type SnoozeBlock,
+  type SnoozeInput,
+} from "./blocks/snooze.js";
+export {
   sendTicketUpdateBlockSchema,
   type SendTicketUpdateBlock,
 } from "./blocks/send-ticket-update.js";
@@ -82,6 +95,8 @@ export const WORKFLOW_BLOCK_TYPES = [
   "send_ticket_update",
   "collect_data",
   "reply_buttons",
+  "snooze",
+  "csat",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -136,6 +151,8 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendTicketUpdateBlockSchema,
   collectDataBlockSchema,
   replyButtonsBlockSchema,
+  snoozeBlockSchema,
+  csatBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -218,6 +235,8 @@ export type WorkflowActionHandlers = {
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
   collectData?: (input: CollectDataInput) => Promise<void>;
   replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
+  snooze?: (input: SnoozeInput) => Promise<void>;
+  csat?: (input: CsatInput) => Promise<void>;
 };
 
 export type WorkflowStepResult = {
@@ -242,12 +261,17 @@ export type WorkflowStepResult = {
     freeText?: string;
     buttonId?: string;
     buttonLabel?: string;
+    rating?: number;
+    ratingComment?: string;
+    snoozeMinutes?: number;
+    ratingRequested?: boolean;
   };
 };
 
 export type WorkflowSuspendedState =
   | { blockId: string; type: "collect_data" }
-  | { blockId: string; type: "reply_buttons" };
+  | { blockId: string; type: "reply_buttons" }
+  | { blockId: string; type: "csat" };
 
 export type WorkflowRunResult = {
   steps: WorkflowStepResult[];

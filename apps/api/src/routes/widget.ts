@@ -272,6 +272,25 @@ export function widgetRoutes() {
 
       if (!updated) return c.json({ error: "update_failed" }, 500);
 
+      if (body.workflowRunId && body.blockId) {
+        const { resumeCsatWorkflow } = await import("../lib/workflow-resume.js");
+        const resume = await resumeCsatWorkflow(
+          c.get("store").db,
+          {
+            orgId: auth.orgId,
+            workflowRunId: body.workflowRunId,
+            blockId: body.blockId,
+            rating: body.rating,
+            ratingComment: body.ratingComment,
+          },
+          c.get("env"),
+          c.get("authConfig"),
+        );
+        if (!resume.resumed) {
+          return c.json({ error: resume.reason ?? "resume_failed" }, 400);
+        }
+      }
+
       if (updated.status === "closed") {
         try {
           await dispatchKbConversationClosed(getKbDispatch(), c.get("store").db, {

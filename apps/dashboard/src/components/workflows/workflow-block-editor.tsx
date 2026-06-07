@@ -661,6 +661,66 @@ export function WorkflowBlockEditor({
           </p>
         </>
       ) : null}
+
+      {block.type === "snooze" ? (
+        <>
+          <Input
+            type="number"
+            min={1}
+            value={block.minutes}
+            onChange={(e) =>
+              onChange({ ...block, minutes: Number.parseInt(e.target.value, 10) || 1 })
+            }
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Sets conversation status to snoozed until the specified minutes elapse.
+          </p>
+        </>
+      ) : null}
+
+      {block.type === "csat" ? (
+        <>
+          <textarea
+            value={block.prompt}
+            onChange={(e) => onChange({ ...block, prompt: e.target.value })}
+            rows={3}
+            placeholder="CSAT prompt"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <input
+              type="checkbox"
+              checked={block.allowComment ?? true}
+              onChange={(e) => onChange({ ...block, allowComment: e.target.checked })}
+            />
+            Allow rating comment
+          </label>
+          <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <input
+              type="checkbox"
+              checked={block.waitForRating ?? false}
+              onChange={(e) => onChange({ ...block, waitForRating: e.target.checked })}
+            />
+            Wait for customer rating (suspend)
+          </label>
+          {block.waitForRating ? (
+            <Input
+              type="number"
+              min={1}
+              placeholder="Rating timeout minutes (optional)"
+              value={block.waitForRatingMinutes ?? ""}
+              onChange={(e) =>
+                onChange({
+                  ...block,
+                  waitForRatingMinutes: e.target.value
+                    ? Number.parseInt(e.target.value, 10)
+                    : undefined,
+                })
+              }
+            />
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

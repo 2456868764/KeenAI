@@ -762,4 +762,221 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("snooze block sets conversation status to snoozed", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Snooze on first message",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [{ id: "snooze", type: "snooze", minutes: 90 }],
+        },
+      }),
+    });
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "snooze-1",
+        initialMessage: { plainText: "Hi" },
+      }),
+    });
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const fetched = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      headers: auth,
+    });
+    expect(fetched.status).toBe(200);
+    const fetchedBody = (await fetched.json()) as {
+      conversation: { status: string; snoozedUntil?: string };
+    };
+    expect(fetchedBody.conversation.status).toBe("snoozed");
+    expect(fetchedBody.conversation.snoozedUntil).toBeTruthy();
+
+    await store.close();
+  });
+
+  it("csat waitForRating suspends until widget posts rating", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "CSAT after chat",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "csat",
+              type: "csat",
+              prompt: "How did we do?",
+              allowComment: true,
+              waitForRating: true,
+            },
+            { id: "thanks", type: "send_message", plainText: "Thanks for your feedback!" },
+          ],
+        },
+      }),
+    });
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-csat-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash },
+      }),
+    });
+    const session = (await sessionRes.json()) as { accessToken: string };
+    const widgetAuth = { Authorization: `Bearer ${session.accessToken}` };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ initialMessage: { plainText: "Hello" } }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const runsBody = (await runsRes.json()) as { items: { id: string; status: string }[] };
+    expect(runsBody.items[0]?.status).toBe("awaiting_input");
+
+    const ratingRes = await app.request(`/api/v1/widget/conversations/${conversation.id}/rating`, {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rating: 5,
+        ratingComment: "Great support",
+        workflowRunId: runsBody.items[0]?.id,
+        blockId: "csat",
+      }),
+    });
+    expect(ratingRes.status).toBe(200);
+
+    const runsAfter = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const afterBody = (await runsAfter.json()) as { items: { status: string }[] };
+    expect(afterBody.items[0]?.status).toBe("completed");
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const msgBody = (await messages.json()) as { items: { plainText: string }[] };
+    expect(msgBody.items.some((m) => m.plainText === "Thanks for your feedback!")).toBe(true);
+
+    await store.close();
+  });
 });

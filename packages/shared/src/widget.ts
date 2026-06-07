@@ -37,8 +37,11 @@ export const widgetPostMessageSchema = z
     { message: "plainText or attachmentIds required" },
   );
 
-/** Widget CSAT after conversation close (I104). */
-export const widgetConversationRatingSchema = conversationRatingSchema;
+/** Widget CSAT after conversation close (I104) or workflow csat block resume. */
+export const widgetConversationRatingSchema = conversationRatingSchema.extend({
+  workflowRunId: z.string().min(1).max(64).optional(),
+  blockId: z.string().min(1).max(64).optional(),
+});
 
 export const widgetWorkflowInputSchema = z.object({
   workflowRunId: z.string().min(1).max(64),

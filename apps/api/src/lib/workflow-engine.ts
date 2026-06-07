@@ -66,15 +66,29 @@ export async function executeWorkflow(
     .returning();
 
   if (result.suspended) {
-    const autoCloseMs = autoCloseMsForBlock(definition, result.suspended.blockId);
-    if (autoCloseMs > 0) {
-      await emitWorkflowAwaitingInput({
+    const block = definition.blocks.find((item) => item.id === result.suspended?.blockId);
+    if (result.suspended.type === "csat" && block?.type === "csat" && block.waitForRatingMinutes) {
+      const { emitCsatRequest } = await import("./workflow-resume.js");
+      await emitCsatRequest({
         workflowRunId: run.id,
         conversationId,
         orgId: workflow.orgId,
         brandId: conversation.brandId,
-        autoCloseMs,
+        stepId: block.id,
+        waitForRating: true,
+        waitForRatingMs: block.waitForRatingMinutes * 60_000,
       });
+    } else {
+      const autoCloseMs = autoCloseMsForBlock(definition, result.suspended.blockId);
+      if (autoCloseMs > 0) {
+        await emitWorkflowAwaitingInput({
+          workflowRunId: run.id,
+          conversationId,
+          orgId: workflow.orgId,
+          brandId: conversation.brandId,
+          autoCloseMs,
+        });
+      }
     }
   }
 

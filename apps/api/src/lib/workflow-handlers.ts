@@ -4,7 +4,9 @@ import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, type workflows } from "@keenai/storage/schema";
 import type {
   CollectDataInput,
+  CsatInput,
   ReplyButtonsInput,
+  SnoozeInput,
   WorkflowActionHandlers,
   WorkflowDefinition,
   WorkflowRunContext,
@@ -53,6 +55,20 @@ export function buildReplyButtonsMessageContent(input: ReplyButtonsInput): Recor
       blockId: input.blockId,
       buttons: input.buttons.map((button) => ({ id: button.id, label: button.label })),
       allowFreeText: input.allowFreeText,
+    },
+  };
+}
+
+export function buildCsatMessageContent(input: CsatInput): Record<string, unknown> {
+  return {
+    type: "workflow_csat",
+    text: input.prompt,
+    workflow: {
+      kind: "csat",
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      allowComment: input.allowComment,
+      waitForRating: input.waitForRating,
     },
   };
 }
@@ -191,6 +207,25 @@ export function createWorkflowActionHandlers(
         isAgentReply: true,
       });
     },
+    snooze: async ({ minutes }) => {
+      const until = new Date(Date.now() + minutes * 60_000);
+      await db
+        .update(conversations)
+        .set({ status: "snoozed", snoozedUntil: until, updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
+    },
+    csat: async (input) => {
+      await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText: input.prompt,
+        content: buildCsatMessageContent({ ...input, workflowRunId }),
+        isInternal: false,
+        sentVia: "workflow",
+        isAgentReply: true,
+      });
+    },
   };
 }
 
@@ -249,6 +284,25 @@ export function patchReplyButtonsStep(
         buttonId: submission.buttonId,
         buttonLabel: submission.buttonLabel,
         nextBlockId: submission.nextBlockId,
+      },
+    };
+  });
+}
+
+export function patchCsatStep(
+  steps: WorkflowStepResult[],
+  blockId: string,
+  submission: { rating: number; ratingComment?: string },
+): WorkflowStepResult[] {
+  return steps.map((step) => {
+    if (step.blockId !== blockId || step.type !== "csat") return step;
+    return {
+      ...step,
+      output: {
+        ...step.output,
+        awaitingInput: false,
+        rating: submission.rating,
+        ratingComment: submission.ratingComment,
       },
     };
   });

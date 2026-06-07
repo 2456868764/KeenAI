@@ -477,6 +477,16 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
               { id: "support", label: "Support", nextId: null },
             ],
           });
+        } else if (type === "snooze") {
+          onAdd({ id, type: "snooze", minutes: 60 });
+        } else if (type === "csat") {
+          onAdd({
+            id,
+            type: "csat",
+            prompt: "How would you rate this conversation?",
+            allowComment: true,
+            waitForRating: false,
+          });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -495,6 +505,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="send_ticket_update">Send ticket update email</option>
       <option value="collect_data">Collect data (suspend)</option>
       <option value="reply_buttons">Reply buttons (suspend)</option>
+      <option value="snooze">Snooze conversation</option>
+      <option value="csat">CSAT rating</option>
     </select>
   );
 }

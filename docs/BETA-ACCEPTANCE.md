@@ -68,6 +68,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 20 smoke (I117 continued)
+
+1. Workflow **Snooze** block → conversation status `snoozed` with `snoozedUntil`.
+2. Workflow **CSAT** with `waitForRating` → run `awaiting_input` until widget rating.
+3. Widget `POST …/rating` with `workflowRunId` + `blockId` resumes CSAT workflow.
+
 ## Batch 19 smoke (I117 continued)
 
 1. Workflow with **Reply buttons** block → run status `awaiting_input`.

@@ -22,6 +22,7 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
     case "let_keeni_answer":
     case "collect_data":
     case "reply_buttons":
+    case "csat":
       return "message";
     case "branches":
       return "condition";
@@ -212,6 +213,10 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
     case "reply_buttons":
       return `${block.buttons.length} button(s)`;
+    case "snooze":
+      return `Snooze ${block.minutes} min`;
+    case "csat":
+      return block.waitForRating ? "CSAT (wait for rating)" : "CSAT request";
   }
 }
 

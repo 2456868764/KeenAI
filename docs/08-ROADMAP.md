@@ -237,7 +237,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 #### Sprint 9-10（W21-W24）：Workflow 完整版 + SLA
 - [~] 所有 Block 实现（参见 02-FEATURES）
-- [~] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data` / `reply_buttons`（suspend blocks + widget resume + Inngest 已落地；`csat` / `snooze` 等待后续）
+- [x] `branches` / `apply_rules` / `http_request` / `wait` / suspend blocks（`collect_data` / `reply_buttons` / `csat` / `snooze` 已落地）
 - [ ] Inngest `step.waitForEvent` / `step.sleepUntil` 集成
 - [x] Workflow 版本管理（draft → published · `published_definition` snapshot）+ Trace 查看（runs API + Dashboard）
 - [x] SLA 策略 + 超时预警（50/80/100% 触发 · API + Inbox badge）

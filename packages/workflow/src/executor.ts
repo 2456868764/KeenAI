@@ -190,6 +190,52 @@ async function executeBlock(
         suspended: { blockId: block.id, type: "reply_buttons" },
       };
     }
+    case "snooze": {
+      if (!handlers.snooze) throw new Error("snooze_handler_missing");
+      await handlers.snooze({ minutes: block.minutes });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { snoozeMinutes: block.minutes },
+        },
+        nextId,
+      };
+    }
+    case "csat": {
+      if (!handlers.csat) throw new Error("csat_handler_missing");
+      await handlers.csat({
+        blockId: block.id,
+        prompt: block.prompt,
+        allowComment: block.allowComment ?? true,
+        workflowRunId: context?.workflowRunId,
+        waitForRating: block.waitForRating ?? false,
+        waitForRatingMinutes: block.waitForRatingMinutes,
+      });
+      if (block.waitForRating) {
+        if (!context?.workflowRunId) throw new Error("workflow_run_id_required");
+        return {
+          step: {
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: { awaitingInput: true },
+          },
+          nextId: null,
+          suspended: { blockId: block.id, type: "csat" },
+        };
+      }
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { ratingRequested: true },
+        },
+        nextId,
+      };
+    }
     case "let_keeni_answer": {
       if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
       if (!context) throw new Error("workflow_context_required");

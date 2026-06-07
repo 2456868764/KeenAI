@@ -98,7 +98,7 @@
 | P2-04 | 自定义字段 Field DSL | [x] |
 | P2-05 | 邮件通知模板（React Email · 多语言） | [x] |
 | P2-06 | Tracker fan-out 状态同步 | [x] |
-| P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [~] |
+| P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [x] |
 | P2-08 | Workflow 版本 draft→published + Trace | [x] |
 | P2-09 | SLA 50/80/100% + Office Hours | [x] |
 | P2-10 | Workflow Builder 多层 + 配置面板 | [x] |
