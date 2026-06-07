@@ -466,6 +466,17 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
             allowFreeText: false,
             fields: [{ key: "email", label: "Email", required: true }],
           });
+        } else if (type === "reply_buttons") {
+          onAdd({
+            id,
+            type: "reply_buttons",
+            prompt: "How can we help?",
+            allowFreeText: false,
+            buttons: [
+              { id: "sales", label: "Sales", nextId: null },
+              { id: "support", label: "Support", nextId: null },
+            ],
+          });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -483,6 +494,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="link_ticket">Link tickets</option>
       <option value="send_ticket_update">Send ticket update email</option>
       <option value="collect_data">Collect data (suspend)</option>
+      <option value="reply_buttons">Reply buttons (suspend)</option>
     </select>
   );
 }

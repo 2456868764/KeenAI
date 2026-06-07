@@ -9,6 +9,7 @@ import {
   letKeeniAnswerBlockSchema,
 } from "./blocks/let-keeni-answer.js";
 import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
+import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 
 export {
@@ -34,6 +35,14 @@ export {
   convertToTicketBlockSchema,
   type ConvertToTicketBlock,
 } from "./blocks/convert-to-ticket.js";
+export {
+  replyButtonsBlockSchema,
+  resolveReplyButtonsNext,
+  type ReplyButton,
+  type ReplyButtonsBlock,
+  type ReplyButtonsInput,
+  type ReplyButtonsSubmission,
+} from "./blocks/reply-buttons.js";
 export {
   linkTicketBlockSchema,
   TICKET_LINK_TYPES,
@@ -72,6 +81,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "link_ticket",
   "send_ticket_update",
   "collect_data",
+  "reply_buttons",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -125,6 +135,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   linkTicketBlockSchema,
   sendTicketUpdateBlockSchema,
   collectDataBlockSchema,
+  replyButtonsBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -206,6 +217,7 @@ export type WorkflowActionHandlers = {
   }) => Promise<{ parentTicketId: string; childTicketId: string }>;
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
   collectData?: (input: CollectDataInput) => Promise<void>;
+  replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
 };
 
 export type WorkflowStepResult = {
@@ -228,13 +240,14 @@ export type WorkflowStepResult = {
     awaitingInput?: boolean;
     submittedAttributes?: Record<string, string>;
     freeText?: string;
+    buttonId?: string;
+    buttonLabel?: string;
   };
 };
 
-export type WorkflowSuspendedState = {
-  blockId: string;
-  type: "collect_data";
-};
+export type WorkflowSuspendedState =
+  | { blockId: string; type: "collect_data" }
+  | { blockId: string; type: "reply_buttons" };
 
 export type WorkflowRunResult = {
   steps: WorkflowStepResult[];

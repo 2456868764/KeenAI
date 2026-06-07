@@ -564,6 +564,103 @@ export function WorkflowBlockEditor({
           </p>
         </>
       ) : null}
+
+      {block.type === "reply_buttons" ? (
+        <>
+          <textarea
+            value={block.prompt}
+            onChange={(e) => onChange({ ...block, prompt: e.target.value })}
+            rows={3}
+            placeholder="Prompt shown above the buttons"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <input
+              type="checkbox"
+              checked={block.allowFreeText ?? false}
+              onChange={(e) => onChange({ ...block, allowFreeText: e.target.checked })}
+            />
+            Allow free-text reply
+          </label>
+          <select
+            value={block.autoCloseMinutes ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                autoCloseMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="">No auto-close timer</option>
+            {[1, 3, 5, 7, 10, 15, 30, 60].map((minutes) => (
+              <option key={minutes} value={minutes}>
+                Auto-close after {minutes} min
+              </option>
+            ))}
+          </select>
+          <div className="space-y-2">
+            {block.buttons.map((button, buttonIndex) => (
+              <div
+                key={button.id}
+                className="grid gap-2 rounded border border-[hsl(var(--border))] p-2"
+              >
+                <Input
+                  placeholder="Button id"
+                  value={button.id}
+                  onChange={(e) => {
+                    const buttons = [...block.buttons];
+                    buttons[buttonIndex] = { ...button, id: e.target.value.trim() };
+                    onChange({ ...block, buttons });
+                  }}
+                />
+                <Input
+                  placeholder="Label"
+                  value={button.label}
+                  onChange={(e) => {
+                    const buttons = [...block.buttons];
+                    buttons[buttonIndex] = { ...button, label: e.target.value };
+                    onChange({ ...block, buttons });
+                  }}
+                />
+                <NextBlockSelect
+                  value={button.nextId}
+                  blocks={allBlocks}
+                  currentId={block.id}
+                  onChange={(nextId) => {
+                    const buttons = [...block.buttons];
+                    buttons[buttonIndex] = { ...button, nextId };
+                    onChange({ ...block, buttons });
+                  }}
+                  placeholder="Target block"
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              className="text-xs text-[hsl(var(--primary))]"
+              onClick={() =>
+                onChange({
+                  ...block,
+                  buttons: [
+                    ...block.buttons,
+                    {
+                      id: `btn_${block.buttons.length + 1}`,
+                      label: "New button",
+                      nextId: null,
+                    },
+                  ],
+                })
+              }
+            >
+              + Add button
+            </button>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Suspends until the widget posts a button click via workflow-button.
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

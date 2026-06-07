@@ -4,6 +4,7 @@ import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, type workflows } from "@keenai/storage/schema";
 import type {
   CollectDataInput,
+  ReplyButtonsInput,
   WorkflowActionHandlers,
   WorkflowDefinition,
   WorkflowRunContext,
@@ -37,6 +38,20 @@ export function buildCollectDataMessageContent(input: CollectDataInput): Record<
       workflowRunId: input.workflowRunId,
       blockId: input.blockId,
       fields: input.fields,
+      allowFreeText: input.allowFreeText,
+    },
+  };
+}
+
+export function buildReplyButtonsMessageContent(input: ReplyButtonsInput): Record<string, unknown> {
+  return {
+    type: "workflow_reply_buttons",
+    text: input.prompt,
+    workflow: {
+      kind: "reply_buttons",
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      buttons: input.buttons.map((button) => ({ id: button.id, label: button.label })),
       allowFreeText: input.allowFreeText,
     },
   };
@@ -164,6 +179,18 @@ export function createWorkflowActionHandlers(
         isAgentReply: true,
       });
     },
+    replyButtons: async (input) => {
+      await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText: input.prompt,
+        content: buildReplyButtonsMessageContent({ ...input, workflowRunId }),
+        isInternal: false,
+        sentVia: "workflow",
+        isAgentReply: true,
+      });
+    },
   };
 }
 
@@ -202,6 +229,26 @@ export function patchCollectDataStep(
         awaitingInput: false,
         submittedAttributes: submission.attributes,
         freeText: submission.freeText,
+      },
+    };
+  });
+}
+
+export function patchReplyButtonsStep(
+  steps: WorkflowStepResult[],
+  blockId: string,
+  submission: { buttonId: string; buttonLabel: string; nextBlockId: string | null },
+): WorkflowStepResult[] {
+  return steps.map((step) => {
+    if (step.blockId !== blockId || step.type !== "reply_buttons") return step;
+    return {
+      ...step,
+      output: {
+        ...step.output,
+        awaitingInput: false,
+        buttonId: submission.buttonId,
+        buttonLabel: submission.buttonLabel,
+        nextBlockId: submission.nextBlockId,
       },
     };
   });

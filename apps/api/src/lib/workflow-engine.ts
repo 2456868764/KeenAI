@@ -2,44 +2,20 @@ import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
-import {
-  WORKFLOW_INNGEST_EVENTS,
-  type WorkflowStepResult,
-  runWorkflow,
-  workflowAutoCloseMsFromMinutes,
-} from "@keenai/workflow";
+import { runWorkflow } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
   resolveActiveWorkflowDefinition,
 } from "./workflow-handlers.js";
+import {
+  autoCloseMsForBlock,
+  emitWorkflowAwaitingInput,
+  resolveRunStatus,
+} from "./workflow-resume.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
-
-async function emitWorkflowAwaitingInput(payload: {
-  workflowRunId: string;
-  conversationId: string;
-  orgId: string;
-  brandId: string;
-  autoCloseMs: number;
-}): Promise<void> {
-  if (payload.autoCloseMs <= 0) return;
-  try {
-    const { getInngestClient } = await import("./workflow-dispatch.js");
-    const client = getInngestClient();
-    if (!client) return;
-    await client.send({ name: WORKFLOW_INNGEST_EVENTS.STEP_AWAITING_INPUT, data: payload });
-  } catch {
-    // Inngest is optional in dev/test
-  }
-}
-
-function resolveRunStatus(steps: WorkflowStepResult[], suspended?: boolean): string {
-  if (suspended) return "awaiting_input";
-  if (steps.some((step) => step.status === "error")) return "failed";
-  return "completed";
-}
 
 export async function executeWorkflow(
   db: Db,
@@ -89,16 +65,15 @@ export async function executeWorkflow(
     .where(eq(workflowRuns.id, run.id))
     .returning();
 
-  if (result.suspended?.type === "collect_data") {
-    const block = definition.blocks.find((item) => item.id === result.suspended?.blockId);
-    const autoCloseMinutes = block?.type === "collect_data" ? block.autoCloseMinutes : undefined;
-    if (autoCloseMinutes) {
+  if (result.suspended) {
+    const autoCloseMs = autoCloseMsForBlock(definition, result.suspended.blockId);
+    if (autoCloseMs > 0) {
       await emitWorkflowAwaitingInput({
         workflowRunId: run.id,
         conversationId,
         orgId: workflow.orgId,
         brandId: conversation.brandId,
-        autoCloseMs: workflowAutoCloseMsFromMinutes(autoCloseMinutes),
+        autoCloseMs,
       });
     }
   }

@@ -631,4 +631,135 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("reply_buttons suspends until widget clicks a button", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Reply buttons",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "buttons",
+              type: "reply_buttons",
+              prompt: "Need sales or support?",
+              allowFreeText: false,
+              buttons: [
+                { id: "sales", label: "Sales", nextId: "sales-msg" },
+                { id: "support", label: "Support", nextId: "support-msg" },
+              ],
+            },
+            { id: "support-msg", type: "send_message", plainText: "Support is on the way." },
+            { id: "sales-msg", type: "send_message", plainText: "Sales team will reach out." },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-buttons-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash },
+      }),
+    });
+    const session = (await sessionRes.json()) as { accessToken: string };
+    const widgetAuth = { Authorization: `Bearer ${session.accessToken}` };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ initialMessage: { plainText: "Hello" } }),
+    });
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const runsBody = (await runsRes.json()) as { items: { id: string; status: string }[] };
+    expect(runsBody.items[0]?.status).toBe("awaiting_input");
+
+    const resumeRes = await app.request(
+      `/api/v1/widget/conversations/${conversation.id}/workflow-button`,
+      {
+        method: "POST",
+        headers: { ...widgetAuth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflowRunId: runsBody.items[0]?.id,
+          blockId: "buttons",
+          buttonId: "sales",
+        }),
+      },
+    );
+    expect(resumeRes.status).toBe(200);
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const msgBody = (await messages.json()) as { items: { plainText: string }[] };
+    expect(msgBody.items.some((m) => m.plainText === "Sales team will reach out.")).toBe(true);
+    expect(msgBody.items.some((m) => m.plainText === "Support is on the way.")).toBe(false);
+
+    await store.close();
+  });
 });

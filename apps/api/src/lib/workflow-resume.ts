@@ -4,8 +4,10 @@ import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
 import {
   WORKFLOW_INNGEST_EVENTS,
+  type WorkflowDefinition,
   type WorkflowStepResult,
   nextBlockAfter,
+  resolveReplyButtonsNext,
   runWorkflow,
   workflowAutoCloseMsFromMinutes,
 } from "@keenai/workflow";
@@ -14,6 +16,7 @@ import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
   patchCollectDataStep,
+  patchReplyButtonsStep,
   resolveActiveWorkflowDefinition,
 } from "./workflow-handlers.js";
 
@@ -43,14 +46,56 @@ function resolveRunStatus(steps: WorkflowStepResult[], suspended?: boolean): str
   return "completed";
 }
 
-export async function resumeCollectDataWorkflow(
+function autoCloseMsForBlock(definition: WorkflowDefinition, blockId: string): number {
+  const block = definition.blocks.find((item) => item.id === blockId);
+  if (!block || (block.type !== "collect_data" && block.type !== "reply_buttons")) return 0;
+  if (!block.autoCloseMinutes) return 0;
+  return workflowAutoCloseMsFromMinutes(block.autoCloseMinutes);
+}
+
+async function finalizeResumedRun(
+  db: Db,
+  input: {
+    runId: string;
+    definition: WorkflowDefinition;
+    conversationId: string;
+    orgId: string;
+    brandId: string;
+    steps: WorkflowStepResult[];
+    suspended?: { blockId: string; type: "collect_data" | "reply_buttons" };
+  },
+): Promise<string> {
+  const status = resolveRunStatus(input.steps, Boolean(input.suspended));
+  await db
+    .update(workflowRuns)
+    .set({ status, steps: input.steps })
+    .where(eq(workflowRuns.id, input.runId));
+
+  if (input.suspended) {
+    const autoCloseMs = autoCloseMsForBlock(input.definition, input.suspended.blockId);
+    if (autoCloseMs > 0) {
+      await emitWorkflowAwaitingInput({
+        workflowRunId: input.runId,
+        conversationId: input.conversationId,
+        orgId: input.orgId,
+        brandId: input.brandId,
+        autoCloseMs,
+      });
+    }
+  }
+
+  return status;
+}
+
+async function resumeFromSuspendedBlock(
   db: Db,
   input: {
     orgId: string;
     workflowRunId: string;
     blockId: string;
-    attributes: Record<string, string>;
-    freeText?: string;
+    expectedType: "collect_data" | "reply_buttons";
+    resumeFrom: string | null;
+    patchedSteps: WorkflowStepResult[];
   },
   env: ApiEnv,
   authConfig?: AuthConfig,
@@ -66,7 +111,7 @@ export async function resumeCollectDataWorkflow(
 
   const existingSteps = run.steps as WorkflowStepResult[];
   const suspendedStep = existingSteps.find(
-    (step) => step.blockId === input.blockId && step.type === "collect_data",
+    (step) => step.blockId === input.blockId && step.type === input.expectedType,
   );
   if (!suspendedStep?.output?.awaitingInput) {
     return { resumed: false, reason: "block_not_awaiting_input" };
@@ -87,11 +132,6 @@ export async function resumeCollectDataWorkflow(
   if (!conversation) return { resumed: false, reason: "conversation_not_found" };
 
   const definition = resolveActiveWorkflowDefinition(workflow);
-  const patchedSteps = patchCollectDataStep(existingSteps, input.blockId, {
-    attributes: input.attributes,
-    freeText: input.freeText,
-  });
-  const resumeFrom = nextBlockAfter(definition, input.blockId);
   const handlers = createWorkflowActionHandlers(
     db,
     workflow,
@@ -103,29 +143,123 @@ export async function resumeCollectDataWorkflow(
   const context = createWorkflowRunContext(workflow, conversation, run.id);
 
   const result = await runWorkflow(definition, handlers, context, {
-    startBlockId: resumeFrom,
-    initialSteps: patchedSteps,
+    startBlockId: input.resumeFrom,
+    initialSteps: input.patchedSteps,
   });
 
-  const status = resolveRunStatus(result.steps, Boolean(result.suspended));
-  await db
-    .update(workflowRuns)
-    .set({ status, steps: result.steps })
-    .where(eq(workflowRuns.id, run.id));
-
-  if (result.suspended?.type === "collect_data") {
-    const block = definition.blocks.find((item) => item.id === result.suspended?.blockId);
-    const autoCloseMinutes = block?.type === "collect_data" ? block.autoCloseMinutes : undefined;
-    if (autoCloseMinutes) {
-      await emitWorkflowAwaitingInput({
-        workflowRunId: run.id,
-        conversationId: conversation.id,
-        orgId: workflow.orgId,
-        brandId: conversation.brandId,
-        autoCloseMs: workflowAutoCloseMsFromMinutes(autoCloseMinutes),
-      });
-    }
-  }
+  const status = await finalizeResumedRun(db, {
+    runId: run.id,
+    definition,
+    conversationId: conversation.id,
+    orgId: workflow.orgId,
+    brandId: conversation.brandId,
+    steps: result.steps,
+    suspended: result.suspended,
+  });
 
   return { resumed: true, status };
 }
+
+export async function resumeCollectDataWorkflow(
+  db: Db,
+  input: {
+    orgId: string;
+    workflowRunId: string;
+    blockId: string;
+    attributes: Record<string, string>;
+    freeText?: string;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string }> {
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, input.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "run_not_found" };
+
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+
+  const definition = resolveActiveWorkflowDefinition(workflow);
+  const patchedSteps = patchCollectDataStep(run.steps as WorkflowStepResult[], input.blockId, {
+    attributes: input.attributes,
+    freeText: input.freeText,
+  });
+
+  return resumeFromSuspendedBlock(
+    db,
+    {
+      orgId: input.orgId,
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      expectedType: "collect_data",
+      resumeFrom: nextBlockAfter(definition, input.blockId),
+      patchedSteps,
+    },
+    env,
+    authConfig,
+  );
+}
+
+export async function resumeReplyButtonsWorkflow(
+  db: Db,
+  input: {
+    orgId: string;
+    workflowRunId: string;
+    blockId: string;
+    buttonId: string;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string }> {
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, input.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "run_not_found" };
+
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+
+  const definition = resolveActiveWorkflowDefinition(workflow);
+  const block = definition.blocks.find((item) => item.id === input.blockId);
+  if (!block || block.type !== "reply_buttons") {
+    return { resumed: false, reason: "block_not_reply_buttons" };
+  }
+
+  const button = block.buttons.find((item) => item.id === input.buttonId);
+  if (!button) return { resumed: false, reason: "button_not_found" };
+
+  const patchedSteps = patchReplyButtonsStep(run.steps as WorkflowStepResult[], input.blockId, {
+    buttonId: input.buttonId,
+    buttonLabel: button.label,
+    nextBlockId: resolveReplyButtonsNext(block, input.buttonId),
+  });
+
+  return resumeFromSuspendedBlock(
+    db,
+    {
+      orgId: input.orgId,
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      expectedType: "reply_buttons",
+      resumeFrom: resolveReplyButtonsNext(block, input.buttonId),
+      patchedSteps,
+    },
+    env,
+    authConfig,
+  );
+}
+
+export { autoCloseMsForBlock, emitWorkflowAwaitingInput, resolveRunStatus };

@@ -168,6 +168,28 @@ async function executeBlock(
         suspended: { blockId: block.id, type: "collect_data" },
       };
     }
+    case "reply_buttons": {
+      if (!handlers.replyButtons) throw new Error("reply_buttons_handler_missing");
+      if (!context?.workflowRunId) throw new Error("workflow_run_id_required");
+      await handlers.replyButtons({
+        blockId: block.id,
+        prompt: block.prompt,
+        allowFreeText: block.allowFreeText ?? false,
+        buttons: block.buttons,
+        workflowRunId: context.workflowRunId,
+        autoCloseMinutes: block.autoCloseMinutes,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { awaitingInput: true },
+        },
+        nextId: null,
+        suspended: { blockId: block.id, type: "reply_buttons" },
+      };
+    }
     case "let_keeni_answer": {
       if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
       if (!context) throw new Error("workflow_context_required");

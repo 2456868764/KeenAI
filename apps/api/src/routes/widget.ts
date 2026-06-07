@@ -7,6 +7,7 @@ import {
   widgetCreateConversationSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
+  widgetWorkflowButtonSchema,
   widgetWorkflowInputSchema,
 } from "@keenai/shared";
 import { conversations } from "@keenai/storage/schema";
@@ -314,6 +315,45 @@ export function widgetRoutes() {
           blockId: body.blockId,
           attributes: body.attributes,
           freeText: body.freeText,
+        },
+        c.get("env"),
+        c.get("authConfig"),
+      );
+
+      if (!result.resumed) {
+        return c.json({ error: result.reason ?? "resume_failed" }, 400);
+      }
+
+      return c.json({ ok: true, status: result.status });
+    },
+  );
+
+  r.post(
+    `${prefix}/conversations/:id/workflow-button`,
+    requireWidgetAuth(),
+    zValidator("json", widgetWorkflowButtonSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      const denied = assertWidgetConversation(conversation, auth);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
+      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+
+      const body = c.req.valid("json");
+      const { resumeReplyButtonsWorkflow } = await import("../lib/workflow-resume.js");
+      const result = await resumeReplyButtonsWorkflow(
+        c.get("store").db,
+        {
+          orgId: auth.orgId,
+          workflowRunId: body.workflowRunId,
+          blockId: body.blockId,
+          buttonId: body.buttonId,
         },
         c.get("env"),
         c.get("authConfig"),

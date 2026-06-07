@@ -47,5 +47,11 @@ export const widgetWorkflowInputSchema = z.object({
   freeText: z.string().max(5000).optional(),
 });
 
+export const widgetWorkflowButtonSchema = z.object({
+  workflowRunId: z.string().min(1).max(64),
+  blockId: z.string().min(1).max(64),
+  buttonId: z.string().min(1).max(64),
+});
+
 export type WidgetUser = z.infer<typeof widgetUserSchema>;
 export type WidgetSessionInput = z.infer<typeof widgetSessionSchema>;

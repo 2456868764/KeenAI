@@ -27,6 +27,7 @@ export {
   widgetSessionSchema,
   widgetUserSchema,
   widgetWorkflowInputSchema,
+  widgetWorkflowButtonSchema,
   type WidgetSessionInput,
   type WidgetUser,
 } from "./widget.js";

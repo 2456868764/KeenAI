@@ -405,6 +405,90 @@ describe("runWorkflow", () => {
     expect(result.suspended).toBeUndefined();
     expect(result.steps).toHaveLength(2);
   });
+
+  it("suspends on reply_buttons until a button is clicked", async () => {
+    const replyButtons = vi.fn(async () => {});
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "buttons",
+            type: "reply_buttons",
+            prompt: "Pick one",
+            allowFreeText: false,
+            buttons: [
+              { id: "yes", label: "Yes", nextId: "yes-path" },
+              { id: "no", label: "No", nextId: "no-path" },
+            ],
+          },
+          { id: "yes-path", type: "send_message", plainText: "Great!" },
+          { id: "no-path", type: "send_message", plainText: "Sorry!" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn(), replyButtons },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+    );
+
+    expect(replyButtons).toHaveBeenCalledOnce();
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(result.suspended).toEqual({ blockId: "buttons", type: "reply_buttons" });
+  });
+
+  it("resumes reply_buttons workflow on the selected button path", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "buttons",
+            type: "reply_buttons",
+            prompt: "Pick one",
+            allowFreeText: false,
+            buttons: [{ id: "yes", label: "Yes", nextId: "yes-path" }],
+          },
+          { id: "yes-path", type: "send_message", plainText: "Great!" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+      {
+        startBlockId: "yes-path",
+        initialSteps: [
+          {
+            blockId: "buttons",
+            type: "reply_buttons",
+            status: "ok",
+            output: {
+              awaitingInput: false,
+              buttonId: "yes",
+              buttonLabel: "Yes",
+              nextBlockId: "yes-path",
+            },
+          },
+        ],
+      },
+    );
+
+    expect(sendMessage).toHaveBeenCalledWith({ plainText: "Great!", attachmentIds: undefined });
+    expect(result.suspended).toBeUndefined();
+  });
 });
 
 describe("resolveLetKeeniAnswerNext", () => {

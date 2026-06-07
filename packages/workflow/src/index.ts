@@ -31,6 +31,12 @@ export {
   type CollectDataField,
   type CollectDataInput,
   type CollectDataSubmission,
+  type ReplyButton,
+  type ReplyButtonsBlock,
+  type ReplyButtonsInput,
+  type ReplyButtonsSubmission,
+  replyButtonsBlockSchema,
+  resolveReplyButtonsNext,
 } from "./schema.js";
 export { runWorkflow, nextBlockAfter } from "./executor.js";
 export {
@@ -54,6 +60,7 @@ export {
   type WorkflowCollectDataResumePayload,
   type WorkflowInngestHandlers,
   type WorkflowInngestOptions,
+  type WorkflowReplyButtonsResumePayload,
 } from "./inngest/functions.js";
 export {
   WORKFLOW_AUTO_CLOSE_MINUTE_OPTIONS,

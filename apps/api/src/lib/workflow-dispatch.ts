@@ -8,7 +8,7 @@ import {
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { dispatchFirstMessageWorkflows } from "./workflow-engine.js";
-import { resumeCollectDataWorkflow } from "./workflow-resume.js";
+import { resumeCollectDataWorkflow, resumeReplyButtonsWorkflow } from "./workflow-resume.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
@@ -44,6 +44,18 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
           blockId: payload.blockId,
           attributes: payload.attributes,
           freeText: payload.freeText,
+        },
+        ctx.env,
+        ctx.authConfig,
+      ),
+    resumeReplyButtons: (payload) =>
+      resumeReplyButtonsWorkflow(
+        ctx.store.db,
+        {
+          orgId: payload.orgId,
+          workflowRunId: payload.workflowRunId,
+          blockId: payload.blockId,
+          buttonId: payload.buttonId,
         },
         ctx.env,
         ctx.authConfig,

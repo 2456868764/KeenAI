@@ -4,6 +4,7 @@ export const WORKFLOW_INNGEST_EVENTS = {
   STEP_AWAITING_INPUT: "keenai/workflow.step_awaiting_input",
   CSAT_REQUEST: "keenai/workflow.csat_request",
   ATTRIBUTE_SUBMITTED: "widget/attribute.submitted",
+  BUTTON_CLICKED: "widget/button.clicked",
   CONVERSATION_CLOSED: "conversation/state.changed.closed",
 } as const;
 

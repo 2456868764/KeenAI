@@ -420,6 +420,14 @@ export type WorkflowBlock =
       allowFreeText?: boolean;
       fields: { key: string; label: string; required?: boolean }[];
       autoCloseMinutes?: number;
+    }
+  | {
+      id: string;
+      type: "reply_buttons";
+      prompt: string;
+      allowFreeText?: boolean;
+      buttons: { id: string; label: string; nextId: string | null }[];
+      autoCloseMinutes?: number;
     };
 
 export type WorkflowDefinition = {

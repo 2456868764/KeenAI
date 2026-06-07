@@ -21,6 +21,7 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
     case "send_message":
     case "let_keeni_answer":
     case "collect_data":
+    case "reply_buttons":
       return "message";
     case "branches":
       return "condition";
@@ -83,6 +84,21 @@ export function collectWorkflowEdges(definition: WorkflowDefinition): WorkflowGr
             source: block.id,
             target: rule.nextId,
             label: rule.label ?? `Rule ${ruleIndex + 1}`,
+            kind: "branch",
+          });
+        }
+      }
+      continue;
+    }
+
+    if (block.type === "reply_buttons") {
+      for (const [buttonIndex, button] of block.buttons.entries()) {
+        if (button.nextId && blockIds.has(button.nextId)) {
+          edges.push({
+            id: `${block.id}-button-${buttonIndex}`,
+            source: block.id,
+            target: button.nextId,
+            label: button.label,
             kind: "branch",
           });
         }
@@ -194,6 +210,8 @@ export function blockLabel(block: WorkflowBlock): string {
         : "Notify conversation ticket";
     case "collect_data":
       return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
+    case "reply_buttons":
+      return `${block.buttons.length} button(s)`;
   }
 }
 

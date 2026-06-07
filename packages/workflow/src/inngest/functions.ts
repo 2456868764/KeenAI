@@ -23,10 +23,21 @@ export type WorkflowCollectDataResumePayload = {
   freeText?: string;
 };
 
+export type WorkflowReplyButtonsResumePayload = {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  buttonId: string;
+};
+
 export type WorkflowInngestHandlers = WorkflowDispatchHandlers &
   Partial<WorkflowTimerHandlers> & {
     resumeCollectData?: (
       payload: WorkflowCollectDataResumePayload,
+    ) => Promise<{ resumed: boolean; status?: string }>;
+    resumeReplyButtons?: (
+      payload: WorkflowReplyButtonsResumePayload,
     ) => Promise<{ resumed: boolean; status?: string }>;
   };
 
@@ -85,12 +96,26 @@ export function createWorkflowInngestFunctions(
     },
   );
 
+  const resumeReplyButtons = client.createFunction(
+    { id: "keenai-workflow-resume-reply-buttons", retries: 3, concurrency: { limit: 20 } },
+    { event: WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED },
+    async ({ event, step }) => {
+      const data = event.data as WorkflowReplyButtonsResumePayload;
+      if (!handlers.resumeReplyButtons) {
+        return { resumed: false, reason: "handler_missing" };
+      }
+      const resume = handlers.resumeReplyButtons;
+      return step.run("resume-reply-buttons", () => resume(data));
+    },
+  );
+
   return [
     firstMessage,
     scanUnresponsive,
     scanUnresponsiveCron,
     ...timerFunctions,
     resumeCollectData,
+    resumeReplyButtons,
   ] as const;
 }
 
