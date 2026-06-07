@@ -146,6 +146,7 @@ export function feedbackRoutes() {
         boardId: board.id,
         orgId: auth.orgId,
         plainText: query.plainText,
+        title: query.title,
         threshold: query.threshold,
       });
       return c.json({ matches });

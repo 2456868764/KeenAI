@@ -19,6 +19,11 @@ export {
 } from "./libsql/kb-chunk-fts.js";
 export { createLibsqlKbChunkVectorStore } from "./libsql/kb-chunk-vectors.js";
 export {
+  createLibsqlFeedbackPostVectorStore,
+  type FeedbackPostVectorQuery,
+  type FeedbackPostVectorStore,
+} from "./libsql/feedback-post-vectors.js";
+export {
   createLibsqlMemoryChunkFtsStore,
   ensureMemoryChunkFtsSchema,
 } from "./libsql/memory-chunk-fts.js";

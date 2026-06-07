@@ -7,6 +7,12 @@ import {
   feedbackVotes,
 } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
+import {
+  type FeedbackDedupMethod,
+  combineDedupText,
+  indexFeedbackPostEmbedding,
+  searchFeedbackPostEmbeddings,
+} from "./feedback-dedup-embed.js";
 import { textSimilarity } from "./feedback-dedup.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
@@ -208,7 +214,14 @@ export async function createFeedbackPost(
     .returning();
 
   if (!row) throw new Error("post_insert_failed");
-  return loadPostMeta(db, row);
+  const post = await loadPostMeta(db, row);
+  await indexFeedbackPostEmbedding({
+    postId: post.id,
+    orgId: input.orgId,
+    boardId: input.boardId,
+    text: combineDedupText(input.title, input.plainText),
+  });
+  return post;
 }
 
 export async function voteFeedbackPost(
@@ -301,8 +314,9 @@ export async function addFeedbackComment(
 
 export async function findSimilarFeedbackPosts(
   db: Db,
-  input: { boardId: string; orgId: string; plainText: string; threshold: number },
+  input: { boardId: string; orgId: string; plainText: string; title?: string; threshold: number },
 ) {
+  const queryText = combineDedupText(input.title, input.plainText);
   const rows = await db
     .select()
     .from(feedbackPosts)
@@ -310,18 +324,45 @@ export async function findSimilarFeedbackPosts(
     .orderBy(desc(feedbackPosts.createdAt))
     .limit(100);
 
-  const matches = [];
+  const merged = new Map<
+    string,
+    { post: SerializedFeedbackPost; score: number; method: FeedbackDedupMethod }
+  >();
+
   for (const row of rows) {
-    const titleScore = textSimilarity(input.plainText, row.title);
-    const bodyScore = textSimilarity(input.plainText, row.plainText);
+    const titleScore = textSimilarity(queryText, row.title);
+    const bodyScore = textSimilarity(queryText, row.plainText);
     const score = Math.max(titleScore, bodyScore);
-    if (score >= input.threshold) {
-      matches.push({
-        post: await loadPostMeta(db, row),
-        score: Number(score.toFixed(3)),
-      });
-    }
+    if (score < input.threshold) continue;
+    merged.set(row.id, {
+      post: await loadPostMeta(db, row),
+      score: Number(score.toFixed(3)),
+      method: "lexical",
+    });
   }
 
-  return matches.sort((a, b) => b.score - a.score).slice(0, 5);
+  const embeddingHits = await searchFeedbackPostEmbeddings({
+    orgId: input.orgId,
+    boardId: input.boardId,
+    text: queryText,
+    threshold: input.threshold,
+  });
+
+  for (const [postId, hit] of embeddingHits) {
+    const existing = merged.get(postId);
+    if (existing) {
+      if (hit.score > existing.score) existing.score = hit.score;
+      existing.method = "both";
+      continue;
+    }
+    const row = rows.find((r) => r.id === postId);
+    if (!row) continue;
+    merged.set(postId, {
+      post: await loadPostMeta(db, row),
+      score: hit.score,
+      method: hit.method,
+    });
+  }
+
+  return [...merged.values()].sort((a, b) => b.score - a.score).slice(0, 5);
 }

@@ -239,6 +239,13 @@
       "when": 1779835200000,
       "tag": "0033_help_center",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1779838800000,
+      "tag": "0034_feedback_post_vectors",
+      "breakpoints": true
     }
   ]
 }

@@ -2,20 +2,24 @@
 
 import { AppHeader } from "@/components/layout/app-header";
 import {
+  type FeedbackDedupMatch,
   createFeedbackPost,
   ensureDefaultFeedbackBoard,
   fetchMe,
+  findFeedbackDuplicates,
   listFeedbackPosts,
 } from "@/lib/api";
 import { Button } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function FeedbackShell() {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [duplicates, setDuplicates] = useState<FeedbackDedupMatch[]>([]);
+  const [checkingDupes, setCheckingDupes] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const brandId = me?.brandIds[0] ?? null;
@@ -38,9 +42,33 @@ export function FeedbackShell() {
     onSuccess: () => {
       setTitle("");
       setBody("");
+      setDuplicates([]);
       void queryClient.invalidateQueries({ queryKey: ["feedback-posts"] });
     },
   });
+
+  useEffect(() => {
+    const trimmedTitle = title.trim();
+    const trimmedBody = body.trim();
+    if (trimmedTitle.length < 2 || trimmedBody.length < 8) {
+      setDuplicates([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCheckingDupes(true);
+      void findFeedbackDuplicates("ideas", {
+        title: trimmedTitle,
+        plainText: trimmedBody,
+        threshold: 0.72,
+      })
+        .then((result) => setDuplicates(result.matches))
+        .catch(() => setDuplicates([]))
+        .finally(() => setCheckingDupes(false));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [title, body]);
 
   const items = data?.items ?? [];
 
@@ -69,6 +97,30 @@ export function FeedbackShell() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+
+          {checkingDupes ? (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Checking for duplicates…</p>
+          ) : null}
+
+          {duplicates.length > 0 ? (
+            <output className="block rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+              <p className="font-medium text-amber-200">Similar ideas already exist</p>
+              <ul className="mt-2 space-y-2">
+                {duplicates.map((match) => (
+                  <li key={match.post.id} className="text-[hsl(var(--foreground))]">
+                    <span className="font-medium">{match.post.title}</span>
+                    <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
+                      {Math.round(match.score * 100)}% · {match.method}
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      ▲ {match.post.upvoteCount} votes — consider upvoting instead
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </output>
+          ) : null}
+
           <Button
             type="submit"
             size="sm"

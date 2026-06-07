@@ -104,8 +104,27 @@ describe("feedback integration", () => {
       },
     );
     expect(duplicate.status).toBe(200);
-    const dedupBody = (await duplicate.json()) as { matches: { post: { id: string } }[] };
+    const dedupBody = (await duplicate.json()) as {
+      matches: { post: { id: string }; method: string }[];
+    };
     expect(dedupBody.matches.some((m) => m.post.id === post.id)).toBe(true);
+
+    const embedDedup = await app.request(
+      `/api/v1/feedback/boards/ideas/dedup?${new URLSearchParams({
+        title: "Dark mode",
+        plainText: "Please add dark mode to the dashboard",
+        threshold: "0.99",
+      })}`,
+      { headers: auth },
+    );
+    expect(embedDedup.status).toBe(200);
+    const embedBody = (await embedDedup.json()) as {
+      matches: { post: { id: string }; method: string; score: number }[];
+    };
+    const embedMatch = embedBody.matches.find((m) => m.post.id === post.id);
+    expect(embedMatch).toBeTruthy();
+    expect(["embedding", "both", "lexical"]).toContain(embedMatch?.method);
+    expect(embedMatch?.score ?? 0).toBeGreaterThanOrEqual(0.99);
 
     const voted = await app.request(`/api/v1/feedback/posts/${post.id}/vote`, {
       method: "POST",

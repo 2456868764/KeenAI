@@ -261,7 +261,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 #### Sprint 11-12（W25-W28）：Feedback + Help Center
 - [ ] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
 - [ ] Feedback Board + Post + Vote + Comment
-- [ ] AI 自动去重（embed via `@xenova/transformers` bge-m3 → VectorStore search）
+- [x] AI 自动去重（lexical Jaccard + bge-m3/stub VectorStore · Dashboard 提交前提示）
 - [x] Public Portal（Next.js SSR + ISR · portal `/help` + KB search）
 - [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
 - [x] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）

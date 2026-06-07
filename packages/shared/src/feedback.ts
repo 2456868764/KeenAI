@@ -31,6 +31,7 @@ export const createFeedbackCommentSchema = z.object({
 
 export const feedbackDedupQuerySchema = z.object({
   plainText: z.string().min(1).max(10_000),
+  title: z.string().max(500).optional(),
   threshold: z.coerce.number().min(0.5).max(1).default(0.75),
 });
 

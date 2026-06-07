@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { initFeedbackPostVectorFromStore } from "./lib/feedback-post-vector-init.js";
 import { initKbChunkFtsFromStore } from "./lib/kb-chunk-fts-init.js";
 import { initKbChunkVectorFromStore } from "./lib/kb-chunk-vector-init.js";
 import { initKbDispatch } from "./lib/kb-dispatch-init.js";
@@ -67,6 +68,7 @@ export function createApp(ctx: AppContext) {
     initMemorySummaryFtsFromStore(ctx.store);
     initKbChunkFtsFromStore(ctx.store);
     initKbChunkVectorFromStore(ctx.store);
+    initFeedbackPostVectorFromStore(ctx.store);
     initKbDispatch(ctx);
     setMemoryChunkEmbedder(resolveMemoryChunkEmbedder(ctx.env));
   }

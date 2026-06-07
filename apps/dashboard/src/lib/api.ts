@@ -667,6 +667,24 @@ export async function createFeedbackPost(
   });
 }
 
+export type FeedbackDedupMatch = {
+  post: FeedbackPost;
+  score: number;
+  method: "lexical" | "embedding" | "both";
+};
+
+export async function findFeedbackDuplicates(
+  slug: string,
+  input: { title: string; plainText: string; threshold?: number },
+): Promise<{ matches: FeedbackDedupMatch[] }> {
+  const params = new URLSearchParams({
+    plainText: input.plainText,
+    threshold: String(input.threshold ?? 0.75),
+  });
+  if (input.title.trim()) params.set("title", input.title.trim());
+  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/dedup?${params.toString()}`);
+}
+
 export type SlaPolicy = {
   id: string;
   name: string;
