@@ -93,7 +93,7 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | P2-01 | Tickets schema + 3 类型 + 配置 UI | [x] |
-| P2-02 | Convert / Send / Link Workflow Actions | [~] |
+| P2-02 | Convert / Send / Link Workflow Actions | [x] |
 | P2-03 | Ticket Portal `apps/portal` RSC | [x] |
 | P2-04 | 自定义字段 Field DSL | [x] |
 | P2-05 | 邮件通知模板（React Email · 多语言） | [x] |

@@ -8,7 +8,14 @@ import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
-import { createTicketFromConversation } from "./tickets.js";
+import { notifyTicketStatusChange } from "./ticket-notify.js";
+import {
+  createTicketFromConversation,
+  getConversationTicketId,
+  getTicketForOrg,
+  linkTickets,
+  loadTicketMeta,
+} from "./tickets.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
@@ -95,6 +102,38 @@ export async function executeWorkflow(
           title,
         });
         return { ticketId: ticket.id };
+      },
+      linkTicket: async ({ parentTicketId, childTicketId, linkType }) => {
+        let parentId = parentTicketId;
+        if (!parentId) {
+          parentId =
+            (await getConversationTicketId(db, workflow.orgId, conversationId)) ?? undefined;
+          if (!parentId) throw new Error("conversation_ticket_missing");
+        }
+        const linked = await linkTickets(db, {
+          orgId: workflow.orgId,
+          parentId,
+          childId: childTicketId,
+          linkType,
+        });
+        if (!linked) throw new Error("link_failed");
+        return { parentTicketId: parentId, childTicketId };
+      },
+      sendTicketUpdate: async ({ ticketId }) => {
+        const resolvedId =
+          ticketId ?? (await getConversationTicketId(db, workflow.orgId, conversationId));
+        if (!resolvedId) throw new Error("ticket_not_found");
+        const row = await getTicketForOrg(db, resolvedId, workflow.orgId);
+        if (!row) throw new Error("ticket_not_found");
+        const ticket = await loadTicketMeta(db, row);
+        if (!ticket.statusName) throw new Error("ticket_status_missing");
+        if (!authConfig) return { sent: false };
+        const result = await notifyTicketStatusChange(db, authConfig, {
+          orgId: workflow.orgId,
+          ticket,
+          statusName: ticket.statusName,
+        });
+        return { sent: result.sent };
       },
       wait: async (ms) => {
         await new Promise((resolve) => setTimeout(resolve, ms));

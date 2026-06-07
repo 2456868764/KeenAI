@@ -166,6 +166,12 @@ export function blockLabel(block: WorkflowBlock): string {
       return `${block.branches.length} branch(es)`;
     case "convert_to_ticket":
       return block.title?.trim() || "Convert conversation to ticket";
+    case "link_ticket":
+      return `Link → ${block.childTicketId.slice(0, 8)}… (${block.linkType})`;
+    case "send_ticket_update":
+      return block.ticketId
+        ? `Notify ticket ${block.ticketId.slice(0, 8)}…`
+        : "Notify conversation ticket";
   }
 }
 

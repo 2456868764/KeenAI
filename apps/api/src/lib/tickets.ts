@@ -257,6 +257,28 @@ async function fanOutTrackerStatus(
   }
 }
 
+export async function getConversationTicketId(
+  db: Db,
+  orgId: string,
+  conversationId: string,
+): Promise<string | null> {
+  const [conversation] = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(and(eq(conversations.id, conversationId), eq(conversations.orgId, orgId)))
+    .limit(1);
+
+  if (!conversation) return null;
+
+  const [link] = await db
+    .select({ ticketId: ticketConversations.ticketId })
+    .from(ticketConversations)
+    .where(eq(ticketConversations.conversationId, conversationId))
+    .limit(1);
+
+  return link?.ticketId ?? null;
+}
+
 export async function linkTickets(
   db: Db,
   input: {

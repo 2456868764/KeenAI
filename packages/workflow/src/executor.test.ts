@@ -135,6 +135,64 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output).toMatchObject({ ticketId: "ticket-99" });
   });
 
+  it("runs link_ticket block", async () => {
+    const linkTicket = vi.fn(async () => ({
+      parentTicketId: "parent-1",
+      childTicketId: "child-2",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "link-1",
+            type: "link_ticket",
+            parentTicketId: "parent-1",
+            childTicketId: "child-2",
+            linkType: "tracks",
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        linkTicket,
+      },
+    );
+
+    expect(linkTicket).toHaveBeenCalledWith({
+      parentTicketId: "parent-1",
+      childTicketId: "child-2",
+      linkType: "tracks",
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      parentTicketId: "parent-1",
+      childTicketId: "child-2",
+    });
+  });
+
+  it("runs send_ticket_update block", async () => {
+    const sendTicketUpdate = vi.fn(async () => ({ sent: true }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "notify-1", type: "send_ticket_update", ticketId: "ticket-42" }],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        sendTicketUpdate,
+      },
+    );
+
+    expect(sendTicketUpdate).toHaveBeenCalledWith({ ticketId: "ticket-42" });
+    expect(result.steps[0]?.output).toMatchObject({ notificationSent: true });
+  });
+
   it("runs wait and http_request blocks", async () => {
     const wait = vi.fn(async () => {});
     const httpRequest = vi.fn(async () => ({ status: 204, body: "" }));

@@ -6,6 +6,8 @@ import {
   type LetKeeniAnswerResult,
   letKeeniAnswerBlockSchema,
 } from "./blocks/let-keeni-answer.js";
+import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
+import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 
 export {
   branchConditionSchema,
@@ -20,6 +22,15 @@ export {
   convertToTicketBlockSchema,
   type ConvertToTicketBlock,
 } from "./blocks/convert-to-ticket.js";
+export {
+  linkTicketBlockSchema,
+  TICKET_LINK_TYPES,
+  type LinkTicketBlock,
+} from "./blocks/link-ticket.js";
+export {
+  sendTicketUpdateBlockSchema,
+  type SendTicketUpdateBlock,
+} from "./blocks/send-ticket-update.js";
 export {
   letKeeniAnswerBlockSchema,
   letKeeniAnswerOutcomeRoutingSchema,
@@ -45,6 +56,8 @@ export const WORKFLOW_BLOCK_TYPES = [
   "http_request",
   "branches",
   "convert_to_ticket",
+  "link_ticket",
+  "send_ticket_update",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -94,6 +107,8 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   httpRequestBlockSchema,
   branchesBlockSchema,
   convertToTicketBlockSchema,
+  linkTicketBlockSchema,
+  sendTicketUpdateBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -167,6 +182,12 @@ export type WorkflowActionHandlers = {
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
   convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
+  linkTicket?: (input: {
+    parentTicketId?: string;
+    childTicketId: string;
+    linkType: "tracks" | "relates" | "blocks";
+  }) => Promise<{ parentTicketId: string; childTicketId: string }>;
+  sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
 };
 
 export type WorkflowStepResult = {
@@ -182,6 +203,9 @@ export type WorkflowStepResult = {
     waitMs?: number;
     ticketId?: string;
     branchLabel?: string;
+    parentTicketId?: string;
+    childTicketId?: string;
+    notificationSent?: boolean;
   };
 };
 

@@ -337,6 +337,50 @@ export function WorkflowBlockEditor({
           </p>
         </>
       ) : null}
+
+      {block.type === "link_ticket" ? (
+        <>
+          <Input
+            placeholder="Parent ticket ID (optional — uses conversation ticket)"
+            value={block.parentTicketId ?? ""}
+            onChange={(e) =>
+              onChange({ ...block, parentTicketId: e.target.value.trim() || undefined })
+            }
+          />
+          <Input
+            placeholder="Child ticket ID"
+            value={block.childTicketId}
+            onChange={(e) => onChange({ ...block, childTicketId: e.target.value.trim() })}
+          />
+          <select
+            value={block.linkType}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                linkType: e.target.value as "tracks" | "relates" | "blocks",
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="tracks">tracks</option>
+            <option value="relates">relates</option>
+            <option value="blocks">blocks</option>
+          </select>
+        </>
+      ) : null}
+
+      {block.type === "send_ticket_update" ? (
+        <>
+          <Input
+            placeholder="Ticket ID (optional — uses conversation ticket)"
+            value={block.ticketId ?? ""}
+            onChange={(e) => onChange({ ...block, ticketId: e.target.value.trim() || undefined })}
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Emails the customer a React Email status update when SMTP is configured.
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

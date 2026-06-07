@@ -119,6 +119,39 @@ export async function runWorkflow(
           });
           break;
         }
+        case "link_ticket": {
+          if (!handlers.linkTicket) {
+            throw new Error("link_ticket_handler_missing");
+          }
+          const result = await handlers.linkTicket({
+            parentTicketId: block.parentTicketId,
+            childTicketId: block.childTicketId,
+            linkType: block.linkType,
+          });
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: {
+              parentTicketId: result.parentTicketId,
+              childTicketId: result.childTicketId,
+            },
+          });
+          break;
+        }
+        case "send_ticket_update": {
+          if (!handlers.sendTicketUpdate) {
+            throw new Error("send_ticket_update_handler_missing");
+          }
+          const result = await handlers.sendTicketUpdate({ ticketId: block.ticketId });
+          steps.push({
+            blockId: block.id,
+            type: block.type,
+            status: "ok",
+            output: { notificationSent: result.sent },
+          });
+          break;
+        }
         case "let_keeni_answer": {
           if (!handlers.letKeeniAnswer) {
             throw new Error("let_keeni_answer_handler_missing");

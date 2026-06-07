@@ -358,6 +358,15 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           });
         } else if (type === "convert_to_ticket") {
           onAdd({ id, type: "convert_to_ticket", title: "" });
+        } else if (type === "link_ticket") {
+          onAdd({
+            id,
+            type: "link_ticket",
+            childTicketId: "",
+            linkType: "tracks",
+          });
+        } else if (type === "send_ticket_update") {
+          onAdd({ id, type: "send_ticket_update" });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -371,6 +380,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="http_request">HTTP request</option>
       <option value="branches">Branches</option>
       <option value="convert_to_ticket">Convert to ticket</option>
+      <option value="link_ticket">Link tickets</option>
+      <option value="send_ticket_update">Send ticket update email</option>
     </select>
   );
 }

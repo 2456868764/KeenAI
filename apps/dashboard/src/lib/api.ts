@@ -395,7 +395,15 @@ export type WorkflowBlock =
       }[];
       elseNextId?: string | null;
     }
-  | { id: string; type: "convert_to_ticket"; title?: string };
+  | { id: string; type: "convert_to_ticket"; title?: string }
+  | {
+      id: string;
+      type: "link_ticket";
+      childTicketId: string;
+      parentTicketId?: string;
+      linkType: "tracks" | "relates" | "blocks";
+    }
+  | { id: string; type: "send_ticket_update"; ticketId?: string };
 
 export type WorkflowDefinition = {
   trigger: "first_message" | "customer_unresponsive";

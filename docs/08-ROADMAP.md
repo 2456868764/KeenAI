@@ -229,7 +229,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 #### Sprint 7-8（W17-W20）：Tickets 系统
 - [x] Drizzle schema：`ticket_types / ticket_statuses / tickets / ticket_conversations / ticket_links / ticket_events`
 - [x] 3 种类型（Customer / Back-office / Tracker）+ 配置 UI
-- [~] Convert / Send / Link Workflow Actions（`convert_to_ticket` block + Link API；Send 待 workflow action）
+- [x] Convert / Send / Link Workflow Actions（`convert_to_ticket` · `link_ticket` · `send_ticket_update` blocks）
 - [x] Ticket Portal `apps/portal` 列表 + 详情页
 - [x] 自定义字段（Field DSL · Zod-typed）
 - [x] 邮件通知模板（React Email · 多语言 · ticket status）
