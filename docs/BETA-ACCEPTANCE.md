@@ -30,8 +30,9 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Public HC from help_articles | `kb-public.integration.test.ts` | SEO fields on detail |
 | Public workspace meta | `kb-public.integration.test.ts` | brand id for portal search |
 | Public KB AI answer SSE | `kb-answer.integration.test.ts` | stream + feedback |
+| SLA policies + office hours | `sla.integration.test.ts` | 50/80/100% breach thresholds |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
-| Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 13 tests green |
+| Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 14 tests green |
 | Beta gate (automated) | `pnpm beta:acceptance` | test + alpha + e2e |
 
 ## Manual (P2-ACC)
@@ -64,6 +65,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 3. Portal `/help` lists public articles; article page has `<title>` / meta from `generateMetadata`.
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
+
+## Batch 13 smoke (I117 continued)
+
+1. Dashboard **Settings → SLA** → create/edit policy and office hours.
+2. Open overdue conversation in Inbox → **SLA 50%/80%/100%** badge appears.
+3. `POST /api/v1/sla/conversations/{id}/evaluate` records breach events.
 
 ## Batch 12 smoke (I117 continued)
 

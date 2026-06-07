@@ -668,8 +668,81 @@ export type SlaPolicy = {
   enabled: boolean;
 };
 
+export type OfficeHours = {
+  id: string;
+  timezone: string;
+  schedule: Record<string, { start: string; end: string }[]>;
+  holidays: string[];
+};
+
+export type SlaBreach = {
+  id: string;
+  metric: string;
+  thresholdPct: number;
+  dueAt: string;
+  breachedAt: string;
+};
+
 export async function listSlaPolicies(): Promise<{ items: SlaPolicy[] }> {
   return apiFetch("/api/v1/sla/policies");
+}
+
+export async function createSlaPolicy(input: {
+  name: string;
+  firstResponseSec?: number;
+  resolutionSec?: number;
+  operationalHoursOnly?: boolean;
+  enabled?: boolean;
+}): Promise<{ policy: SlaPolicy }> {
+  return apiFetch("/api/v1/sla/policies", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateSlaPolicy(
+  id: string,
+  input: Partial<{
+    name: string;
+    firstResponseSec: number | null;
+    resolutionSec: number | null;
+    operationalHoursOnly: boolean;
+    enabled: boolean;
+  }>,
+): Promise<{ policy: SlaPolicy }> {
+  return apiFetch(`/api/v1/sla/policies/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getOfficeHours(): Promise<{ hours: OfficeHours | null }> {
+  return apiFetch("/api/v1/sla/office-hours");
+}
+
+export async function upsertOfficeHours(input: {
+  timezone: string;
+  schedule: Record<string, { start: string; end: string }[]>;
+  holidays: string[];
+}): Promise<{ hours: OfficeHours }> {
+  return apiFetch("/api/v1/sla/office-hours", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listConversationSlaBreaches(
+  conversationId: string,
+): Promise<{ items: SlaBreach[] }> {
+  return apiFetch(`/api/v1/sla/conversations/${conversationId}/breaches`);
+}
+
+export async function evaluateConversationSla(
+  conversationId: string,
+): Promise<{ breaches: unknown[] }> {
+  return apiFetch(`/api/v1/sla/conversations/${conversationId}/evaluate`, {
+    method: "POST",
+  });
 }
 
 export type AnalyticsDailyPoint = { day: string; count: number };

@@ -240,8 +240,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [~] `branches` / `apply_rules` / `http_request` / `wait` / `collect_data`（`branches` + `wait` + `http_request` + `convert_to_ticket` 已落地）
 - [ ] Inngest `step.waitForEvent` / `step.sleepUntil` 集成
 - [x] Workflow 版本管理（draft → published · `published_definition` snapshot）+ Trace 查看（runs API + Dashboard）
-- [ ] SLA 策略 + 超时预警（50/80/100% 触发）
-- [ ] Office Hours（多时区 · `date-fns-tz`）
+- [x] SLA 策略 + 超时预警（50/80/100% 触发 · API + Inbox badge）
+- [x] Office Hours（多时区 schedule · Dashboard `/settings/sla`）
 - [~] Workflow Builder 完整（dagre 自动布局 + 分支/结果多层边 + Sheet 配置面板）
 
 #### Sprint 10b（W24-W25）：Multimodal MVP

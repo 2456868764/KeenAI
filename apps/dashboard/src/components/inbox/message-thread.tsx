@@ -2,6 +2,7 @@
 
 import { ConversationActions } from "@/components/inbox/conversation-actions";
 import { RichTextComposer } from "@/components/inbox/rich-text-composer";
+import { SlaBreachBadge } from "@/components/inbox/sla-breach-badge";
 import { VirtualMessageList } from "@/components/inbox/virtual-message-list";
 import { useConversationStream } from "@/hooks/use-conversation-stream";
 import type { Conversation, Message } from "@/lib/api";
@@ -136,7 +137,10 @@ export function MessageThread({
     <section className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--surface-0))]">
       <header className="border-b border-[hsl(var(--border))] px-6 py-4">
         <div className="mb-3">
-          <h2 className="text-base font-semibold">{conversation?.subject ?? "Conversation"}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-semibold">{conversation?.subject ?? "Conversation"}</h2>
+            {conversationId ? <SlaBreachBadge conversationId={conversationId} /> : null}
+          </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
             {conversation?.status}
             {conversation?.snoozedUntil
