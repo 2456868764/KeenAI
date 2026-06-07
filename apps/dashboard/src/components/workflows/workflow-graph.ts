@@ -20,6 +20,7 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
   switch (block.type) {
     case "send_message":
     case "let_keeni_answer":
+    case "collect_data":
       return "message";
     case "branches":
       return "condition";
@@ -191,6 +192,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.ticketId
         ? `Notify ticket ${block.ticketId.slice(0, 8)}…`
         : "Notify conversation ticket";
+    case "collect_data":
+      return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
   }
 }
 

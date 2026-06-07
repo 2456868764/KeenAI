@@ -2,31 +2,43 @@ import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
-import { type WorkflowDefinition, runWorkflow } from "@keenai/workflow";
-import { and, desc, eq } from "drizzle-orm";
-import { buildMessageContent, insertMessage } from "./conversations.js";
-import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
-import { getKbDispatch } from "./kb-dispatch-init.js";
-import { dispatchKbConversationClosed } from "./kb-dispatch.js";
-import { notifyTicketStatusChange } from "./ticket-notify.js";
 import {
-  createTicketFromConversation,
-  getConversationTicketId,
-  getTicketForOrg,
-  linkTickets,
-  loadTicketMeta,
-} from "./tickets.js";
-import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
+  WORKFLOW_INNGEST_EVENTS,
+  type WorkflowStepResult,
+  runWorkflow,
+  workflowAutoCloseMsFromMinutes,
+} from "@keenai/workflow";
+import { and, desc, eq } from "drizzle-orm";
+import {
+  createWorkflowActionHandlers,
+  createWorkflowRunContext,
+  resolveActiveWorkflowDefinition,
+} from "./workflow-handlers.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
 
-export function resolveActiveWorkflowDefinition(
-  workflow: typeof workflows.$inferSelect,
-): WorkflowDefinition {
-  if (workflow.status === "published" && workflow.publishedDefinition) {
-    return workflow.publishedDefinition as WorkflowDefinition;
+async function emitWorkflowAwaitingInput(payload: {
+  workflowRunId: string;
+  conversationId: string;
+  orgId: string;
+  brandId: string;
+  autoCloseMs: number;
+}): Promise<void> {
+  if (payload.autoCloseMs <= 0) return;
+  try {
+    const { getInngestClient } = await import("./workflow-dispatch.js");
+    const client = getInngestClient();
+    if (!client) return;
+    await client.send({ name: WORKFLOW_INNGEST_EVENTS.STEP_AWAITING_INPUT, data: payload });
+  } catch {
+    // Inngest is optional in dev/test
   }
-  return workflow.definition as WorkflowDefinition;
+}
+
+function resolveRunStatus(steps: WorkflowStepResult[], suspended?: boolean): string {
+  if (suspended) return "awaiting_input";
+  if (steps.some((step) => step.status === "error")) return "failed";
+  return "completed";
 }
 
 export async function executeWorkflow(
@@ -45,138 +57,53 @@ export async function executeWorkflow(
   if (!conversation) return null;
 
   const definition = resolveActiveWorkflowDefinition(workflow);
-  const result = await runWorkflow(
-    definition,
-    {
-      sendMessage: async ({ plainText, attachmentIds }) => {
-        const { message } = await insertMessage(db, {
-          orgId: workflow.orgId,
-          conversationId,
-          senderType: "agent",
-          plainText,
-          attachmentIds,
-          content: plainText ? buildMessageContent(plainText) : undefined,
-          isInternal: false,
-          sentVia: "workflow",
-          isAgentReply: true,
-        });
 
-        if (plainText && authConfig) {
-          const job = await buildEmailSendJob(db, {
-            orgId: workflow.orgId,
-            conversationId,
-            plainText,
-            messageId: message.id,
-          });
-          if (job) {
-            await dispatchEmailOutbound(db, env, authConfig, job);
-          }
-        }
-      },
-      assign: async (assigneeId) => {
-        await db
-          .update(conversations)
-          .set({ assigneeId, updatedAt: new Date() })
-          .where(eq(conversations.id, conversationId));
-      },
-      close: async () => {
-        await db
-          .update(conversations)
-          .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
-          .where(eq(conversations.id, conversationId));
-        try {
-          await dispatchKbConversationClosed(getKbDispatch(), db, {
-            orgId: workflow.orgId,
-            brandId: conversation.brandId,
-            conversationId,
-          });
-        } catch {
-          // KB crystallize is best-effort on close
-        }
-      },
-      letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
-      convertToTicket: async ({ title }) => {
-        const ticket = await createTicketFromConversation(db, {
-          orgId: workflow.orgId,
-          conversationId,
-          title,
-        });
-        return { ticketId: ticket.id };
-      },
-      linkTicket: async ({ parentTicketId, childTicketId, linkType }) => {
-        let parentId = parentTicketId;
-        if (!parentId) {
-          parentId =
-            (await getConversationTicketId(db, workflow.orgId, conversationId)) ?? undefined;
-          if (!parentId) throw new Error("conversation_ticket_missing");
-        }
-        const linked = await linkTickets(db, {
-          orgId: workflow.orgId,
-          parentId,
-          childId: childTicketId,
-          linkType,
-        });
-        if (!linked) throw new Error("link_failed");
-        return { parentTicketId: parentId, childTicketId };
-      },
-      sendTicketUpdate: async ({ ticketId }) => {
-        const resolvedId =
-          ticketId ?? (await getConversationTicketId(db, workflow.orgId, conversationId));
-        if (!resolvedId) throw new Error("ticket_not_found");
-        const row = await getTicketForOrg(db, resolvedId, workflow.orgId);
-        if (!row) throw new Error("ticket_not_found");
-        const ticket = await loadTicketMeta(db, row);
-        if (!ticket.statusName) throw new Error("ticket_status_missing");
-        if (!authConfig) return { sent: false };
-        const result = await notifyTicketStatusChange(db, authConfig, {
-          orgId: workflow.orgId,
-          ticket,
-          statusName: ticket.statusName,
-        });
-        return { sent: result.sent };
-      },
-      wait: async (ms) => {
-        await new Promise((resolve) => setTimeout(resolve, ms));
-      },
-      httpRequest: async ({ method, url, body }) => {
-        const res = await fetch(url, {
-          method,
-          headers: body ? { "Content-Type": "application/json" } : undefined,
-          body: body ?? undefined,
-          signal: AbortSignal.timeout(30_000),
-        });
-        const text = await res.text();
-        return { status: res.status, body: text.slice(0, 4000) };
-      },
-    },
-    {
-      workflowId: workflow.id,
-      orgId: workflow.orgId,
-      brandId: conversation.brandId,
-      conversationId,
-      targetCustomerId: conversation.userId,
-      subject: conversation.subject ?? undefined,
-      facts: {
-        channelType: conversation.channelType,
-        priority: conversation.priority ?? "normal",
-        conversationStatus: conversation.status,
-      },
-    },
-  );
-
-  const failed = result.steps.some((s) => s.status === "error");
   const [run] = await db
     .insert(workflowRuns)
     .values({
       orgId: workflow.orgId,
       workflowId: workflow.id,
       conversationId,
-      status: failed ? "failed" : "completed",
-      steps: result.steps,
+      status: "running",
+      steps: [],
     })
     .returning();
+  if (!run) return null;
 
-  return run ?? null;
+  const handlers = createWorkflowActionHandlers(
+    db,
+    workflow,
+    conversation,
+    env,
+    authConfig,
+    run.id,
+  );
+  const context = createWorkflowRunContext(workflow, conversation, run.id);
+
+  const result = await runWorkflow(definition, handlers, context);
+  const status = resolveRunStatus(result.steps, Boolean(result.suspended));
+
+  const [updated] = await db
+    .update(workflowRuns)
+    .set({ status, steps: result.steps })
+    .where(eq(workflowRuns.id, run.id))
+    .returning();
+
+  if (result.suspended?.type === "collect_data") {
+    const block = definition.blocks.find((item) => item.id === result.suspended?.blockId);
+    const autoCloseMinutes = block?.type === "collect_data" ? block.autoCloseMinutes : undefined;
+    if (autoCloseMinutes) {
+      await emitWorkflowAwaitingInput({
+        workflowRunId: run.id,
+        conversationId,
+        orgId: workflow.orgId,
+        brandId: conversation.brandId,
+        autoCloseMs: workflowAutoCloseMsFromMinutes(autoCloseMinutes),
+      });
+    }
+  }
+
+  return updated ?? null;
 }
 
 export async function dispatchFirstMessageWorkflows(
@@ -232,3 +159,5 @@ export function serializeWorkflow(row: typeof workflows.$inferSelect) {
     updatedAt: row.updatedAt.toISOString(),
   };
 }
+
+export { resolveActiveWorkflowDefinition } from "./workflow-handlers.js";

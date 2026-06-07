@@ -322,6 +322,89 @@ describe("runWorkflow", () => {
       },
     });
   });
+
+  it("suspends on collect_data until input is submitted", async () => {
+    const collectData = vi.fn(async () => {});
+    const sendMessage = vi.fn(async () => {});
+
+    const definition: WorkflowDefinition = {
+      trigger: "first_message",
+      blocks: [
+        {
+          id: "collect",
+          type: "collect_data",
+          prompt: "Email?",
+          allowFreeText: false,
+          fields: [{ key: "email", label: "Email", required: true }],
+        },
+        { id: "thanks", type: "send_message", plainText: "Thanks!" },
+      ],
+    };
+
+    const result = await runWorkflow(
+      definition,
+      { sendMessage, assign: vi.fn(), close: vi.fn(), collectData },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+    );
+
+    expect(collectData).toHaveBeenCalledOnce();
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(result.suspended).toEqual({ blockId: "collect", type: "collect_data" });
+    expect(result.steps.at(-1)?.output?.awaitingInput).toBe(true);
+  });
+
+  it("resumes collect_data workflow from the next block", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const definition: WorkflowDefinition = {
+      trigger: "first_message",
+      blocks: [
+        {
+          id: "collect",
+          type: "collect_data",
+          prompt: "Email?",
+          allowFreeText: false,
+          fields: [{ key: "email", label: "Email", required: true }],
+        },
+        { id: "thanks", type: "send_message", plainText: "Thanks!" },
+      ],
+    };
+
+    const initialSteps = [
+      {
+        blockId: "collect",
+        type: "collect_data" as const,
+        status: "ok" as const,
+        output: {
+          awaitingInput: false,
+          submittedAttributes: { email: "user@test.local" },
+        },
+      },
+    ];
+
+    const result = await runWorkflow(
+      definition,
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+      { startBlockId: "thanks", initialSteps },
+    );
+
+    expect(sendMessage).toHaveBeenCalledWith({ plainText: "Thanks!", attachmentIds: undefined });
+    expect(result.suspended).toBeUndefined();
+    expect(result.steps).toHaveLength(2);
+  });
 });
 
 describe("resolveLetKeeniAnswerNext", () => {

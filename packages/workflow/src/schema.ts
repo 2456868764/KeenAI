@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { applyRulesBlockSchema } from "./blocks/apply-rules.js";
 import { branchesBlockSchema } from "./blocks/branches.js";
+import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import {
   type LetKeeniAnswerInput,
@@ -22,6 +23,13 @@ export {
   type BranchesBlock,
   type WorkflowFacts,
 } from "./blocks/branches.js";
+export {
+  collectDataBlockSchema,
+  type CollectDataBlock,
+  type CollectDataField,
+  type CollectDataInput,
+  type CollectDataSubmission,
+} from "./blocks/collect-data.js";
 export {
   convertToTicketBlockSchema,
   type ConvertToTicketBlock,
@@ -63,6 +71,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "convert_to_ticket",
   "link_ticket",
   "send_ticket_update",
+  "collect_data",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -115,6 +124,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   convertToTicketBlockSchema,
   linkTicketBlockSchema,
   sendTicketUpdateBlockSchema,
+  collectDataBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -155,6 +165,7 @@ export const updateWorkflowBodySchema = z.object({
 
 export type WorkflowRunContext = {
   workflowId: string;
+  workflowRunId?: string;
   orgId: string;
   brandId: string;
   conversationId: string;
@@ -194,6 +205,7 @@ export type WorkflowActionHandlers = {
     linkType: "tracks" | "relates" | "blocks";
   }) => Promise<{ parentTicketId: string; childTicketId: string }>;
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
+  collectData?: (input: CollectDataInput) => Promise<void>;
 };
 
 export type WorkflowStepResult = {
@@ -213,9 +225,18 @@ export type WorkflowStepResult = {
     parentTicketId?: string;
     childTicketId?: string;
     notificationSent?: boolean;
+    awaitingInput?: boolean;
+    submittedAttributes?: Record<string, string>;
+    freeText?: string;
   };
+};
+
+export type WorkflowSuspendedState = {
+  blockId: string;
+  type: "collect_data";
 };
 
 export type WorkflowRunResult = {
   steps: WorkflowStepResult[];
+  suspended?: WorkflowSuspendedState;
 };

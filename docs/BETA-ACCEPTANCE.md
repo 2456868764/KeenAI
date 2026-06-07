@@ -68,6 +68,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 4. `GET /api/v1/public/{org}/kb/collections` and `…/kb/articles/{id}`.
 5. Discord outbound: agent reply posts to channel after inbound webhook.
 
+## Batch 18 smoke (I117 continued)
+
+1. Workflow with **Collect data** block → run status `awaiting_input` after first message.
+2. Widget `POST …/workflow-input` submits attributes → run completes and follow-up block runs.
+3. Dashboard editor adds **Collect data (suspend)** block with prompt + fields.
+
 ## Batch 17 smoke (I117 continued)
 
 1. Dashboard Workflow editor **Flow** view → click **Trigger** node → Sheet opens for trigger/inactivity.

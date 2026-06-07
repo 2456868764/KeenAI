@@ -25,9 +25,14 @@ export {
   type WorkflowRunResult,
   type WorkflowStatus,
   type WorkflowStepResult,
+  type WorkflowSuspendedState,
   type WorkflowTrigger,
+  type CollectDataBlock,
+  type CollectDataField,
+  type CollectDataInput,
+  type CollectDataSubmission,
 } from "./schema.js";
-export { runWorkflow } from "./executor.js";
+export { runWorkflow, nextBlockAfter } from "./executor.js";
 export {
   DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES,
   resolveInactivityMs,
@@ -46,6 +51,7 @@ export {
   createWorkflowInngestFunctions,
   createInngestClient,
   WORKFLOW_SCAN_CRON_DEFAULT,
+  type WorkflowCollectDataResumePayload,
   type WorkflowInngestHandlers,
   type WorkflowInngestOptions,
 } from "./inngest/functions.js";

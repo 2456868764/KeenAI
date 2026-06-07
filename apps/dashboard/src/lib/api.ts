@@ -412,7 +412,15 @@ export type WorkflowBlock =
       parentTicketId?: string;
       linkType: "tracks" | "relates" | "blocks";
     }
-  | { id: string; type: "send_ticket_update"; ticketId?: string };
+  | { id: string; type: "send_ticket_update"; ticketId?: string }
+  | {
+      id: string;
+      type: "collect_data";
+      prompt: string;
+      allowFreeText?: boolean;
+      fields: { key: string; label: string; required?: boolean }[];
+      autoCloseMinutes?: number;
+    };
 
 export type WorkflowDefinition = {
   trigger: "first_message" | "customer_unresponsive";

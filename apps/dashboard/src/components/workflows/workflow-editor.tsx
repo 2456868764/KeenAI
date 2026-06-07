@@ -458,6 +458,14 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           });
         } else if (type === "send_ticket_update") {
           onAdd({ id, type: "send_ticket_update" });
+        } else if (type === "collect_data") {
+          onAdd({
+            id,
+            type: "collect_data",
+            prompt: "What is your email?",
+            allowFreeText: false,
+            fields: [{ key: "email", label: "Email", required: true }],
+          });
         }
       }}
       className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
@@ -474,6 +482,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="convert_to_ticket">Convert to ticket</option>
       <option value="link_ticket">Link tickets</option>
       <option value="send_ticket_update">Send ticket update email</option>
+      <option value="collect_data">Collect data (suspend)</option>
     </select>
   );
 }

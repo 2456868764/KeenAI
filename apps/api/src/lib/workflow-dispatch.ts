@@ -8,6 +8,7 @@ import {
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
 import { dispatchFirstMessageWorkflows } from "./workflow-engine.js";
+import { resumeCollectDataWorkflow } from "./workflow-resume.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
@@ -34,6 +35,19 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
       })),
     runAutoCloseTimer: timerHandlers.runAutoCloseTimer,
     runCsatTimer: timerHandlers.runCsatTimer,
+    resumeCollectData: (payload) =>
+      resumeCollectDataWorkflow(
+        ctx.store.db,
+        {
+          orgId: payload.orgId,
+          workflowRunId: payload.workflowRunId,
+          blockId: payload.blockId,
+          attributes: payload.attributes,
+          freeText: payload.freeText,
+        },
+        ctx.env,
+        ctx.authConfig,
+      ),
   };
 
   inngestHandlers = handlers;

@@ -14,7 +14,21 @@ export type WorkflowInngestOptions = {
   scanCron?: string;
 };
 
-export type WorkflowInngestHandlers = WorkflowDispatchHandlers & Partial<WorkflowTimerHandlers>;
+export type WorkflowCollectDataResumePayload = {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  attributes: Record<string, string>;
+  freeText?: string;
+};
+
+export type WorkflowInngestHandlers = WorkflowDispatchHandlers &
+  Partial<WorkflowTimerHandlers> & {
+    resumeCollectData?: (
+      payload: WorkflowCollectDataResumePayload,
+    ) => Promise<{ resumed: boolean; status?: string }>;
+  };
 
 export function createWorkflowInngestFunctions(
   client: Inngest,
@@ -58,7 +72,26 @@ export function createWorkflowInngestFunctions(
 
   const timerFunctions = createWorkflowTimerInngestFunctions(client, timerHandlers);
 
-  return [firstMessage, scanUnresponsive, scanUnresponsiveCron, ...timerFunctions] as const;
+  const resumeCollectData = client.createFunction(
+    { id: "keenai-workflow-resume-collect-data", retries: 3, concurrency: { limit: 20 } },
+    { event: WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED },
+    async ({ event, step }) => {
+      const data = event.data as WorkflowCollectDataResumePayload;
+      if (!handlers.resumeCollectData) {
+        return { resumed: false, reason: "handler_missing" };
+      }
+      const resume = handlers.resumeCollectData;
+      return step.run("resume-collect-data", () => resume(data));
+    },
+  );
+
+  return [
+    firstMessage,
+    scanUnresponsive,
+    scanUnresponsiveCron,
+    ...timerFunctions,
+    resumeCollectData,
+  ] as const;
 }
 
 export function createInngestClient(appId = "keenai") {

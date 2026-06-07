@@ -11,13 +11,14 @@ describe("createWorkflowInngestFunctions", () => {
     };
 
     const fns = createWorkflowInngestFunctions(client, handlers);
-    expect(fns).toHaveLength(5);
+    expect(fns).toHaveLength(6);
     expect(fns.map((fn) => fn.id())).toEqual([
       "keenai-workflow-first-message",
       "keenai-workflow-scan-unresponsive",
       "keenai-workflow-scan-unresponsive-cron",
       "keenai-workflow-auto-close-timer",
       "keenai-workflow-csat-timer",
+      "keenai-workflow-resume-collect-data",
     ]);
   });
 
@@ -29,7 +30,7 @@ describe("createWorkflowInngestFunctions", () => {
     };
 
     const fns = createWorkflowInngestFunctions(client, handlers, { scanCron: "0 * * * *" });
-    expect(fns).toHaveLength(5);
+    expect(fns).toHaveLength(6);
     expect(fns[2]?.id()).toBe("keenai-workflow-scan-unresponsive-cron");
   });
 

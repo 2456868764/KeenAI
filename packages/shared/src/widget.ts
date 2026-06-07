@@ -40,5 +40,12 @@ export const widgetPostMessageSchema = z
 /** Widget CSAT after conversation close (I104). */
 export const widgetConversationRatingSchema = conversationRatingSchema;
 
+export const widgetWorkflowInputSchema = z.object({
+  workflowRunId: z.string().min(1).max(64),
+  blockId: z.string().min(1).max(64),
+  attributes: z.record(z.string().min(1).max(64), z.string().max(2000)),
+  freeText: z.string().max(5000).optional(),
+});
+
 export type WidgetUser = z.infer<typeof widgetUserSchema>;
 export type WidgetSessionInput = z.infer<typeof widgetSessionSchema>;

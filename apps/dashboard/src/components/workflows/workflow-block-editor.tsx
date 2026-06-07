@@ -482,6 +482,88 @@ export function WorkflowBlockEditor({
           </p>
         </>
       ) : null}
+
+      {block.type === "collect_data" ? (
+        <>
+          <textarea
+            value={block.prompt}
+            onChange={(e) => onChange({ ...block, prompt: e.target.value })}
+            rows={3}
+            placeholder="Prompt shown to the customer"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <input
+              type="checkbox"
+              checked={block.allowFreeText ?? false}
+              onChange={(e) => onChange({ ...block, allowFreeText: e.target.checked })}
+            />
+            Allow free-text reply
+          </label>
+          <select
+            value={block.autoCloseMinutes ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                autoCloseMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="">No auto-close timer</option>
+            {[1, 3, 5, 7, 10, 15, 30, 60].map((minutes) => (
+              <option key={minutes} value={minutes}>
+                Auto-close after {minutes} min
+              </option>
+            ))}
+          </select>
+          <div className="space-y-2">
+            {block.fields.map((field, fieldIndex) => (
+              <div
+                key={field.key}
+                className="grid gap-2 rounded border border-[hsl(var(--border))] p-2"
+              >
+                <Input
+                  placeholder="Field key"
+                  value={field.key}
+                  onChange={(e) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, key: e.target.value.trim() };
+                    onChange({ ...block, fields });
+                  }}
+                />
+                <Input
+                  placeholder="Label"
+                  value={field.label}
+                  onChange={(e) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, label: e.target.value };
+                    onChange({ ...block, fields });
+                  }}
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              className="text-xs text-[hsl(var(--primary))]"
+              onClick={() =>
+                onChange({
+                  ...block,
+                  fields: [
+                    ...block.fields,
+                    { key: `field_${block.fields.length + 1}`, label: "New field", required: true },
+                  ],
+                })
+              }
+            >
+              + Add field
+            </button>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Suspends the workflow until the widget submits attributes via workflow-input.
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

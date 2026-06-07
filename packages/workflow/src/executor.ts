@@ -9,6 +9,7 @@ import type {
   WorkflowRunContext,
   WorkflowRunResult,
   WorkflowStepResult,
+  WorkflowSuspendedState,
 } from "./schema.js";
 
 function blockById(definition: WorkflowDefinition, id: string): WorkflowBlock | undefined {
@@ -27,7 +28,12 @@ async function executeBlock(
   handlers: WorkflowActionHandlers,
   context: WorkflowRunContext | undefined,
   facts: WorkflowFacts,
-): Promise<{ step: WorkflowStepResult; nextId: string | null; forkTargets?: string[] }> {
+): Promise<{
+  step: WorkflowStepResult;
+  nextId: string | null;
+  forkTargets?: string[];
+  suspended?: WorkflowSuspendedState;
+}> {
   let nextId: string | null = defaultNextId(definition, block.id);
   const blockIds = new Set(definition.blocks.map((b) => b.id));
 
@@ -140,6 +146,28 @@ async function executeBlock(
         nextId,
       };
     }
+    case "collect_data": {
+      if (!handlers.collectData) throw new Error("collect_data_handler_missing");
+      if (!context?.workflowRunId) throw new Error("workflow_run_id_required");
+      await handlers.collectData({
+        blockId: block.id,
+        prompt: block.prompt,
+        allowFreeText: block.allowFreeText ?? false,
+        fields: block.fields,
+        workflowRunId: context.workflowRunId,
+        autoCloseMinutes: block.autoCloseMinutes,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { awaitingInput: true },
+        },
+        nextId: null,
+        suspended: { blockId: block.id, type: "collect_data" },
+      };
+    }
     case "let_keeni_answer": {
       if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
       if (!context) throw new Error("workflow_context_required");
@@ -187,7 +215,7 @@ async function runBlockChain(
   facts: WorkflowFacts,
   visited: Set<string>,
   steps: WorkflowStepResult[],
-): Promise<void> {
+): Promise<WorkflowSuspendedState | undefined> {
   let currentId = startId;
 
   while (currentId) {
@@ -214,7 +242,7 @@ async function runBlockChain(
     }
 
     try {
-      const { step, nextId, forkTargets } = await executeBlock(
+      const { step, nextId, forkTargets, suspended } = await executeBlock(
         block,
         definition,
         handlers,
@@ -223,9 +251,20 @@ async function runBlockChain(
       );
       steps.push(step);
 
+      if (suspended) return suspended;
+
       if (forkTargets && forkTargets.length > 0) {
         for (const target of forkTargets) {
-          await runBlockChain(target, definition, handlers, context, facts, visited, steps);
+          const nested = await runBlockChain(
+            target,
+            definition,
+            handlers,
+            context,
+            facts,
+            visited,
+            steps,
+          );
+          if (nested) return nested;
         }
       }
 
@@ -242,13 +281,26 @@ export async function runWorkflow(
   definition: WorkflowDefinition,
   handlers: WorkflowActionHandlers,
   context?: WorkflowRunContext,
+  options?: { startBlockId?: string | null; initialSteps?: WorkflowStepResult[] },
 ): Promise<WorkflowRunResult> {
-  const steps: WorkflowStepResult[] = [];
+  const steps: WorkflowStepResult[] = [...(options?.initialSteps ?? [])];
   const facts = context?.facts ?? {};
   const visited = new Set<string>();
-  const startId = definition.blocks[0]?.id ?? null;
+  const startId = options?.startBlockId ?? definition.blocks[0]?.id ?? null;
 
-  await runBlockChain(startId, definition, handlers, context, facts, visited, steps);
+  const suspended = await runBlockChain(
+    startId,
+    definition,
+    handlers,
+    context,
+    facts,
+    visited,
+    steps,
+  );
 
-  return { steps };
+  return suspended ? { steps, suspended } : { steps };
+}
+
+export function nextBlockAfter(definition: WorkflowDefinition, blockId: string): string | null {
+  return defaultNextId(definition, blockId);
 }
