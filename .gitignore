@@ -29,6 +29,7 @@ fbapp/
 .next/
 playwright-report/
 test-results/
+coverage/
 blob-report/
 data/uploads/
 

@@ -81,4 +81,43 @@ test.describe("API smoke @smoke", () => {
     const body = (await res.json()) as { accessToken?: string };
     expect(body.accessToken).toBeTruthy();
   });
+
+  test("GET /api/v1/openapi.json returns OpenAPI document", async ({ request }) => {
+    const res = await request.get(`${apiUrl}/api/v1/openapi.json`);
+    expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { openapi?: string; paths?: Record<string, unknown> };
+    expect(body.openapi).toBe("3.1.0");
+    expect(body.paths).toBeTruthy();
+  });
+
+  test("authenticated workflows, tickets, and analytics endpoints", async ({ request }) => {
+    const loginRes = await request.post(`${apiUrl}/api/v1/auth/login`, {
+      data: {
+        email: "owner@keenai.local",
+        password: "keenai-demo-12",
+        orgSlug: "demo",
+      },
+    });
+    expect(loginRes.ok()).toBeTruthy();
+    const { accessToken } = (await loginRes.json()) as { accessToken: string };
+    const auth = { Authorization: `Bearer ${accessToken}` };
+
+    const workflows = await request.get(`${apiUrl}/api/v1/workflows`, { headers: auth });
+    expect(workflows.ok()).toBeTruthy();
+    const workflowsBody = (await workflows.json()) as { items: unknown[] };
+    expect(Array.isArray(workflowsBody.items)).toBe(true);
+
+    const tickets = await request.get(`${apiUrl}/api/v1/tickets`, { headers: auth });
+    expect(tickets.ok()).toBeTruthy();
+    const ticketsBody = (await tickets.json()) as { items: unknown[] };
+    expect(Array.isArray(ticketsBody.items)).toBe(true);
+
+    const analytics = await request.get(`${apiUrl}/api/v1/analytics/dashboard`, { headers: auth });
+    expect(analytics.ok()).toBeTruthy();
+    const analyticsBody = (await analytics.json()) as {
+      dashboard?: { support?: unknown; feedback?: unknown };
+    };
+    expect(analyticsBody.dashboard?.support).toBeTruthy();
+    expect(analyticsBody.dashboard?.feedback).toBeTruthy();
+  });
 });

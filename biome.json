@@ -26,6 +26,9 @@
       "www.featurebase.app",
       ".turbo",
       ".next",
+      "coverage",
+      "test-results",
+      "playwright-report",
       "**/migrations/**"
     ]
   }

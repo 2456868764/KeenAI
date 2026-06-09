@@ -113,7 +113,7 @@
 | P2-19 | Beta 公开发布验收 | [x] |
 | P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
 | P2-ACC-02 | ≥3 外部团队试用 | [ ] |
-| P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [~] |
+| P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [x] |
 
 ### Phase 3 · AI 完整版（I118）
 

@@ -7,6 +7,8 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Check | Command | Expected |
 |-------|---------|----------|
 | Unit + integration tests | `pnpm test` | All green |
+| Vitest line coverage (scoped backend) | `pnpm test:coverage` | lines / statements / functions ≥ 65% |
+| Playwright e2e route coverage | `node scripts/check-e2e-route-coverage.mjs` | ≥ 65% of critical routes |
 | Ticket types (3 kinds) | `tickets.integration.test.ts` | customer / back_office / tracker |
 | Tracker fan-out | same | Child tickets sync on tracker status |
 | Field DSL | `packages/shared` ticket-field tests | Validation passes |
@@ -34,14 +36,14 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Public KB AI answer SSE | `kb-answer.integration.test.ts` | stream + feedback |
 | Feedback dedup (lexical + embed) | `feedback.integration.test.ts` | hybrid matches + method |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
-| Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 14 tests green |
-| Beta gate (automated) | `pnpm beta:acceptance` | test + alpha + e2e |
+| Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 22 tests green |
+| Beta gate (automated) | `pnpm beta:acceptance` | coverage + alpha + e2e |
 
 ## Manual (P2-ACC)
 
 - [ ] **P2-ACC-01** Featurebase ~60% parity (tickets, feedback board, HC — spot-check)
 - [ ] **P2-ACC-02** ≥3 external teams on Beta build
-- [ ] **P2-ACC-03** Vitest + Playwright e2e coverage ≥65% (track in CI dashboard)
+- [x] **P2-ACC-03** Vitest line coverage ≥65% + Playwright e2e route coverage ≥65% (CI gated)
 
 ## Product smoke
 
@@ -167,6 +169,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 1. Flow canvas: trigger node + dagre layout; purple labeled branch/outcome edges.
 2. Click block → right Sheet opens with full config (branch targets as dropdowns).
 3. `let_keeni_answer` outcome routing: Resolved / Unresolved / Escalated paths on canvas.
+
+## Batch 21 smoke (I117 continued)
+
+1. `pnpm test:coverage` — scoped backend packages meet ≥65% line coverage gate.
+2. `node scripts/check-e2e-route-coverage.mjs` — e2e specs cover ≥65% critical routes.
+3. `pnpm e2e` — Dashboard workflows/tickets/analytics/feedback/HC/brands + API openapi/workflows.
 
 ## Still open (Phase 2 remainder)
 

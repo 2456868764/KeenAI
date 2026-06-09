@@ -277,7 +277,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] 至少 3 个外部团队试用
 - [ ] GitHub Stars ≥ 2000
 - [ ] 文档站访问 ≥ 1000 PV/月
-- [ ] Vitest 单元 + e2e 覆盖率 ≥ 65%
+- [x] Vitest 单元 + e2e 覆盖率 ≥ 65%
 - [x] Playwright e2e 主路径全绿（API · Portal · Dashboard login）
 
 ---

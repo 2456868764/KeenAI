@@ -7,7 +7,8 @@ cd "$ROOT"
 
 echo "== P2-19 Beta acceptance =="
 
-pnpm test
+pnpm test:coverage
+node scripts/check-e2e-route-coverage.mjs
 pnpm alpha:acceptance
 pnpm e2e
 

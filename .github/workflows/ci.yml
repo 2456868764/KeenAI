@@ -30,7 +30,8 @@ jobs:
       - run: pnpm lint
       - run: echo "feat: ci smoke" | pnpm exec commitlint
       - run: pnpm db:migrate
-      - run: pnpm test
+      - run: pnpm test:coverage
+      - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm kb:eval
       - run: pnpm typecheck
       - run: pnpm --filter @keenai/docs build
