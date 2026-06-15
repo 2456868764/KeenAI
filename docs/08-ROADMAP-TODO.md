@@ -124,7 +124,7 @@
 | P3-03 | Personality & Branding UI | [x] |
 | P3-04 | Multimodal MM-10～15 Agent 完整版 | [ ] |
 | P3-05 | Memory Tree MT-07～09 + Explorer UI | [ ] |
-| P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [ ] |
+| P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [x] |
 | P3-07 | Roadmap Kanban / Timeline | [ ] |
 | P3-08 | Changelog 编辑器 + 受众分群 | [ ] |
 | P3-09 | Telegram · 钉钉/飞书渠道 | [ ] |

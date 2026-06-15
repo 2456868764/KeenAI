@@ -176,6 +176,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 2. `node scripts/check-e2e-route-coverage.mjs` — e2e specs cover ≥65% critical routes.
 3. `pnpm e2e` — Dashboard workflows/tickets/analytics/feedback/HC/brands + API openapi/workflows.
 
+## Batch 23 smoke (I118 Phase 3)
+
+1. Dashboard **Custom Actions** → 4-step wizard (parameters schema, auth, sandbox) → create action.
+2. Select action → **Run test** sandbox (http_direct) → view call logs.
+3. MCP panel shows Host tools + **KeenAI expose** stdio command (`GET /api/v1/mcp/expose/tools`).
+
 ## Batch 22 smoke (I118 Phase 3)
 
 1. Dashboard **Settings → Personality** → edit agent name, tone, system prompt, guardrails → Save.

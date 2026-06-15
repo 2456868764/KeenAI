@@ -987,9 +987,11 @@ export type CustomAction = {
   name: string;
   description: string | null;
   whenToUse: string | null;
+  parametersSchema: Record<string, unknown>;
   endpoint: string;
   method: string;
   authType: string;
+  authSecretRef: string | null;
   sandbox: string;
   enabled: boolean;
   createdAt: string;
@@ -1002,7 +1004,27 @@ export type CustomActionLog = {
   ok: boolean;
   responseStatus: number | null;
   durationMs: number | null;
+  errorCode: string | null;
   createdAt: string;
+};
+
+export type McpServerInfo = {
+  enabled: boolean;
+  servers: Array<{ id: string; command?: string }>;
+  connected: string[];
+};
+
+export type McpToolInfo = {
+  serverId: string;
+  name: string;
+  qualifiedName: string;
+  description?: string;
+};
+
+export type McpExposeToolInfo = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
 };
 
 export async function listCustomActions(brandId: string): Promise<{ items: CustomAction[] }> {
@@ -1015,12 +1037,50 @@ export async function createCustomAction(input: {
   name: string;
   description?: string;
   whenToUse?: string;
+  parametersSchema?: Record<string, unknown>;
   endpoint: string;
   method: string;
   authType: string;
+  authSecretRef?: string;
   sandbox?: string;
+  enabled?: boolean;
 }): Promise<{ action: CustomAction }> {
   return apiFetch("/api/v1/custom-actions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCustomAction(
+  id: string,
+  patch: Partial<{
+    name: string;
+    description: string | null;
+    whenToUse: string | null;
+    parametersSchema: Record<string, unknown>;
+    endpoint: string;
+    method: string;
+    authType: string;
+    authSecretRef: string | null;
+    sandbox: string;
+    enabled: boolean;
+  }>,
+): Promise<{ action: CustomAction }> {
+  return apiFetch(`/api/v1/custom-actions/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteCustomAction(id: string): Promise<void> {
+  await apiFetch(`/api/v1/custom-actions/${id}`, { method: "DELETE" });
+}
+
+export async function executeCustomAction(
+  id: string,
+  input: { parameters?: Record<string, unknown> },
+): Promise<{ result: { ok: boolean; status: number; data: unknown } }> {
+  return apiFetch(`/api/v1/custom-actions/${id}/execute`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1030,6 +1090,22 @@ export async function listCustomActionLogs(
   actionId: string,
 ): Promise<{ items: CustomActionLog[] }> {
   return apiFetch(`/api/v1/custom-actions/${actionId}/logs`);
+}
+
+export async function listMcpServers(): Promise<McpServerInfo> {
+  return apiFetch("/api/v1/mcp/servers");
+}
+
+export async function listMcpHostTools(): Promise<{ items: McpToolInfo[] }> {
+  return apiFetch("/api/v1/mcp/tools");
+}
+
+export async function listMcpExposeTools(): Promise<{
+  transport: string;
+  command: string;
+  items: McpExposeToolInfo[];
+}> {
+  return apiFetch("/api/v1/mcp/expose/tools");
 }
 
 export type KbSearchHit = {

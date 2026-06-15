@@ -379,7 +379,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **CA-04** · Vercel AI SDK `tool()` in copilot/agent draft path
 - [x] **CA-05** · Action call logs（`custom_action_logs` + OTel span stub）
 - [x] **CA-06** · MCP Host mode stub（`GET /mcp/tools` · copilot tool load）
-- [ ] Dashboard 4-step Action config UI · Sandbox workers/isolated-vm · MCP Server expose（产品面未完成）
+- [x] Dashboard 4-step Action config UI · Sandbox workers/isolated-vm · MCP Server expose
 
 #### Sprint 17（W37-W38）：Roadmap + Changelog + 国产化 · KB Phase C 启动
 

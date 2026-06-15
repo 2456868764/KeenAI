@@ -24,6 +24,7 @@ const CRITICAL_ROUTES = {
     "/api/v1/workflows",
     "/api/v1/tickets",
     "/api/v1/analytics/dashboard",
+    "/api/v1/mcp/expose/tools",
   ],
   dashboard: [
     "/login",
@@ -33,6 +34,7 @@ const CRITICAL_ROUTES = {
     "/analytics",
     "/feedback",
     "/help-center",
+    "/custom-actions",
     "/settings/sla",
     "/settings/brands",
     "/settings/personality",

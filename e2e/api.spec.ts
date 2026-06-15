@@ -120,4 +120,23 @@ test.describe("API smoke @smoke", () => {
     expect(analyticsBody.dashboard?.support).toBeTruthy();
     expect(analyticsBody.dashboard?.feedback).toBeTruthy();
   });
+
+  test("GET /api/v1/mcp/expose/tools returns KeenAI server catalog", async ({ request }) => {
+    const loginRes = await request.post(`${apiUrl}/api/v1/auth/login`, {
+      data: {
+        email: "owner@keenai.local",
+        password: "keenai-demo-12",
+        orgSlug: "demo",
+      },
+    });
+    expect(loginRes.ok()).toBeTruthy();
+    const { accessToken } = (await loginRes.json()) as { accessToken: string };
+    const res = await request.get(`${apiUrl}/api/v1/mcp/expose/tools`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { transport?: string; items: unknown[] };
+    expect(body.transport).toBe("stdio");
+    expect(Array.isArray(body.items)).toBe(true);
+  });
 });

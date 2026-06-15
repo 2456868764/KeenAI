@@ -1,3 +1,4 @@
+import { getKeenaiExposeServerCommand, listKeenaiExposeTools } from "@keenai/mcp";
 import { API_VERSION } from "@keenai/shared";
 import { Hono } from "hono";
 import { getSharedMcpHost, listConfiguredMcpServers } from "../lib/mcp-tools.js";
@@ -36,6 +37,17 @@ export function mcpRoutes() {
         description: tool.description,
         inputSchema: tool.inputSchema,
       })),
+    });
+  });
+
+  r.get(`${prefix}/expose/tools`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    return c.json({
+      transport: "stdio",
+      command: getKeenaiExposeServerCommand(),
+      items: listKeenaiExposeTools(),
     });
   });
 

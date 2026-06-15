@@ -5,6 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./expose": "./src/expose.ts",
+    "./server": "./src/server.ts",
     "./stub-server": "./src/stub-server.ts"
   },
   "scripts": {

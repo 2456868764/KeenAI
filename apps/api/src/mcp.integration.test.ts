@@ -101,6 +101,17 @@ describe("MCP host integration", () => {
     expect(toolsBody.items.some((tool) => tool.name === "echo")).toBe(true);
     expect(toolsBody.items.some((tool) => tool.qualifiedName === "mcp_stub__echo")).toBe(true);
 
+    const exposeRes = await app.request("/api/v1/mcp/expose/tools", { headers: auth });
+    expect(exposeRes.status).toBe(200);
+    const exposeBody = (await exposeRes.json()) as {
+      transport: string;
+      command: string;
+      items: Array<{ name: string }>;
+    };
+    expect(exposeBody.transport).toBe("stdio");
+    expect(exposeBody.command).toContain("packages/mcp/src/server.ts");
+    expect(exposeBody.items.some((tool) => tool.name === "keenai_search_help")).toBe(true);
+
     await store.close();
     await resetSharedMcpHost();
   });

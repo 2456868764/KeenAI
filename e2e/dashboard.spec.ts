@@ -67,4 +67,14 @@ test.describe("Dashboard @smoke", () => {
     await expect(page.getByRole("heading", { name: "Agent identity" })).toBeVisible();
     await expect(page.getByRole("button", { name: /save personality/i })).toBeVisible();
   });
+
+  test("custom actions page loads after login", async ({ page }) => {
+    await loginAsDemo(page);
+    await page.goto("/custom-actions");
+    await expectPageTitle(page, "Custom Actions");
+    await expect(page.getByRole("button", { name: /new action/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "MCP Host (consume external tools)" }),
+    ).toBeVisible();
+  });
 });
