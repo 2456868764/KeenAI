@@ -35,6 +35,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Public workspace meta | `kb-public.integration.test.ts` | brand id for portal search |
 | Public KB AI answer SSE | `kb-answer.integration.test.ts` | stream + feedback |
 | Feedback dedup (lexical + embed) | `feedback.integration.test.ts` | hybrid matches + method |
+| Roadmap CRUD + public read | `roadmap.integration.test.ts` | items + public items |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 | Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 22 tests green |
 | Beta gate (automated) | `pnpm beta:acceptance` | coverage + alpha + e2e |
@@ -187,6 +188,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 1. Dashboard **Settings → Personality** → edit agent name, tone, system prompt, guardrails → Save.
 2. `PATCH /api/v1/brands/:id` with `personality` persists to `brands.settings`.
 3. Copilot draft uses brand-specific system prompt (see `brands.integration.test.ts`).
+
+## Batch 24 smoke (I118 Phase 3)
+
+1. Dashboard **Roadmap** → Kanban columns (Planned / In Progress / Done) → drag item between columns.
+2. Toggle **Timeline** view → items sorted by ETA.
+3. `GET /api/v1/public/{org}/roadmap/product/items` (PORTAL_PUBLIC_READ).
 
 ## Still open (Phase 2 remainder)
 

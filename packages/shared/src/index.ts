@@ -86,6 +86,13 @@ export {
   type BrandPersonality,
 } from "./personality.js";
 export {
+  createRoadmapItemSchema,
+  createRoadmapSchema,
+  listRoadmapsQuerySchema,
+  roadmapColumnSchema,
+  updateRoadmapItemSchema,
+} from "./roadmap.js";
+export {
   createFeedbackBoardSchema,
   createFeedbackCommentSchema,
   createFeedbackPostSchema,

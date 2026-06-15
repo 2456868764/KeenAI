@@ -49,6 +49,7 @@ import { notificationRoutes } from "./routes/notifications.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import { portalRoutes } from "./routes/portal.js";
 import { publicRoutes } from "./routes/public.js";
+import { roadmapRoutes } from "./routes/roadmap.js";
 import { searchRoutes } from "./routes/search.js";
 import { slaRoutes } from "./routes/sla.js";
 import { ticketRoutes } from "./routes/tickets.js";
@@ -130,6 +131,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", copilotRoutes(ctx));
   app.route("/", ticketRoutes());
   app.route("/", feedbackRoutes());
+  app.route("/", roadmapRoutes());
   app.route("/", helpCenterRoutes());
   app.route("/", slaRoutes());
   app.route("/", analyticsRoutes());

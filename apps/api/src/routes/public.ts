@@ -26,6 +26,7 @@ import {
 } from "../lib/kb-public.js";
 import { getKbReranker } from "../lib/kb-search-config.js";
 import { resolveOrgBrandBySlug } from "../lib/org-brand.js";
+import { getRoadmapBySlug, listRoadmapItems } from "../lib/roadmap.js";
 import type { AppContext, AppVariables } from "../types.js";
 
 export function publicRoutes(ctx: AppContext) {
@@ -286,6 +287,38 @@ export function publicRoutes(ctx: AppContext) {
 
     const items = await listFeedbackPosts(c.get("store").db, board.id, resolved.org.id, 50);
     return c.json({ board: { slug: board.slug, name: board.name }, items });
+  });
+
+  r.get(`${prefix}/:orgSlug/roadmap/:roadmapSlug/items`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const roadmap = await getRoadmapBySlug(
+      c.get("store").db,
+      resolved.org.id,
+      c.req.param("roadmapSlug"),
+    );
+    if (!roadmap || !roadmap.public || roadmap.brandId !== resolved.brand.id) {
+      return c.json({ error: "not_found" }, 404);
+    }
+
+    const items = await listRoadmapItems(c.get("store").db, roadmap.id, resolved.org.id);
+    return c.json({
+      roadmap: {
+        slug: roadmap.slug,
+        name: roadmap.name,
+        columns: roadmap.columns,
+      },
+      items,
+    });
   });
 
   return r;

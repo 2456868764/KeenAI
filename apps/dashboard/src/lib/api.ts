@@ -747,6 +747,87 @@ export async function findFeedbackDuplicates(
   return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/dedup?${params.toString()}`);
 }
 
+export type RoadmapColumn = { id: string; label: string };
+
+export type Roadmap = {
+  id: string;
+  orgId: string;
+  brandId: string;
+  slug: string;
+  name: string;
+  public: boolean;
+  columns: RoadmapColumn[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RoadmapItem = {
+  id: string;
+  roadmapId: string;
+  title: string;
+  description: string | null;
+  columnId: string;
+  sortOrder: number;
+  linkedPostId: string | null;
+  eta: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function ensureDefaultRoadmap(brandId: string): Promise<{ roadmap: Roadmap }> {
+  return apiFetch(`/api/v1/roadmaps/ensure-default?brandId=${encodeURIComponent(brandId)}`, {
+    method: "POST",
+  });
+}
+
+export async function listRoadmapBoardItems(
+  roadmapId: string,
+): Promise<{ roadmap: Roadmap; items: RoadmapItem[] }> {
+  return apiFetch(`/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items`);
+}
+
+export async function createRoadmapItem(
+  roadmapId: string,
+  input: {
+    title: string;
+    description?: string;
+    columnId?: string;
+    eta?: string;
+  },
+): Promise<{ item: RoadmapItem }> {
+  return apiFetch(`/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateRoadmapItem(
+  roadmapId: string,
+  itemId: string,
+  input: {
+    title?: string;
+    description?: string | null;
+    columnId?: string;
+    sortOrder?: number;
+    eta?: string | null;
+  },
+): Promise<{ item: RoadmapItem }> {
+  return apiFetch(
+    `/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function deleteRoadmapItem(roadmapId: string, itemId: string): Promise<void> {
+  await apiFetch(
+    `/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
+    { method: "DELETE" },
+  );
+}
+
 export type SlaPolicy = {
   id: string;
   name: string;

@@ -47,6 +47,13 @@ test.describe("Dashboard @smoke", () => {
     await expectPageTitle(page, "Feedback");
   });
 
+  test("roadmap page loads after login", async ({ page }) => {
+    await loginAsDemo(page);
+    await page.goto("/roadmap");
+    await expectPageTitle(page, "Roadmap");
+    await expect(page.getByRole("button", { name: /add item/i })).toBeVisible();
+  });
+
   test("help center page loads after login", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/help-center");

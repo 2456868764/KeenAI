@@ -122,4 +122,12 @@ export {
   ticketTypes,
   tickets,
 } from "./ticket";
+export {
+  DEFAULT_ROADMAP_COLUMNS,
+  roadmapItems,
+  roadmaps,
+  type RoadmapColumnDef,
+  type RoadmapItemRow,
+  type RoadmapRow,
+} from "./roadmap";
 export { workflowRuns, workflows } from "./workflow";
