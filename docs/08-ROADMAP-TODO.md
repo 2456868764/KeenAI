@@ -34,13 +34,13 @@
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
 | 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [x] |
 | 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [x] |
-| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [~] |
-| 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [ ] |
+| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [x] |
+| 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [~] |
 | 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [ ] |
 | 29 | I120 | Release **v0.2.0** | Phase 0～3 全 `[x]` 后打 tag | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24  roadmap 已打勾；**实现深度**见 [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)（v0.2.0 前须达标，非 stub）。  
-**当前主轨**：**I117** Phase 2 → I118 P3 → I119 → I120 tag。  
+**当前主轨**：**I118** Phase 3 → I119 → I120 tag。  
 **发布门禁**：`08-ROADMAP.md` Phase 0～3 内 **所有** `- [ ]` 项完成 + 各 Phase 验收。
 
 ---
@@ -111,8 +111,8 @@
 | P2-17 | Multi-brand 配置 UI | [x] |
 | P2-18 | 分析看板（ECharts · Support/Feedback/HC） | [x] |
 | P2-19 | Beta 公开发布验收 | [x] |
-| P2-ACC-01 | Featurebase 60% 对齐 | [ ] |
-| P2-ACC-02 | ≥3 外部团队试用 | [ ] |
+| P2-ACC-01 | Featurebase 60% 对齐 | [-] 跳过（手动） |
+| P2-ACC-02 | ≥3 外部团队试用 | [-] 跳过（手动） |
 | P2-ACC-03 | Vitest + Playwright e2e ≥ 65% 覆盖 | [x] |
 
 ### Phase 3 · AI 完整版（I118）
@@ -121,7 +121,7 @@
 |----|-----|------|
 | P3-01 | `@keenai/memory` 4 层生产实现（非 stub） | [ ] |
 | P3-02 | Knowledge Graph extractor（`generateObject`） | [ ] |
-| P3-03 | Personality & Branding UI | [ ] |
+| P3-03 | Personality & Branding UI | [x] |
 | P3-04 | Multimodal MM-10～15 Agent 完整版 | [ ] |
 | P3-05 | Memory Tree MT-07～09 + Explorer UI | [ ] |
 | P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [ ] |

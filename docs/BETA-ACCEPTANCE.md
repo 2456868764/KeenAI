@@ -41,8 +41,8 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Manual (P2-ACC)
 
-- [ ] **P2-ACC-01** Featurebase ~60% parity (tickets, feedback board, HC — spot-check)
-- [ ] **P2-ACC-02** ≥3 external teams on Beta build
+- [ ] **P2-ACC-01** Featurebase ~60% parity (tickets, feedback board, HC — spot-check) — skipped
+- [ ] **P2-ACC-02** ≥3 external teams on Beta build — skipped
 - [x] **P2-ACC-03** Vitest line coverage ≥65% + Playwright e2e route coverage ≥65% (CI gated)
 
 ## Product smoke
@@ -175,6 +175,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 1. `pnpm test:coverage` — scoped backend packages meet ≥65% line coverage gate.
 2. `node scripts/check-e2e-route-coverage.mjs` — e2e specs cover ≥65% critical routes.
 3. `pnpm e2e` — Dashboard workflows/tickets/analytics/feedback/HC/brands + API openapi/workflows.
+
+## Batch 22 smoke (I118 Phase 3)
+
+1. Dashboard **Settings → Personality** → edit agent name, tone, system prompt, guardrails → Save.
+2. `PATCH /api/v1/brands/:id` with `personality` persists to `brands.settings`.
+3. Copilot draft uses brand-specific system prompt (see `brands.integration.test.ts`).
 
 ## Still open (Phase 2 remainder)
 

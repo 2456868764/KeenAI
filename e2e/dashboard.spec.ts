@@ -59,4 +59,12 @@ test.describe("Dashboard @smoke", () => {
     await expectPageTitle(page, "Settings");
     await expect(page.getByRole("button", { name: /add brand/i })).toBeVisible();
   });
+
+  test("personality settings page loads after login", async ({ page }) => {
+    await loginAsDemo(page);
+    await page.goto("/settings/personality");
+    await expectPageTitle(page, "Settings");
+    await expect(page.getByRole("heading", { name: "Agent identity" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /save personality/i })).toBeVisible();
+  });
 });

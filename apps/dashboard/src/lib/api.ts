@@ -518,10 +518,31 @@ export type Brand = {
   slug: string;
   name: string;
   domain: string | null;
+  logoUrl: string | null;
   locale: string;
   emailFrom: string | null;
+  personality: BrandPersonality;
   createdAt: string;
   updatedAt: string;
+};
+
+export type BrandPersonality = {
+  name: string;
+  voice: {
+    tone: "friendly_professional" | "casual" | "formal";
+    formality: number;
+    emojiUsage: "none" | "minimal" | "rich";
+    responseLength: "concise" | "balanced" | "detailed";
+  };
+  language: {
+    primary: string;
+    fallback: string;
+    autoDetect: boolean;
+  };
+  systemPrompt: string;
+  guardRails: string[];
+  sensitiveTopics: string[];
+  capabilities: string[];
 };
 
 export async function listBrands(): Promise<{ items: Brand[] }> {
@@ -543,7 +564,14 @@ export async function createBrand(input: {
 
 export async function updateBrand(
   id: string,
-  patch: { name?: string; domain?: string | null; locale?: string; emailFrom?: string | null },
+  patch: {
+    name?: string;
+    domain?: string | null;
+    locale?: string;
+    emailFrom?: string | null;
+    logoUrl?: string | null;
+    personality?: Partial<BrandPersonality>;
+  },
 ): Promise<{ brand: Brand }> {
   return apiFetch(`/api/v1/brands/${id}`, {
     method: "PATCH",

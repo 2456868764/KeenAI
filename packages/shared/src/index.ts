@@ -79,6 +79,13 @@ export {
 } from "./ticket-field.js";
 export { createBrandSchema, updateBrandSchema } from "./brand.js";
 export {
+  brandPersonalitySchema,
+  buildAgentSystemPrompt,
+  DEFAULT_BRAND_PERSONALITY,
+  parseBrandPersonality,
+  type BrandPersonality,
+} from "./personality.js";
+export {
   createFeedbackBoardSchema,
   createFeedbackCommentSchema,
   createFeedbackPostSchema,

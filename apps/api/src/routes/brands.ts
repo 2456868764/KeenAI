@@ -3,23 +3,9 @@ import { API_VERSION, createBrandSchema, updateBrandSchema } from "@keenai/share
 import { brands } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { mergeBrandSettings, serializeBrand } from "../lib/brand-serialize.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
-
-function serializeBrand(row: typeof brands.$inferSelect) {
-  return {
-    id: row.id,
-    orgId: row.orgId,
-    slug: row.slug,
-    name: row.name,
-    domain: row.domain ?? null,
-    logoUrl: row.logoUrl ?? null,
-    locale: row.locale ?? "en",
-    emailFrom: row.emailFrom ?? null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
 
 export function brandRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -55,6 +41,7 @@ export function brandRoutes() {
           domain: body.domain,
           locale: body.locale ?? "en",
           emailFrom: body.emailFrom,
+          logoUrl: body.logoUrl,
         })
         .returning();
 
@@ -79,6 +66,11 @@ export function brandRoutes() {
 
     if (!existing) return c.json({ error: "not_found" }, 404);
 
+    const settings =
+      body.personality !== undefined
+        ? mergeBrandSettings(existing.settings ?? {}, { personality: body.personality })
+        : existing.settings;
+
     const [row] = await c
       .get("store")
       .db.update(brands)
@@ -87,6 +79,8 @@ export function brandRoutes() {
         domain: body.domain === undefined ? existing.domain : body.domain,
         locale: body.locale ?? existing.locale,
         emailFrom: body.emailFrom === undefined ? existing.emailFrom : body.emailFrom,
+        logoUrl: body.logoUrl === undefined ? existing.logoUrl : body.logoUrl,
+        settings,
         updatedAt: new Date(),
       })
       .where(eq(brands.id, existing.id))

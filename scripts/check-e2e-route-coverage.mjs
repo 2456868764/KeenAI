@@ -35,6 +35,7 @@ const CRITICAL_ROUTES = {
     "/help-center",
     "/settings/sla",
     "/settings/brands",
+    "/settings/personality",
   ],
   portal: ["/", "/help", "/sitemap.xml", "/robots.txt"],
 };

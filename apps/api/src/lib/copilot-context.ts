@@ -6,6 +6,7 @@ import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { loadAttachmentsForMessages } from "./attachments.js";
+import { loadBrandPersonality } from "./brand-personality.js";
 import { resolveCustomActionSecretFromEnv } from "./custom-action-executor.js";
 import { loadCustomActionDraftTools } from "./custom-action-tools.js";
 import { getKbContextSearch } from "./kb-search-config.js";
@@ -102,7 +103,7 @@ export async function buildCopilotDraftRequest(
     kbSearch: getKbContextSearch(),
   });
 
-  const [customTools, mcpTools] = await Promise.all([
+  const [customTools, mcpTools, personality] = await Promise.all([
     loadCustomActionDraftTools(
       db,
       {
@@ -117,6 +118,7 @@ export async function buildCopilotDraftRequest(
       { otelEnabled: env.OTEL_ENABLED },
     ),
     loadMcpDraftTools(env),
+    loadBrandPersonality(db, { orgId: input.orgId, brandId: input.brandId }),
   ]);
   const tools = [...customTools, ...mcpTools];
 
@@ -127,6 +129,7 @@ export async function buildCopilotDraftRequest(
       conversationId: input.conversationId,
       userId: input.userId,
     },
+    personality,
     draftRequest: {
       messages: draftMessages,
       instruction: input.instruction,
