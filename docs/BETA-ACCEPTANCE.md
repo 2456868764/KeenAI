@@ -202,6 +202,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 2. `POST /api/v1/changelog/entries` with `audienceFilter.segments` persists targeting rules.
 3. `GET /api/v1/public/{org}/changelog/entries` lists published updates.
 
+## Batch 26 smoke (I118 Phase 3)
+
+1. Dashboard **Settings → Channels** shows Telegram / Feishu / DingTalk webhook URLs.
+2. `POST /api/v1/webhooks/im/feishu?org={slug}` ingests text events (URL verification returns challenge).
+3. `POST /api/v1/webhooks/im/dingtalk?org={slug}` stores `sessionWebhook` on conversation attributes.
+
 ## Still open (Phase 2 remainder)
 
 Manual P2-ACC (external teams, Featurebase parity) — `08-ROADMAP-TODO.md` §P2.

@@ -1,6 +1,6 @@
 import type { MessageKind, MessagePart, OutboundDirectives } from "@keenai/shared";
 
-export type ImPlatform = "telegram" | "slack" | "discord";
+export type ImPlatform = "telegram" | "slack" | "discord" | "feishu" | "dingtalk";
 
 export type ImPendingAttachment = {
   fileName: string;
@@ -23,6 +23,7 @@ export type ParsedInboundImMessage = {
   attachments: ImPendingAttachment[];
   replyToMessageId?: string;
   mediaGroupId?: string;
+  conversationAttributes?: Record<string, unknown>;
 };
 
 export type ImAttachmentRef = {
@@ -82,7 +83,27 @@ export type DiscordOutboundAction = {
   content: string;
 };
 
-export type ImOutboundAction = TelegramOutboundAction | SlackOutboundAction | DiscordOutboundAction;
+export type FeishuOutboundAction = {
+  platform: "feishu";
+  method: "im.message.create";
+  receiveId: string;
+  receiveIdType: "chat_id" | "open_id";
+  text: string;
+};
+
+export type DingTalkOutboundAction = {
+  platform: "dingtalk";
+  method: "sessionWebhook.send";
+  sessionWebhook: string;
+  text: string;
+};
+
+export type ImOutboundAction =
+  | TelegramOutboundAction
+  | SlackOutboundAction
+  | DiscordOutboundAction
+  | FeishuOutboundAction
+  | DingTalkOutboundAction;
 
 export type PlanImOutboundInput = {
   platform: ImPlatform;
@@ -90,4 +111,5 @@ export type PlanImOutboundInput = {
   parts: MessagePart[];
   attachments: Map<string, ImAttachmentRef>;
   directives?: OutboundDirectives;
+  channelAttributes?: Record<string, unknown>;
 };

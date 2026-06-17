@@ -82,6 +82,14 @@ test.describe("Dashboard @smoke", () => {
     await expect(page.getByRole("button", { name: /save personality/i })).toBeVisible();
   });
 
+  test("channels settings page loads after login", async ({ page }) => {
+    await loginAsDemo(page);
+    await page.goto("/settings/channels");
+    await expectPageTitle(page, "Settings");
+    await expect(page.getByRole("heading", { name: "Telegram" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Feishu / Lark" })).toBeVisible();
+  });
+
   test("custom actions page loads after login", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/custom-actions");

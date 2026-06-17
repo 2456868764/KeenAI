@@ -86,6 +86,7 @@ export function serializeConversation(row: typeof conversations.$inferSelect) {
     teamId: row.teamId,
     subject: row.subject,
     tags: row.tags,
+    attributes: row.attributes ?? {},
     snoozedUntil: row.snoozedUntil?.toISOString() ?? null,
     unreadCount: row.unreadCount,
     messageCount: row.messageCount,

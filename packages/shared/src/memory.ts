@@ -5,7 +5,7 @@ export const memoryTreeQuerySchema = z
     scope: z.enum(["conversation", "customer", "channel"]),
     id: z.string().min(1),
     brandId: z.string().min(1).optional(),
-    channelType: z.enum(["slack", "telegram"]).optional(),
+    channelType: z.enum(["slack", "telegram", "feishu", "dingtalk"]).optional(),
     mode: z.enum(["latest", "drill_down"]).default("latest"),
     level: z.coerce.number().int().min(0).max(2).optional(),
   })
@@ -63,7 +63,7 @@ export const memoryFactsQuerySchema = z
     brandId: z.string().min(1),
     scope: z.enum(["conversation", "customer", "channel"]),
     id: z.string().min(1),
-    channelType: z.enum(["slack", "telegram"]).optional(),
+    channelType: z.enum(["slack", "telegram", "feishu", "dingtalk"]).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(50),
   })
   .superRefine((value, ctx) => {

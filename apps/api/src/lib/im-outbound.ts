@@ -38,7 +38,9 @@ export async function planConversationImOutbound(
   if (
     conversation.channelType !== "telegram" &&
     conversation.channelType !== "slack" &&
-    conversation.channelType !== "discord"
+    conversation.channelType !== "discord" &&
+    conversation.channelType !== "feishu" &&
+    conversation.channelType !== "dingtalk"
   ) {
     return null;
   }
@@ -95,7 +97,9 @@ export async function planConversationImOutbound(
   const platform =
     conversation.channelType === "telegram" ||
     conversation.channelType === "slack" ||
-    conversation.channelType === "discord"
+    conversation.channelType === "discord" ||
+    conversation.channelType === "feishu" ||
+    conversation.channelType === "dingtalk"
       ? conversation.channelType
       : "slack";
 
@@ -105,6 +109,7 @@ export async function planConversationImOutbound(
     parts: normalizeParts(parts, rows),
     attachments: refs,
     directives,
+    channelAttributes: conversation.attributes ?? {},
   });
 
   return {

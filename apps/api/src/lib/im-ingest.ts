@@ -52,7 +52,11 @@ export async function ingestInboundIm(
         ? `Telegram ${input.parsed.channelId}`
         : channelType === "discord"
           ? `Discord ${input.parsed.channelId}`
-          : `Slack ${input.parsed.channelId}`;
+          : channelType === "feishu"
+            ? `Feishu ${input.parsed.channelId}`
+            : channelType === "dingtalk"
+              ? `DingTalk ${input.parsed.channelId}`
+              : `Slack ${input.parsed.channelId}`;
 
     const [row] = await db
       .insert(conversations)
@@ -67,6 +71,7 @@ export async function ingestInboundIm(
         lastMessageAt: new Date(),
         messageCount: 1,
         unreadCount: 1,
+        attributes: input.parsed.conversationAttributes ?? {},
       })
       .returning({ id: conversations.id, channelId: conversations.channelId });
 
@@ -82,6 +87,22 @@ export async function ingestInboundIm(
       actorId: input.parsed.userId,
       payload: { channel: channelType },
     });
+  } else if (input.parsed.conversationAttributes) {
+    const [existingRow] = await db
+      .select({ attributes: conversations.attributes })
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id))
+      .limit(1);
+    await db
+      .update(conversations)
+      .set({
+        attributes: {
+          ...(existingRow?.attributes ?? {}),
+          ...input.parsed.conversationAttributes,
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversation.id));
   }
 
   const attachmentRows = [];

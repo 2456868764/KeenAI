@@ -350,4 +350,119 @@ describe("IM multimodal integration", () => {
 
     await store.close();
   });
+
+  it("ingests Feishu text webhook and plans outbound", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db.insert(organizations).values({ slug: "im", name: "IM" }).returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: {
+        jwtSecret: "test-secret-at-least-32-characters-long!!",
+        accessTtlSec: 900,
+        refreshTtlSec: 604_800,
+        appUrl: "http://localhost:3000",
+      },
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const webhookRes = await app.request("/api/v1/webhooks/im/feishu?org=im", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        schema: "2.0",
+        header: { event_type: "im.message.receive_v1", event_id: "evt-feishu" },
+        event: {
+          sender: { sender_id: { open_id: "ou_1" } },
+          message: {
+            message_id: "om_1",
+            chat_id: "oc_chat",
+            message_type: "text",
+            content: JSON.stringify({ text: "Feishu support request" }),
+          },
+        },
+      }),
+    });
+    expect(webhookRes.status).toBe(202);
+    const webhookBody = (await webhookRes.json()) as {
+      accepted: boolean;
+      message: { plainText: string };
+    };
+    expect(webhookBody.accepted).toBe(true);
+    expect(webhookBody.message.plainText).toBe("Feishu support request");
+
+    await store.close();
+  });
+
+  it("ingests DingTalk robot webhook with session webhook metadata", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db.insert(organizations).values({ slug: "im", name: "IM" }).returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: {
+        jwtSecret: "test-secret-at-least-32-characters-long!!",
+        accessTtlSec: 900,
+        refreshTtlSec: 604_800,
+        appUrl: "http://localhost:3000",
+      },
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const webhookRes = await app.request("/api/v1/webhooks/im/dingtalk?org=im", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        msgtype: "text",
+        text: { content: "DingTalk hello" },
+        msgId: "dt-1",
+        conversationId: "cid-dt",
+        senderId: "user-dt",
+        sessionWebhook: "https://oapi.dingtalk.com/robot/sendBySession?session=test",
+      }),
+    });
+    expect(webhookRes.status).toBe(202);
+    const webhookBody = (await webhookRes.json()) as {
+      accepted: boolean;
+      conversation: { attributes: Record<string, unknown> } | null;
+    };
+    expect(webhookBody.accepted).toBe(true);
+    expect(webhookBody.conversation?.attributes.sessionWebhook).toContain("sendBySession");
+
+    await store.close();
+  });
 });

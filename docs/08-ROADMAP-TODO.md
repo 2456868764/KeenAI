@@ -127,7 +127,7 @@
 | P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [x] |
 | P3-07 | Roadmap Kanban / Timeline | [x] |
 | P3-08 | Changelog 编辑器 + 受众分群 | [x] |
-| P3-09 | Telegram · 钉钉/飞书渠道 | [ ] |
+| P3-09 | Telegram · 钉钉/飞书渠道 | [x] |
 | P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [ ] |
 | P3-11 | 10+ 语言 next-intl | [ ] |
 | P3-12 | 视频教程（YouTube / B 站） | [ ] |
