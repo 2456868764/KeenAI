@@ -34,13 +34,14 @@ const CRITICAL_ROUTES = {
     "/analytics",
     "/feedback",
     "/roadmap",
+    "/changelog",
     "/help-center",
     "/custom-actions",
     "/settings/sla",
     "/settings/brands",
     "/settings/personality",
   ],
-  portal: ["/", "/help", "/roadmap", "/sitemap.xml", "/robots.txt"],
+  portal: ["/", "/help", "/roadmap", "/changelog", "/sitemap.xml", "/robots.txt"],
 };
 
 function collectE2eSource() {

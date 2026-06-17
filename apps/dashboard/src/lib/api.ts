@@ -1309,3 +1309,83 @@ export async function updateHelpArticle(
     body: JSON.stringify(patch),
   });
 }
+
+export type ChangelogAudienceSegment = {
+  name: string;
+  plan?: "free" | "pro" | "enterprise";
+  countries?: string[];
+};
+
+export type ChangelogAudienceFilter = {
+  segments: ChangelogAudienceSegment[];
+};
+
+export type ChangelogEntry = {
+  id: string;
+  brandId: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  content: Record<string, unknown>;
+  plainText: string;
+  categoryTags: ("new" | "improved" | "fixed")[];
+  status: "draft" | "scheduled" | "published";
+  publishedAt: string | null;
+  scheduledAt: string | null;
+  audienceFilter: ChangelogAudienceFilter;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listChangelogEntries(input: {
+  brandId: string;
+  status?: ChangelogEntry["status"];
+}): Promise<{ items: ChangelogEntry[] }> {
+  const qs = new URLSearchParams({ brandId: input.brandId });
+  if (input.status) qs.set("status", input.status);
+  return apiFetch(`/api/v1/changelog/entries?${qs.toString()}`);
+}
+
+export async function getChangelogEntry(id: string): Promise<{ entry: ChangelogEntry }> {
+  return apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`);
+}
+
+export async function createChangelogEntry(input: {
+  brandId: string;
+  slug: string;
+  title: string;
+  summary?: string;
+  plainText?: string;
+  content?: Record<string, unknown>;
+  categoryTags?: ChangelogEntry["categoryTags"];
+  audienceFilter?: ChangelogAudienceFilter;
+}): Promise<{ entry: ChangelogEntry }> {
+  return apiFetch("/api/v1/changelog/entries", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateChangelogEntry(
+  id: string,
+  patch: Partial<{
+    slug: string;
+    title: string;
+    summary: string | null;
+    plainText: string;
+    content: Record<string, unknown>;
+    categoryTags: ChangelogEntry["categoryTags"];
+    audienceFilter: ChangelogAudienceFilter;
+    status: ChangelogEntry["status"];
+    scheduledAt: string | null;
+  }>,
+): Promise<{ entry: ChangelogEntry }> {
+  return apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteChangelogEntry(id: string): Promise<void> {
+  await apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`, { method: "DELETE" });
+}

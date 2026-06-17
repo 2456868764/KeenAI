@@ -18,6 +18,11 @@ test.describe("Portal @smoke", () => {
     await expect(page.getByRole("heading", { name: "Product roadmap" })).toBeVisible();
   });
 
+  test("changelog page loads", async ({ page }) => {
+    await page.goto("/changelog");
+    await expect(page.getByRole("heading", { name: "Product updates" })).toBeVisible();
+  });
+
   test("sitemap includes help routes", async ({ request }) => {
     const res = await request.get("/sitemap.xml");
     expect(res.ok()).toBeTruthy();

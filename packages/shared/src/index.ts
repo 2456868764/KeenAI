@@ -93,6 +93,13 @@ export {
   updateRoadmapItemSchema,
 } from "./roadmap.js";
 export {
+  changelogAudienceFilterSchema,
+  changelogAudienceSegmentSchema,
+  createChangelogEntrySchema,
+  listChangelogEntriesSchema,
+  updateChangelogEntrySchema,
+} from "./changelog.js";
+export {
   createFeedbackBoardSchema,
   createFeedbackCommentSchema,
   createFeedbackPostSchema,

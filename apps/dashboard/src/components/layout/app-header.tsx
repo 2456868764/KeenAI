@@ -44,6 +44,9 @@ export function AppHeader({
           <NavLink href="/roadmap" active={pathname.startsWith("/roadmap")}>
             {t("roadmap")}
           </NavLink>
+          <NavLink href="/changelog" active={pathname.startsWith("/changelog")}>
+            {t("changelog")}
+          </NavLink>
           <NavLink href="/analytics" active={pathname.startsWith("/analytics")}>
             {t("analytics")}
           </NavLink>

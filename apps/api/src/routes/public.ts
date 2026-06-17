@@ -15,6 +15,7 @@ import { kbQueryLogs } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { getChangelogEntryBySlug, listPublicChangelogEntries } from "../lib/changelog.js";
 import { getFeedbackBoardBySlug, listFeedbackPosts } from "../lib/feedback.js";
 import { preparePublicKbAnswerStream } from "../lib/kb-answer-stream.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
@@ -319,6 +320,50 @@ export function publicRoutes(ctx: AppContext) {
       },
       items,
     });
+  });
+
+  r.get(`${prefix}/:orgSlug/changelog/entries`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const items = await listPublicChangelogEntries(
+      c.get("store").db,
+      resolved.org.id,
+      resolved.brand.id,
+      50,
+    );
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/:orgSlug/changelog/entries/:slug`, async (c) => {
+    if (!ctx.env.PORTAL_PUBLIC_READ) {
+      return c.json({ error: "public_read_disabled" }, 403);
+    }
+
+    const resolved = await resolveOrgBrandBySlug(
+      c.get("store").db,
+      c.req.param("orgSlug"),
+      c.req.query("brand") ?? "default",
+    );
+    if ("error" in resolved) return c.json({ error: resolved.error }, 404);
+
+    const entry = await getChangelogEntryBySlug(
+      c.get("store").db,
+      resolved.org.id,
+      resolved.brand.id,
+      c.req.param("slug"),
+    );
+    if (!entry || entry.status !== "published") return c.json({ error: "not_found" }, 404);
+
+    return c.json({ entry });
   });
 
   return r;

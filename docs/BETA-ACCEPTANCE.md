@@ -36,6 +36,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Public KB AI answer SSE | `kb-answer.integration.test.ts` | stream + feedback |
 | Feedback dedup (lexical + embed) | `feedback.integration.test.ts` | hybrid matches + method |
 | Roadmap CRUD + public read | `roadmap.integration.test.ts` | items + public items |
+| Changelog publish + audience | `changelog.integration.test.ts` | segments + public list |
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 | Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 22 tests green |
 | Beta gate (automated) | `pnpm beta:acceptance` | coverage + alpha + e2e |
@@ -194,6 +195,12 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 1. Dashboard **Roadmap** → Kanban columns (Planned / In Progress / Done) → drag item between columns.
 2. Toggle **Timeline** view → items sorted by ETA.
 3. `GET /api/v1/public/{org}/roadmap/product/items` (PORTAL_PUBLIC_READ).
+
+## Batch 25 smoke (I118 Phase 3)
+
+1. Dashboard **Changelog** → New entry → Tiptap body → category tags → audience segments → Publish.
+2. `POST /api/v1/changelog/entries` with `audienceFilter.segments` persists targeting rules.
+3. `GET /api/v1/public/{org}/changelog/entries` lists published updates.
 
 ## Still open (Phase 2 remainder)
 

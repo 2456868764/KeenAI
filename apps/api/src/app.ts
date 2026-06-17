@@ -31,6 +31,7 @@ import { analyticsRoutes } from "./routes/analytics.js";
 import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
 import { brandRoutes } from "./routes/brands.js";
+import { changelogRoutes } from "./routes/changelog.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { customActionRoutes } from "./routes/custom-actions.js";
@@ -132,6 +133,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", ticketRoutes());
   app.route("/", feedbackRoutes());
   app.route("/", roadmapRoutes());
+  app.route("/", changelogRoutes());
   app.route("/", helpCenterRoutes());
   app.route("/", slaRoutes());
   app.route("/", analyticsRoutes());

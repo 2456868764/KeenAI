@@ -130,4 +130,14 @@ export {
   type RoadmapItemRow,
   type RoadmapRow,
 } from "./roadmap";
+export {
+  CHANGELOG_CATEGORY_TAGS,
+  CHANGELOG_ENTRY_STATUSES,
+  changelogEntries,
+  type ChangelogAudienceFilter,
+  type ChangelogAudienceSegment,
+  type ChangelogCategoryTag,
+  type ChangelogEntryRow,
+  type ChangelogEntryStatus,
+} from "./changelog";
 export { workflowRuns, workflows } from "./workflow";
