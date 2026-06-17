@@ -316,7 +316,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Mastra `@mastra/memory` adapter stub（I68 · `buildKeeniMastraMemory` + `toResourceId`）
 - [x] Mastra processors stub（I69 · PiiFilter / TrajectoryCompressor / ConfidenceFilter）
 - [x] Memory consolidation Inngest cron stub（I70 · consolidate + decay sweep crons）
-- [ ] `@keenai/memory` 包基于 `@mastra/memory` + 4 层（observations / episodes / facts / patterns / slots / entities / relations / audit）
+- [x] `@keenai/memory` 包基于 `@mastra/memory` + 4 层（observations / episodes / facts / patterns / slots / entities / relations / audit）
 - [x] Workflow "Let Keeni Answer" Block（WF-01 · stub provider + outcome routing metadata）
 - [x] Auto-close + CSAT Inngest timer stub（I71 · `@keenai/workflow` timer functions）
 - [x] Resolution 检测 stub + post-run hooks（AE-03 · `detectResolution` + `agent/run.completed`）

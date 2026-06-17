@@ -1,12 +1,12 @@
-import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { Memory } from "@mastra/memory";
+import { buildKeeniMastraStorage } from "./storage.js";
 
-/** Mastra adapter metadata — agent inputProcessor wiring lands in a later sprint. */
+/** Mastra adapter metadata — production LibSQL storage via `buildKeeniMastraStorage`. */
 export const KEENI_MEMORY_MASTRA_ADAPTER = {
   enabled: true,
   targetPackage: "@mastra/memory",
   notes:
-    "Memory runs via Mastra Memory + LibSQL; native @keenai/memory-tree facade remains separate.",
+    "Memory runs via Mastra Memory + shared LibSQL (DATABASE_URL); @keenai/memory-tree handles L2–L4 facts.",
 } as const;
 
 export type MemorySubject = "customer" | "conversation" | "brand";
@@ -82,33 +82,47 @@ export type BuildKeeniMastraMemoryInput = {
   orgId: string;
   brandId: string;
   storageUrl?: string;
+  databaseUrl?: string;
   vectorUrl?: string;
   embedder?: string;
+  /** L1 observational capture (default on). */
+  observationalMemory?: boolean;
 };
 
-/** Build a brand-scoped Mastra Memory instance (LibSQL stub backend). */
+/** Build a brand-scoped Mastra Memory instance backed by production LibSQL storage. */
 export function buildKeeniMastraMemory(input: BuildKeeniMastraMemoryInput): Memory {
-  const storageUrl = input.storageUrl ?? ":memory:";
-  const storageId = `keeni-memory-${input.orgId}-${input.brandId}`;
-  const storage = new LibSQLStore({ id: storageId, url: storageUrl });
+  const { storage, vector } = buildKeeniMastraStorage({
+    orgId: input.orgId,
+    brandId: input.brandId,
+    storageUrl: input.storageUrl ?? input.vectorUrl,
+    databaseUrl: input.databaseUrl,
+    withVector: Boolean(input.embedder),
+  });
 
-  if (input.embedder) {
-    const vectorUrl = input.vectorUrl ?? storageUrl;
+  const baseOptions = {
+    lastMessages: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.lastMessages,
+    workingMemory: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.workingMemory,
+    generateTitle: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.generateTitle,
+    observationalMemory: input.observationalMemory ?? true,
+  };
+
+  if (input.embedder && vector) {
     return new Memory({
       storage,
-      vector: new LibSQLVector({ id: `${storageId}-vector`, url: vectorUrl }),
+      vector,
       embedder: input.embedder,
-      options: { ...DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS },
+      options: {
+        ...baseOptions,
+        semanticRecall: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.semanticRecall,
+      },
     });
   }
 
   return new Memory({
     storage,
     options: {
-      lastMessages: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.lastMessages,
+      ...baseOptions,
       semanticRecall: false,
-      workingMemory: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.workingMemory,
-      generateTitle: DEFAULT_KEENI_MASTRA_MEMORY_OPTIONS.generateTitle,
     },
   });
 }

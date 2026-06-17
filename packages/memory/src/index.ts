@@ -14,6 +14,17 @@ export {
   type MemorySubject,
 } from "./mastra-adapter.js";
 export {
+  KEENI_MEMORY_LAYERS,
+  listKeeniMemoryLayerIds,
+  type KeenaiMemoryLayerDefinition,
+} from "./layers.js";
+export {
+  buildKeeniMastraStorage,
+  resolveKeeniMemoryStorageUrl,
+  type BuildKeeniMastraStorageInput,
+  type KeenaiMastraStorageBundle,
+} from "./storage.js";
+export {
   buildKeeniMemoryProcessors,
   ConfidenceFilter,
   DEFAULT_KEENI_MEMORY_PROCESSOR_OPTIONS,

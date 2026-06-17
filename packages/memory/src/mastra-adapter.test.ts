@@ -38,6 +38,7 @@ describe("Mastra memory adapter", () => {
     const memory = buildKeeniMastraMemory({
       orgId: "org-1",
       brandId: "brand-1",
+      storageUrl: ":memory:",
     });
     expect(memory).toBeInstanceOf(Memory);
   });

@@ -1,15 +1,17 @@
 import type { DraftLanguageModel, DraftRequest, DraftToolRuntime } from "@keenai/llm";
 import { formatDraftToolSummary } from "@keenai/llm";
+import { buildKeeniMastraMemory } from "@keenai/memory";
 import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
+import type { Memory } from "@mastra/memory";
 import { z } from "zod";
 import type { KeeniAgentContext } from "./orchestrator.js";
 
-/** Mastra adapter metadata — memory wiring lands in a later sprint. */
+/** Mastra adapter — Agent.stream() with brand-scoped Mastra Memory (L1–L3). */
 export const KEENI_AGENT_MASTRA_ADAPTER = {
   enabled: true,
   targetPackage: "@mastra/core/agent",
-  notes: "Agent runs via Mastra Agent.stream(); @keenai/llm remains the llm fallback.",
+  notes: "Agent runs via Mastra Agent.stream() with @keenai/memory Mastra adapter.",
 } as const;
 
 export type MastraAgentIdentity = {
@@ -21,12 +23,24 @@ export type MastraAgentIdentity = {
 export type BuildKeeniMastraAgentInput = {
   context: KeeniAgentContext;
   model: DraftLanguageModel;
+  /** Pre-built Mastra Memory; built from brand scope when omitted. */
+  memory?: Memory;
+  memoryStorageUrl?: string;
+  memoryEmbedder?: string;
 };
 
 /** Build a Mastra Agent for a brand-scoped Keeni run. */
 export function buildKeeniMastraAgent(input: BuildKeeniMastraAgentInput): Agent {
   const { context, model } = input;
   const tools = buildMastraTools(context.draftRequest.tools?.slice(0, context.toolBudget));
+  const memory =
+    input.memory ??
+    buildKeeniMastraMemory({
+      orgId: context.params.orgId,
+      brandId: context.params.brandId,
+      storageUrl: input.memoryStorageUrl,
+      embedder: input.memoryEmbedder,
+    });
 
   return new Agent({
     id: `keeni-${context.params.brandId}`,
@@ -34,6 +48,7 @@ export function buildKeeniMastraAgent(input: BuildKeeniMastraAgentInput): Agent 
     description: `Customer support agent for brand ${context.params.brandId}`,
     instructions: context.draftRequest.instruction ?? "",
     model,
+    memory: memory as never,
     ...(tools ? { tools } : {}),
     defaultOptions: {
       maxSteps: context.maxIterations,
