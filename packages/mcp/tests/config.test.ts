@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseMcpServersJson, resolveMcpHostConfig } from "../src/config.js";
+import { resolveBunCommand } from "../src/runtime.js";
 import { qualifyMcpToolName } from "../src/tool-utils.js";
 
 describe("MCP config", () => {
@@ -33,6 +34,6 @@ describe("parseMcpServersJson", () => {
     const servers = parseMcpServersJson(undefined);
     expect(servers).toHaveLength(1);
     expect(servers[0]?.id).toBe("stub");
-    expect(servers[0]?.command).toBe("bun");
+    expect(servers[0]?.command).toBe(resolveBunCommand());
   });
 });

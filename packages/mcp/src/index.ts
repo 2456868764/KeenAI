@@ -6,6 +6,7 @@ export {
   type KeenaiExposeTool,
 } from "./expose.js";
 export { McpHost } from "./host.js";
+export { resolveBunCommand } from "./runtime.js";
 export {
   extractMcpToolResult,
   normalizeMcpToolInputSchema,

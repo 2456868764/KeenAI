@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AuthConfig, hashPassword } from "@keenai/auth";
+import { resolveBunCommand } from "@keenai/mcp";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import { accounts, members, organizations } from "@keenai/storage/schema";
@@ -61,7 +62,9 @@ describe("MCP host integration", () => {
       NODE_ENV: "test",
       DATABASE_URL: ":memory:",
       MCP_HOST_ENABLED: "true",
-      MCP_SERVERS: JSON.stringify([{ id: "stub", command: "bun", args: [stubServerPath] }]),
+      MCP_SERVERS: JSON.stringify([
+        { id: "stub", command: resolveBunCommand(), args: [stubServerPath] },
+      ]),
     });
     const app = createApp({
       store,

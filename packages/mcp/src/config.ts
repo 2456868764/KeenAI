@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { resolveBunCommand } from "./runtime.js";
 import {
   type McpHostConfig,
   type McpStdioServerConfig,
@@ -12,7 +13,7 @@ export function defaultStubServerConfig(): McpStdioServerConfig {
   const stubPath = fileURLToPath(new URL("./stub-server.ts", import.meta.url));
   return {
     id: "stub",
-    command: "bun",
+    command: resolveBunCommand(),
     args: [stubPath],
   };
 }
