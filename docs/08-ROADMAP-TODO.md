@@ -120,7 +120,7 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | P3-01 | `@keenai/memory` 4 层生产实现（非 stub） | [x] |
-| P3-02 | Knowledge Graph extractor（`generateObject`） | [ ] |
+| P3-02 | Knowledge Graph extractor（`generateObject`） | [x] |
 | P3-03 | Personality & Branding UI | [x] |
 | P3-04 | Multimodal MM-10～15 Agent 完整版 | [ ] |
 | P3-05 | Memory Tree MT-07～09 + Explorer UI | [ ] |

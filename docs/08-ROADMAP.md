@@ -328,7 +328,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [x] `memory.digest_daily` brand 日摘要 stub（I75 · `runBrandDailyDigestStub`）
   - [x] 检索 scope stub（I76 · `queryMemoryTreeByScope`）
   - [x] Agent scope 路由 stub（I77 · `assembleAgentMemoryContext` / 09 附录 B）
-- [ ] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
+- [x] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
 - [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
 - [ ] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：
   - [ ] Inngest `media.transcribe` / `media.thumbnail` / `media.vision_summary`

@@ -537,20 +537,29 @@ importers:
         version: link:../storage
       '@mastra/core':
         specifier: ^1.37.1
-        version: 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3)
+        version: 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)
       '@mastra/libsql':
         specifier: ^1.11.1
-        version: 1.11.1(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3))
+        version: 1.11.1(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))
       '@mastra/memory':
         specifier: ^1.20.0
-        version: 1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3))(zod@4.4.3)
+        version: 1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))(zod@3.25.76)
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.4(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.6)(@types/react@19.2.14)(bun-types@1.3.14)(postgres@3.4.9)(react@19.2.6)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     optionalDependencies:
+      '@ai-sdk/openai':
+        specifier: ^1.0.18
+        version: 1.3.24(zod@3.25.76)
+      ai:
+        specifier: ^4.0.38
+        version: 4.3.19(react@19.2.6)(zod@3.25.76)
       inngest:
         specifier: ^3.27.0
-        version: 3.54.2(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.0))(express@5.2.1)(hono@4.12.19)(next@15.5.18(@opentelemetry/api@1.9.0)(@playwright/test@1.60.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@5.9.3)(zod@4.4.3)
+        version: 3.54.2(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.0))(express@5.2.1)(hono@4.12.19)(next@15.5.18(@opentelemetry/api@1.9.0)(@playwright/test@1.60.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -8374,6 +8383,7 @@ snapshots:
       nanoid: 3.3.12
       secure-json-parse: 2.7.0
       zod: 4.4.3
+    optional: true
 
   '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)':
     dependencies:
@@ -8388,6 +8398,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
       zod: 4.4.3
+    optional: true
 
   '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
     dependencies:
@@ -8402,6 +8413,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
       zod: 4.4.3
+    optional: true
 
   '@ai-sdk/provider@1.1.3':
     dependencies:
@@ -8439,6 +8451,7 @@ snapshots:
       '@ai-sdk/provider-utils': 2.2.8(zod@4.4.3)
       zod: 4.4.3
       zod-to-json-schema: 3.25.2(zod@4.4.3)
+    optional: true
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -9430,6 +9443,56 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
+  '@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)':
+    dependencies:
+      '@a2a-js/sdk': 0.3.13(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(express@5.2.1)
+      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)'
+      '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)'
+      '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
+      '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.10'
+      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)'
+      '@isaacs/ttlcache': 2.1.5
+      '@lukeed/uuid': 2.0.1
+      '@mastra/schema-compat': 1.2.10(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
+      '@sindresorhus/slugify': 2.2.1
+      '@standard-schema/spec': 1.1.0
+      ajv: 8.20.0
+      chat: 4.29.0(ai@4.3.19(react@19.2.6)(zod@3.25.76))(zod@3.25.76)
+      croner: 10.0.1
+      dotenv: 17.4.2
+      execa: 9.6.1
+      fastq: 1.20.1
+      gray-matter: 4.0.3
+      hono: 4.12.19
+      hono-openapi: 1.3.0(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(hono@4.12.19)(openapi-types@12.1.3)
+      ignore: 7.0.5
+      json-schema: 0.4.0
+      lru-cache: 11.5.1
+      p-map: 7.0.4
+      p-retry: 7.1.1
+      picomatch: 4.0.4
+      posthog-node: 5.35.6
+      tokenx: 1.3.0
+      ws: 8.20.1
+      xxhash-wasm: 1.1.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+      - '@cfworker/json-schema'
+      - '@grpc/grpc-js'
+      - '@hono/standard-validator'
+      - '@standard-community/standard-json'
+      - '@standard-community/standard-openapi'
+      - '@types/json-schema'
+      - ai
+      - bufferutil
+      - express
+      - openapi-types
+      - rxjs
+      - supports-color
+      - utf-8-validate
+
   '@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)':
     dependencies:
       '@a2a-js/sdk': 0.3.13(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(express@5.2.1)
@@ -9529,6 +9592,7 @@ snapshots:
       - rxjs
       - supports-color
       - utf-8-validate
+    optional: true
 
   '@mastra/evals@1.2.4(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3))':
     dependencies:
@@ -9539,17 +9603,17 @@ snapshots:
       string-similarity: 4.0.4
     optional: true
 
-  '@mastra/libsql@1.11.1(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3))':
+  '@mastra/libsql@1.11.1(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))':
     dependencies:
       '@libsql/client': 0.15.15
-      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3)
+      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@mastra/memory@1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))(zod@3.25.76)':
+  '@mastra/memory@1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)
+      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(ai@4.3.19(react@19.2.6)(zod@3.25.76))(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)
       '@mastra/schema-compat': 1.2.10(zod@3.25.76)
       async-mutex: 0.5.0
       image-size: 2.0.2
@@ -9562,10 +9626,10 @@ snapshots:
       - supports-color
       - zod
 
-  '@mastra/memory@1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3))(zod@4.4.3)':
+  '@mastra/memory@1.20.0(@mastra/core@1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.4.3))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@4.4.3)
-      '@mastra/schema-compat': 1.2.10(zod@4.4.3)
+      '@mastra/core': 1.37.1(@bufbuild/protobuf@2.12.0)(@grpc/grpc-js@1.14.4)(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76))(@types/json-schema@7.0.15)(express@5.2.1)(openapi-types@12.1.3)(zod@3.25.76)
+      '@mastra/schema-compat': 1.2.10(zod@3.25.76)
       async-mutex: 0.5.0
       image-size: 2.0.2
       json-schema: 0.4.0
@@ -9592,6 +9656,7 @@ snapshots:
       zod-from-json-schema: 0.5.2
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
       zod-to-json-schema: 3.25.2(zod@4.4.3)
+    optional: true
 
   '@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.2.6)':
     dependencies:
@@ -9646,6 +9711,7 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
     optional: true
@@ -11771,6 +11837,7 @@ snapshots:
     optionalDependencies:
       zod: 4.4.3
       zod-to-json-schema: 3.25.2(zod@4.4.3)
+    optional: true
 
   '@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(quansync@0.2.11)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@3.25.76)':
     dependencies:
@@ -11787,6 +11854,7 @@ snapshots:
       openapi-types: 12.1.3
     optionalDependencies:
       zod: 4.4.3
+    optional: true
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -12884,6 +12952,21 @@ snapshots:
 
   character-reference-invalid@2.0.1: {}
 
+  chat@4.29.0(ai@4.3.19(react@19.2.6)(zod@3.25.76))(zod@3.25.76):
+    dependencies:
+      '@workflow/serde': 4.1.0-beta.2
+      mdast-util-to-string: 4.0.0
+      remark-gfm: 4.0.1
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      remend: 1.3.0
+      unified: 11.0.5
+    optionalDependencies:
+      ai: 4.3.19(react@19.2.6)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
   chat@4.29.0(zod@3.25.76):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
@@ -12911,6 +12994,7 @@ snapshots:
       zod: 4.4.3
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   check-error@2.1.3: {}
 
@@ -13945,6 +14029,7 @@ snapshots:
       openapi-types: 12.1.3
     optionalDependencies:
       hono: 4.12.19
+    optional: true
 
   hono@4.12.19: {}
 
@@ -16738,6 +16823,7 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
       zod: 4.4.3
+    optional: true
 
   zod@3.25.76: {}
 

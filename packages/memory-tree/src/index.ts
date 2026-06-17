@@ -107,6 +107,12 @@ export {
   type ExtractRelationsFromSummaryResult,
   type MemoryRelationExtractor,
 } from "./extract-relations.js";
+export {
+  extractKgFromSummary,
+  type ExtractKgFromSummaryInput,
+  type ExtractKgFromSummaryResult,
+  type MemoryKgExtractor,
+} from "./extract-kg.js";
 export { persistMemoryRelations, type PersistMemoryRelationsInput } from "./persist-relations.js";
 export {
   stubExtractRelations,

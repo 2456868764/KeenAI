@@ -1,8 +1,7 @@
 import {
   type BrandDailyDigestPayload,
-  extractEntitiesFromSummary,
   extractFactsFromSummary,
-  extractRelationsFromSummary,
+  extractKgFromSummary,
   flushStaleBuffers,
   processAdmittedChunk,
   runBrandDailyDigestStub,
@@ -10,9 +9,8 @@ import {
   runMemoryDecaySweep,
 } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
-import { getMemoryEntityExtractor } from "./memory-entity-extract-init.js";
 import { getMemoryFactExtractor } from "./memory-fact-extract-init.js";
-import { getMemoryRelationExtractor } from "./memory-relation-extract-init.js";
+import { getMemoryKgExtractor } from "./memory-kg-extract-init.js";
 import { getMemorySummaryFtsIndexer } from "./memory-summary-fts-init.js";
 
 export async function runProcessAdmittedChunk(
@@ -58,53 +56,33 @@ export async function runExtractEntitiesForSummary(
   db: KeenaiDb,
   payload: { orgId: string; brandId: string; summaryId: string },
 ) {
-  const extractor = getMemoryEntityExtractor();
-  if (!extractor) {
-    return {
-      extracted: false,
-      summaryId: payload.summaryId,
-      scope: "",
-      scopeId: "",
-      entityCount: 0,
-      reason: "extract_disabled",
-    };
-  }
-
-  return extractEntitiesFromSummary(db, {
+  const result = await extractKgFromSummary(db, {
     ...payload,
-    entityExtractor: extractor,
+    kgExtractor: getMemoryKgExtractor(),
   });
+  return result.entityResult;
 }
 
 export async function runExtractRelationsForSummary(
   db: KeenaiDb,
   payload: { orgId: string; brandId: string; summaryId: string },
 ) {
-  const extractor = getMemoryRelationExtractor();
-  if (!extractor) {
-    return {
-      extracted: false,
-      summaryId: payload.summaryId,
-      scope: "",
-      scopeId: "",
-      relationCount: 0,
-      reason: "extract_disabled",
-    };
-  }
-
-  return extractRelationsFromSummary(db, {
+  const result = await extractKgFromSummary(db, {
     ...payload,
-    relationExtractor: extractor,
+    kgExtractor: getMemoryKgExtractor(),
   });
+  return result.relationResult;
 }
 
 export async function runExtractEntitiesAndRelationsForSummary(
   db: KeenaiDb,
   payload: { orgId: string; brandId: string; summaryId: string },
 ) {
-  const entityResult = await runExtractEntitiesForSummary(db, payload);
-  const relationResult = await runExtractRelationsForSummary(db, payload);
-  return { entityResult, relationResult };
+  const result = await extractKgFromSummary(db, {
+    ...payload,
+    kgExtractor: getMemoryKgExtractor(),
+  });
+  return { entityResult: result.entityResult, relationResult: result.relationResult };
 }
 
 export async function runFlushStaleBuffers(db: KeenaiDb) {

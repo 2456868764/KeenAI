@@ -103,6 +103,10 @@ export const apiEnvSchema = z.object({
   MEMORY_TREE_EMBED_PROVIDER: z.enum(["stub", "openai"]).default("stub"),
   MEMORY_TREE_EMBED_MODEL: z.string().default("text-embedding-3-small"),
   MEMORY_TREE_EMBED_DIMENSIONS: z.coerce.number().int().positive().default(384),
+  /** LLM KG extraction for memory_entities + memory_relations (requires OPENAI_API_KEY). */
+  MEMORY_KG_EXTRACT_ENABLED: z.coerce.boolean().default(false),
+  MEMORY_KG_EXTRACT_PROVIDER: z.enum(["stub", "openai"]).default("stub"),
+  MEMORY_KG_EXTRACT_MODEL: z.string().default("gpt-4o-mini"),
   /** Org/brand slugs for IMAP ingest target */
   EMAIL_IMAP_ORG_SLUG: z.string().optional(),
   EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),

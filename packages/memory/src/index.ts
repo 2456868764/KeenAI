@@ -62,6 +62,18 @@ export {
   type ExportMemoryVaultInput,
   type ExportMemoryVaultResult,
 } from "./export-vault.js";
+export {
+  createMemoryKgExtractor,
+  createOpenAiMemoryKgExtractor,
+  createStubMemoryKgExtractor,
+  extractKgFromSummaryText,
+  extractedKgSchema,
+  type ExtractKgFromSummaryOptions,
+  type ExtractKgFromSummaryResult,
+  type ExtractedKgPayload,
+  type GenerateObjectFn,
+  type KgSummaryExtractInput,
+} from "./kg/index.js";
 export type {
   KeenaiMemory,
   KeenaiMemoryDeps,
