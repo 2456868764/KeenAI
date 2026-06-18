@@ -1,6 +1,7 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
+import { MemoryTreePanel, type MemoryTreeSelection } from "@/components/memory/memory-tree-panel";
 import {
   type MemoryDigest,
   type MemoryExplorerStats,
@@ -33,6 +34,7 @@ export function MemoryExplorerShell() {
   const [searchQ, setSearchQ] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [digestDate, setDigestDate] = useState(todayUtcDate());
+  const [treeSelection, setTreeSelection] = useState<MemoryTreeSelection | null>(null);
   const submittedQ = searchQ.trim();
 
   const { data: me } = useQuery({
@@ -106,7 +108,11 @@ export function MemoryExplorerShell() {
                 ) : (
                   <ul className="space-y-2">
                     {hotTopics.map((topic) => (
-                      <HotTopicRow key={topic.userId} topic={topic} />
+                      <HotTopicRow
+                        key={topic.userId}
+                        topic={topic}
+                        onInspect={() => setTreeSelection({ scope: "customer", id: topic.userId })}
+                      />
                     ))}
                   </ul>
                 )}
@@ -122,6 +128,15 @@ export function MemoryExplorerShell() {
               summaryHits={searchQuery.data?.summaryHits ?? []}
               loading={searchQuery.isLoading}
               submitted={submittedQ.length > 0}
+              onInspectConversation={(conversationId) =>
+                setTreeSelection({ scope: "conversation", id: conversationId })
+              }
+            />
+
+            <MemoryTreePanel
+              brandId={brandId}
+              selection={treeSelection}
+              onClearSelection={() => setTreeSelection(null)}
             />
           </>
         )}
@@ -211,10 +226,22 @@ function DigestPanel({
   );
 }
 
-function HotTopicRow({ topic }: { topic: MemoryHotTopic }) {
+function HotTopicRow({
+  topic,
+  onInspect,
+}: {
+  topic: MemoryHotTopic;
+  onInspect: () => void;
+}) {
   return (
     <li className="flex items-center justify-between gap-2 rounded-md bg-[hsl(var(--surface-0))] px-3 py-2 text-xs">
-      <span className="truncate font-mono text-[hsl(var(--foreground))]">{topic.userId}</span>
+      <button
+        type="button"
+        onClick={onInspect}
+        className="truncate text-left font-mono text-[hsl(var(--primary))] hover:underline"
+      >
+        {topic.userId}
+      </button>
       <span className="shrink-0 text-[hsl(var(--muted-foreground))]">
         score {topic.score.toFixed(1)} · {topic.messageCount7d} msg/7d
       </span>
@@ -231,6 +258,7 @@ function SearchPanel({
   summaryHits,
   loading,
   submitted,
+  onInspectConversation,
 }: {
   q: string;
   scope: SearchScope;
@@ -240,6 +268,7 @@ function SearchPanel({
   summaryHits: MemorySummarySearchHit[];
   loading: boolean;
   submitted: boolean;
+  onInspectConversation: (conversationId: string) => void;
 }) {
   const hasResults = hits.length > 0 || summaryHits.length > 0;
   return (
@@ -289,7 +318,15 @@ function SearchPanel({
               </p>
               <ul className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
                 {summaryHits.map((hit) => (
-                  <SummaryHitRow key={hit.summaryId} hit={hit} />
+                  <SummaryHitRow
+                    key={hit.summaryId}
+                    hit={hit}
+                    onInspectTree={
+                      hit.conversationId
+                        ? () => onInspectConversation(hit.conversationId as string)
+                        : undefined
+                    }
+                  />
                 ))}
               </ul>
             </div>
@@ -299,7 +336,15 @@ function SearchPanel({
               <p className="mb-2 text-xs font-medium text-[hsl(var(--muted-foreground))]">Chunks</p>
               <ul className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
                 {hits.map((hit) => (
-                  <SearchHitRow key={hit.chunkId} hit={hit} />
+                  <SearchHitRow
+                    key={hit.chunkId}
+                    hit={hit}
+                    onInspectTree={
+                      hit.conversationId
+                        ? () => onInspectConversation(hit.conversationId as string)
+                        : undefined
+                    }
+                  />
                 ))}
               </ul>
             </div>
@@ -310,7 +355,13 @@ function SearchPanel({
   );
 }
 
-function SummaryHitRow({ hit }: { hit: MemorySummarySearchHit }) {
+function SummaryHitRow({
+  hit,
+  onInspectTree,
+}: {
+  hit: MemorySummarySearchHit;
+  onInspectTree?: () => void;
+}) {
   return (
     <li className="space-y-1 px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
@@ -322,18 +373,35 @@ function SummaryHitRow({ hit }: { hit: MemorySummarySearchHit }) {
       {hit.title ? <p className="font-medium text-[hsl(var(--foreground))]">{hit.title}</p> : null}
       <p className="line-clamp-3 text-[hsl(var(--foreground))]">{hit.snippet ?? hit.summary}</p>
       {hit.conversationId ? (
-        <Link
-          href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
-          className="text-xs text-[hsl(var(--primary))] hover:underline"
-        >
-          Open conversation
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
+            className="text-xs text-[hsl(var(--primary))] hover:underline"
+          >
+            Open conversation
+          </Link>
+          {onInspectTree ? (
+            <button
+              type="button"
+              onClick={onInspectTree}
+              className="text-xs text-[hsl(var(--primary))] hover:underline"
+            >
+              View tree
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </li>
   );
 }
 
-function SearchHitRow({ hit }: { hit: MemorySearchHit }) {
+function SearchHitRow({
+  hit,
+  onInspectTree,
+}: {
+  hit: MemorySearchHit;
+  onInspectTree?: () => void;
+}) {
   return (
     <li className="space-y-1 px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
@@ -347,12 +415,23 @@ function SearchHitRow({ hit }: { hit: MemorySearchHit }) {
       </div>
       <p className="line-clamp-2 text-[hsl(var(--foreground))]">{hit.snippet ?? hit.body}</p>
       {hit.conversationId ? (
-        <Link
-          href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
-          className="text-xs text-[hsl(var(--primary))] hover:underline"
-        >
-          Open conversation
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
+            className="text-xs text-[hsl(var(--primary))] hover:underline"
+          >
+            Open conversation
+          </Link>
+          {onInspectTree ? (
+            <button
+              type="button"
+              onClick={onInspectTree}
+              className="text-xs text-[hsl(var(--primary))] hover:underline"
+            >
+              View tree
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </li>
   );

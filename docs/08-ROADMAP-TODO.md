@@ -122,8 +122,8 @@
 | P3-01 | `@keenai/memory` 4 层生产实现（非 stub） | [x] |
 | P3-02 | Knowledge Graph extractor（`generateObject`） | [x] |
 | P3-03 | Personality & Branding UI | [x] |
-| P3-04 | Multimodal MM-10～15 Agent 完整版 | [ ] |
-| P3-05 | Memory Tree MT-07～09 + Explorer UI | [ ] |
+| P3-04 | Multimodal MM-10～15 Agent 完整版 | [x] |
+| P3-05 | Memory Tree MT-07～09 + Explorer UI | [x] |
 | P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [x] |
 | P3-07 | Roadmap Kanban / Timeline | [x] |
 | P3-08 | Changelog 编辑器 + 受众分群 | [x] |

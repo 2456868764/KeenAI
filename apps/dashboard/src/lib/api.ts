@@ -1051,6 +1051,70 @@ export async function searchMemory(input: {
   return { hits: res.results.hits, summaryHits: res.results.summaryHits };
 }
 
+export type MemoryTreeLeafNode = {
+  kind: "leaf";
+  chunkId: string;
+  messageId: string | null;
+  body: string;
+  lifecycle: string;
+  fastScore: number | null;
+  createdAt: string;
+};
+
+export type MemoryTreeSummaryNode = {
+  kind: "summary";
+  summaryId: string;
+  title: string | null;
+  summary: string;
+  sealedAt: string;
+};
+
+export type MemoryTreeEpisodeNode = {
+  kind: "episode";
+  episodeId: string;
+  summary: string;
+  topic: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+export type MemoryTreeNode = MemoryTreeLeafNode | MemoryTreeSummaryNode | MemoryTreeEpisodeNode;
+
+export type MemoryTreeLevel = {
+  level: number;
+  nodes: MemoryTreeNode[];
+};
+
+export type MemoryTreeResult = {
+  scope: string;
+  mode?: "latest" | "drill_down";
+  levels: MemoryTreeLevel[];
+  scopeKey?: string;
+  conversationId?: string;
+  userId?: string;
+  channelType?: string;
+  channelId?: string;
+};
+
+export async function getMemoryTree(input: {
+  scope: "conversation" | "customer" | "channel";
+  id: string;
+  brandId?: string;
+  channelType?: "slack" | "telegram" | "feishu" | "dingtalk";
+  mode?: "latest" | "drill_down";
+  level?: number;
+}): Promise<{ tree: MemoryTreeResult }> {
+  const qs = new URLSearchParams({
+    scope: input.scope,
+    id: input.id,
+    mode: input.mode ?? "latest",
+  });
+  if (input.brandId) qs.set("brandId", input.brandId);
+  if (input.channelType) qs.set("channelType", input.channelType);
+  if (input.level != null) qs.set("level", String(input.level));
+  return apiFetch(`/api/v1/memory/tree?${qs}`);
+}
+
 export async function transitionTicketStatus(
   id: string,
   statusId: string,

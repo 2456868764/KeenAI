@@ -99,4 +99,12 @@ test.describe("Dashboard @smoke", () => {
       page.getByRole("heading", { name: "MCP Host (consume external tools)" }),
     ).toBeVisible();
   });
+
+  test("memory explorer page loads after login", async ({ page }) => {
+    await loginAsDemo(page);
+    await page.goto("/memory");
+    await expectPageTitle(page, "Memory Explorer");
+    await expect(page.getByRole("heading", { name: "Hot topics" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Summary tree" })).toBeVisible();
+  });
 });

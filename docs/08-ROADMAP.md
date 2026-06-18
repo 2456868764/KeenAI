@@ -330,11 +330,11 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [x] Agent scope 路由 stub（I77 · `assembleAgentMemoryContext` / 09 附录 B）
 - [x] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
 - [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
-- [ ] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：
-  - [ ] Inngest `media.transcribe` / `media.thumbnail` / `media.vision_summary`
-  - [ ] Keeni outbound：`parseAgentResponse` + 生图 / TTS Tools
-  - [ ] Widget 语音播放 · 视频 bubble
-  - [ ] Telegram / Slack IM 原生多模态收发
+- [x] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：
+  - [x] Inngest `media.transcribe` / `media.thumbnail` / `media.vision_summary`
+  - [x] Keeni outbound：`parseAgentResponse` + 生图 / TTS Tools
+  - [x] Widget 语音播放 · 视频 bubble
+  - [x] Telegram / Slack IM 原生多模态收发
 
 #### Sprint 15（W33-W34）：KB / RAG Phase A — 检索质量
 
@@ -352,7 +352,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] **KB-10** · Hierarchical chunk hydrate（I81 · `hydrateKbSearchHits` · rerank 后默认开启）
 - [x] **KB-11** · Diversity + Recency 后置（I82 · `applyKbSearchPostFuse` · halfLife 90d）
 - [x] **KB-12** · `kb_query_logs` + `POST /kb/search/:id/feedback`（I83 · search 返回 `logId`）
-- [ ] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI · [x]
+- [x] Memory Tree Phase 2（[15-MEMORY-TREE.md](15-MEMORY-TREE.md) MT-07–09）：topic tree + hotness · Memory Explorer UI
 - [x] Keeni Memory 原生（KM-01～13 + KG-01～04 + KB-01～06）
 
 **Phase A 验收**：Recall@5 ≥ 88% · Precision@5 ≥ 90% · P95 检索 < 200ms
