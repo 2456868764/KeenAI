@@ -1,6 +1,11 @@
 "use client";
 
-import { type AppLocale, getStoredLocale, setStoredLocale } from "@/i18n/locale-store";
+import {
+  type AppLocale,
+  SUPPORTED_LOCALES,
+  getStoredLocale,
+  setStoredLocale,
+} from "@/i18n/locale-store";
 import { clearAccessToken } from "@/lib/auth-store";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -66,7 +71,14 @@ export function AppHeader({
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         {children}
-        <LocaleSwitcher labels={{ en: tLocale("en"), zh: tLocale("zh") }} />
+        <LocaleSwitcher
+          labels={
+            Object.fromEntries(SUPPORTED_LOCALES.map((id) => [id, tLocale(id)])) as Record<
+              AppLocale,
+              string
+            >
+          }
+        />
         <button
           type="button"
           onClick={() => {
@@ -99,8 +111,11 @@ function LocaleSwitcher({ labels }: { labels: Record<AppLocale, string> }) {
         window.location.reload();
       }}
     >
-      <option value="en">{labels.en}</option>
-      <option value="zh">{labels.zh}</option>
+      {SUPPORTED_LOCALES.map((item) => (
+        <option key={item} value={item}>
+          {labels[item]}
+        </option>
+      ))}
     </select>
   );
 }

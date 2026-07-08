@@ -129,7 +129,7 @@
 | P3-08 | Changelog 编辑器 + 受众分群 | [x] |
 | P3-09 | Telegram · 钉钉/飞书渠道 | [x] |
 | P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [x] |
-| P3-11 | 10+ 语言 next-intl | [ ] |
+| P3-11 | 10+ 语言 next-intl | [x] |
 | P3-12 | 视频教程（YouTube / B 站） | [ ] |
 | P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
 | P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [x] |

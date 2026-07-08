@@ -1,17 +1,17 @@
 {
   "nav": {
-    "inbox": "收件箱",
-    "workflows": "工作流",
-    "tickets": "工单",
-    "feedback": "反馈",
-    "roadmap": "路线图",
-    "changelog": "更新日志",
-    "analytics": "分析",
-    "memory": "记忆",
-    "actions": "动作",
-    "help": "帮助",
-    "settings": "设置",
-    "signOut": "退出"
+    "inbox": "Posta",
+    "workflows": "Workflow",
+    "tickets": "Ticket",
+    "feedback": "Feedback",
+    "roadmap": "Roadmap",
+    "changelog": "Novità",
+    "analytics": "Analisi",
+    "memory": "Memoria",
+    "actions": "Azioni",
+    "help": "Aiuto",
+    "settings": "Impostazioni",
+    "signOut": "Esci"
   },
   "locale": {
     "ar": "العربية",

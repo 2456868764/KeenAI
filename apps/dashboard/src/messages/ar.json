@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "inbox": "صندوق الوارد",
+    "workflows": "سير العمل",
+    "tickets": "التذاكر",
+    "feedback": "الملاحظات",
+    "roadmap": "خارطة الطريق",
+    "changelog": "سجل التغييرات",
+    "analytics": "التحليلات",
+    "memory": "الذاكرة",
+    "actions": "الإجراءات",
+    "help": "المساعدة",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج"
+  },
+  "locale": {
+    "ar": "العربية",
+    "de": "Deutsch",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "hi": "हिन्दी",
+    "it": "Italiano",
+    "ja": "日本語",
+    "ko": "한국어",
+    "nl": "Nederlands",
+    "pt": "Português",
+    "zh": "中文"
+  }
+}

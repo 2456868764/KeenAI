@@ -5,13 +5,13 @@
     "tickets": "Tickets",
     "feedback": "Feedback",
     "roadmap": "Roadmap",
-    "changelog": "Changelog",
-    "analytics": "Analytics",
-    "memory": "Memory",
-    "actions": "Actions",
+    "changelog": "Wijzigingen",
+    "analytics": "Analyse",
+    "memory": "Geheugen",
+    "actions": "Acties",
     "help": "Help",
-    "settings": "Settings",
-    "signOut": "Sign out"
+    "settings": "Instellingen",
+    "signOut": "Uitloggen"
   },
   "locale": {
     "ar": "العربية",

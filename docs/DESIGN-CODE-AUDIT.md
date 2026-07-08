@@ -43,6 +43,7 @@
 ## v0.2.0 pass notes (2026-07-08)
 
 - **P3-10 fixed:** Qwen (`QWEN_API_KEY`) and Zhipu (`ZHIPU_API_KEY`) providers are wired through env parsing, API Copilot, Workflow "Let Keeni Answer", provider summaries, and prompt tests. Chinese conversations now add Simplified Chinese drafting guidance to the LLM system prompt.
+- **P3-11 fixed:** Dashboard next-intl now registers 12 locale bundles (`en`, `zh`, `ja`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, `hi`) and the locale switcher renders from the shared supported-locale list.
 - **P3-14 fixed:** `keenai import intercom --file` now imports users/admins and conversations/messages from normalized JSON or an extracted export directory into core tables. Direct ZIP extraction is intentionally not bundled; extract the archive first.
 - **I119 typecheck hardening:** optional `@mastra/evals` scorer loading no longer breaks TypeScript when the optional package subpath is absent.
 

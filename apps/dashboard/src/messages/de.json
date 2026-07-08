@@ -1,17 +1,17 @@
 {
   "nav": {
-    "inbox": "Inbox",
+    "inbox": "Posteingang",
     "workflows": "Workflows",
     "tickets": "Tickets",
     "feedback": "Feedback",
     "roadmap": "Roadmap",
     "changelog": "Changelog",
-    "analytics": "Analytics",
-    "memory": "Memory",
-    "actions": "Actions",
-    "help": "Help",
-    "settings": "Settings",
-    "signOut": "Sign out"
+    "analytics": "Analysen",
+    "memory": "Speicher",
+    "actions": "Aktionen",
+    "help": "Hilfe",
+    "settings": "Einstellungen",
+    "signOut": "Abmelden"
   },
   "locale": {
     "ar": "العربية",

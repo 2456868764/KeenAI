@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "inbox": "इनबॉक्स",
+    "workflows": "वर्कफ़्लो",
+    "tickets": "टिकट",
+    "feedback": "फ़ीडबैक",
+    "roadmap": "रोडमैप",
+    "changelog": "बदलाव",
+    "analytics": "विश्लेषण",
+    "memory": "मेमोरी",
+    "actions": "कार्रवाइयां",
+    "help": "सहायता",
+    "settings": "सेटिंग्स",
+    "signOut": "साइन आउट"
+  },
+  "locale": {
+    "ar": "العربية",
+    "de": "Deutsch",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "hi": "हिन्दी",
+    "it": "Italiano",
+    "ja": "日本語",
+    "ko": "한국어",
+    "nl": "Nederlands",
+    "pt": "Português",
+    "zh": "中文"
+  }
+}

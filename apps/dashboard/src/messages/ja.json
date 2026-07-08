@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "inbox": "受信箱",
+    "workflows": "ワークフロー",
+    "tickets": "チケット",
+    "feedback": "フィードバック",
+    "roadmap": "ロードマップ",
+    "changelog": "変更履歴",
+    "analytics": "分析",
+    "memory": "メモリ",
+    "actions": "アクション",
+    "help": "ヘルプ",
+    "settings": "設定",
+    "signOut": "サインアウト"
+  },
+  "locale": {
+    "ar": "العربية",
+    "de": "Deutsch",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "hi": "हिन्दी",
+    "it": "Italiano",
+    "ja": "日本語",
+    "ko": "한국어",
+    "nl": "Nederlands",
+    "pt": "Português",
+    "zh": "中文"
+  }
+}

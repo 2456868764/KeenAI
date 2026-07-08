@@ -1,17 +1,17 @@
 {
   "nav": {
-    "inbox": "Inbox",
-    "workflows": "Workflows",
+    "inbox": "Bandeja",
+    "workflows": "Flujos",
     "tickets": "Tickets",
-    "feedback": "Feedback",
-    "roadmap": "Roadmap",
-    "changelog": "Changelog",
-    "analytics": "Analytics",
-    "memory": "Memory",
-    "actions": "Actions",
-    "help": "Help",
-    "settings": "Settings",
-    "signOut": "Sign out"
+    "feedback": "Comentarios",
+    "roadmap": "Hoja de ruta",
+    "changelog": "Novedades",
+    "analytics": "Analítica",
+    "memory": "Memoria",
+    "actions": "Acciones",
+    "help": "Ayuda",
+    "settings": "Ajustes",
+    "signOut": "Cerrar sesión"
   },
   "locale": {
     "ar": "العربية",

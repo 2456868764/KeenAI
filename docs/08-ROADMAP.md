@@ -401,7 +401,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 钉钉 / 飞书 渠道
 - [x] DeepSeek / 智谱 / Moonshot / Qwen 适配（`@ai-sdk/openai-compatible`）
 - [x] AI Prompt 中文优化（指令调优 + 评测集）
-- [ ] 10 种语言（next-intl messages + AI 翻译辅助）
+- [x] 10 种语言（next-intl messages + AI 翻译辅助）
 
 #### Sprint 18（W39-W40）：评测 + 发布准备 · KB Phase C 收尾
 
