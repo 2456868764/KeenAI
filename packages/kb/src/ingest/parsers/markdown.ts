@@ -7,10 +7,11 @@ import {
 export const KEENI_KB_KB18_PARSER = {
   enabled: true,
   target: "kb.ingest.parser.markdown",
-  notes: "KB-18 stub: markdown parser delegates to parseKbDocument (unpdf/mammoth later).",
+  notes:
+    "KB-18: markdown/html-ish parser normalizes headings, hierarchy, links, lists, and code blocks.",
 } as const;
 
-/** KB-18 markdown parser entry (stub). */
+/** KB-18 markdown parser entry. */
 export function parseKbMarkdownDocument(input: ParseKbDocumentInput): ParsedKbDocument {
   return parseKbDocument({ ...input, contentType: input.contentType ?? "text/markdown" });
 }

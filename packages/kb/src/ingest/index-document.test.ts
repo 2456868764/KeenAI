@@ -1,10 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  chunkKbDocumentHierarchical,
   createHelpCenterStubConnector,
   createKeenaiKb,
   embedKbChunkStub,
   parseKbDocument,
+  parseKbMarkdownDocument,
 } from "@keenai/kb";
 import { chunkKbDocument } from "@keenai/kb";
 import { createLibsqlKbChunkFtsStore, createLibsqlStore } from "@keenai/storage";
@@ -29,6 +31,44 @@ describe("KB ingestion pipeline", () => {
     const chunks = chunkKbDocument(parsed);
     expect(chunks.length).toBeGreaterThan(0);
     expect(chunks[0]?.contextPrefix).toContain("Export CSV");
+  });
+
+  it("normalizes HTML and markdown hierarchy for KB-18 parsing", () => {
+    const parsed = parseKbMarkdownDocument({
+      title: "Billing Guide",
+      contentType: "text/html",
+      rawContent: `
+        <h1>Billing</h1>
+        <p>Use <strong>Invoices</strong> for receipts.</p>
+        <h2>Refunds</h2>
+        <ul><li>Open the billing page.</li><li>Choose refund request.</li></ul>
+        <h2>Refunds</h2>
+        <p>Duplicate headings get stable unique ids.</p>
+      `,
+    });
+
+    expect(parsed.sections.map((section) => section.heading)).toEqual([
+      "Billing",
+      "Refunds",
+      "Refunds",
+    ]);
+    expect(parsed.sections[1]?.path).toEqual(["Billing", "Refunds"]);
+    expect(parsed.sections[1]?.body).toContain("- Open the billing page.");
+    expect(parsed.sections[2]?.id).toBe("billing-refunds-2");
+  });
+
+  it("chunks on paragraph and sentence boundaries with context overlap", () => {
+    const parsed = parseKbDocument({
+      title: "Troubleshooting",
+      rawContent:
+        "# Reset device\n\nFirst sentence explains the reset flow. Second sentence keeps context for the next chunk.\n\nThird paragraph includes the final recovery step.",
+    });
+
+    const chunks = chunkKbDocumentHierarchical(parsed, 80, 40);
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks[0]?.content.endsWith("flow.")).toBe(true);
+    expect(chunks[1]?.content).toContain("Second sentence");
+    expect(chunks[1]?.contextPrefix).toBe("Troubleshooting > Reset device");
   });
 
   it("indexes a document with stub embeddings", async () => {
