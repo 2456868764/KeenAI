@@ -4,6 +4,7 @@ export {
   QUERY_INTENTS,
   assembleUnifiedAgentContext,
   classifyQueryIntent,
+  rerankUnifiedContextSections,
   type AssembleUnifiedContextInput,
   type AssembleUnifiedContextResult,
   type ContextRouteWeights,

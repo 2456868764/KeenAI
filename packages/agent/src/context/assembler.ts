@@ -1,3 +1,5 @@
+import { searchKbChunks } from "@keenai/kb";
+import type { KbSearchHit } from "@keenai/kb";
 import type { AssembleMemoryContextInput } from "@keenai/memory-tree";
 import { assembleAgentMemoryContext } from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
@@ -30,6 +32,8 @@ export type UnifiedContextSection = {
   title: string;
   body: string;
   source: "kb" | "memory";
+  score?: number;
+  reason?: string;
 };
 
 export type AssembleUnifiedContextResult = {
@@ -54,7 +58,12 @@ function dedupeSections(sections: UnifiedContextSection[]): UnifiedContextSectio
   const seen = new Set<string>();
   const kept: UnifiedContextSection[] = [];
   for (const section of sections) {
-    const key = `${section.source}:${section.title}`;
+    const normalizedBody = section.body
+      .toLowerCase()
+      .replace(/[^a-z0-9\u3400-\u9fff]+/g, " ")
+      .trim()
+      .slice(0, 240);
+    const key = normalizedBody || section.title.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     kept.push(section);
@@ -62,7 +71,70 @@ function dedupeSections(sections: UnifiedContextSection[]): UnifiedContextSectio
   return kept;
 }
 
-/** KB-22: assemble Memory Tree + KB with intent-based weight metadata and deduped sections. */
+function tokenize(text: string | undefined): Set<string> {
+  return new Set(
+    (text ?? "")
+      .toLowerCase()
+      .split(/[^a-z0-9\u3400-\u9fff]+/i)
+      .filter((term) => term.length > 2),
+  );
+}
+
+function queryOverlap(query: string | undefined, section: UnifiedContextSection): number {
+  const queryTerms = tokenize(query);
+  if (queryTerms.size === 0) return 0;
+  const sectionTerms = tokenize(`${section.title}\n${section.body}`);
+  let shared = 0;
+  for (const term of queryTerms) {
+    if (sectionTerms.has(term)) shared += 1;
+  }
+  return shared / queryTerms.size;
+}
+
+export function rerankUnifiedContextSections(
+  sections: UnifiedContextSection[],
+  input: { intent: QueryIntent; weights: ContextRouteWeights; query?: string },
+): UnifiedContextSection[] {
+  return sections
+    .map((section, index) => {
+      const sourceWeight = section.source === "kb" ? input.weights.kb : input.weights.memory;
+      const overlap = queryOverlap(input.query, section);
+      const priorScore = section.score ?? 0;
+      const score = sourceWeight + overlap * 0.45 + priorScore * 0.15 - index * 0.001;
+      return {
+        ...section,
+        score: Number(score.toFixed(4)),
+        reason: `intent:${input.intent};source:${section.source};overlap:${overlap.toFixed(2)}`,
+      };
+    })
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+}
+
+function formatUnifiedContext(
+  intent: QueryIntent,
+  weights: ContextRouteWeights,
+  sections: UnifiedContextSection[],
+): string {
+  const header = `[Unified Context · intent=${intent} · kb=${weights.kb} · memory=${weights.memory}]`;
+  const body = sections.map((section) => {
+    const score = section.score !== undefined ? ` · score=${section.score.toFixed(2)}` : "";
+    return `## ${section.title} [${section.source}${score}]\n${section.body}`;
+  });
+  return [header, ...body].join("\n\n");
+}
+
+function kbHitToSection(hit: KbSearchHit): UnifiedContextSection {
+  const prefix = hit.contextPrefix ? `[${hit.contextPrefix}] ` : "";
+  const score = hit.rerankScore ?? hit.fusedScore ?? hit.confidence ?? 0;
+  return {
+    title: `Knowledge Base: ${hit.documentTitle}`,
+    body: `${prefix}${hit.content}`,
+    source: "kb",
+    score,
+  };
+}
+
+/** KB-22: assemble Memory Tree + KB with intent-based dynamic rerank and dedupe. */
 export async function assembleUnifiedAgentContext(
   db: KeenaiDb,
   input: AssembleUnifiedContextInput,
@@ -77,16 +149,30 @@ export async function assembleUnifiedAgentContext(
     source: section.title.toLowerCase().includes("kb") ? "kb" : "memory",
   }));
 
+  const query = input.instruction?.trim() ?? "";
+  if (query && input.kbSearch) {
+    const kb = await searchKbChunks(db, {
+      orgId: input.orgId,
+      brandId: input.brandId,
+      q: query,
+      chunkFts: input.kbSearch.chunkFts,
+      chunkVector: input.kbSearch.chunkVector,
+      queryEmbedder: input.kbSearch.queryEmbedder,
+      limit: input.kbSearch.limit ?? 5,
+    });
+    sections.push(...kb.hits.map(kbHitToSection));
+  }
+
   const deduped = dedupeSections(sections);
-  const header = `[Unified Context · intent=${intent} · kb=${weights.kb} · memory=${weights.memory}]`;
-  const text = [header, memory.text].filter(Boolean).join("\n\n");
+  const reranked = rerankUnifiedContextSections(deduped, { intent, weights, query });
+  const text = formatUnifiedContext(intent, weights, reranked);
 
   return {
     intent,
     weights,
-    sections: deduped,
+    sections: reranked,
     text,
     memoryScope: memory.scope,
-    signals: [...memory.signals, `intent:${intent}`],
+    signals: [...memory.signals, `intent:${intent}`, "context:reranked"],
   };
 }
