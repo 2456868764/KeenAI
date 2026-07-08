@@ -54,8 +54,9 @@
 ```bash
 pnpm keenai import intercom --file ./export.zip --org-slug demo --dry-run
 pnpm keenai memory export --vault --org-id <org> --brand-id <brand>
-pnpm kb:eval    # golden retrieval suite
-pnpm kb:bench   # search load test (API must be running)
+pnpm kb:eval          # golden retrieval suite + local release gate
+pnpm kb:release-gate  # focused Recall@5 + stale-answer proxy gate
+pnpm kb:bench         # search load test (API must be running)
 ```
 
 Set `KEENAI_EVAL_JUDGE_MODEL=openai/gpt-4o-mini` (and provider API keys) to enable Mastra faithfulness scoring in KB eval.

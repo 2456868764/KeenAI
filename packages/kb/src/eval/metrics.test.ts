@@ -10,6 +10,7 @@ describe("enrichKbEvalMetricsFromGolden", () => {
     graphContributionRate: 0,
     recallAt5: null,
     precisionAt5: null,
+    staleAnswerRate: 0,
   };
 
   it("leaves metrics unchanged when golden has no cases", () => {
@@ -30,6 +31,7 @@ describe("enrichKbEvalMetricsFromGolden", () => {
         mrrMin: 0.8,
         faithfulnessMin: 0.85,
         contextualRecallMin: 0.75,
+        staleAnswerRateMax: 0.02,
       },
       passed: false,
       failures: [],
@@ -56,6 +58,7 @@ describe("enrichKbEvalMetricsFromGolden", () => {
         mrrMin: 0.8,
         faithfulnessMin: 0.85,
         contextualRecallMin: 0.75,
+        staleAnswerRateMax: 0.02,
       },
       passed: true,
       failures: [],

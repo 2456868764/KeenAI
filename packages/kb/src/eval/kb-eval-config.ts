@@ -14,6 +14,7 @@ export type KbEvalThresholds = {
   hitRateMin: number;
   faithfulnessMin: number;
   contextualRecallMin: number;
+  staleAnswerRateMax: number;
 };
 
 export type KbEvalConfig = {
@@ -59,6 +60,7 @@ export function parseKbEvalYaml(text: string): KbEvalConfig {
       if (line.startsWith("hit_rate_min:")) thresholds.hitRateMin = value;
       if (line.startsWith("faithfulness_min:")) thresholds.faithfulnessMin = value;
       if (line.startsWith("contextual_recall_min:")) thresholds.contextualRecallMin = value;
+      if (line.startsWith("stale_answer_rate_max:")) thresholds.staleAnswerRateMax = value;
       continue;
     }
 
@@ -79,6 +81,7 @@ export function parseKbEvalYaml(text: string): KbEvalConfig {
       hitRateMin: thresholds.hitRateMin ?? 0.85,
       faithfulnessMin: thresholds.faithfulnessMin ?? 0.85,
       contextualRecallMin: thresholds.contextualRecallMin ?? 0.75,
+      staleAnswerRateMax: thresholds.staleAnswerRateMax ?? 0.02,
     },
     nightlyMaxCases,
     smokeMaxCases,
@@ -99,6 +102,7 @@ export function checkKbEvalThresholds(
     hitRate: number;
     avgFaithfulness: number | null;
     avgContextualRecall: number | null;
+    staleAnswerRate?: number | null;
   },
   config: KbEvalConfig = loadKbEvalConfig(),
 ): { passed: boolean; failures: string[] } {
@@ -118,6 +122,13 @@ export function checkKbEvalThresholds(
     failures.push(
       `contextual_recall ${report.avgContextualRecall.toFixed(3)} < ${t.contextualRecallMin}`,
     );
+  }
+  if (report.staleAnswerRate !== undefined && report.staleAnswerRate !== null) {
+    if (report.staleAnswerRate > t.staleAnswerRateMax) {
+      failures.push(
+        `stale_answer_rate ${report.staleAnswerRate.toFixed(3)} > ${t.staleAnswerRateMax}`,
+      );
+    }
   }
   return { passed: failures.length === 0, failures };
 }

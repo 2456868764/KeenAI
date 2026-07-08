@@ -10,6 +10,8 @@ export type KbEvalMetrics = {
   graphContributionRate: number;
   recallAt5: number | null;
   precisionAt5: number | null;
+  /** Local release-gate proxy: not_helpful feedback rate for retrieved answers. */
+  staleAnswerRate: number;
 };
 
 export type ComputeKbEvalMetricsInput = {
@@ -60,5 +62,6 @@ export async function computeKbEvalMetrics(
     graphContributionRate: 0,
     recallAt5: null,
     precisionAt5: null,
+    staleAnswerRate: total > 0 ? notHelpful / total : 0,
   };
 }

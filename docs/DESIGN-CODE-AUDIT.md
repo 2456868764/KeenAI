@@ -62,7 +62,7 @@
 
 ## Release gates
 
-See [GA.md](./GA.md): **0.1.0** shipped with relaxed dev gates; **v0.2.0** targets Recall@5 ≥ 88%, CI green, documented KB bench P95.
+See [GA.md](./GA.md): **0.1.0** shipped with relaxed dev gates; **v0.2.0** targets Recall@5 ≥ 88%, stale-answer proxy < 2% via `kb:release-gate`, CI green, documented KB bench P95.
 
 ## Recommended next work
 

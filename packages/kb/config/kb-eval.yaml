@@ -5,6 +5,7 @@ thresholds:
   hit_rate_min: 0.85
   faithfulness_min: 0.85
   contextual_recall_min: 0.75
+  stale_answer_rate_max: 0.02
 
 schedule:
   nightly_max_cases: 50

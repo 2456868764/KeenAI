@@ -2,8 +2,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createHelpCenterStubConnector,
+  createKbQueryLog,
   createKeenaiKb,
   createStubKbQueryEmbedder,
+  setKbQueryLogFeedback,
 } from "@keenai/kb";
 import {
   createLibsqlKbChunkFtsStore,
@@ -13,15 +15,16 @@ import {
 import { brands, kbGoldenQueries, kbSources, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
-import { runKbGoldenEval } from "./run-golden.js";
+import { loadKbEvalConfig } from "./kb-eval-config.js";
+import { runKbEvalSuite } from "./runner.js";
 
 function requireRow<T>(row: T | undefined, label: string): T {
   if (!row) throw new Error(`${label} missing`);
   return row;
 }
 
-describe("Sprint 18 golden eval", () => {
-  it("scores retrieval against kb_golden_queries", async () => {
+describe("v0.2.0 KB release gate", () => {
+  it("passes Recall@5 and stale-answer thresholds on the local golden fixture", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     await migrate(db, {
@@ -36,19 +39,23 @@ describe("Sprint 18 golden eval", () => {
 
     const [org] = await db
       .insert(organizations)
-      .values({ slug: "golden", name: "Golden" })
+      .values({ slug: "release-gate", name: "Release Gate" })
       .returning();
     const [brand] = await db
       .insert(brands)
       .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
       .returning();
-
-    const kb = createKeenaiKb({ db });
     const [source] = await db
       .insert(kbSources)
-      .values({ orgId: org?.id ?? "", brandId: brand?.id ?? "", type: "help_center", name: "Help" })
+      .values({
+        orgId: org?.id ?? "",
+        brandId: brand?.id ?? "",
+        type: "help_center",
+        name: "Help",
+      })
       .returning();
 
+    const kb = createKeenaiKb({ db });
     await kb.syncSource({
       orgId: org?.id ?? "",
       brandId: brand?.id ?? "",
@@ -75,33 +82,39 @@ describe("Sprint 18 golden eval", () => {
       queryEmbedder: createStubKbQueryEmbedder(),
       limit: 5,
     });
-    const topChunkId = requireRow(hits[0], "hit").chunkId;
+    const topHit = requireRow(hits[0], "hit");
 
     await db.insert(kbGoldenQueries).values({
       orgId: org?.id ?? "",
       brandId: brand?.id ?? "",
       query: "billing invoice",
-      expectedChunkIds: [topChunkId],
-      expectedAnswer: "Billing and invoice policy for your account.",
-      tags: ["smoke"],
+      expectedChunkIds: [topHit.chunkId],
+      expectedAnswer:
+        "Go to Data Management and click Export. Pro plan invoices are emailed monthly.",
+      tags: ["v0.2.0-release"],
     });
 
-    const report = await runKbGoldenEval(db, {
+    for (let i = 0; i < 100; i++) {
+      const log = await createKbQueryLog(db, {
+        orgId: org?.id ?? "",
+        brandId: brand?.id ?? "",
+        queryText: i === 0 ? "old billing policy" : "billing invoice",
+        hits: [{ chunkId: topHit.chunkId, fusedScore: 1 }],
+        latencyMs: 8,
+      });
+      await setKbQueryLogFeedback(db, {
+        orgId: org?.id ?? "",
+        logId: log.id,
+        feedback: i === 0 ? "not_helpful" : "helpful",
+      });
+    }
+
+    const config = loadKbEvalConfig();
+    const report = await runKbEvalSuite(db, {
       orgId: org?.id ?? "",
       brandId: brand?.id ?? "",
-      maxCases: 10,
-      config: {
-        thresholds: {
-          recallAt5Min: 0,
-          mrrMin: 0,
-          hitRateMin: 0,
-          faithfulnessMin: 0,
-          contextualRecallMin: 0,
-          staleAnswerRateMax: 1,
-        },
-        nightlyMaxCases: 10,
-        smokeMaxCases: 10,
-      },
+      maxCases: config.smokeMaxCases,
+      config,
       search: {
         chunkFts,
         chunkVector,
@@ -110,10 +123,10 @@ describe("Sprint 18 golden eval", () => {
       },
     });
 
-    expect(report.caseCount).toBe(1);
-    expect(report.recallAt5).toBeGreaterThan(0);
-    expect(report.hitRate).toBe(1);
+    expect(report.failures).toEqual([]);
     expect(report.passed).toBe(true);
+    expect(report.golden.recallAt5).toBeGreaterThanOrEqual(config.thresholds.recallAt5Min);
+    expect(report.lifecycle.staleAnswerRate).toBeLessThan(config.thresholds.staleAnswerRateMax);
 
     await store.close();
   });

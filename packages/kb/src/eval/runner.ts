@@ -1,4 +1,5 @@
 import type { KeenaiDb } from "@keenai/storage";
+import { checkKbEvalThresholds } from "./kb-eval-config.js";
 import { type KbEvalMetrics, computeKbEvalMetrics } from "./metrics.js";
 import {
   type KbGoldenEvalReport,
@@ -10,6 +11,7 @@ export type KbEvalSuiteReport = {
   lifecycle: KbEvalMetrics;
   golden: KbGoldenEvalReport;
   passed: boolean;
+  failures: string[];
 };
 
 /** Sprint 18: lifecycle feedback metrics + golden retrieval eval in one run. */
@@ -32,10 +34,22 @@ export async function runKbEvalSuite(
     precisionAt5: golden.hitRate,
     graphContributionRate: golden.graphContributionRate,
   };
+  const releaseThresholdCheck = checkKbEvalThresholds(
+    {
+      recallAt5: enrichedLifecycle.recallAt5 ?? 0,
+      mrr: golden.mrr,
+      hitRate: enrichedLifecycle.precisionAt5 ?? 0,
+      avgFaithfulness: golden.avgFaithfulness,
+      avgContextualRecall: golden.avgContextualRecall,
+      staleAnswerRate: enrichedLifecycle.staleAnswerRate,
+    },
+    input.config,
+  );
 
   return {
     lifecycle: enrichedLifecycle,
     golden,
-    passed: golden.passed,
+    passed: golden.passed && releaseThresholdCheck.passed,
+    failures: [...new Set([...golden.failures, ...releaseThresholdCheck.failures])],
   };
 }
