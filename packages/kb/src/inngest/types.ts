@@ -28,12 +28,18 @@ export type KbIngestStepResult = {
   step: KbIngestStep;
   ok: boolean;
   detail?: string;
+  skipped?: boolean;
+  error?: string;
+  durationMs?: number;
+  metadata?: Record<string, unknown>;
 };
 
 export type KbIngestPipelineResult = {
   sourceId: string;
   documentId?: string;
   steps: KbIngestStepResult[];
+  ok?: boolean;
+  failedStep?: KbIngestStep;
 };
 
 export type KbCrystallizePayload = {

@@ -9,5 +9,12 @@ export type {
   KbCrystallizePayload,
   KbIngestPayload,
   KbIngestPipelineResult,
+  KbIngestStep,
   KbIngestStepResult,
-} from "./types.js";
+} from "./kb-ingest.js";
+export type {
+  KbIngestPipelineHandlers,
+  KbIngestPipelineOptions,
+  KbIngestPipelineState,
+  KbIngestStepHandler,
+} from "./kb-ingest.js";

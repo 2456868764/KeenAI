@@ -32,7 +32,7 @@
 
 | ID | Marked done | Gap / note |
 |----|-------------|------------|
-| KB-16 | [x] | Inngest steps exist; not all 8 stages match full production ingest (connectors, retries, notify) |
+| KB-16 | [x] | **Improved (P3-13 pass):** Ingest now runs fetch→parse→clean→chunk→enrich→embed→index→notify through per-step handlers with duration metadata, failure capture, skipped dependent steps, and notify finalization. Source-specific connector handlers, retry policy, and external notification integrations remain future production wiring. |
 | KB-18 | [x] | **Improved (P3-13 pass):** Markdown/HTML-ish parser now normalizes headings, hierarchy, links, lists, and code blocks; hierarchical chunker splits on paragraph/sentence boundaries with overlap. PDF/DOCX parser adapters remain future work. |
 | KG-05 | [x] | `extractKbEntitiesFromDocument` heuristic; graph used in retrieval expand |
 | KB-19 | [x] | LLM FAQ extract optional (`KEENAI_CRYSTALLIZE_MODEL`); quality gate still heuristic; CSAT from `conversations.rating` only |
@@ -44,7 +44,7 @@
 
 - **P3-10 fixed:** Qwen (`QWEN_API_KEY`) and Zhipu (`ZHIPU_API_KEY`) providers are wired through env parsing, API Copilot, Workflow "Let Keeni Answer", provider summaries, and prompt tests. Chinese conversations now add Simplified Chinese drafting guidance to the LLM system prompt.
 - **P3-11 fixed:** Dashboard next-intl now registers 12 locale bundles (`en`, `zh`, `ja`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, `hi`) and the locale switcher renders from the shared supported-locale list.
-- **P3-13 partial:** KB-18 parser/chunker stubs were replaced with a heading-aware Markdown/HTML-ish parser and paragraph/sentence-boundary chunker with overlap. KB-20 now uses policy-signal conflict detection in addition to topic overlap. KB-22 now performs dynamic KB/Memory reranking. Remaining P3-13 depth is KB-16 pipeline production hardening and KB-19 quality gates.
+- **P3-13 partial:** KB-16 ingest now has a real 8-stage runner with hookable handlers and failure/notify semantics. KB-18 parser/chunker stubs were replaced with a heading-aware Markdown/HTML-ish parser and paragraph/sentence-boundary chunker with overlap. KB-20 now uses policy-signal conflict detection in addition to topic overlap. KB-22 now performs dynamic KB/Memory reranking. Remaining P3-13 depth is KB-19 quality gates plus production connector/retry/notify wiring around KB-16.
 - **P3-14 fixed:** `keenai import intercom --file` now imports users/admins and conversations/messages from normalized JSON or an extracted export directory into core tables. Direct ZIP extraction is intentionally not bundled; extract the archive first.
 - **I119 typecheck hardening:** optional `@mastra/evals` scorer loading no longer breaks TypeScript when the optional package subpath is absent.
 

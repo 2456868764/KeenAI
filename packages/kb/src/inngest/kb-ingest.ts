@@ -12,8 +12,15 @@ export type {
   KbCrystallizePayload,
   KbIngestPayload,
   KbIngestPipelineResult,
+  KbIngestStep,
   KbIngestStepResult,
 } from "./types.js";
+export type {
+  KbIngestPipelineHandlers,
+  KbIngestPipelineOptions,
+  KbIngestPipelineState,
+  KbIngestStepHandler,
+} from "./kb-ingest-pipeline.js";
 export { runKbIngestPipeline, KEENI_KB_KB16 } from "./kb-ingest-pipeline.js";
 
 /** KB-16: 8-step ingestion orchestration via Inngest (brand-level concurrency). */
