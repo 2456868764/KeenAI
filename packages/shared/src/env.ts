@@ -54,9 +54,9 @@ export const apiEnvSchema = z.object({
   SLACK_BOT_TOKEN: z.string().min(1).optional(),
   /** Video/image thumbnail provider: stub | ffmpeg */
   THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
-  /** Copilot provider: stub | openai | anthropic | deepseek | kimi | gemini | ollama (auto if unset) */
+  /** Copilot provider: stub | openai | anthropic | deepseek | kimi | qwen | zhipu | gemini | ollama (auto if unset) */
   LLM_PROVIDER: z
-    .enum(["stub", "openai", "anthropic", "deepseek", "kimi", "gemini", "ollama"])
+    .enum(["stub", "openai", "anthropic", "deepseek", "kimi", "qwen", "zhipu", "gemini", "ollama"])
     .optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
@@ -66,6 +66,10 @@ export const apiEnvSchema = z.object({
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),
   KIMI_MODEL: z.string().default("moonshot-v1-8k"),
+  QWEN_API_KEY: z.string().min(1).optional(),
+  QWEN_MODEL: z.string().default("qwen-plus"),
+  ZHIPU_API_KEY: z.string().min(1).optional(),
+  ZHIPU_MODEL: z.string().default("glm-4-flash"),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
   /** Local Ollama OpenAI-compatible API (register provider when set) */

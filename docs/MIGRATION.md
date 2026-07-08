@@ -7,7 +7,7 @@
 | Source | Entities | Status |
 |--------|----------|--------|
 | Intercom | help center articles → `kb_documents` | **articles import implemented** |
-| Intercom | users, conversations, tags | planned |
+| Intercom | users/admins → `accounts` + `members`; conversations/messages → Inbox core tables | **normalized JSON / extracted directory import implemented** |
 | Zendesk | help center articles → `kb_documents` | **kb import implemented** |
 | Zendesk | tickets, users → conversations | planned |
 
@@ -23,8 +23,9 @@
 pnpm keenai import intercom --articles ./articles.json --org-slug acme
 pnpm keenai import intercom --articles ./articles.json --org-slug acme --dry-run
 
-# Intercom full zip export — conversations/users still stub
-pnpm keenai import intercom --file ./export.zip --org-slug acme --dry-run
+# Intercom users/conversations JSON or extracted export directory → accounts/members/conversations/messages
+pnpm keenai import intercom --file ./intercom-export.json --org-slug acme --dry-run
+pnpm keenai import intercom --file ./intercom-export-dir --org-slug acme
 
 # Zendesk Help Center JSON → kb_documents (requires DATABASE_URL + migrated schema)
 export DATABASE_URL=file:./data/keenai.db

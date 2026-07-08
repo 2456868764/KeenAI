@@ -12,6 +12,12 @@ export {
   GEMINI_DEFAULT_MODEL,
 } from "./providers/gemini.js";
 export { createKimiDraftProvider, KIMI_BASE_URL, KIMI_DEFAULT_MODEL } from "./providers/kimi.js";
+export { createQwenDraftProvider, QWEN_BASE_URL, QWEN_DEFAULT_MODEL } from "./providers/qwen.js";
+export {
+  createZhipuDraftProvider,
+  ZHIPU_BASE_URL,
+  ZHIPU_DEFAULT_MODEL,
+} from "./providers/zhipu.js";
 export { createOpenAiCompatibleDraftProvider } from "./providers/openai-compatible.js";
 export {
   buildDraftPrompt,

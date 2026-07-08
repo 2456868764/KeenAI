@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import { migrate } from "drizzle-orm/libsql/migrator";
+import { importIntercomFullExport } from "./import-intercom-full.js";
 import { importIntercomKbArticles } from "./import-intercom-kb.js";
 import { importZendeskKbArticles } from "./import-zendesk-kb.js";
 
@@ -105,17 +106,37 @@ export async function runImportCommand(args: ImportCliArgs): Promise<void> {
     }
 
     if (!args.file) {
-      throw new Error("intercom import requires --articles <json> or --file <export.zip>");
+      throw new Error(
+        "intercom import requires --articles <json> or --file <export.json|extracted-dir>",
+      );
     }
     const file = await assertReadable(args.file, "intercom export");
-    console.log("[keenai import] Intercom full export (stub)");
+    const env = parseApiEnv({ DATABASE_URL: process.env.DATABASE_URL ?? ":memory:" });
+    const store = createLibsqlStore({ url: env.DATABASE_URL });
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(store.db, { migrationsFolder });
+
+    const result = await importIntercomFullExport({
+      db: store.db,
+      orgSlug: args.orgSlug,
+      filePath: file,
+      dryRun: args.dryRun,
+    });
+
+    console.log("[keenai import] Intercom users + conversations → KeenAI");
     console.log(`  org-slug: ${args.orgSlug}`);
     console.log(`  source:   ${file}`);
-    console.log("  maps:");
-    console.log("    users/admins → accounts + members");
-    console.log("    conversations → conversations + messages");
+    console.log(`  users:    ${result.usersImported} imported, ${result.usersSkipped} skipped`);
+    console.log(
+      `  conversations: ${result.conversationsImported} imported, ${result.conversationsUpdated} updated`,
+    );
+    console.log(`  messages: ${result.messagesImported} imported`);
     console.log("  articles: use --articles <json> for Help Center → kb_documents");
     if (args.dryRun) console.log("  mode: dry-run (no database writes)");
+    await store.close();
     return;
   }
 

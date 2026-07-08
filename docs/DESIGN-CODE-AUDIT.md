@@ -40,6 +40,12 @@
 | KB-22 | [x] | `assembleUnifiedAgentContext` wired in copilot; **weights in metadata only** (no dynamic re-rank) |
 | KB-23 | [x] | Query-log metrics always on; recall/precision need **`includeGolden`** or `POST /kb/eval/run` |
 
+## v0.2.0 pass notes (2026-07-08)
+
+- **P3-10 fixed:** Qwen (`QWEN_API_KEY`) and Zhipu (`ZHIPU_API_KEY`) providers are wired through env parsing, API Copilot, Workflow "Let Keeni Answer", provider summaries, and prompt tests. Chinese conversations now add Simplified Chinese drafting guidance to the LLM system prompt.
+- **P3-14 fixed:** `keenai import intercom --file` now imports users/admins and conversations/messages from normalized JSON or an extracted export directory into core tables. Direct ZIP extraction is intentionally not bundled; extract the archive first.
+- **I119 typecheck hardening:** optional `@mastra/evals` scorer loading no longer breaks TypeScript when the optional package subpath is absent.
+
 ## Non-KB doc mismatches
 
 - **[11-RAG-KNOWLEDGE.md](./11-RAG-KNOWLEDGE.md)** — aligned to `@keenai/kb` + optional `@mastra/evals` judge.

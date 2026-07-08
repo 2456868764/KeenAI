@@ -5,7 +5,9 @@ import { createGeminiDraftProvider } from "./providers/gemini.js";
 import { createKimiDraftProvider } from "./providers/kimi.js";
 import { createOllamaDraftProvider } from "./providers/ollama.js";
 import { createOpenaiDraftProvider } from "./providers/openai.js";
+import { createQwenDraftProvider } from "./providers/qwen.js";
 import { stubDraftProvider } from "./providers/stub.js";
+import { createZhipuDraftProvider } from "./providers/zhipu.js";
 import type { DraftProvider, LlmConfig, LlmProviderId } from "./types.js";
 
 const REMOTE_PROVIDER_ORDER: LlmProviderId[] = [
@@ -14,6 +16,8 @@ const REMOTE_PROVIDER_ORDER: LlmProviderId[] = [
   "gemini",
   "deepseek",
   "kimi",
+  "qwen",
+  "zhipu",
   "ollama",
 ];
 
@@ -52,6 +56,24 @@ function registerRemoteProviders(config: LlmConfig): DraftProvider[] {
       createKimiDraftProvider({
         apiKey: config.kimiApiKey,
         model: config.kimiModel,
+      }),
+    );
+  }
+
+  if (config.qwenApiKey) {
+    providers.push(
+      createQwenDraftProvider({
+        apiKey: config.qwenApiKey,
+        model: config.qwenModel,
+      }),
+    );
+  }
+
+  if (config.zhipuApiKey) {
+    providers.push(
+      createZhipuDraftProvider({
+        apiKey: config.zhipuApiKey,
+        model: config.zhipuModel,
       }),
     );
   }

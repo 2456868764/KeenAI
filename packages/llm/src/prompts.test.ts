@@ -19,6 +19,17 @@ describe("buildDraftStreamInput", () => {
     expect(draftRequestHasImages(req)).toBe(false);
   });
 
+  it("adds Simplified Chinese guidance for Chinese conversations", () => {
+    const input = buildDraftStreamInput({
+      messages: [{ role: "user", plainText: "我的订单无法退款，帮我看一下" }],
+    });
+    expect(input.mode).toBe("prompt");
+    if (input.mode === "prompt") {
+      expect(input.system).toContain("Simplified Chinese");
+      expect(input.system).toContain("natural Chinese customer-support tone");
+    }
+  });
+
   it("uses messages mode when images are present", () => {
     const req: DraftRequest = {
       messages: [

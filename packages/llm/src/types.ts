@@ -7,6 +7,8 @@ export const LLM_PROVIDER_IDS = [
   "gemini",
   "deepseek",
   "kimi",
+  "qwen",
+  "zhipu",
   "ollama",
 ] as const;
 export type LlmProviderId = (typeof LLM_PROVIDER_IDS)[number];
@@ -65,6 +67,10 @@ export type LlmConfig = {
   deepseekModel?: string;
   kimiApiKey?: string;
   kimiModel?: string;
+  qwenApiKey?: string;
+  qwenModel?: string;
+  zhipuApiKey?: string;
+  zhipuModel?: string;
   geminiApiKey?: string;
   geminiModel?: string;
   ollamaBaseUrl?: string;

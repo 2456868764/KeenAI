@@ -393,14 +393,14 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 **Roadmap + Changelog + 国产化（主轨）**
 
-- [ ] Roadmap Kanban / Timeline 视图（dnd-kit + TanStack Table）
-- [ ] Changelog 编辑器（Tiptap + AI 起草 from Linear / Jira 已完成 issue）
-- [ ] 受众分群发布（segment DSL · Zod）
-- [ ] 应用内 Widget 弹窗 + Email 通知模板
-- [ ] Telegram 渠道（grammy）
-- [ ] 钉钉 / 飞书 渠道
-- [ ] DeepSeek / 智谱 / Moonshot / Qwen 适配（`@ai-sdk/openai-compatible`）
-- [ ] AI Prompt 中文优化（指令调优 + 评测集）
+- [x] Roadmap Kanban / Timeline 视图（dnd-kit + TanStack Table）
+- [x] Changelog 编辑器（Tiptap + AI 起草 from Linear / Jira 已完成 issue）
+- [x] 受众分群发布（segment DSL · Zod）
+- [x] 应用内 Widget弹窗 + Email 通知模板
+- [x] Telegram 渠道（grammy）
+- [x] 钉钉 / 飞书 渠道
+- [x] DeepSeek / 智谱 / Moonshot / Qwen 适配（`@ai-sdk/openai-compatible`）
+- [x] AI Prompt 中文优化（指令调优 + 评测集）
 - [ ] 10 种语言（next-intl messages + AI 翻译辅助）
 
 #### Sprint 18（W39-W40）：评测 + 发布准备 · KB Phase C 收尾
@@ -422,7 +422,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] 部署文档（I100 · Docker lite · Bun binary · Vercel/CF 指引 · 见 [DEPLOYMENT.md](DEPLOYMENT.md)）
 - [ ] 视频教程（YouTube + B 站）
 - [x] **0.1.0 发布**（I111 · `v0.1.0` tag · prerelease）
-- [~] 迁移工具（I101 · Zendesk HC 实写 I105 · Intercom HC I113）
+- [x] 迁移工具（I101 · Zendesk HC 实写 I105 · Intercom HC I113 · Intercom users/conversations P3-14）
 - [ ] **v0.2.0 发布**（I120 · Phase 0～3 全 `[x]` + Docker `0.2.0` + tag）
 
 #### v0.2.0 迭代轨（I112～I120）

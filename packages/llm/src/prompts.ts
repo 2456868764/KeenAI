@@ -1,12 +1,34 @@
 import { formatDraftToolSummary } from "./draft-tools.js";
 import type { DraftRequest } from "./types.js";
 
+function containsChinese(text: string): boolean {
+  return /[\u3400-\u9fff]/.test(text);
+}
+
+function buildLanguageGuidance(req: DraftRequest): string {
+  const body = [
+    req.subject ?? "",
+    req.instruction ?? "",
+    req.memoryContext ?? "",
+    ...req.messages.map((message) => message.plainText),
+  ].join("\n");
+
+  if (!containsChinese(body)) return "Reply in the customer's language.";
+
+  return [
+    "Reply in Simplified Chinese unless the agent instruction explicitly asks for another language.",
+    "Use a concise, natural Chinese customer-support tone.",
+    "Avoid literal translations of English support templates.",
+  ].join(" ");
+}
+
 export function buildDraftPrompt(req: DraftRequest): { system: string; prompt: string } {
   const toolSummary = formatDraftToolSummary(req.tools ?? []);
   const system = [
     "You are a helpful customer support agent drafting a reply.",
     "Be concise, professional, and empathetic.",
     "Output only the reply body — no subject line.",
+    buildLanguageGuidance(req),
     toolSummary,
     req.memoryContext ? `Relevant memory:\n${req.memoryContext}` : "",
     req.instruction ? `Agent instruction: ${req.instruction}` : "",

@@ -6,6 +6,8 @@ export const PROVIDER_LABELS: Record<LlmProviderId, string> = {
   anthropic: "Anthropic",
   deepseek: "DeepSeek",
   kimi: "Kimi (Moonshot)",
+  qwen: "Qwen (DashScope)",
+  zhipu: "Zhipu GLM",
   gemini: "Google Gemini",
   ollama: "Ollama (local)",
 };
@@ -27,6 +29,10 @@ export function resolveProviderModel(config: LlmConfig, id: LlmProviderId): stri
       return config.deepseekModel;
     case "kimi":
       return config.kimiModel;
+    case "qwen":
+      return config.qwenModel;
+    case "zhipu":
+      return config.zhipuModel;
     case "gemini":
       return config.geminiModel;
     case "ollama":

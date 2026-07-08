@@ -33,11 +33,15 @@ type MastraFaithfulnessScorer = {
   score?: (input: { answer: string; context: string[] }) => Promise<unknown>;
 };
 
+const importOptional = new Function("specifier", "return import(specifier)") as (
+  specifier: string,
+) => Promise<Record<string, unknown>>;
+
 async function tryMastraFaithfulness(
   model: string,
   input: { answer: string; context: string[] },
 ): Promise<number | null> {
-  const mod = (await import("@mastra/evals/scorers/prebuilt")) as Record<string, unknown>;
+  const mod = await importOptional("@mastra/evals/scorers/prebuilt");
   const factory = mod.createFaithfulnessScorer;
   if (typeof factory !== "function") return null;
 

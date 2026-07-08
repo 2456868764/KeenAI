@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createLlmRegistry } from "./registry.js";
 
 describe("createLlmRegistry", () => {
-  it("registers deepseek and kimi when keys are set", () => {
+  it("registers Chinese OpenAI-compatible providers when keys are set", () => {
     const { listConfiguredProviderIds } = createLlmRegistry({
       deepseekApiKey: "ds-key",
       kimiApiKey: "kimi-key",
+      qwenApiKey: "qwen-key",
+      zhipuApiKey: "zhipu-key",
     });
-    expect(listConfiguredProviderIds()).toEqual(["stub", "deepseek", "kimi"]);
+    expect(listConfiguredProviderIds()).toEqual(["stub", "deepseek", "kimi", "qwen", "zhipu"]);
   });
 
   it("prefers explicit LLM_PROVIDER", () => {
@@ -28,12 +30,14 @@ describe("createLlmRegistry", () => {
     expect(resolveDraftProvider().id).toBe("gemini");
   });
 
-  it("auto-selects openai before gemini, deepseek and kimi", () => {
+  it("auto-selects openai before gemini and Chinese providers", () => {
     const { resolveDraftProvider } = createLlmRegistry({
       openaiApiKey: "sk-openai",
       geminiApiKey: "gemini-key",
       deepseekApiKey: "ds-key",
       kimiApiKey: "kimi-key",
+      qwenApiKey: "qwen-key",
+      zhipuApiKey: "zhipu-key",
     });
     expect(resolveDraftProvider().id).toBe("openai");
   });
@@ -42,18 +46,21 @@ describe("createLlmRegistry", () => {
     const { resolveDraftProvider } = createLlmRegistry({
       deepseekApiKey: "ds-key",
       kimiApiKey: "kimi-key",
+      qwenApiKey: "qwen-key",
     });
     expect(resolveDraftProvider().id).toBe("deepseek");
   });
 
   it("lists provider summaries with labels", () => {
     const { listProviderSummaries } = createLlmRegistry({
-      geminiApiKey: "gemini-key",
-      geminiModel: "gemini-2.0-flash",
+      provider: "qwen",
+      qwenApiKey: "qwen-key",
+      qwenModel: "qwen-max",
     });
     const items = listProviderSummaries();
-    expect(items.find((p) => p.id === "gemini")?.label).toBe("Google Gemini");
-    expect(items.find((p) => p.id === "gemini")?.isDefault).toBe(true);
+    expect(items.find((p) => p.id === "qwen")?.label).toBe("Qwen (DashScope)");
+    expect(items.find((p) => p.id === "qwen")?.model).toBe("qwen-max");
+    expect(items.find((p) => p.id === "qwen")?.isDefault).toBe(true);
   });
 
   it("registers anthropic and ollama when configured", () => {

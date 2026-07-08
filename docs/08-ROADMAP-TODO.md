@@ -128,11 +128,11 @@
 | P3-07 | Roadmap Kanban / Timeline | [x] |
 | P3-08 | Changelog 编辑器 + 受众分群 | [x] |
 | P3-09 | Telegram · 钉钉/飞书渠道 | [x] |
-| P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [ ] |
+| P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [x] |
 | P3-11 | 10+ 语言 next-intl | [ ] |
 | P3-12 | 视频教程（YouTube / B 站） | [ ] |
 | P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
-| P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [ ] |
+| P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [x] |
 | P3-ACC-01 | 自动解决率 ≥ 50% | [ ] |
 | P3-ACC-02 | Ollama 完全离线 demo | [ ] |
 | P3-ACC-03 | Featurebase 90% 对齐 | [ ] |
