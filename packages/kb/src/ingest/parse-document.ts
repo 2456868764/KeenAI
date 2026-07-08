@@ -98,21 +98,24 @@ export function parseKbDocument(input: ParseKbDocumentInput): ParsedKbDocument {
   let current: { level: number; heading: string; lines: string[] } | null = null;
 
   const pushCurrent = () => {
-    if (!current) return;
-    const body = cleanBody(current.lines);
+    const active = current;
+    if (!active) return;
+    const body = cleanBody(active.lines);
     if (!body) return;
 
-    while (headingStack.length && headingStack[headingStack.length - 1]?.level >= current.level) {
+    while (headingStack.length) {
+      const parent = headingStack.at(-1);
+      if (!parent || parent.level < active.level) break;
       headingStack.pop();
     }
-    headingStack.push({ level: current.level, heading: current.heading });
+    headingStack.push({ level: active.level, heading: active.heading });
 
     const path = headingStack.map((item) => item.heading);
     sections.push({
       id: uniqueId(slugify(path.join("-")), seenIds),
-      heading: current.heading,
+      heading: active.heading,
       body,
-      level: current.level,
+      level: active.level,
       path,
     });
   };
