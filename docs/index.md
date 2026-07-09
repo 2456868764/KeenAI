@@ -8,7 +8,7 @@
 |-----|-------------|
 | [README](../README.md) | Vision, stack, monorepo layout |
 | [ALPHA.md](./ALPHA.md) | Alpha scope, quick start, Docker lite |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Production profiles, env, `kb:bench` / `kb:eval` |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Production profiles, env, `kb:bench`, `kb:bench:local` / `kb:eval` |
 | [deploy/helm/README.md](../deploy/helm/README.md) | Helm chart skeleton (v0.2.0 images) |
 | [MIGRATION.md](./MIGRATION.md) | Intercom / Zendesk import (`keenai import`) |
 | [GA.md](./GA.md) | Release checklist (**v0.2.0** = Phase 0～3 全量) |
@@ -56,6 +56,7 @@ pnpm keenai import intercom --file ./export.zip --org-slug demo --dry-run
 pnpm keenai memory export --vault --org-id <org> --brand-id <brand>
 pnpm kb:eval          # golden retrieval suite + local release gate
 pnpm kb:release-gate  # focused Recall@5 + stale-answer proxy gate
+pnpm kb:bench:local   # local KB domain P95 bench, no API server required
 pnpm kb:bench         # search load test (API must be running)
 ```
 

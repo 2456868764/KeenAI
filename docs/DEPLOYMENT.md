@@ -74,6 +74,7 @@ pnpm smoke
 |--------|---------|
 | `pnpm kb:eval` | Vitest golden retrieval suite + v0.2.0 local release gate (CI nightly) |
 | `pnpm kb:release-gate` | Focused Recall@5 + stale-answer proxy gate for v0.2.0 |
+| `pnpm kb:bench:local` | Node-only KB domain bench for sync/index/search P95 without a running API server |
 | `pnpm kb:bench` | autocannon load test on `/api/v1/kb/search` (requires `pnpm dev`) |
 
 Bench thresholds: `packages/kb/config/kb-perf.yaml` (`p95_ms_max` default 500ms).
