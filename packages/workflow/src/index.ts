@@ -43,8 +43,11 @@ export {
   type CsatBlock,
   type CsatInput,
   type CsatSubmission,
+  type TagConversationBlock,
+  type TagConversationInput,
   snoozeBlockSchema,
   csatBlockSchema,
+  tagConversationBlockSchema,
 } from "./schema.js";
 export { runWorkflow, nextBlockAfter } from "./executor.js";
 export {

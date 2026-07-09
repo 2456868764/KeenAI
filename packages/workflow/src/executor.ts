@@ -236,6 +236,19 @@ async function executeBlock(
         nextId,
       };
     }
+    case "tag_conversation": {
+      if (!handlers.tagConversation) throw new Error("tag_conversation_handler_missing");
+      await handlers.tagConversation({ tags: block.tags, mode: block.mode });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { tags: block.tags, tagMode: block.mode },
+        },
+        nextId,
+      };
+    }
     case "let_keeni_answer": {
       if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
       if (!context) throw new Error("workflow_context_required");

@@ -854,6 +854,108 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("tag_conversation block appends tags to the conversation", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Tag VIP conversations",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "tag",
+              type: "tag_conversation",
+              tags: ["vip", "billing"],
+              mode: "append",
+            },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "tag-1",
+        tags: ["existing"],
+        initialMessage: { plainText: "Hi" },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { conversation } = (await created.json()) as {
+      conversation: { id: string };
+    };
+
+    const fetched = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      headers: auth,
+    });
+    expect(fetched.status).toBe(200);
+    const fetchedBody = (await fetched.json()) as {
+      conversation: { tags: string[] };
+    };
+    expect(fetchedBody.conversation.tags).toEqual(["existing", "vip", "billing"]);
+
+    await store.close();
+  });
+
   it("csat waitForRating suspends until widget posts rating", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

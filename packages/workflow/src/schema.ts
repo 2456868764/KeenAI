@@ -13,6 +13,10 @@ import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
+import {
+  type TagConversationInput,
+  tagConversationBlockSchema,
+} from "./blocks/tag-conversation.js";
 
 export {
   applyRulesBlockSchema,
@@ -62,6 +66,11 @@ export {
   type SnoozeInput,
 } from "./blocks/snooze.js";
 export {
+  tagConversationBlockSchema,
+  type TagConversationBlock,
+  type TagConversationInput,
+} from "./blocks/tag-conversation.js";
+export {
   sendTicketUpdateBlockSchema,
   type SendTicketUpdateBlock,
 } from "./blocks/send-ticket-update.js";
@@ -97,6 +106,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "reply_buttons",
   "snooze",
   "csat",
+  "tag_conversation",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -153,6 +163,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   replyButtonsBlockSchema,
   snoozeBlockSchema,
   csatBlockSchema,
+  tagConversationBlockSchema,
 ]);
 
 export const workflowDefinitionSchema = z
@@ -237,6 +248,7 @@ export type WorkflowActionHandlers = {
   replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
   snooze?: (input: SnoozeInput) => Promise<void>;
   csat?: (input: CsatInput) => Promise<void>;
+  tagConversation?: (input: TagConversationInput) => Promise<void>;
 };
 
 export type WorkflowStepResult = {
@@ -265,6 +277,8 @@ export type WorkflowStepResult = {
     ratingComment?: string;
     snoozeMinutes?: number;
     ratingRequested?: boolean;
+    tags?: string[];
+    tagMode?: "append" | "replace";
   };
 };
 

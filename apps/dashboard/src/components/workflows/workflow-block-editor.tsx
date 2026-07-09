@@ -678,6 +678,37 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "tag_conversation" ? (
+        <>
+          <Input
+            placeholder="Tags, comma separated"
+            value={block.tags.join(", ")}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                tags: e.target.value
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean),
+              })
+            }
+          />
+          <select
+            value={block.mode ?? "append"}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                mode: e.target.value as "append" | "replace",
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="append">Append to existing tags</option>
+            <option value="replace">Replace existing tags</option>
+          </select>
+        </>
+      ) : null}
+
       {block.type === "csat" ? (
         <>
           <textarea

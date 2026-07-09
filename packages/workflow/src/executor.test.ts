@@ -505,6 +505,28 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output?.snoozeMinutes).toBe(30);
   });
 
+  it("tags conversation via tag_conversation block", async () => {
+    const tagConversation = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "tag",
+            type: "tag_conversation",
+            tags: ["vip", "billing"],
+            mode: "append",
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), assign: vi.fn(), close: vi.fn(), tagConversation },
+    );
+
+    expect(tagConversation).toHaveBeenCalledWith({ tags: ["vip", "billing"], mode: "append" });
+    expect(result.steps[0]?.output?.tags).toEqual(["vip", "billing"]);
+  });
+
   it("suspends csat workflow when waitForRating is enabled", async () => {
     const csat = vi.fn(async () => {});
 

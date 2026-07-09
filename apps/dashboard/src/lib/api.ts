@@ -430,6 +430,7 @@ export type WorkflowBlock =
       autoCloseMinutes?: number;
     }
   | { id: string; type: "snooze"; minutes: number }
+  | { id: string; type: "tag_conversation"; tags: string[]; mode?: "append" | "replace" }
   | {
       id: string;
       type: "csat";

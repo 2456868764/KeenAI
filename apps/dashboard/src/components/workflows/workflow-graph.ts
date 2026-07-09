@@ -215,6 +215,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return `${block.buttons.length} button(s)`;
     case "snooze":
       return `Snooze ${block.minutes} min`;
+    case "tag_conversation":
+      return `Tag: ${block.tags.join(", ")}`;
     case "csat":
       return block.waitForRating ? "CSAT (wait for rating)" : "CSAT request";
   }

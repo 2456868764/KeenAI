@@ -479,6 +479,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           });
         } else if (type === "snooze") {
           onAdd({ id, type: "snooze", minutes: 60 });
+        } else if (type === "tag_conversation") {
+          onAdd({ id, type: "tag_conversation", tags: ["vip"], mode: "append" });
         } else if (type === "csat") {
           onAdd({
             id,
@@ -506,6 +508,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="collect_data">Collect data (suspend)</option>
       <option value="reply_buttons">Reply buttons (suspend)</option>
       <option value="snooze">Snooze conversation</option>
+      <option value="tag_conversation">Tag conversation</option>
       <option value="csat">CSAT rating</option>
     </select>
   );

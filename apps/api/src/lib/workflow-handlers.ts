@@ -7,6 +7,7 @@ import type {
   CsatInput,
   ReplyButtonsInput,
   SnoozeInput,
+  TagConversationInput,
   WorkflowActionHandlers,
   WorkflowDefinition,
   WorkflowRunContext,
@@ -71,6 +72,11 @@ export function buildCsatMessageContent(input: CsatInput): Record<string, unknow
       waitForRating: input.waitForRating,
     },
   };
+}
+
+export function mergeConversationTags(existing: string[], input: TagConversationInput): string[] {
+  if (input.mode === "replace") return [...new Set(input.tags)];
+  return [...new Set([...existing, ...input.tags])];
 }
 
 export function createWorkflowActionHandlers(
@@ -225,6 +231,18 @@ export function createWorkflowActionHandlers(
         sentVia: "workflow",
         isAgentReply: true,
       });
+    },
+    tagConversation: async (input) => {
+      const [row] = await db
+        .select({ tags: conversations.tags })
+        .from(conversations)
+        .where(eq(conversations.id, conversationId))
+        .limit(1);
+      const tags = mergeConversationTags(row?.tags ?? [], input);
+      await db
+        .update(conversations)
+        .set({ tags, updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
     },
   };
 }
