@@ -33,14 +33,14 @@
 | 22 | I113 | Import · Intercom HC | `--articles` JSON → `kb_documents` | [x] |
 | 23 | I114 | Helm skeleton | `deploy/helm/keenai` Chart + values | [x] |
 | 24 | I115 | v0.2.0 · **Phase 0** | 工程地基全量（§P0） | [x] |
-| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [x] |
-| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [x] |
+| 25 | I116 | v0.2.0 · **Phase 1** | MVP 全量 + 验收（§P1） | [~] |
+| 26 | I117 | v0.2.0 · **Phase 2** | Beta 全量 + 验收（§P2） | [~] |
 | 27 | I118 | v0.2.0 · **Phase 3** | AI 完整版全量 + 验收（§P3） | [~] |
-| 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [ ] |
+| 28 | I119 | v0.2.0 · 发布准备 | 质量门槛 · Docker `0.2.0` | [~] |
 | 29 | I120 | Release **v0.2.0** | Phase 0～3 全 `[x]` 后打 tag | [ ] |
 
 **KB Phase A–C（I78～I96）**：KB-07～24  roadmap 已打勾；**实现深度**见 [DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)（v0.2.0 前须达标，非 stub）。  
-**当前主轨**：**I118** Phase 3 → I119 → I120 tag。  
+**当前主轨**：**I118 / I119** 外部证据闭环 → I120 tag。
 **发布门禁**：`08-ROADMAP.md` Phase 0～3 内 **所有** `- [ ]` 项完成 + 各 Phase 验收。
 
 ---
@@ -143,18 +143,18 @@
 
 | ID | 项 | 状态 |
 |----|-----|------|
-| I119-01 | Recall@5 ≥ 88%（`pnpm kb:eval`） | [ ] |
-| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [ ] |
-| I119-03 | GHCR Docker `0.2.0` publish pipeline | [ ] |
-| I119-04 | Helm chart 可安装（超越 I114 skeleton） | [ ] |
-| I120-01 | `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md` | [ ] |
+| I119-01 | Recall@5 ≥ 88%（`pnpm kb:eval`） | [~] 本地 gate 可跑；生产/prod-like telemetry 仍需外部证据 |
+| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [~] 本地 lint/typecheck/test/eval/bench 已有；远程 CI artifact 和 deployed API bench 仍需外部证据 |
+| I119-03 | GHCR Docker `0.2.0` publish pipeline | [~] workflow 已有；实际 GHCR `0.2.0` image publish 未完成 |
+| I119-04 | Helm chart 可安装（超越 I114 skeleton） | [~] lint/template 本地可跑；远程 Helm install artifact 未完成 |
+| I120-01 | `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md` | [~] release-candidate 草案已有；final release notes confirmation 未完成 |
 | I120-02 | `git tag v0.2.0` · GitHub Release（prerelease） | [ ] |
 
 ---
 
-## 当前迭代 · Iteration 115（v0.2.0 · Phase 0）[ ]
+## 当前迭代 · Iteration 119（v0.2.0 · 发布准备）[~]
 
-见上表 **§ Phase 0**（P0-01～P0-11）。
+见上表 **§ 发布准备 / Release gate**（I119-01～I120-02）和 [V0.2.0-RELEASE-GAP-AUDIT.md](./V0.2.0-RELEASE-GAP-AUDIT.md)。
 
 ---
 

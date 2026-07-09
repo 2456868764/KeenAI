@@ -55,8 +55,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 
 ### 交付物
 - [x] Monorepo 结构（pnpm workspace + Turborepo）→ 仓库根目录 [`apps/`](../apps/) · [`packages/`](../packages/)
-- [ ] 包结构：`apps/{api,dashboard,portal,widget,docs}` + `packages/{shared,storage,auth,llm,agent,memory,kb,channels,workflow,…}`（**进行中**：核心包已有；`inbox/ticket/feedback/helpcenter` 等待拆或实装）
-- [ ] Bun 1.2+ 运行时 + Node 22 fallback 双工具链验证
+- [x] 包结构：`apps/{api,dashboard,portal,widget,docs}` + `packages/{shared,storage,auth,llm,agent,memory,kb,channels,workflow,…}`（当前采用 modular monolith：inbox/ticket/feedback/helpcenter 等 bounded context 由 API、Dashboard/Portal 和 `packages/storage` schema 承载，见 [V0.2.0-ARCHITECTURE-MODULE-STATUS.md](./V0.2.0-ARCHITECTURE-MODULE-STATUS.md)）
+- [x] Bun 1.2+ 运行时 + Node 22 fallback 双工具链验证（`pnpm verify:toolchains`）
 - [x] Docker Compose 开发环境（`lite` / `standard` / `full` profiles）骨架 → [`docker-compose.yml`](../docker-compose.yml)
 - [x] GitHub Actions CI/CD（PG + LibSQL 双矩阵）
 - [x] **Biome** 统一 lint + format
@@ -259,8 +259,8 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] `@keenai/channels-core`：`parseAgentResponse` 骨架（Markdown 图 · 为出站预留）
 
 #### Sprint 11-12（W25-W28）：Feedback + Help Center
-- [ ] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
-- [ ] Feedback Board + Post + Vote + Comment
+- [x] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
+- [x] Feedback Board + Post + Vote + Comment
 - [x] AI 自动去重（lexical Jaccard + bge-m3/stub VectorStore · Dashboard 提交前提示）
 - [x] Public Portal（Next.js SSR + ISR · portal `/help` + KB search）
 - [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
@@ -329,7 +329,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [x] 检索 scope stub（I76 · `queryMemoryTreeByScope`）
   - [x] Agent scope 路由 stub（I77 · `assembleAgentMemoryContext` / 09 附录 B）
 - [x] Knowledge Graph extractor（实体 + 关系 · `generateObject` schema）
-- [ ] Personality & Branding UI（Brand voice / 头像 / 语言）
+- [x] Personality & Branding UI（Brand voice / 头像 / 语言）
 - [x] **多模态 Agent 完整版**（[14-MULTIMODAL.md](14-MULTIMODAL.md) MM-10–15）：
   - [x] Inngest `media.transcribe` / `media.thumbnail` / `media.vision_summary`
   - [x] Keeni outbound：`parseAgentResponse` + 生图 / TTS Tools
@@ -430,11 +430,11 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 | 迭代 | 交付 | 状态 |
 |------|------|------|
 | I112～I114 | 0.1.0 后 hardening · Intercom · Helm skeleton | [x] |
-| I115 | **Phase 0** 剩余项全完成 | [ ] |
-| I116 | **Phase 1** 剩余项 + Phase 1 验收 | [ ] |
+| I115 | **Phase 0** 剩余项全完成 | [x] |
+| I116 | **Phase 1** 剩余项 + Phase 1 验收 | [~] |
 | I117 | **Phase 2** 剩余项 + Phase 2 验收 | [~] |
-| I118 | **Phase 3** 剩余项 + Phase 3 验收 | [ ] |
-| I119 | 质量门槛 · Docker GHCR `0.2.0` | [ ] |
+| I118 | **Phase 3** 剩余项 + Phase 3 验收 | [~] |
+| I119 | 质量门槛 · Docker GHCR `0.2.0` | [~] |
 | I120 | `CHANGELOG [0.2.0]` · `git tag v0.2.0` · GitHub Release | [ ] |
 
 > 明细清单：[08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) § v0.2.0 发布门禁。

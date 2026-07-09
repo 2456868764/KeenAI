@@ -98,6 +98,7 @@ export {
   feedbackComments,
   feedbackPosts,
   feedbackStatuses,
+  feedbackSubscriptions,
   feedbackVotes,
 } from "./feedback";
 export {

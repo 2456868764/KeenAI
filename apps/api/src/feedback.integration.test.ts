@@ -3,7 +3,14 @@ import { fileURLToPath } from "node:url";
 import { type AuthConfig, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, members, organizations } from "@keenai/storage/schema";
+import {
+  accounts,
+  brands,
+  feedbackSubscriptions,
+  members,
+  organizations,
+} from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -138,9 +145,20 @@ describe("feedback integration", () => {
     const commented = await app.request(`/api/v1/feedback/posts/${post.id}/comments`, {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
-      body: JSON.stringify({ plainText: "+1 from enterprise customer" }),
+      body: JSON.stringify({ plainText: "+1 from enterprise customer", authorId: "user-1" }),
     });
     expect(commented.status).toBe(201);
+
+    const subscriptions = await db
+      .select()
+      .from(feedbackSubscriptions)
+      .where(eq(feedbackSubscriptions.postId, post.id));
+    expect(
+      subscriptions.some((item) => item.subscriberType === "member" && item.reason === "author"),
+    ).toBe(true);
+    expect(
+      subscriptions.some((item) => item.subscriberType === "customer" && item.reason === "vote"),
+    ).toBe(true);
 
     await store.close();
   });

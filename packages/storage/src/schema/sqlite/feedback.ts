@@ -109,3 +109,22 @@ export const feedbackComments = sqliteTable(
     idxPost: index("idx_feedback_comments_post").on(t.postId, t.createdAt),
   }),
 );
+
+export const feedbackSubscriptions = sqliteTable(
+  "feedback_subscriptions",
+  {
+    postId: text("post_id")
+      .notNull()
+      .references(() => feedbackPosts.id),
+    subscriberType: text("subscriber_type", { enum: ["customer", "member", "email"] }).notNull(),
+    subscriberId: text("subscriber_id").notNull(),
+    reason: text("reason", { enum: ["author", "vote", "comment", "manual", "status_follow"] })
+      .notNull()
+      .default("manual"),
+    ...sqliteTimestamps,
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.postId, t.subscriberType, t.subscriberId] }),
+    idxPost: index("idx_feedback_subscriptions_post").on(t.postId),
+  }),
+);

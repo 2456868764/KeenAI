@@ -4,6 +4,7 @@ import {
   feedbackComments,
   feedbackPosts,
   feedbackStatuses,
+  feedbackSubscriptions,
   feedbackVotes,
 } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
@@ -58,6 +59,26 @@ export type SerializedFeedbackComment = {
   parentId: string | null;
   createdAt: string;
 };
+
+type FeedbackSubscriptionInput =
+  | {
+      postId: string;
+      subscriberType: "customer";
+      subscriberId?: string | null;
+      reason: "author" | "vote" | "comment";
+    }
+  | {
+      postId: string;
+      subscriberType: "member";
+      subscriberId?: string | null;
+      reason: "author" | "comment";
+    }
+  | {
+      postId: string;
+      subscriberType: "email";
+      subscriberId?: string | null;
+      reason: "manual" | "status_follow";
+    };
 
 function serializeBoard(row: typeof feedbackBoards.$inferSelect): SerializedFeedbackBoard {
   return {
@@ -172,6 +193,19 @@ async function loadPostMeta(
   };
 }
 
+async function ensureFeedbackSubscription(db: Db, input: FeedbackSubscriptionInput) {
+  if (!input.subscriberId) return;
+  await db
+    .insert(feedbackSubscriptions)
+    .values({
+      postId: input.postId,
+      subscriberType: input.subscriberType,
+      subscriberId: input.subscriberId,
+      reason: input.reason,
+    })
+    .onConflictDoNothing();
+}
+
 export async function listFeedbackPosts(db: Db, boardId: string, orgId: string, limit: number) {
   const rows = await db
     .select()
@@ -215,6 +249,20 @@ export async function createFeedbackPost(
 
   if (!row) throw new Error("post_insert_failed");
   const post = await loadPostMeta(db, row);
+  await Promise.all([
+    ensureFeedbackSubscription(db, {
+      postId: post.id,
+      subscriberType: "customer",
+      subscriberId: input.authorId,
+      reason: "author",
+    }),
+    ensureFeedbackSubscription(db, {
+      postId: post.id,
+      subscriberType: "member",
+      subscriberId: input.authorMemberId,
+      reason: "author",
+    }),
+  ]);
   await indexFeedbackPostEmbedding({
     postId: post.id,
     orgId: input.orgId,
@@ -244,6 +292,13 @@ export async function voteFeedbackPost(
       weight: input.weight ?? 1,
     })
     .onConflictDoNothing();
+
+  await ensureFeedbackSubscription(db, {
+    postId: input.postId,
+    subscriberType: "customer",
+    subscriberId: input.userId,
+    reason: "vote",
+  });
 
   const votes = await db
     .select({ weight: feedbackVotes.weight })
@@ -293,6 +348,21 @@ export async function addFeedbackComment(
     .returning();
 
   if (!row) throw new Error("comment_insert_failed");
+
+  await Promise.all([
+    ensureFeedbackSubscription(db, {
+      postId: input.postId,
+      subscriberType: "customer",
+      subscriberId: input.authorId,
+      reason: "comment",
+    }),
+    ensureFeedbackSubscription(db, {
+      postId: input.postId,
+      subscriberType: "member",
+      subscriberId: input.authorMemberId,
+      reason: "comment",
+    }),
+  ]);
 
   await db
     .update(feedbackPosts)
