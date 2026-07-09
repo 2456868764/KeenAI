@@ -273,7 +273,7 @@ export function widgetRoutes() {
       if (!updated) return c.json({ error: "update_failed" }, 500);
 
       if (body.workflowRunId && body.blockId) {
-        const { resumeCsatWorkflow } = await import("../lib/workflow-resume.js");
+        const { emitCsatRated, resumeCsatWorkflow } = await import("../lib/workflow-resume.js");
         const resume = await resumeCsatWorkflow(
           c.get("store").db,
           {
@@ -289,6 +289,14 @@ export function widgetRoutes() {
         if (!resume.resumed) {
           return c.json({ error: resume.reason ?? "resume_failed" }, 400);
         }
+        await emitCsatRated({
+          orgId: auth.orgId,
+          conversationId: conversation.id,
+          workflowRunId: body.workflowRunId,
+          blockId: body.blockId,
+          rating: body.rating,
+          ratingComment: body.ratingComment,
+        });
       }
 
       if (updated.status === "closed") {
@@ -325,7 +333,9 @@ export function widgetRoutes() {
       if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
       const body = c.req.valid("json");
-      const { resumeCollectDataWorkflow } = await import("../lib/workflow-resume.js");
+      const { emitCollectDataSubmitted, resumeCollectDataWorkflow } = await import(
+        "../lib/workflow-resume.js"
+      );
       const result = await resumeCollectDataWorkflow(
         c.get("store").db,
         {
@@ -342,6 +352,15 @@ export function widgetRoutes() {
       if (!result.resumed) {
         return c.json({ error: result.reason ?? "resume_failed" }, 400);
       }
+
+      await emitCollectDataSubmitted({
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        workflowRunId: body.workflowRunId,
+        blockId: body.blockId,
+        attributes: body.attributes,
+        freeText: body.freeText,
+      });
 
       return c.json({ ok: true, status: result.status });
     },
@@ -365,7 +384,9 @@ export function widgetRoutes() {
       if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
       const body = c.req.valid("json");
-      const { resumeReplyButtonsWorkflow } = await import("../lib/workflow-resume.js");
+      const { emitReplyButtonClicked, resumeReplyButtonsWorkflow } = await import(
+        "../lib/workflow-resume.js"
+      );
       const result = await resumeReplyButtonsWorkflow(
         c.get("store").db,
         {
@@ -381,6 +402,14 @@ export function widgetRoutes() {
       if (!result.resumed) {
         return c.json({ error: result.reason ?? "resume_failed" }, 400);
       }
+
+      await emitReplyButtonClicked({
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        workflowRunId: body.workflowRunId,
+        blockId: body.blockId,
+        buttonId: body.buttonId,
+      });
 
       return c.json({ ok: true, status: result.status });
     },

@@ -5,6 +5,7 @@ export const WORKFLOW_INNGEST_EVENTS = {
   CSAT_REQUEST: "keenai/workflow.csat_request",
   ATTRIBUTE_SUBMITTED: "widget/attribute.submitted",
   BUTTON_CLICKED: "widget/button.clicked",
+  CSAT_RATED: "widget/csat.rated",
   CONVERSATION_CLOSED: "conversation/state.changed.closed",
 } as const;
 

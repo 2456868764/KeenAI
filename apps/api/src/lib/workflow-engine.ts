@@ -2,7 +2,7 @@ import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
-import { runWorkflow } from "@keenai/workflow";
+import { WORKFLOW_INNGEST_EVENTS, runWorkflow } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import {
   createWorkflowActionHandlers,
@@ -87,6 +87,11 @@ export async function executeWorkflow(
           orgId: workflow.orgId,
           brandId: conversation.brandId,
           autoCloseMs,
+          blockId: result.suspended.blockId,
+          awaitEvent:
+            result.suspended.type === "collect_data"
+              ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+              : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
         });
       }
     }

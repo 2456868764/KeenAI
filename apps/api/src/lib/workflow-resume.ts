@@ -29,6 +29,10 @@ async function emitWorkflowAwaitingInput(payload: {
   orgId: string;
   brandId: string;
   autoCloseMs: number;
+  blockId?: string;
+  awaitEvent?:
+    | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+    | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED;
 }): Promise<void> {
   if (payload.autoCloseMs <= 0) return;
   try {
@@ -36,6 +40,23 @@ async function emitWorkflowAwaitingInput(payload: {
     const client = getInngestClient();
     if (!client) return;
     await client.send({ name: WORKFLOW_INNGEST_EVENTS.STEP_AWAITING_INPUT, data: payload });
+  } catch {
+    // Inngest is optional in dev/test
+  }
+}
+
+async function emitWorkflowInputEvent(payload: {
+  name:
+    | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+    | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
+    | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED;
+  data: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const { getInngestClient } = await import("./workflow-dispatch.js");
+    const client = getInngestClient();
+    if (!client) return;
+    await client.send(payload);
   } catch {
     // Inngest is optional in dev/test
   }
@@ -112,6 +133,11 @@ async function finalizeResumedRun(
           orgId: input.orgId,
           brandId: input.brandId,
           autoCloseMs,
+          blockId: input.suspended.blockId,
+          awaitEvent:
+            input.suspended.type === "collect_data"
+              ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+              : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
         });
       }
     }
@@ -340,6 +366,47 @@ export async function resumeCsatWorkflow(
     env,
     authConfig,
   );
+}
+
+export async function emitCollectDataSubmitted(payload: {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  attributes: Record<string, string>;
+  freeText?: string;
+}) {
+  await emitWorkflowInputEvent({
+    name: WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED,
+    data: payload,
+  });
+}
+
+export async function emitReplyButtonClicked(payload: {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  buttonId: string;
+}) {
+  await emitWorkflowInputEvent({
+    name: WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
+    data: payload,
+  });
+}
+
+export async function emitCsatRated(payload: {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  rating: number;
+  ratingComment?: string;
+}) {
+  await emitWorkflowInputEvent({
+    name: WORKFLOW_INNGEST_EVENTS.CSAT_RATED,
+    data: payload,
+  });
 }
 
 export { autoCloseMsForBlock, emitCsatRequest, emitWorkflowAwaitingInput, resolveRunStatus };

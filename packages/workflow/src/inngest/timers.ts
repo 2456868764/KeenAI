@@ -12,6 +12,8 @@ export type WorkflowAutoClosePayload = {
   orgId: string;
   brandId: string;
   autoCloseMs: number;
+  blockId?: string;
+  awaitEvent?: WorkflowAwaitedInputEvent;
 };
 
 export type WorkflowAutoCloseResult = {
@@ -61,8 +63,56 @@ export function workflowAutoCloseMsFromMinutes(minutes: number): number {
 
 type TimerStep = {
   sleep: (id: string, duration: string) => Promise<unknown>;
+  sleepUntil: (id: string, date: Date) => Promise<unknown>;
+  waitForEvent: <T = unknown>(
+    id: string,
+    opts: { event: string; timeout: string; if?: string },
+  ) => Promise<T | null>;
   run: <T>(id: string, fn: () => Promise<T> | T) => Promise<T>;
 };
+
+export type WorkflowAwaitedInputEvent =
+  | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+  | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
+  | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED;
+
+export function workflowTimerDuration(milliseconds: number): string {
+  return `${Math.max(1, Math.floor(milliseconds / 1000))}s`;
+}
+
+export function workflowTimerDeadline(milliseconds: number, now = Date.now()): Date {
+  return new Date(now + Math.max(1_000, milliseconds));
+}
+
+function workflowInputMatchExpression(payload: { blockId?: string }): string {
+  const runMatch = "event.data.workflowRunId == async.data.workflowRunId";
+  if (!payload.blockId) return runMatch;
+  return `${runMatch} && event.data.blockId == async.data.blockId`;
+}
+
+export async function waitForWorkflowInputEvent(
+  step: Pick<TimerStep, "waitForEvent">,
+  input: {
+    id: string;
+    event: WorkflowAwaitedInputEvent;
+    timeoutMs: number;
+    blockId?: string;
+  },
+) {
+  return step.waitForEvent(input.id, {
+    event: input.event,
+    timeout: workflowTimerDuration(input.timeoutMs),
+    if: workflowInputMatchExpression({ blockId: input.blockId }),
+  });
+}
+
+export async function sleepUntilWorkflowDeadline(
+  step: Pick<TimerStep, "sleepUntil">,
+  id: string,
+  timeoutMs: number,
+) {
+  return step.sleepUntil(id, workflowTimerDeadline(timeoutMs));
+}
 
 /** Inngest timer functions for workflow auto-close and CSAT wait. */
 export function createWorkflowTimerInngestFunctions(
@@ -79,10 +129,20 @@ export function createWorkflowTimerInngestFunctions(
       }
 
       const timerStep = step as TimerStep;
-      await timerStep.sleep(
-        "await-customer-input",
-        `${Math.max(1, Math.floor(data.autoCloseMs / 1000))}s`,
-      );
+      if (data.awaitEvent) {
+        const received = await waitForWorkflowInputEvent(timerStep, {
+          id: "await-customer-input-event",
+          event: data.awaitEvent,
+          timeoutMs: data.autoCloseMs,
+          blockId: data.blockId,
+        });
+        if (received) {
+          return { closed: false, skipped: true, reason: "input_received" };
+        }
+      } else {
+        await timerStep.sleep("await-customer-input", workflowTimerDuration(data.autoCloseMs));
+      }
+      await sleepUntilWorkflowDeadline(timerStep, "auto-close-deadline", data.autoCloseMs);
       return timerStep.run("auto-close", () => handlers.runAutoCloseTimer(data));
     },
   );
@@ -96,7 +156,15 @@ export function createWorkflowTimerInngestFunctions(
 
       if (data.waitForRating) {
         const waitMs = data.waitForRatingMs ?? DEFAULT_CSAT_WAIT_MS;
-        await timerStep.sleep("await-csat-rating", `${Math.max(1, Math.floor(waitMs / 1000))}s`);
+        const received = await waitForWorkflowInputEvent(timerStep, {
+          id: "await-csat-rating-event",
+          event: WORKFLOW_INNGEST_EVENTS.CSAT_RATED,
+          timeoutMs: waitMs,
+          blockId: data.stepId,
+        });
+        if (!received) {
+          await sleepUntilWorkflowDeadline(timerStep, "csat-rating-deadline", waitMs);
+        }
       }
 
       return timerStep.run("csat-timer", () => handlers.runCsatTimer(data));
