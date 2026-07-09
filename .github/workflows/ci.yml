@@ -34,6 +34,9 @@ jobs:
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm kb:eval
       - run: pnpm kb:bench:local
+      - run: pnpm kb:bench:api:local
+        env:
+          KB_API_BENCH_DURATION: 1
       - run: pnpm typecheck
       - run: pnpm --filter @keenai/docs build
       - run: pnpm --filter @keenai/auth test
@@ -43,7 +46,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: v0.2.0-release-evidence
-          path: artifacts/release/v0.2.0-evidence.md
+          path: |
+            artifacts/release/v0.2.0-evidence.md
+            artifacts/release/kb-api-bench.md
 
   postgres:
     runs-on: ubuntu-latest

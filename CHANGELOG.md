@@ -17,6 +17,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - Intercom normalized export import for users/admins, conversations, and messages.
 - KB release gate for Recall@5 and stale-answer proxy thresholds, wired into `pnpm kb:eval`.
 - `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
+- `kb:bench:api:local` for authenticated HTTP `/api/v1/kb/search` P95 evidence from a running local API server.
 - KB telemetry release report generation from `kb_query_logs`, including stale-answer proxy, feedback coverage, latency percentiles, and insufficient-data failures.
 - KB telemetry API and `pnpm kb:telemetry` export for JSON/Markdown release evidence from production or production-like query logs.
 - Signed KB source webhook verification for GitHub and Notion events, wired to trigger KB-16 source ingest.
@@ -40,6 +41,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - KB telemetry export: `CI=true DATABASE_URL=:memory: KB_TELEMETRY_MIGRATE=true KB_TELEMETRY_ORG_ID=org_local KB_TELEMETRY_JSON=/private/tmp/keenai-telemetry-cli/report.json KB_TELEMETRY_MD=/private/tmp/keenai-telemetry-cli/report.md corepack pnpm kb:telemetry`.
 - KB source webhooks: `CI=true corepack pnpm exec vitest run packages/kb/src/source-webhook.test.ts apps/api/src/kb.integration.test.ts`.
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
+- API KB bench: `CI=true KB_API_BENCH_DURATION=1 corepack pnpm kb:bench:api:local` (`billing` p95 24.3ms, `refund policy` p95 18.6ms, errors 0).
 - Release evidence: `CI=true corepack pnpm release:evidence`.
 - Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
 
@@ -47,7 +49,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 
 - Production Recall@5/stale-answer telemetry data or CI artifact from real golden queries.
 - Live GitHub/Notion OAuth App credential proof.
-- Remote CI history and API-level `pnpm kb:bench` P95 from a running service.
+- Remote CI history and deployed-service `pnpm kb:bench` P95 from a running service.
 - Actual GHCR image publish and Helm install artifact.
 - P3-12 tutorial video assets/links and external KPI evidence.
 
