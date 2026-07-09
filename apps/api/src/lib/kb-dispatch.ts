@@ -1,6 +1,7 @@
 import {
   KB_INNGEST_EVENTS,
   type KbCrystallizePayload,
+  type KbIngestPayload,
   buildKbCrystallizePayloadFromConversation,
 } from "@keenai/kb";
 import type { KeenaiDb } from "@keenai/storage";
@@ -8,26 +9,34 @@ import type { KeenaiDb } from "@keenai/storage";
 export type KbDispatchAdapter = {
   mode: "sync" | "inngest";
   enqueueConversationClosed: (payload: KbCrystallizePayload) => Promise<void>;
+  enqueueSourceIngest: (payload: KbIngestPayload) => Promise<void>;
 };
 
 export function createSyncKbDispatch(
   runCrystallize: (payload: KbCrystallizePayload) => Promise<unknown>,
+  runIngest: (payload: KbIngestPayload) => Promise<unknown>,
 ): KbDispatchAdapter {
   return {
     mode: "sync",
     enqueueConversationClosed: async (payload) => {
       await runCrystallize(payload);
     },
+    enqueueSourceIngest: async (payload) => {
+      await runIngest(payload);
+    },
   };
 }
 
 export function createInngestKbDispatch(
-  send: (payload: { name: string; data: KbCrystallizePayload }) => Promise<void>,
+  send: (payload: { name: string; data: KbCrystallizePayload | KbIngestPayload }) => Promise<void>,
 ): KbDispatchAdapter {
   return {
     mode: "inngest",
     enqueueConversationClosed: async (payload) => {
       await send({ name: KB_INNGEST_EVENTS.CONVERSATION_CLOSED, data: payload });
+    },
+    enqueueSourceIngest: async (payload) => {
+      await send({ name: KB_INNGEST_EVENTS.INGEST, data: payload });
     },
   };
 }

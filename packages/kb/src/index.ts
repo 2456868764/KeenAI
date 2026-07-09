@@ -179,6 +179,15 @@ export {
 } from "./search-kb-chunks.js";
 export { syncKbSource } from "./sync-source.js";
 export {
+  handleKbSourceWebhook,
+  KEENI_KB_SOURCE_WEBHOOKS,
+  KbSourceWebhookError,
+  type HandleKbSourceWebhookInput,
+  type KbSourceWebhookAction,
+  type KbSourceWebhookProvider,
+  type KbSourceWebhookResult,
+} from "./source-webhook.js";
+export {
   buildKbCrystallizePayloadFromConversation,
   type BuildKbCrystallizePayloadInput,
 } from "./lifecycle/crystallize-payload.js";

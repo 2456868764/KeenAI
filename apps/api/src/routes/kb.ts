@@ -1,9 +1,12 @@
 import { zValidator } from "@hono/zod-validator";
 import {
+  KbSourceWebhookError,
+  type KbSourceWebhookResult,
   computeKbEvalMetrics,
   createBgeM3KbQueryEmbedder,
   createKbQueryLog,
   enrichKbEvalMetricsFromGolden,
+  handleKbSourceWebhook,
   promoteKbQueryLogToGolden,
   runKbGoldenEval,
   searchKbChunks,
@@ -17,12 +20,13 @@ import {
   kbSearchFeedbackSchema,
   kbSearchQuerySchema,
 } from "@keenai/shared";
-import { kbQueryLogs } from "@keenai/storage/schema";
+import { kbQueryLogs, kbSources } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { canAccessBrand } from "../lib/conversations.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "../lib/kb-chunk-vector-init.js";
+import { getKbDispatch } from "../lib/kb-dispatch-init.js";
 import { getKbReranker } from "../lib/kb-search-config.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
@@ -30,6 +34,48 @@ import type { AppContext, AppVariables } from "../types.js";
 export function kbRoutes(_ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/kb`;
+
+  r.post(`${prefix}/sources/:sourceId/webhook/:provider`, async (c) => {
+    const sourceId = c.req.param("sourceId");
+    const provider = c.req.param("provider");
+    if (provider !== "github" && provider !== "notion") {
+      return c.json({ error: "unsupported_kb_webhook_provider" }, 400);
+    }
+
+    const db = c.get("store").db;
+    const [source] = await db.select().from(kbSources).where(eq(kbSources.id, sourceId)).limit(1);
+    if (!source) return c.json({ error: "kb_source_not_found" }, 404);
+    if (source.type !== provider) return c.json({ error: "kb_source_provider_mismatch" }, 400);
+    if (!source.brandId) return c.json({ error: "kb_source_brand_missing" }, 400);
+
+    let event: KbSourceWebhookResult;
+    try {
+      event = handleKbSourceWebhook({
+        provider,
+        headers: c.req.raw.headers,
+        rawBody: await c.req.text(),
+        config: source.config,
+      });
+    } catch (error) {
+      if (error instanceof KbSourceWebhookError) {
+        const status = error.status === 401 ? 401 : error.status === 400 ? 400 : 500;
+        return c.json({ error: error.code }, status);
+      }
+      throw error;
+    }
+
+    if (event.action === "ignored") {
+      return c.json({ accepted: false, sourceId, event }, 202);
+    }
+
+    await getKbDispatch().enqueueSourceIngest({
+      orgId: source.orgId,
+      brandId: source.brandId,
+      sourceId,
+    });
+
+    return c.json({ accepted: true, sourceId, event }, 202);
+  });
 
   r.get(`${prefix}/search`, requireAuth(), zValidator("query", kbSearchQuerySchema), async (c) => {
     const auth = c.get("auth");

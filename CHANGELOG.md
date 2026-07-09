@@ -18,6 +18,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - KB release gate for Recall@5 and stale-answer proxy thresholds, wired into `pnpm kb:eval`.
 - `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
 - KB telemetry release report generation from `kb_query_logs`, including stale-answer proxy, feedback coverage, latency percentiles, and insufficient-data failures.
+- Signed KB source webhook verification for GitHub and Notion events, wired to trigger KB-16 source ingest.
 - GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
 - Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
 - CI release evidence artifact generation for v0.2.0 gate summaries.
@@ -27,6 +28,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - Root `typecheck` now uses the repo-pinned pnpm path via `corepack pnpm -r --if-present typecheck`.
 - Release workflow now marks all `v0.x` GitHub releases as prerelease.
 - KB ingest now has an 8-step pipeline with API connector sync, chunk indexing, source status/error updates, notify, and Inngest retries.
+- KB dispatch now supports source ingest events in addition to conversation crystallization events.
 - KB parser/chunker, crystallization gates, contradiction detection, and Agent KB/Memory context reranking were deepened for P3-13.
 - KB source ingestion now includes config-backed `file`, shallow `web`, GitHub raw content, and Notion page/block sources.
 
@@ -34,6 +36,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 
 - Local CI-equivalent checks: `CI=true corepack pnpm lint`, `CI=true corepack pnpm typecheck`, `CI=true corepack pnpm test`, and `CI=true corepack pnpm kb:eval`.
 - KB telemetry report: `CI=true corepack pnpm exec vitest run packages/kb/src/eval/telemetry-report.test.ts`.
+- KB source webhooks: `CI=true corepack pnpm exec vitest run packages/kb/src/source-webhook.test.ts apps/api/src/kb.integration.test.ts`.
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
 - Release evidence: `CI=true corepack pnpm release:evidence`.
 - Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
@@ -41,6 +44,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 ### Remaining Before Tag
 
 - Production Recall@5/stale-answer telemetry data or CI artifact from real golden queries.
+- Live GitHub/Notion OAuth App credential proof.
 - Remote CI history and API-level `pnpm kb:bench` P95 from a running service.
 - Actual GHCR image publish and Helm install artifact.
 - P3-12 tutorial video assets/links and external KPI evidence.

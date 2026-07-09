@@ -5,6 +5,7 @@ import {
   createInngestKbDispatch,
   createSyncKbDispatch,
 } from "./kb-dispatch.js";
+import { runKbIngestForSource } from "./kb-pipeline.js";
 import { getInngestClient } from "./workflow-dispatch.js";
 
 let adapter: KbDispatchAdapter | null = null;
@@ -12,6 +13,9 @@ let adapter: KbDispatchAdapter | null = null;
 export function initKbDispatch(ctx: AppContext): KbDispatchAdapter {
   const runCrystallize = async (payload: Parameters<typeof runKbCrystallizeJob>[1]) => {
     await runKbCrystallizeJob(ctx.store.db, payload);
+  };
+  const runIngest = async (payload: Parameters<typeof runKbIngestForSource>[1]) => {
+    await runKbIngestForSource(ctx.store, payload);
   };
 
   const client = getInngestClient();
@@ -22,7 +26,7 @@ export function initKbDispatch(ctx: AppContext): KbDispatchAdapter {
     return adapter;
   }
 
-  adapter = createSyncKbDispatch(runCrystallize);
+  adapter = createSyncKbDispatch(runCrystallize, runIngest);
   return adapter;
 }
 
