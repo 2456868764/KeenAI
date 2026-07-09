@@ -12,6 +12,7 @@
 | [deploy/helm/README.md](../deploy/helm/README.md) | Helm chart skeleton (v0.2.0 images) |
 | [MIGRATION.md](./MIGRATION.md) | Intercom / Zendesk import (`keenai import`) |
 | [GA.md](./GA.md) | Release checklist (**v0.2.0** = Phase 0～3 全量) |
+| [tutorials/v0.2.0](./tutorials/v0.2.0/README.md) | v0.2.0 tutorial video scripts and publishing checklist |
 | [releases/v0.1.0.md](./releases/v0.1.0.md) | v0.1.0 release notes |
 | [releases/v0.2.0.md](./releases/v0.2.0.md) | v0.2.0 planned release |
 | [CHANGELOG.md](../CHANGELOG.md) | Release notes |
