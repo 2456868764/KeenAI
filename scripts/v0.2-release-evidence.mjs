@@ -26,6 +26,12 @@ function loadOllamaOfflineReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadDockerLiteStartupReport() {
+  const reportPath = process.env.DOCKER_LITE_STARTUP_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -113,6 +119,34 @@ function ollamaOfflineSection(report) {
   ];
 }
 
+function dockerLiteStartupSection(report) {
+  if (!report) {
+    return [
+      "## Docker Lite Startup",
+      "",
+      "No Docker lite startup report was attached. Run `pnpm docker:lite:startup-report` in a Docker-enabled release environment, or `DOCKER_LITE_STARTUP_DRY_RUN=true pnpm docker:lite:startup-report` for CI-safe compose validation.",
+      "",
+    ];
+  }
+
+  return [
+    "## Docker Lite Startup",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("docker_available", report.docker?.available ? "yes" : "no"),
+    row("api_health_ms", report.timing?.apiHealthMs ?? "n/a"),
+    row("db_health_ms", report.timing?.dbHealthMs ?? "n/a"),
+    row("db_after_api_ms", report.timing?.dbAfterApiMs ?? "n/a"),
+    row("startup_threshold_ms", report.thresholds?.startupMs),
+    row("db_threshold_ms", report.thresholds?.dbMs),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -125,6 +159,7 @@ const generatedAt = new Date().toISOString();
 const telemetryReport = loadTelemetryReport();
 const kbEvalReport = loadKbEvalReport();
 const ollamaOfflineReport = loadOllamaOfflineReport();
+const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -153,12 +188,14 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
   ...kbEvalSection(kbEvalReport),
   ...telemetrySection(telemetryReport),
   "## Gates Requiring External Artifacts",
   "",
   "- API-level `pnpm kb:bench` P95 from the deployed service.",
+  "- Actual Docker lite startup timing report with `evidenceStatus: pass` from a Docker-enabled release environment.",
   "- Real `ollama serve` + local model runtime evidence for final P3-ACC-02 acceptance.",
   "- Production faithfulness / Recall@5 / stale-answer telemetry from live or production-like golden data.",
   "- GHCR `0.2.0` image publish run.",

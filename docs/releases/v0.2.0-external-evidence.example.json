@@ -33,6 +33,6 @@
   "externalKpis": {
     "adoptionEvidence": "Dashboard export or analytics note proving adoption/team targets.",
     "parityEvidence": "Manual parity audit artifact for Featurebase parity gates.",
-    "startupTimingEvidence": "Docker lite/startup timing artifact from release environment."
+    "startupTimingEvidence": "Actual docker-lite-startup.json or remote artifact from pnpm docker:lite:startup-report with evidenceStatus pass."
   }
 }

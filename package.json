@@ -34,6 +34,7 @@
     "seed": "pnpm --filter @keenai/api seed",
     "smoke": "bash scripts/smoke.sh",
     "docker:lite": "docker compose --profile lite up --build",
+    "docker:lite:startup-report": "node scripts/docker-lite-startup-report.mjs",
     "compile:api": "bash scripts/build-api-binary.sh",
     "check:widget": "node scripts/check-widget-bundle.mjs",
     "verify:toolchains": "node scripts/verify-toolchains.mjs",
