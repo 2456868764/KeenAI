@@ -26,7 +26,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - Release workflow now marks all `v0.x` GitHub releases as prerelease.
 - KB ingest now has an 8-step pipeline with API connector sync, chunk indexing, source status/error updates, notify, and Inngest retries.
 - KB parser/chunker, crystallization gates, contradiction detection, and Agent KB/Memory context reranking were deepened for P3-13.
-- KB source ingestion now includes config-backed `file`, shallow `web`, and GitHub raw content sources.
+- KB source ingestion now includes config-backed `file`, shallow `web`, GitHub raw content, and Notion page/block sources.
 
 ### Verification
 

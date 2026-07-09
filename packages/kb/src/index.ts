@@ -20,6 +20,7 @@ export {
   createFileUploadConnector,
   createGitHubConnector,
   createHelpCenterStubConnector,
+  createNotionConnector,
   createWebCrawlConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,

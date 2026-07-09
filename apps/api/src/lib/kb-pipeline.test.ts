@@ -83,7 +83,12 @@ describe("runKbIngestForSource", () => {
     stores.push(store);
     const [source] = await store.db
       .insert(kbSources)
-      .values({ orgId: org.id, brandId: brand.id, type: "notion", name: "Notion" })
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        type: "resolved_conversations",
+        name: "Resolved conversations",
+      })
       .returning();
     if (!source?.id) throw new Error("source_create_failed");
 
@@ -93,14 +98,14 @@ describe("runKbIngestForSource", () => {
         brandId: brand.id,
         sourceId: source.id,
       }),
-    ).rejects.toThrow("kb_connector_unavailable:notion");
+    ).rejects.toThrow("kb_connector_unavailable:resolved_conversations");
 
     const [updatedSource] = await store.db
       .select()
       .from(kbSources)
       .where(eq(kbSources.id, source.id));
     expect(updatedSource?.status).toBe("error");
-    expect(updatedSource?.error).toBe("connector_unavailable:notion");
+    expect(updatedSource?.error).toBe("connector_unavailable:resolved_conversations");
   });
 
   it("ingests config-backed file sources", async () => {
@@ -235,6 +240,70 @@ describe("runKbIngestForSource", () => {
         status: 200,
         headers: { "content-type": "text/markdown" },
       })) as unknown as typeof fetch;
+    try {
+      const result = await runKbIngestForSource(store, {
+        orgId: org.id,
+        brandId: brand.id,
+        sourceId: source.id,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.steps.find((step) => step.step === "fetch")?.detail).toBe("synced:1/1");
+      expect(result.steps.find((step) => step.step === "index")?.metadata).toMatchObject({
+        documents: 1,
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const [updatedSource] = await store.db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, source.id));
+    expect(updatedSource?.status).toBe("active");
+    expect(updatedSource?.documentCount).toBe(1);
+    expect(updatedSource?.chunkCount).toBeGreaterThan(0);
+  });
+
+  it("ingests config-backed Notion sources", async () => {
+    const { store, org, brand } = await createFixture();
+    stores.push(store);
+    const [source] = await store.db
+      .insert(kbSources)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        type: "notion",
+        name: "Notion",
+        config: {
+          token: "secret_notion",
+          pageIds: [{ pageId: "page-1", updatedAt: "2026-07-01T00:00:00.000Z" }],
+        },
+      })
+      .returning();
+    if (!source?.id) throw new Error("source_create_failed");
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string | URL | Request) =>
+      new Response(
+        JSON.stringify(
+          String(url).includes("/pages/")
+            ? {
+                properties: {
+                  title: { type: "title", title: [{ plain_text: "Refund Playbook" }] },
+                },
+              }
+            : {
+                results: [
+                  {
+                    type: "paragraph",
+                    paragraph: { rich_text: [{ plain_text: "Refunds are approved in 14 days." }] },
+                  },
+                ],
+              },
+        ),
+        { status: 200, headers: { "content-type": "application/json" } },
+      )) as unknown as typeof fetch;
     try {
       const result = await runKbIngestForSource(store, {
         orgId: org.id,

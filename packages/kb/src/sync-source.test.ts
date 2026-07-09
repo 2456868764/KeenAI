@@ -5,6 +5,7 @@ import {
   createGitHubConnector,
   createHelpCenterStubConnector,
   createKeenaiKb,
+  createNotionConnector,
   createWebCrawlConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,
@@ -288,6 +289,78 @@ describe("KB source connectors", () => {
     expect(result.synced).toBe(1);
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("README");
+
+    await store.close();
+  });
+
+  it("syncs config-backed Notion pages", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "notion", name: "Notion" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "notion", name: "Notion KB" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createNotionConnector(
+        {
+          token: "secret_notion",
+          pageIds: [{ pageId: "page-1", updatedAt: "2026-07-01T00:00:00.000Z" }],
+        },
+        {
+          fetchFn: async (url) => ({
+            ok: true,
+            status: 200,
+            async json() {
+              if (url.includes("/pages/")) {
+                return {
+                  properties: {
+                    title: {
+                      type: "title",
+                      title: [{ plain_text: "Refund Playbook" }],
+                    },
+                  },
+                };
+              }
+              return {
+                results: [
+                  { type: "heading_2", heading_2: { rich_text: [{ plain_text: "Refunds" }] } },
+                  {
+                    type: "paragraph",
+                    paragraph: { rich_text: [{ plain_text: "Approve refunds within 14 days." }] },
+                  },
+                ],
+              };
+            },
+          }),
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(1);
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents[0]?.title).toBe("Refund Playbook");
 
     await store.close();
   });

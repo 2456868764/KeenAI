@@ -1,6 +1,7 @@
 import { createFileUploadConnector } from "./file-upload.js";
 import { createGitHubConnector } from "./github.js";
 import { createHelpCenterStubConnector } from "./help-center-stub.js";
+import { createNotionConnector } from "./notion.js";
 import type { KbConnector } from "./types.js";
 import { createWebCrawlConnector } from "./web-crawl.js";
 import { createWebCrawlStubConnector } from "./web-stub.js";
@@ -28,6 +29,7 @@ export function resolveKbConnectorForSource(
     return createWebCrawlConnector(config);
   }
   if (type === "github") return createGitHubConnector(config ?? {});
+  if (type === "notion") return createNotionConnector(config ?? {});
   return getKbStubConnector(type);
 }
 
@@ -35,6 +37,7 @@ export {
   createFileUploadConnector,
   createGitHubConnector,
   createHelpCenterStubConnector,
+  createNotionConnector,
   createWebCrawlConnector,
   createWebCrawlStubConnector,
 };
