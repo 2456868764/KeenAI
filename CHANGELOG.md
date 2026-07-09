@@ -19,6 +19,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
 - GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
 - Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
+- CI release evidence artifact generation for v0.2.0 gate summaries.
 
 ### Changed
 
@@ -32,6 +33,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 
 - Local CI-equivalent checks: `CI=true corepack pnpm lint`, `CI=true corepack pnpm typecheck`, `CI=true corepack pnpm test`, and `CI=true corepack pnpm kb:eval`.
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
+- Release evidence: `CI=true corepack pnpm release:evidence`.
 - Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
 
 ### Remaining Before Tag

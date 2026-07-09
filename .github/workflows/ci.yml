@@ -33,11 +33,17 @@ jobs:
       - run: pnpm test:coverage
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm kb:eval
+      - run: pnpm kb:bench:local
       - run: pnpm typecheck
       - run: pnpm --filter @keenai/docs build
       - run: pnpm --filter @keenai/auth test
       - run: pnpm verify:api-binary
       - run: pnpm alpha:acceptance
+      - run: pnpm release:evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v0.2.0-release-evidence
+          path: artifacts/release/v0.2.0-evidence.md
 
   postgres:
     runs-on: ubuntu-latest
