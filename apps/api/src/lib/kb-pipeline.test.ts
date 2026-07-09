@@ -148,4 +148,61 @@ describe("runKbIngestForSource", () => {
     expect(updatedSource?.documentCount).toBe(1);
     expect(updatedSource?.chunkCount).toBeGreaterThan(0);
   });
+
+  it("ingests config-backed web sources", async () => {
+    const { store, org, brand } = await createFixture();
+    stores.push(store);
+    const [source] = await store.db
+      .insert(kbSources)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        type: "web",
+        name: "Docs",
+        config: {
+          urls: [
+            {
+              url: "https://docs.example.com/local-fixture",
+              title: "Local Fixture",
+              updatedAt: "2026-07-01T00:00:00.000Z",
+            },
+          ],
+        },
+      })
+      .returning();
+    if (!source?.id) throw new Error("source_create_failed");
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string | URL | Request) =>
+      new Response(
+        "<html><title>Local Fixture</title><body><p>Install with docker compose.</p></body></html>",
+        {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        },
+      )) as typeof fetch;
+    try {
+      const result = await runKbIngestForSource(store, {
+        orgId: org.id,
+        brandId: brand.id,
+        sourceId: source.id,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.steps.find((step) => step.step === "fetch")?.detail).toBe("synced:1/1");
+      expect(result.steps.find((step) => step.step === "index")?.metadata).toMatchObject({
+        documents: 1,
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const [updatedSource] = await store.db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, source.id));
+    expect(updatedSource?.status).toBe("active");
+    expect(updatedSource?.documentCount).toBe(1);
+    expect(updatedSource?.chunkCount).toBeGreaterThan(0);
+  });
 });

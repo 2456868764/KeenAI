@@ -4,6 +4,7 @@ import {
   createFileUploadConnector,
   createHelpCenterStubConnector,
   createKeenaiKb,
+  createWebCrawlConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,
 } from "@keenai/kb";
@@ -171,6 +172,60 @@ describe("KB source connectors", () => {
     expect(result).toMatchObject({ listed: 1, synced: 1, skipped: 0 });
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("Refund Policy");
+
+    await store.close();
+  });
+
+  it("syncs config-backed web crawl documents", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "crawl", name: "Crawl" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "web", name: "Docs" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createWebCrawlConnector(
+        { urls: ["https://docs.example.com/refunds"] },
+        {
+          fetchFn: async (url) => ({
+            ok: true,
+            status: 200,
+            url,
+            headers: { get: (name) => (name === "content-type" ? "text/html" : null) },
+            async text() {
+              return "<html><title>Refunds</title><body><h1>Refunds</h1><p>Refunds are available in the portal.</p></body></html>";
+            },
+          }),
+          now: () => new Date("2026-07-01T00:00:00.000Z"),
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(1);
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents[0]?.title).toBe("Refunds");
 
     await store.close();
   });

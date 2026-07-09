@@ -1,6 +1,7 @@
 import { createFileUploadConnector } from "./file-upload.js";
 import { createHelpCenterStubConnector } from "./help-center-stub.js";
 import type { KbConnector } from "./types.js";
+import { createWebCrawlConnector } from "./web-crawl.js";
 import { createWebCrawlStubConnector } from "./web-stub.js";
 
 const HELP_CENTER = createHelpCenterStubConnector();
@@ -22,7 +23,15 @@ export function resolveKbConnectorForSource(
   config: Record<string, unknown> | null | undefined,
 ): KbConnector | null {
   if (type === "file") return createFileUploadConnector(config ?? {});
+  if (type === "web" && Array.isArray(config?.urls) && config.urls.length > 0) {
+    return createWebCrawlConnector(config);
+  }
   return getKbStubConnector(type);
 }
 
-export { createFileUploadConnector, createHelpCenterStubConnector, createWebCrawlStubConnector };
+export {
+  createFileUploadConnector,
+  createHelpCenterStubConnector,
+  createWebCrawlConnector,
+  createWebCrawlStubConnector,
+};
