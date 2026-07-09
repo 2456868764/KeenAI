@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  createFileUploadConnector,
   createHelpCenterStubConnector,
   createKeenaiKb,
   createWebCrawlStubConnector,
@@ -113,6 +114,63 @@ describe("KB source connectors", () => {
     expect(result.synced).toBe(1);
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("Getting Started");
+
+    await store.close();
+  });
+
+  it("syncs config-backed file upload documents", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "files", name: "Files" })
+      .returning();
+    const brandRow = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow[0], "brand");
+    if (!org?.id) throw new Error("org missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        type: "file",
+        name: "Uploaded files",
+      })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createFileUploadConnector({
+        documents: [
+          {
+            externalId: "uploads/refund-policy.md",
+            title: "Refund Policy",
+            rawContent: "# Refund Policy\n\nRefunds are available within 14 days.",
+            contentType: "text/markdown",
+            canonicalLocale: "en",
+            updatedAt: "2026-07-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    });
+
+    expect(result).toMatchObject({ listed: 1, synced: 1, skipped: 0 });
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents[0]?.title).toBe("Refund Policy");
 
     await store.close();
   });

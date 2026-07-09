@@ -83,7 +83,7 @@ describe("runKbIngestForSource", () => {
     stores.push(store);
     const [source] = await store.db
       .insert(kbSources)
-      .values({ orgId: org.id, brandId: brand.id, type: "file", name: "Files" })
+      .values({ orgId: org.id, brandId: brand.id, type: "notion", name: "Notion" })
       .returning();
     if (!source?.id) throw new Error("source_create_failed");
 
@@ -93,13 +93,59 @@ describe("runKbIngestForSource", () => {
         brandId: brand.id,
         sourceId: source.id,
       }),
-    ).rejects.toThrow("kb_connector_unavailable:file");
+    ).rejects.toThrow("kb_connector_unavailable:notion");
 
     const [updatedSource] = await store.db
       .select()
       .from(kbSources)
       .where(eq(kbSources.id, source.id));
     expect(updatedSource?.status).toBe("error");
-    expect(updatedSource?.error).toBe("connector_unavailable:file");
+    expect(updatedSource?.error).toBe("connector_unavailable:notion");
+  });
+
+  it("ingests config-backed file sources", async () => {
+    const { store, org, brand } = await createFixture();
+    stores.push(store);
+    const [source] = await store.db
+      .insert(kbSources)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        type: "file",
+        name: "Files",
+        config: {
+          documents: [
+            {
+              externalId: "uploads/returns.md",
+              title: "Returns",
+              rawContent: "# Returns\n\nCustomers can request returns in the portal.",
+              contentType: "text/markdown",
+              updatedAt: "2026-07-01T00:00:00.000Z",
+            },
+          ],
+        },
+      })
+      .returning();
+    if (!source?.id) throw new Error("source_create_failed");
+
+    const result = await runKbIngestForSource(store, {
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: source.id,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.steps.find((step) => step.step === "fetch")?.detail).toBe("synced:1/1");
+    expect(result.steps.find((step) => step.step === "index")?.metadata).toMatchObject({
+      documents: 1,
+    });
+
+    const [updatedSource] = await store.db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, source.id));
+    expect(updatedSource?.status).toBe("active");
+    expect(updatedSource?.documentCount).toBe(1);
+    expect(updatedSource?.chunkCount).toBeGreaterThan(0);
   });
 });

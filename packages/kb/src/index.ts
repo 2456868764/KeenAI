@@ -17,9 +17,11 @@ export {
   type KbChunkFtsIndexer,
 } from "./chunk-fts-index.js";
 export {
+  createFileUploadConnector,
   createHelpCenterStubConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,
+  resolveKbConnectorForSource,
 } from "./connectors/index.js";
 export type {
   KbConnector,

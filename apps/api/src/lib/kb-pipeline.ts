@@ -1,4 +1,4 @@
-import { type KbChunkFtsIndexer, createKeenaiKb, getKbStubConnector } from "@keenai/kb";
+import { type KbChunkFtsIndexer, createKeenaiKb, resolveKbConnectorForSource } from "@keenai/kb";
 import { type KbIngestPayload, runKbIngestPipeline } from "@keenai/kb/inngest";
 import { type LibsqlStore, type Store, createLibsqlKbChunkFtsStore } from "@keenai/storage";
 import { kbDocuments, kbSources } from "@keenai/storage/schema";
@@ -46,7 +46,7 @@ export async function runKbIngestForSource(store: Store, payload: KbIngestPayloa
     throw new Error("kb_source_not_found");
   }
 
-  const connector = getKbStubConnector(source.type);
+  const connector = resolveKbConnectorForSource(source.type, source.config);
   if (!connector) {
     await markSourceError(store, payload.sourceId, `connector_unavailable:${source.type}`);
     throw new Error(`kb_connector_unavailable:${source.type}`);
