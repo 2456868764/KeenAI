@@ -32,6 +32,12 @@ function loadDockerLiteStartupReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadCopilotAdoptionReport() {
+  const reportPath = process.env.COPILOT_ADOPTION_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -147,6 +153,34 @@ function dockerLiteStartupSection(report) {
   ];
 }
 
+function copilotAdoptionSection(report) {
+  if (!report) {
+    return [
+      "## Copilot Adoption",
+      "",
+      "No Copilot adoption report was attached. Run `pnpm copilot:adoption:report` against production or production-like `copilot_events`, or `pnpm copilot:adoption:report --fixture` for CI-safe report validation.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+  return [
+    "## Copilot Adoption",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("total_events", report.totalEvents),
+    row("accept_rate", pct(report.acceptRate)),
+    row("used_rate_accept_or_edit", pct(report.usedRate)),
+    row("accept_rate_threshold", pct(report.thresholds?.acceptRateMin)),
+    row("min_events", report.thresholds?.minEvents),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -160,6 +194,7 @@ const telemetryReport = loadTelemetryReport();
 const kbEvalReport = loadKbEvalReport();
 const ollamaOfflineReport = loadOllamaOfflineReport();
 const dockerLiteStartupReport = loadDockerLiteStartupReport();
+const copilotAdoptionReport = loadCopilotAdoptionReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -188,6 +223,7 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
   ...kbEvalSection(kbEvalReport),
@@ -195,6 +231,7 @@ const body = [
   "## Gates Requiring External Artifacts",
   "",
   "- API-level `pnpm kb:bench` P95 from the deployed service.",
+  "- Production/prod-like Copilot adoption report with `evidenceStatus: pass` and accept rate >= 30%.",
   "- Actual Docker lite startup timing report with `evidenceStatus: pass` from a Docker-enabled release environment.",
   "- Real `ollama serve` + local model runtime evidence for final P3-ACC-02 acceptance.",
   "- Production faithfulness / Recall@5 / stale-answer telemetry from live or production-like golden data.",

@@ -31,7 +31,7 @@
     }
   },
   "externalKpis": {
-    "adoptionEvidence": "Dashboard export or analytics note proving adoption/team targets.",
+    "adoptionEvidence": "Actual copilot-adoption.json or remote artifact from pnpm copilot:adoption:report with evidenceStatus pass and accept rate >= 30%.",
     "parityEvidence": "Manual parity audit artifact for Featurebase parity gates.",
     "startupTimingEvidence": "Actual docker-lite-startup.json or remote artifact from pnpm docker:lite:startup-report with evidenceStatus pass."
   }

@@ -15,6 +15,7 @@
 | Workflow triggers | `workflow.integration.test.ts` |
 | KB golden eval | `pnpm kb:eval` |
 | API binary (optional CI) | `pnpm verify:api-binary` |
+| Copilot adoption report | `pnpm copilot:adoption:report --fixture` in CI; omit fixture against production/prod-like `copilot_events` |
 | Docker lite startup report | `DOCKER_LITE_STARTUP_DRY_RUN=true pnpm docker:lite:startup-report` in CI; omit dry-run in a Docker-enabled release environment |
 
 ## Manual gates (P1-ACC)
@@ -23,7 +24,7 @@
 |----|-----------|---------------|
 | P1-ACC-01 | Internal support end-to-end | Login → inbox → reply → assign → close |
 | P1-ACC-02 | Widget + Email reachability | Widget embed + SMTP/IMAP or webhook ingest |
-| P1-ACC-03 | Copilot adoption ≥ 30% | `copilot_events` accept rate in prod (post-launch) |
+| P1-ACC-03 | Copilot adoption ≥ 30% | `pnpm copilot:adoption:report` against production/prod-like `copilot_events` |
 | P1-ACC-04 | Docker lite < 30s | `pnpm docker:lite:startup-report` in a Docker-enabled release environment |
 | P1-ACC-05 | Local bootstrap < 2min | `pnpm bootstrap:local` after `pnpm install` |
 | P1-ACC-06 | Tests + CI green | `pnpm test` · GitHub Actions |

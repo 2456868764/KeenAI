@@ -35,6 +35,7 @@ jobs:
       - run: pnpm docker:lite:startup-report
         env:
           DOCKER_LITE_STARTUP_DRY_RUN: true
+      - run: pnpm copilot:adoption:report --fixture
       - run: pnpm ollama:offline:demo
       - run: pnpm kb:eval
       - run: pnpm kb:eval:report
@@ -49,6 +50,7 @@ jobs:
       - run: pnpm alpha:acceptance
       - run: pnpm release:evidence
         env:
+          COPILOT_ADOPTION_REPORT_JSON: artifacts/release/copilot-adoption.json
           DOCKER_LITE_STARTUP_REPORT_JSON: artifacts/release/docker-lite-startup.json
           OLLAMA_OFFLINE_REPORT_JSON: artifacts/release/ollama-offline-demo.json
           KB_EVAL_REPORT_JSON: artifacts/release/kb-eval-report.json
@@ -57,6 +59,8 @@ jobs:
           name: v0.2.0-release-evidence
           path: |
             artifacts/release/v0.2.0-evidence.md
+            artifacts/release/copilot-adoption.json
+            artifacts/release/copilot-adoption.md
             artifacts/release/docker-lite-startup.json
             artifacts/release/docker-lite-startup.md
             artifacts/release/ollama-offline-demo.json
