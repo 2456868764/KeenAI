@@ -26,6 +26,7 @@
       "www.featurebase.app",
       ".turbo",
       ".next",
+      "artifacts",
       "coverage",
       "test-results",
       "playwright-report",

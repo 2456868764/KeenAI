@@ -20,6 +20,12 @@ function loadKbEvalReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadOllamaOfflineReport() {
+  const reportPath = process.env.OLLAMA_OFFLINE_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -80,6 +86,33 @@ function kbEvalSection(report) {
   ];
 }
 
+function ollamaOfflineSection(report) {
+  if (!report) {
+    return [
+      "## Ollama Offline Demo",
+      "",
+      "No Ollama offline demo report was attached. Run `pnpm ollama:offline:demo` and pass `OLLAMA_OFFLINE_REPORT_JSON=artifacts/release/ollama-offline-demo.json` to embed P3-ACC-02 evidence.",
+      "",
+    ];
+  }
+
+  return [
+    "## Ollama Offline Demo",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("provider", report.providerId),
+    row("model", report.model),
+    row("configured_providers", report.configuredProviders?.join(", ")),
+    row("request_count", report.requestCount),
+    row("remote_keys_present", report.remoteKeysPresent ? "yes" : "no"),
+    row("response_text", report.responseText),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -91,6 +124,7 @@ const runUrl =
 const generatedAt = new Date().toISOString();
 const telemetryReport = loadTelemetryReport();
 const kbEvalReport = loadKbEvalReport();
+const ollamaOfflineReport = loadOllamaOfflineReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -119,12 +153,14 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...ollamaOfflineSection(ollamaOfflineReport),
   ...kbEvalSection(kbEvalReport),
   ...telemetrySection(telemetryReport),
   "## Gates Requiring External Artifacts",
   "",
   "- API-level `pnpm kb:bench` P95 from the deployed service.",
-  "- Production Recall@5 / stale-answer telemetry from live or production-like golden data.",
+  "- Real `ollama serve` + local model runtime evidence for final P3-ACC-02 acceptance.",
+  "- Production faithfulness / Recall@5 / stale-answer telemetry from live or production-like golden data.",
   "- GHCR `0.2.0` image publish run.",
   "- Helm install artifact against a reachable Kubernetes cluster.",
   "- Rendered and uploaded YouTube / Bilibili tutorial video links.",

@@ -32,6 +32,7 @@ jobs:
       - run: pnpm db:migrate
       - run: pnpm test:coverage
       - run: node scripts/check-e2e-route-coverage.mjs
+      - run: pnpm ollama:offline:demo
       - run: pnpm kb:eval
       - run: pnpm kb:eval:report
       - run: pnpm kb:bench:local
@@ -45,12 +46,15 @@ jobs:
       - run: pnpm alpha:acceptance
       - run: pnpm release:evidence
         env:
+          OLLAMA_OFFLINE_REPORT_JSON: artifacts/release/ollama-offline-demo.json
           KB_EVAL_REPORT_JSON: artifacts/release/kb-eval-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: v0.2.0-release-evidence
           path: |
             artifacts/release/v0.2.0-evidence.md
+            artifacts/release/ollama-offline-demo.json
+            artifacts/release/ollama-offline-demo.md
             artifacts/release/kb-eval-report.json
             artifacts/release/kb-eval-report.md
             artifacts/release/kb-api-bench.md
