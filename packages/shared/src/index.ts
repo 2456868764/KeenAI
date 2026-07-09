@@ -183,6 +183,7 @@ export {
   kbGoldenPromoteSchema,
   kbSearchFeedbackSchema,
   kbSearchQuerySchema,
+  kbTelemetryQuerySchema,
   publicKbAnswerQuerySchema,
   type PublicKbAnswerQuery,
   type KbEvalMetricsQuery,
@@ -190,6 +191,7 @@ export {
   type KbGoldenPromote,
   type KbSearchFeedback,
   type KbSearchQuery,
+  type KbTelemetryQuery,
 } from "./kb.js";
 export {
   CUSTOM_ACTION_AUTH_TYPES,

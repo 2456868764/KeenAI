@@ -20,6 +20,7 @@
     "kb:release-gate": "vitest run packages/kb/src/eval/release-gate.test.ts",
     "kb:bench": "node scripts/kb-search-bench.mjs",
     "kb:bench:local": "corepack pnpm --filter @keenai/kb exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/search-bench-local.ts",
+    "kb:telemetry": "corepack pnpm --filter @keenai/kb exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/telemetry-report.ts",
     "release:evidence": "node scripts/v0.2-release-evidence.mjs",
     "keenai": "pnpm --filter @keenai/memory-cli exec keenai",
     "test:watch": "vitest",

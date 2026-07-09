@@ -89,10 +89,13 @@ function percentile(sortedValues: number[], p: number): number | null {
 }
 
 function mergeThresholds(thresholds?: Partial<KbTelemetryThresholds>): KbTelemetryThresholds {
-  return {
-    ...DEFAULT_KB_TELEMETRY_THRESHOLDS,
-    ...thresholds,
-  };
+  const merged = { ...DEFAULT_KB_TELEMETRY_THRESHOLDS };
+  for (const [key, value] of Object.entries(thresholds ?? {})) {
+    if (value !== undefined) {
+      merged[key as keyof KbTelemetryThresholds] = value;
+    }
+  }
+  return merged;
 }
 
 export function checkKbTelemetryThresholds(

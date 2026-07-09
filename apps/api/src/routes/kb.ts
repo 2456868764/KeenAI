@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import {
   KbSourceWebhookError,
   type KbSourceWebhookResult,
+  buildKbTelemetryReport,
   computeKbEvalMetrics,
   createBgeM3KbQueryEmbedder,
   createKbQueryLog,
@@ -19,6 +20,7 @@ import {
   kbGoldenPromoteSchema,
   kbSearchFeedbackSchema,
   kbSearchQuerySchema,
+  kbTelemetryQuerySchema,
 } from "@keenai/shared";
 import { kbQueryLogs, kbSources } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
@@ -190,6 +192,37 @@ export function kbRoutes(_ctx: AppContext) {
       }
 
       return c.json({ metrics });
+    },
+  );
+
+  r.get(
+    `${prefix}/eval/telemetry`,
+    requireAuth(),
+    zValidator("query", kbTelemetryQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const report = await buildKbTelemetryReport(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: query.brandId,
+        since: query.since ? new Date(query.since) : undefined,
+        until: query.until ? new Date(query.until) : undefined,
+        topFailuresLimit: query.topFailuresLimit,
+        thresholds: {
+          minQueries: query.minQueries,
+          minFeedbackRate: query.minFeedbackRate,
+          staleAnswerRateMax: query.staleAnswerRateMax,
+          p95LatencyMsMax: query.p95LatencyMsMax,
+        },
+      });
+
+      return c.json({ report });
     },
   );
 

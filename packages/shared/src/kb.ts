@@ -37,6 +37,19 @@ export const kbEvalMetricsQuerySchema = z.object({
 
 export type KbEvalMetricsQuery = z.infer<typeof kbEvalMetricsQuerySchema>;
 
+export const kbTelemetryQuerySchema = z.object({
+  brandId: z.string().min(1),
+  since: z.string().datetime().optional(),
+  until: z.string().datetime().optional(),
+  topFailuresLimit: z.coerce.number().int().min(1).max(50).optional(),
+  minQueries: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  minFeedbackRate: z.coerce.number().min(0).max(1).optional(),
+  staleAnswerRateMax: z.coerce.number().min(0).max(1).optional(),
+  p95LatencyMsMax: z.coerce.number().int().min(1).max(60_000).optional(),
+});
+
+export type KbTelemetryQuery = z.infer<typeof kbTelemetryQuerySchema>;
+
 export const kbGoldenPromoteSchema = z.object({
   brandId: z.string().min(1),
   queryLogId: z.string().min(1),

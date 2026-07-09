@@ -167,6 +167,18 @@ describe("kb search API", () => {
     };
     expect(metricsBody.metrics.totalQueries).toBe(1);
 
+    const telemetryRes = await app.request(
+      `/api/v1/kb/eval/telemetry?brandId=${brand.id}&minFeedbackRate=1&p95LatencyMsMax=500`,
+      { headers: auth },
+    );
+    expect(telemetryRes.status).toBe(200);
+    const telemetryBody = (await telemetryRes.json()) as {
+      report: { totalQueries: number; feedbackCoverageRate: number; evidenceStatus: string };
+    };
+    expect(telemetryBody.report.totalQueries).toBe(1);
+    expect(telemetryBody.report.feedbackCoverageRate).toBe(1);
+    expect(telemetryBody.report.evidenceStatus).toBe("passed");
+
     const evalRunRes = await app.request("/api/v1/kb/eval/run", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },

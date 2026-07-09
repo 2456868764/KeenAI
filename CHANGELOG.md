@@ -18,6 +18,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - KB release gate for Recall@5 and stale-answer proxy thresholds, wired into `pnpm kb:eval`.
 - `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
 - KB telemetry release report generation from `kb_query_logs`, including stale-answer proxy, feedback coverage, latency percentiles, and insufficient-data failures.
+- KB telemetry API and `pnpm kb:telemetry` export for JSON/Markdown release evidence from production or production-like query logs.
 - Signed KB source webhook verification for GitHub and Notion events, wired to trigger KB-16 source ingest.
 - GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
 - Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
@@ -36,6 +37,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 
 - Local CI-equivalent checks: `CI=true corepack pnpm lint`, `CI=true corepack pnpm typecheck`, `CI=true corepack pnpm test`, and `CI=true corepack pnpm kb:eval`.
 - KB telemetry report: `CI=true corepack pnpm exec vitest run packages/kb/src/eval/telemetry-report.test.ts`.
+- KB telemetry export: `CI=true DATABASE_URL=:memory: KB_TELEMETRY_MIGRATE=true KB_TELEMETRY_ORG_ID=org_local KB_TELEMETRY_JSON=/private/tmp/keenai-telemetry-cli/report.json KB_TELEMETRY_MD=/private/tmp/keenai-telemetry-cli/report.md corepack pnpm kb:telemetry`.
 - KB source webhooks: `CI=true corepack pnpm exec vitest run packages/kb/src/source-webhook.test.ts apps/api/src/kb.integration.test.ts`.
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
 - Release evidence: `CI=true corepack pnpm release:evidence`.
