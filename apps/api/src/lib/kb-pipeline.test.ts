@@ -1,0 +1,105 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createLibsqlStore } from "@keenai/storage";
+import { brands, kbChunks, kbSources, organizations } from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
+import { migrate } from "drizzle-orm/libsql/migrator";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  KB_INGEST_NOTIFY_CHANNEL,
+  type KbIngestNotifyPayload,
+  runKbIngestForSource,
+} from "./kb-pipeline.js";
+
+const migrationsFolder = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../../../packages/storage/migrations/libsql",
+);
+
+async function createFixture() {
+  const store = createLibsqlStore({ url: ":memory:" });
+  await migrate(store.db, { migrationsFolder });
+  const [org] = await store.db
+    .insert(organizations)
+    .values({ slug: "kb-pipeline", name: "KB Pipeline" })
+    .returning();
+  const [brand] = await store.db
+    .insert(brands)
+    .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+    .returning();
+  if (!org?.id || !brand?.id) throw new Error("fixture_create_failed");
+  return { store, org, brand };
+}
+
+describe("runKbIngestForSource", () => {
+  const stores: Array<ReturnType<typeof createLibsqlStore>> = [];
+
+  afterEach(async () => {
+    await Promise.all(stores.splice(0).map((store) => store.close()));
+  });
+
+  it("syncs a source, indexes documents, updates status, and notifies", async () => {
+    const { store, org, brand } = await createFixture();
+    stores.push(store);
+    const [source] = await store.db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "help_center", name: "Help" })
+      .returning();
+    if (!source?.id) throw new Error("source_create_failed");
+    const notifications: KbIngestNotifyPayload[] = [];
+    await store.listen<KbIngestNotifyPayload>(KB_INGEST_NOTIFY_CHANNEL, (payload) => {
+      notifications.push(payload);
+    });
+
+    const result = await runKbIngestForSource(store, {
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: source.id,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.steps.find((step) => step.step === "fetch")?.detail).toBe("synced:2/2");
+    expect(result.steps.find((step) => step.step === "index")?.metadata).toMatchObject({
+      documents: 2,
+      fts: true,
+    });
+    expect(notifications).toEqual([expect.objectContaining({ sourceId: source.id, ok: true })]);
+
+    const [updatedSource] = await store.db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, source.id));
+    expect(updatedSource?.status).toBe("active");
+    expect(updatedSource?.error).toBeNull();
+    expect(updatedSource?.documentCount).toBe(2);
+    expect(updatedSource?.chunkCount).toBeGreaterThan(0);
+
+    const chunks = await store.db.select().from(kbChunks).where(eq(kbChunks.brandId, brand.id));
+    expect(chunks.length).toBe(updatedSource?.chunkCount);
+  });
+
+  it("marks unsupported source types as error", async () => {
+    const { store, org, brand } = await createFixture();
+    stores.push(store);
+    const [source] = await store.db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "file", name: "Files" })
+      .returning();
+    if (!source?.id) throw new Error("source_create_failed");
+
+    await expect(
+      runKbIngestForSource(store, {
+        orgId: org.id,
+        brandId: brand.id,
+        sourceId: source.id,
+      }),
+    ).rejects.toThrow("kb_connector_unavailable:file");
+
+    const [updatedSource] = await store.db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, source.id));
+    expect(updatedSource?.status).toBe("error");
+    expect(updatedSource?.error).toBe("connector_unavailable:file");
+  });
+});

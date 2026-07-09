@@ -34,6 +34,7 @@ export function createKbInngestFunctions(
     {
       id: "keenai-kb-ingest",
       concurrency: { limit: 1, key: "event.data.brandId" },
+      retries: 3,
     },
     { event: KB_INNGEST_EVENTS.INGEST },
     async ({ event, step }) => {
