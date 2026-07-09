@@ -24,6 +24,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
 - Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
 - CI release evidence artifact generation for v0.2.0 gate summaries.
+- External evidence manifest template and `pnpm release:verify-external` validator for tag-time artifacts.
 
 ### Changed
 
@@ -43,6 +44,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
 - API KB bench: `CI=true KB_API_BENCH_DURATION=1 corepack pnpm kb:bench:api:local` (`billing` p95 24.3ms, `refund policy` p95 18.6ms, errors 0).
 - Release evidence: `CI=true corepack pnpm release:evidence`.
+- External evidence validator: `corepack pnpm release:verify-external /private/tmp/keenai-external-evidence/manifest.json`.
 - Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
 
 ### Remaining Before Tag

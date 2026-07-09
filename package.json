@@ -23,6 +23,7 @@
     "kb:bench:api:local": "corepack pnpm --filter @keenai/api exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/kb-api-bench-local.ts",
     "kb:telemetry": "corepack pnpm --filter @keenai/kb exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/telemetry-report.ts",
     "release:evidence": "node scripts/v0.2-release-evidence.mjs",
+    "release:verify-external": "node scripts/verify-v0.2-external-evidence.mjs",
     "keenai": "pnpm --filter @keenai/memory-cli exec keenai",
     "test:watch": "vitest",
     "typecheck": "corepack pnpm -r --if-present typecheck",

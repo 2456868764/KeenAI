@@ -90,6 +90,7 @@ const body = [
   "- GHCR `0.2.0` image publish run.",
   "- Helm install artifact against a reachable Kubernetes cluster.",
   "- Rendered and uploaded YouTube / Bilibili tutorial video links.",
+  "- `pnpm release:verify-external` passing with `artifacts/release/v0.2.0-external-evidence.json` before tagging.",
   "",
 ].join("\n");
 
