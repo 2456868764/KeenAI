@@ -17,6 +17,7 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 - Intercom normalized export import for users/admins, conversations, and messages.
 - KB release gate for Recall@5 and stale-answer proxy thresholds, wired into `pnpm kb:eval`.
 - `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
+- KB telemetry release report generation from `kb_query_logs`, including stale-answer proxy, feedback coverage, latency percentiles, and insufficient-data failures.
 - GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
 - Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
 - CI release evidence artifact generation for v0.2.0 gate summaries.
@@ -32,13 +33,14 @@ Phase 0 through Phase 3 release candidate. Do not tag until the remaining extern
 ### Verification
 
 - Local CI-equivalent checks: `CI=true corepack pnpm lint`, `CI=true corepack pnpm typecheck`, `CI=true corepack pnpm test`, and `CI=true corepack pnpm kb:eval`.
+- KB telemetry report: `CI=true corepack pnpm exec vitest run packages/kb/src/eval/telemetry-report.test.ts`.
 - Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
 - Release evidence: `CI=true corepack pnpm release:evidence`.
 - Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
 
 ### Remaining Before Tag
 
-- Production Recall@5/stale-answer telemetry or CI artifact from real golden queries.
+- Production Recall@5/stale-answer telemetry data or CI artifact from real golden queries.
 - Remote CI history and API-level `pnpm kb:bench` P95 from a running service.
 - Actual GHCR image publish and Helm install artifact.
 - P3-12 tutorial video assets/links and external KPI evidence.

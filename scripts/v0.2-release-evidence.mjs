@@ -1,11 +1,47 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const outputDir = process.env.RELEASE_EVIDENCE_DIR ?? "artifacts/release";
 const outputPath = join(outputDir, "v0.2.0-evidence.md");
 
 function row(label, value) {
-  return `| ${label} | ${value || "n/a"} |`;
+  return `| ${label} | ${value ?? "n/a"} |`;
+}
+
+function loadTelemetryReport() {
+  const reportPath = process.env.KB_TELEMETRY_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
+function telemetrySection(report) {
+  if (!report) {
+    return [
+      "## KB Production Telemetry",
+      "",
+      "No KB telemetry report was attached. Set `KB_TELEMETRY_REPORT_JSON` to a JSON report generated from `buildKbTelemetryReport` when production or production-like query logs are available.",
+      "",
+    ];
+  }
+
+  return [
+    "## KB Production Telemetry",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("org_id", report.orgId),
+    row("brand_id", report.brandId),
+    row("window_since", report.window?.since),
+    row("window_until", report.window?.until),
+    row("total_queries", report.totalQueries),
+    row("feedback_coverage", report.feedbackCoverageRate?.toFixed?.(3)),
+    row("stale_answer_rate", report.staleAnswerRate?.toFixed?.(3)),
+    row("latency_p95_ms", report.latency?.p95Ms),
+    row("empty_result_rate", report.emptyResultRate?.toFixed?.(3)),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -17,6 +53,7 @@ const runUrl =
     : "local";
 
 const generatedAt = new Date().toISOString();
+const telemetryReport = loadTelemetryReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -44,6 +81,7 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...telemetrySection(telemetryReport),
   "## Gates Requiring External Artifacts",
   "",
   "- API-level `pnpm kb:bench` P95 from a running service.",

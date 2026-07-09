@@ -12,6 +12,17 @@ export {
   type KbEvalMetrics,
 } from "./metrics.js";
 export {
+  buildKbTelemetryReport,
+  checkKbTelemetryThresholds,
+  DEFAULT_KB_TELEMETRY_THRESHOLDS,
+  KEENI_KB_V020_TELEMETRY,
+  renderKbTelemetryMarkdown,
+  type BuildKbTelemetryReportInput,
+  type KbTelemetryFailureSample,
+  type KbTelemetryReport,
+  type KbTelemetryThresholds,
+} from "./telemetry-report.js";
+export {
   KEENI_KB_SPRINT18_EVAL,
   scoreKbAnswerQuality,
   scoreKbFaithfulness,
