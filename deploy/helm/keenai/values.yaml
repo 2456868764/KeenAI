@@ -1,4 +1,4 @@
-# I114 skeleton — extend for v0.2.0. See deploy/helm/README.md
+# v0.2.0 chart defaults. See deploy/helm/README.md.
 
 global:
   imagePullSecrets: []
@@ -7,8 +7,8 @@ api:
   enabled: true
   replicaCount: 1
   image:
-    repository: ghcr.io/keenai/api
-    tag: "0.1.0"
+    repository: ghcr.io/keenai/keenai-api
+    tag: "0.2.0"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -23,8 +23,8 @@ dashboard:
   enabled: true
   replicaCount: 1
   image:
-    repository: ghcr.io/keenai/dashboard
-    tag: "0.1.0"
+    repository: ghcr.io/keenai/keenai-dashboard
+    tag: "0.2.0"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP

@@ -1,6 +1,6 @@
 # KeenAI Helm chart
 
-> **v0.1.0** ships Docker Compose. Chart skeleton **I114**; image tags track **0.2.0** next.
+> **v0.2.0** chart defaults point at GHCR image tags `0.2.0`. Override image repositories when publishing under a different GitHub owner.
 
 ## Install (local dry-run)
 
@@ -26,15 +26,17 @@ deploy/helm/keenai/
 
 | Key | Default |
 |-----|---------|
-| `api.image.tag` | `0.1.0` |
+| `api.image.repository` | `ghcr.io/keenai/keenai-api` |
+| `api.image.tag` | `0.2.0` |
+| `dashboard.image.repository` | `ghcr.io/keenai/keenai-dashboard` |
+| `dashboard.image.tag` | `0.2.0` |
 | `api.env.KEENAI_AUTO_SEED` | `0` |
 | `dashboard.env.NEXT_PUBLIC_API_URL` | in-cluster API service |
 
-## Planned for v0.2.0 (I116)
+## Post-v0.2 hardening
 
 - Init Job for `db:migrate`
 - Ingress + TLS
 - External PostgreSQL / Redis subcharts or `externalDatabase.url`
-- GHCR image publish workflow (`0.2.0` tags)
 
 Track: [docs/08-ROADMAP-TODO.md](../../docs/08-ROADMAP-TODO.md) I114～I117 · [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md)

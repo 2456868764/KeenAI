@@ -28,7 +28,7 @@ jobs:
 
       - run: pnpm verify:p0
       - run: pnpm lint
-      - run: echo "feat: ci smoke" | pnpm exec commitlint
+      - run: 'echo "feat: ci smoke" | pnpm exec commitlint'
       - run: pnpm db:migrate
       - run: pnpm test:coverage
       - run: node scripts/check-e2e-route-coverage.mjs
@@ -108,3 +108,13 @@ jobs:
       - run: pnpm e2e
         env:
           CI: true
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - run: helm lint deploy/helm/keenai
+      - run: helm template keenai deploy/helm/keenai

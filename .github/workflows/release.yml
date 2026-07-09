@@ -52,5 +52,5 @@ jobs:
           name: ${{ steps.tag.outputs.name }}
           body: ${{ steps.notes.outputs.file }}
           draft: false
-          prerelease: ${{ contains(steps.tag.outputs.name, '0.0.') || contains(steps.tag.outputs.name, '0.1.') }}
+          prerelease: ${{ startsWith(steps.tag.outputs.name, 'v0.') }}
           generate_release_notes: false

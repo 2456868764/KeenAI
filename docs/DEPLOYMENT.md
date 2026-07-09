@@ -82,7 +82,12 @@ Eval thresholds: `packages/kb/config/kb-eval.yaml` (`recall_at_5_min: 0.88`, `st
 
 ## Helm / Kubernetes
 
-Helm chart skeleton exists (`deploy/helm/keenai`); until images publish for v0.2.0, use Docker lite or compose `standard` profile.
+Helm chart defaults target GHCR `0.2.0` image tags. Publish images with `.github/workflows/docker-publish.yml`, then validate:
+
+```bash
+helm lint deploy/helm/keenai
+helm template keenai deploy/helm/keenai
+```
 
 ## Documentation site
 
