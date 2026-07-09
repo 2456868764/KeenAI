@@ -1,4 +1,5 @@
 import { createFileUploadConnector } from "./file-upload.js";
+import { createGitHubConnector } from "./github.js";
 import { createHelpCenterStubConnector } from "./help-center-stub.js";
 import type { KbConnector } from "./types.js";
 import { createWebCrawlConnector } from "./web-crawl.js";
@@ -26,11 +27,13 @@ export function resolveKbConnectorForSource(
   if (type === "web" && Array.isArray(config?.urls) && config.urls.length > 0) {
     return createWebCrawlConnector(config);
   }
+  if (type === "github") return createGitHubConnector(config ?? {});
   return getKbStubConnector(type);
 }
 
 export {
   createFileUploadConnector,
+  createGitHubConnector,
   createHelpCenterStubConnector,
   createWebCrawlConnector,
   createWebCrawlStubConnector,

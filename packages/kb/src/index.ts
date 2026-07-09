@@ -18,6 +18,7 @@ export {
 } from "./chunk-fts-index.js";
 export {
   createFileUploadConnector,
+  createGitHubConnector,
   createHelpCenterStubConnector,
   createWebCrawlConnector,
   createWebCrawlStubConnector,

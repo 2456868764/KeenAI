@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createFileUploadConnector,
+  createGitHubConnector,
   createHelpCenterStubConnector,
   createKeenaiKb,
   createWebCrawlConnector,
@@ -226,6 +227,67 @@ describe("KB source connectors", () => {
     expect(result.synced).toBe(1);
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("Refunds");
+
+    await store.close();
+  });
+
+  it("syncs config-backed GitHub raw documents", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "github", name: "GitHub" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "github", name: "GitHub Docs" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createGitHubConnector(
+        {
+          files: [
+            {
+              url: "https://raw.githubusercontent.com/keenai/docs/main/README.md",
+              path: "README.md",
+              updatedAt: "2026-07-01T00:00:00.000Z",
+            },
+          ],
+        },
+        {
+          fetchFn: async (url) => ({
+            ok: true,
+            status: 200,
+            url,
+            headers: { get: (name) => (name === "content-type" ? "text/markdown" : null) },
+            async text() {
+              return "# KeenAI README\n\nInstall with Docker or Helm.";
+            },
+          }),
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(1);
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents[0]?.title).toBe("README");
 
     await store.close();
   });
