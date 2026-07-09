@@ -6,6 +6,41 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning: [Se
 
 ## [Unreleased]
 
+## [0.2.0] — pending
+
+Phase 0 through Phase 3 release candidate. Do not tag until the remaining external acceptance gates in `docs/V0.2.0-RELEASE-GAP-AUDIT.md` are satisfied.
+
+### Added
+
+- Chinese LLM provider support for Qwen and Zhipu, including API env wiring, provider summaries, and Simplified Chinese drafting guidance.
+- Dashboard i18n coverage for 12 locales: `en`, `zh`, `ja`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, and `hi`.
+- Intercom normalized export import for users/admins, conversations, and messages.
+- KB release gate for Recall@5 and stale-answer proxy thresholds, wired into `pnpm kb:eval`.
+- `kb:bench:local` for Node-only KB sync/index/search P95 validation without a running API server.
+- GHCR Docker publish workflow for `keenai-api` and `keenai-dashboard` `0.2.x` image tags.
+- Helm chart defaults for `0.2.0` API and Dashboard images, plus CI lint/template validation.
+
+### Changed
+
+- Root `typecheck` now uses the repo-pinned pnpm path via `corepack pnpm -r --if-present typecheck`.
+- Release workflow now marks all `v0.x` GitHub releases as prerelease.
+- KB ingest now has an 8-step pipeline with API connector sync, chunk indexing, source status/error updates, notify, and Inngest retries.
+- KB parser/chunker, crystallization gates, contradiction detection, and Agent KB/Memory context reranking were deepened for P3-13.
+- KB source ingestion now includes config-backed `file` sources for imported/uploaded documents.
+
+### Verification
+
+- Local CI-equivalent checks: `CI=true corepack pnpm lint`, `CI=true corepack pnpm typecheck`, `CI=true corepack pnpm test`, and `CI=true corepack pnpm kb:eval`.
+- Local KB bench: `CI=true corepack pnpm kb:bench:local` (`billing` p95 10.1ms, `refund policy` p95 7.1ms, errors 0).
+- Helm validation: `helm lint deploy/helm/keenai`, `helm template keenai deploy/helm/keenai`.
+
+### Remaining Before Tag
+
+- Production Recall@5/stale-answer telemetry or CI artifact from real golden queries.
+- Remote CI history and API-level `pnpm kb:bench` P95 from a running service.
+- Actual GHCR image publish and Helm install artifact.
+- P3-12 tutorial video assets/links and external KPI evidence.
+
 ## [0.1.0] — 2026-05-20
 
 First minor release after Alpha (`0.0.1`): KB compounding loop wiring, GA prep, and Dashboard product stubs.
