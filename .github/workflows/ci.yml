@@ -33,6 +33,7 @@ jobs:
       - run: pnpm test:coverage
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm kb:eval
+      - run: pnpm kb:eval:report
       - run: pnpm kb:bench:local
       - run: pnpm kb:bench:api:local
         env:
@@ -43,11 +44,15 @@ jobs:
       - run: pnpm verify:api-binary
       - run: pnpm alpha:acceptance
       - run: pnpm release:evidence
+        env:
+          KB_EVAL_REPORT_JSON: artifacts/release/kb-eval-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: v0.2.0-release-evidence
           path: |
             artifacts/release/v0.2.0-evidence.md
+            artifacts/release/kb-eval-report.json
+            artifacts/release/kb-eval-report.md
             artifacts/release/kb-api-bench.md
 
   postgres:

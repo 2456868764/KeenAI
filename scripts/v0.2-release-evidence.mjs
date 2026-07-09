@@ -14,6 +14,12 @@ function loadTelemetryReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadKbEvalReport() {
+  const reportPath = process.env.KB_EVAL_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -44,6 +50,36 @@ function telemetrySection(report) {
   ];
 }
 
+function kbEvalSection(report) {
+  if (!report) {
+    return [
+      "## KB Local Eval Report",
+      "",
+      "No local KB eval report was attached. Run `pnpm kb:eval:report` and pass `KB_EVAL_REPORT_JSON=artifacts/release/kb-eval-report.json` to embed P3-ACC-04/P3-ACC-05 evidence.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+
+  return [
+    "## KB Local Eval Report",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("case_count", report.golden?.caseCount),
+    row("recall_at_5", pct(report.golden?.recallAt5)),
+    row("mrr", pct(report.golden?.mrr)),
+    row("hit_rate", pct(report.golden?.hitRate)),
+    row("avg_faithfulness", pct(report.golden?.avgFaithfulness)),
+    row("avg_contextual_recall", pct(report.golden?.avgContextualRecall)),
+    row("stale_answer_rate", pct(report.lifecycle?.staleAnswerRate)),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -54,6 +90,7 @@ const runUrl =
 
 const generatedAt = new Date().toISOString();
 const telemetryReport = loadTelemetryReport();
+const kbEvalReport = loadKbEvalReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -82,6 +119,7 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...kbEvalSection(kbEvalReport),
   ...telemetrySection(telemetryReport),
   "## Gates Requiring External Artifacts",
   "",
