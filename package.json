@@ -21,7 +21,7 @@
     "kb:bench": "node scripts/kb-search-bench.mjs",
     "keenai": "pnpm --filter @keenai/memory-cli exec keenai",
     "test:watch": "vitest",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "corepack pnpm -r --if-present typecheck",
     "db:generate": "pnpm --filter @keenai/storage db:generate",
     "db:migrate": "pnpm --filter @keenai/storage db:migrate",
     "seed": "pnpm --filter @keenai/api seed",

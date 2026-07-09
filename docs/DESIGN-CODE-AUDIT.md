@@ -46,7 +46,7 @@
 - **P3-11 fixed:** Dashboard next-intl now registers 12 locale bundles (`en`, `zh`, `ja`, `ko`, `es`, `fr`, `de`, `pt`, `it`, `nl`, `ar`, `hi`) and the locale switcher renders from the shared supported-locale list.
 - **P3-13 partial:** KB-16 ingest now has a real 8-stage runner with hookable handlers and failure/notify semantics. KB-18 parser/chunker stubs were replaced with a heading-aware Markdown/HTML-ish parser and paragraph/sentence-boundary chunker with overlap. KB-19 now has explainable quality gates and conflict-aware candidate downgrade. KB-20 now uses policy-signal conflict detection in addition to topic overlap. KB-22 now performs dynamic KB/Memory reranking. Remaining P3-13 depth is production connector/retry/notify wiring around KB-16; release acceptance still needs fresh KB eval evidence.
 - **P3-14 fixed:** `keenai import intercom --file` now imports users/admins and conversations/messages from normalized JSON or an extracted export directory into core tables. Direct ZIP extraction is intentionally not bundled; extract the archive first.
-- **I119 typecheck hardening:** optional `@mastra/evals` scorer loading no longer breaks TypeScript when the optional package subpath is absent.
+- **I119 typecheck hardening:** optional `@mastra/evals` scorer loading no longer breaks TypeScript when the optional package subpath is absent. Root `typecheck` now runs `corepack pnpm -r --if-present typecheck` so release checks use the repo-pinned pnpm version instead of nested Turbo subprocesses resolving a different pnpm.
 
 ## Non-KB doc mismatches
 
