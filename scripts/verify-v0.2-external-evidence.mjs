@@ -6,8 +6,22 @@ const DEFAULT_MANIFEST = "artifacts/release/v0.2.0-external-evidence.json";
 
 const REQUIRED_URL_FIELDS = [
   ["remoteCiRunUrl", "remote CI run URL"],
+  ["ciGreenRate.url", "CI green-rate evidence URL"],
   ["deployedKbBench.url", "deployed API kb:bench evidence URL"],
   ["helm.installArtifactUrl", "Helm install artifact URL"],
+  ["runningEnvironment.supportDogfoodUrl", "running-environment support dogfood evidence URL"],
+  [
+    "runningEnvironment.customerReachabilityUrl",
+    "running-environment customer reachability evidence URL",
+  ],
+  ["featurebaseParity.artifactUrl", "Featurebase parity artifact URL"],
+  ["externalTeams.artifactUrl", "external teams trial evidence URL"],
+  ["copilotAdoption.artifactUrl", "Copilot adoption artifact URL"],
+  ["autoResolution.artifactUrl", "auto resolution artifact URL"],
+  ["dockerLiteStartup.artifactUrl", "Docker lite startup artifact URL"],
+  ["liveSourceConnectors.githubOAuthArtifactUrl", "GitHub source OAuth evidence URL"],
+  ["liveSourceConnectors.notionOAuthArtifactUrl", "Notion source OAuth evidence URL"],
+  ["ollamaOffline.realRuntimeArtifactUrl", "real Ollama runtime evidence URL"],
   ["tutorials.selfHosted.youtubeUrl", "self-hosted YouTube tutorial URL"],
   ["tutorials.selfHosted.bilibiliUrl", "self-hosted Bilibili tutorial URL"],
   ["tutorials.kbImport.youtubeUrl", "KB import/eval YouTube tutorial URL"],
@@ -19,9 +33,7 @@ const REQUIRED_TEXT_FIELDS = [
   ["tag", "release tag"],
   ["ghcr.apiImage", "GHCR API image ref"],
   ["ghcr.dashboardImage", "GHCR Dashboard image ref"],
-  ["externalKpis.adoptionEvidence", "adoption KPI evidence"],
-  ["externalKpis.parityEvidence", "parity KPI evidence"],
-  ["externalKpis.startupTimingEvidence", "startup timing evidence"],
+  ["ollamaOffline.model", "real Ollama runtime model"],
 ];
 
 function usage() {
@@ -112,14 +124,110 @@ function checkDeployedBench(manifest, failures) {
 
 function checkImages(manifest, failures) {
   const tag = get(manifest, "tag");
+  const imageTag = isNonEmptyString(tag) ? tag.replace(/^v/, "") : tag;
   for (const [path, label] of [
     ["ghcr.apiImage", "GHCR API image ref"],
     ["ghcr.dashboardImage", "GHCR Dashboard image ref"],
   ]) {
     const value = get(manifest, path);
-    if (isNonEmptyString(tag) && isNonEmptyString(value) && !value.includes(tag)) {
-      failures.push(`${label} must include ${tag}`);
+    if (
+      isNonEmptyString(tag) &&
+      isNonEmptyString(imageTag) &&
+      isNonEmptyString(value) &&
+      !value.includes(tag) &&
+      !value.includes(imageTag)
+    ) {
+      failures.push(`${label} must include ${tag} or ${imageTag}`);
     }
+  }
+}
+
+function checkCiGreenRate(manifest, failures) {
+  const rate = get(manifest, "ciGreenRate.rate");
+  const threshold = get(manifest, "ciGreenRate.threshold");
+  if (typeof rate !== "number" || rate < 0 || rate > 1) {
+    failures.push("CI green-rate must be a number between 0 and 1");
+  }
+  if (typeof threshold === "number" && typeof rate === "number" && rate < threshold) {
+    failures.push(`CI green-rate ${rate} < threshold ${threshold}`);
+  }
+  if (typeof threshold !== "number" && typeof rate === "number" && rate < 0.95) {
+    failures.push(`CI green-rate ${rate} < default threshold 0.95`);
+  }
+}
+
+function checkExternalTeams(manifest, failures) {
+  const count = get(manifest, "externalTeams.count");
+  if (typeof count !== "number" || count < 3) {
+    failures.push("external teams trial count must be >= 3");
+  }
+}
+
+function checkJsonReport(path, label, failures) {
+  checkFile(path, label, failures);
+  if (!isNonEmptyString(path) || !existsSync(resolvePath(path))) return null;
+  return loadJson(resolvePath(path));
+}
+
+function checkCopilotAdoption(manifest, failures) {
+  const report = checkJsonReport(
+    get(manifest, "copilotAdoption.reportJson"),
+    "Copilot adoption report JSON",
+    failures,
+  );
+  if (!report) return;
+  if (report.evidenceStatus !== "pass") failures.push("Copilot adoption report must pass");
+  if (report.mode !== "actual") failures.push("Copilot adoption report must be mode=actual");
+  if (typeof report.totalEvents !== "number" || report.totalEvents < report.thresholds?.minEvents) {
+    failures.push("Copilot adoption report must include enough production/prod-like events");
+  }
+  if (
+    typeof report.acceptRate !== "number" ||
+    report.acceptRate < (report.thresholds?.acceptRateMin ?? 0.3)
+  ) {
+    failures.push("Copilot adoption report acceptRate must meet threshold");
+  }
+}
+
+function checkAutoResolution(manifest, failures) {
+  const report = checkJsonReport(
+    get(manifest, "autoResolution.reportJson"),
+    "auto resolution report JSON",
+    failures,
+  );
+  if (!report) return;
+  if (report.evidenceStatus !== "pass") failures.push("auto resolution report must pass");
+  if (report.mode !== "actual") failures.push("auto resolution report must be mode=actual");
+  if (
+    typeof report.totalClosedConversations !== "number" ||
+    report.totalClosedConversations < report.thresholds?.minClosedConversations
+  ) {
+    failures.push("auto resolution report must include enough production/prod-like conversations");
+  }
+  if (
+    typeof report.autoResolutionRate !== "number" ||
+    report.autoResolutionRate < (report.thresholds?.autoResolutionRateMin ?? 0.5)
+  ) {
+    failures.push("auto resolution report autoResolutionRate must meet threshold");
+  }
+}
+
+function checkDockerStartup(manifest, failures) {
+  const report = checkJsonReport(
+    get(manifest, "dockerLiteStartup.reportJson"),
+    "Docker lite startup report JSON",
+    failures,
+  );
+  if (!report) return;
+  if (report.evidenceStatus !== "pass") failures.push("Docker lite startup report must pass");
+  if (report.mode !== "actual") failures.push("Docker lite startup report must be mode=actual");
+  const apiHealthMs = report.timing?.apiHealthMs;
+  const dbAfterApiMs = report.timing?.dbAfterApiMs;
+  if (typeof apiHealthMs !== "number" || apiHealthMs > (report.thresholds?.startupMs ?? 30_000)) {
+    failures.push("Docker lite startup report apiHealthMs must meet threshold");
+  }
+  if (typeof dbAfterApiMs !== "number" || dbAfterApiMs > (report.thresholds?.dbMs ?? 5_000)) {
+    failures.push("Docker lite startup report dbAfterApiMs must meet threshold");
   }
 }
 
@@ -130,9 +238,14 @@ function verify(manifest) {
   for (const [path, label] of REQUIRED_TEXT_FIELDS) checkText(get(manifest, path), label, failures);
 
   if (get(manifest, "tag") !== "v0.2.0") failures.push("tag must be v0.2.0");
+  checkCiGreenRate(manifest, failures);
+  checkExternalTeams(manifest, failures);
   checkTelemetry(manifest, failures);
   checkDeployedBench(manifest, failures);
   checkImages(manifest, failures);
+  checkCopilotAdoption(manifest, failures);
+  checkAutoResolution(manifest, failures);
+  checkDockerStartup(manifest, failures);
 
   return failures;
 }
