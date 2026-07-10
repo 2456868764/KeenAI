@@ -131,7 +131,7 @@
 | P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [x] |
 | P3-11 | 10+ 语言 next-intl | [x] |
 | P3-12 | 视频教程（YouTube / B 站） | [~] `docs:release:report` 已验证两套 v0.2.0 录制脚本和发布 checklist；渲染 MP4 或 YouTube/Bilibili 链接仍待外部附加 |
-| P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
+| P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [~] `core:parity:report` 已验证 RAG/KB 本地实现路径；live OAuth app 与生产/prod-like telemetry 证据仍待外部附加 |
 | P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [x] |
 | P3-ACC-01 | 自动解决率 ≥ 50% | [~] `auto:resolution:report --fixture` 已验证 closed conversation resolution 分类和阈值报告；生产/prod-like telemetry artifact 待外部附加 |
 | P3-ACC-02 | Ollama 完全离线 demo | [~] `ollama:offline:demo` 可验证本地 Ollama-compatible 调用链；真实 Ollama 模型端到端运行证据待外部附加 |
@@ -144,7 +144,7 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | I119-01 | Recall@5 ≥ 88%（`pnpm kb:eval`） | [~] 本地 gate 与 `kb:eval:report` 可跑并进入 release evidence；生产/prod-like telemetry 仍需外部证据 |
-| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [~] 本地 lint/typecheck/test/eval/bench 已有；远程 CI artifact 和 deployed API bench 仍需外部证据 |
+| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [~] 本地 lint/typecheck/test/eval/bench 与 `core:parity:report` 已有；远程 CI artifact 和 deployed API bench 仍需外部证据 |
 | I119-03 | GHCR Docker `0.2.0` publish pipeline | [~] workflow 已有；实际 GHCR `0.2.0` image publish 未完成 |
 | I119-04 | Helm chart 可安装（超越 I114 skeleton） | [~] lint/template 本地可跑；远程 Helm install artifact 未完成 |
 | I120-01 | `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md` | [~] release-candidate 草案已有；final release notes confirmation 未完成 |

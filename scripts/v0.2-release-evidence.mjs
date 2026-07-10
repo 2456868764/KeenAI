@@ -74,6 +74,12 @@ function loadFeaturebaseParityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadCoreModuleParityReport() {
+  const reportPath = process.env.CORE_MODULE_PARITY_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function loadDocsReleaseReport() {
   const reportPath = process.env.DOCS_RELEASE_REPORT_JSON;
   if (!reportPath) return null;
@@ -402,6 +408,37 @@ function featurebaseParitySection(report) {
   ];
 }
 
+function coreModuleParitySection(report) {
+  if (!report) {
+    return [
+      "## Core Module Parity",
+      "",
+      "No core module parity report was attached. Run `pnpm core:parity:report` to validate frontend, RAG, memory, storage, multimodal, agent, and workflow implementation coverage against the v0.2.0 design docs.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+  const groups = (report.groups ?? [])
+    .map((group) => `${group.group}:${(group.score * 100).toFixed(1)}%`)
+    .join(", ");
+
+  return [
+    "## Core Module Parity",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("score", pct(report.score)),
+    row("threshold", pct(report.threshold)),
+    row("passed_weight", report.passedWeight),
+    row("total_weight", report.totalWeight),
+    row("groups", groups || "n/a"),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 function docsReleaseSection(report) {
   if (!report) {
     return [
@@ -484,6 +521,7 @@ const customerReachabilityReport = loadCustomerReachabilityReport();
 const widgetRuntimeReport = loadWidgetRuntimeReport();
 const autoResolutionReport = loadAutoResolutionReport();
 const featurebaseParityReport = loadFeaturebaseParityReport();
+const coreModuleParityReport = loadCoreModuleParityReport();
 const docsReleaseReport = loadDocsReleaseReport();
 const qualityGateReport = loadQualityGateReport();
 const body = [
@@ -516,6 +554,7 @@ const body = [
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "| Support dogfood | `pnpm support:dogfood:report` | CI job uploads JSON/Markdown dashboard evidence |",
   "| Widget runtime | `pnpm widget:runtime:report` | CI job uploads JSON/Markdown embed evidence |",
+  "| Core module parity | `pnpm core:parity:report` | CI job uploads frontend/RAG/memory/storage/multimodal/agent/workflow parity evidence |",
   "| Docs release | `pnpm docs:release:report` | CI job uploads docs/tutorial readiness evidence; video uploads required before tag |",
   "",
   ...supportFlowSection(supportFlowReport),
@@ -524,6 +563,7 @@ const body = [
   ...widgetRuntimeSection(widgetRuntimeReport),
   ...autoResolutionSection(autoResolutionReport),
   ...featurebaseParitySection(featurebaseParityReport),
+  ...coreModuleParitySection(coreModuleParityReport),
   ...docsReleaseSection(docsReleaseReport),
   ...qualityGateSection(qualityGateReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
