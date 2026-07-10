@@ -195,7 +195,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [ ] 客户可通过 Widget / Email 联系
 - [ ] AI Copilot 采纳率 ≥ 30%
 - [ ] `docker compose --profile lite up` 启动 < 30 秒 · DB 可用 < 5 秒
-- [ ] `bun create keenai` 全栈本地启动 < 2 分钟
+- [x] `bun create keenai` 全栈本地启动 < 2 分钟
 - [ ] GitHub Stars ≥ 500
 - [ ] **Solo 模式额外验收**：维护 ≥ 70% 测试覆盖率（Vitest）+ ≥ 95% CI 绿率
 
@@ -236,7 +236,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Tracker fan-out（一个 Tracker → N 个 Customer ticket 状态同步）
 
 #### Sprint 9-10（W21-W24）：Workflow 完整版 + SLA
-- [~] 所有 Block 实现（参见 02-FEATURES）
+- [x] 所有 Block 实现（参见 02-FEATURES）
 - [x] `branches` / `apply_rules` / `http_request` / `wait` / suspend blocks（`collect_data` / `reply_buttons` / `csat` / `snooze` / `tag_conversation` 已落地）
 - [x] Inngest `step.waitForEvent` / `step.sleepUntil` 集成（workflow timers 等待 widget input/button/CSAT 事件并按绝对 deadline 兜底）
 - [x] Workflow 版本管理（draft → published · `published_definition` snapshot）+ Trace 查看（runs API + Dashboard）
@@ -263,7 +263,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] Feedback Board + Post + Vote + Comment
 - [x] AI 自动去重（lexical Jaccard + bge-m3/stub VectorStore · Dashboard 提交前提示）
 - [x] Public Portal（Next.js SSR + ISR · portal `/help` + KB search）
-- [~] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
+- [x] Help Center Collections + Articles + Tags（`help_collections` / `help_articles` · Tiptap 编辑器 · publish→KB 索引）
 - [x] Tiptap 编辑器扩展（步骤列表 / 信息框 / 折叠面板）
 - [x] Public Help Center 页面（Next.js + SEO + sitemap + OG image · `next/og`）
 - [x] AI Search Answers（公开 KB search + Portal Ask AI SSE + 反馈）
