@@ -266,14 +266,25 @@ function fileContains(relativePath, needle) {
 }
 
 function evaluateCriterion(criterion) {
-  const missingPaths = criterion.paths.filter((path) => !existsSync(join(ROOT, path)));
-  const missingContent = (criterion.contains ?? [])
-    .filter(([path, needle]) => !fileContains(path, needle))
-    .map(([path, needle]) => `${path} missing ${needle}`);
+  const pathChecks = criterion.paths.map((path) => ({
+    path,
+    passed: existsSync(join(ROOT, path)),
+  }));
+  const contentChecks = (criterion.contains ?? []).map(([path, needle]) => ({
+    path,
+    needle,
+    passed: fileContains(path, needle),
+  }));
+  const missingPaths = pathChecks.filter((check) => !check.passed).map((check) => check.path);
+  const missingContent = contentChecks
+    .filter((check) => !check.passed)
+    .map((check) => `${check.path} missing ${check.needle}`);
 
   return {
     ...criterion,
     passed: missingPaths.length === 0 && missingContent.length === 0,
+    pathChecks,
+    contentChecks,
     missingPaths,
     missingContent,
   };
@@ -307,6 +318,18 @@ function groupSummary(evaluated) {
   }));
 }
 
+function escapeCell(value) {
+  return String(value).replaceAll("|", "\\|").replaceAll("\n", "<br>");
+}
+
+function renderChecks(checks, formatter) {
+  if (checks.length === 0) return "none";
+  return checks
+    .map((check) => `${check.passed ? "pass" : "missing"}: ${formatter(check)}`)
+    .map(escapeCell)
+    .join("<br>");
+}
+
 function renderMarkdown(report) {
   const groupRows = report.groups
     .map(
@@ -326,6 +349,17 @@ function renderMarkdown(report) {
         } |`,
     )
     .join("\n");
+  const matrixRows = report.criteria
+    .map(
+      (item) =>
+        `| ${item.id} | ${item.group} | ${item.passed ? "pass" : "fail"} | ${item.sourceDocs
+          .map(escapeCell)
+          .join("<br>")} | ${escapeCell(item.label)} | ${renderChecks(
+          item.pathChecks,
+          (check) => check.path,
+        )} | ${renderChecks(item.contentChecks, (check) => `${check.path} :: ${check.needle}`)} |`,
+    )
+    .join("\n");
 
   return [
     "# Core Module Parity Report",
@@ -339,6 +373,8 @@ function renderMarkdown(report) {
     `| score | ${(report.score * 100).toFixed(1)}% |`,
     `| passed_weight | ${report.passedWeight} |`,
     `| total_weight | ${report.totalWeight} |`,
+    `| path_checks | ${report.passedPathChecks}/${report.totalPathChecks} |`,
+    `| content_probe_checks | ${report.passedContentChecks}/${report.totalContentChecks} |`,
     `| failures | ${report.failures.length > 0 ? report.failures.join("; ") : "none"} |`,
     "",
     "## Groups",
@@ -353,6 +389,12 @@ function renderMarkdown(report) {
     "|----|-------|--------|--------|---------|",
     criteriaRows,
     "",
+    "## Design-to-Code Matrix",
+    "",
+    "| ID | Group | Status | Source docs | Required design scope | Implementation path checks | Content probes |",
+    "|----|-------|--------|-------------|-----------------------|----------------------------|----------------|",
+    matrixRows,
+    "",
   ].join("\n");
 }
 
@@ -366,6 +408,8 @@ const failures = evaluated
   .filter((item) => !item.passed)
   .map((item) => item.id)
   .concat(score < THRESHOLD ? [`score ${score.toFixed(3)} < ${THRESHOLD}`] : []);
+const allPathChecks = evaluated.flatMap((item) => item.pathChecks);
+const allContentChecks = evaluated.flatMap((item) => item.contentChecks);
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -374,6 +418,10 @@ const report = {
   score,
   passedWeight,
   totalWeight,
+  totalPathChecks: allPathChecks.length,
+  passedPathChecks: allPathChecks.filter((check) => check.passed).length,
+  totalContentChecks: allContentChecks.length,
+  passedContentChecks: allContentChecks.filter((check) => check.passed).length,
   groups: groupSummary(evaluated),
   criteria: evaluated,
   failures,

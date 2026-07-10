@@ -439,6 +439,14 @@ function coreModuleParitySection(report) {
     row("threshold", pct(report.threshold)),
     row("passed_weight", report.passedWeight),
     row("total_weight", report.totalWeight),
+    row(
+      "implementation_path_checks",
+      `${report.passedPathChecks ?? "n/a"}/${report.totalPathChecks ?? "n/a"}`,
+    ),
+    row(
+      "content_probe_checks",
+      `${report.passedContentChecks ?? "n/a"}/${report.totalContentChecks ?? "n/a"}`,
+    ),
     row("groups", groups || "n/a"),
     row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
     "",
