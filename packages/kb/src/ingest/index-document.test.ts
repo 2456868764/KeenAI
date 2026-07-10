@@ -174,6 +174,10 @@ describe("KB ingestion pipeline", () => {
       brandId: brand.id,
       documentId: doc.id,
       chunkFtsIndexer: chunkFts,
+      contextualRetrieval: {
+        generateContext: async ({ title, chunk }) =>
+          `${title} contextual note for ${chunk.slice(0, 24)}`,
+      },
     });
 
     expect(result.chunkCount).toBeGreaterThan(0);
@@ -181,6 +185,8 @@ describe("KB ingestion pipeline", () => {
 
     const chunks = await db.select().from(kbChunks).where(eq(kbChunks.documentId, doc.id));
     expect(chunks.length).toBe(result.chunkCount);
+    expect(chunks[0]?.content).toContain("contextual note");
+    expect(chunks[0]?.contextPrefix).toContain("contextual note");
 
     const vectors = await db
       .select()

@@ -7,6 +7,7 @@ import { computeKbChunkConfidence } from "../lifecycle/confidence.js";
 import { getKbFreshnessHalfLifeDays } from "../lifecycle/freshness.js";
 import { buildKbChunkProvenance } from "../lifecycle/provenance.js";
 import { chunkKbDocument } from "./chunk-document.js";
+import { type AddKbContextualRetrievalOptions, addKbContextualRetrieval } from "./contextual.js";
 import { hashKbChunkContent, planKbDocumentDiffIndex } from "./diff-index.js";
 import { type KbChunkEmbedder, createStubKbChunkEmbedder, embedKbChunk } from "./embedder.js";
 import { extractKbEntitiesFromDocument } from "./extract-kb-entities.js";
@@ -22,6 +23,8 @@ export type IndexKbDocumentInput = {
   diffIndex?: boolean;
   /** KG-05: write kb_entities after index. Defaults to true. */
   extractEntities?: boolean;
+  /** KB-18: optional Contextual Retrieval enrichment before embed/index. */
+  contextualRetrieval?: false | AddKbContextualRetrievalOptions;
 };
 
 export type IndexKbDocumentResult = {
@@ -75,7 +78,10 @@ export async function indexKbDocument(
     rawContent: document.rawContent,
     contentType: document.contentType,
   });
-  const drafts = chunkKbDocument(parsed);
+  const baseDrafts = chunkKbDocument(parsed);
+  const drafts = input.contextualRetrieval
+    ? await addKbContextualRetrieval(parsed, baseDrafts, input.contextualRetrieval)
+    : baseDrafts;
   const now = new Date();
   const useDiff = input.diffIndex !== false;
 

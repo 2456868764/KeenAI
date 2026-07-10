@@ -51,6 +51,14 @@ export {
   KEENI_KB_KB18_CHUNKER,
 } from "./ingest/chunkers/hierarchical.js";
 export {
+  addKbContextualRetrieval,
+  KB_CONTEXTUAL_RETRIEVAL_PROMPT,
+  KEENI_KB_KB18_CONTEXTUAL,
+  type AddKbContextualRetrievalOptions,
+  type KbContextualGenerator,
+  type KbContextualGeneratorInput,
+} from "./ingest/contextual.js";
+export {
   hashKbChunkContent,
   planKbDocumentDiffIndex,
   KEENI_KB_KB17,
