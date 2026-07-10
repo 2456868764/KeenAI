@@ -38,6 +38,12 @@ function loadCopilotAdoptionReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadSupportFlowReport() {
+  const reportPath = process.env.SUPPORT_FLOW_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -181,6 +187,33 @@ function copilotAdoptionSection(report) {
   ];
 }
 
+function supportFlowSection(report) {
+  if (!report) {
+    return [
+      "## Internal Support Flow",
+      "",
+      "No internal support flow report was attached. Run `pnpm support:flow:report` to validate login, inbox, reply, assign, and close through the in-process API.",
+      "",
+    ];
+  }
+
+  return [
+    "## Internal Support Flow",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("conversation_id", report.conversationId),
+    row("reply_message_id", report.replyMessageId),
+    row("final_status", report.finalConversationStatus),
+    row("inbox_count", report.inboxCount),
+    row("message_count", report.messageCount),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -195,6 +228,7 @@ const kbEvalReport = loadKbEvalReport();
 const ollamaOfflineReport = loadOllamaOfflineReport();
 const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const copilotAdoptionReport = loadCopilotAdoptionReport();
+const supportFlowReport = loadSupportFlowReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -223,6 +257,7 @@ const body = [
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
+  ...supportFlowSection(supportFlowReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
