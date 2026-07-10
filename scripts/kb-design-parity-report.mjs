@@ -22,6 +22,7 @@ const criteria = [
     sourceDocs: ["docs/11-RAG-KNOWLEDGE.md"],
     paths: [
       "packages/kb/src/connectors/types.ts",
+      "packages/kb/src/connectors/schemas.ts",
       "packages/kb/src/connectors/help-center-stub.ts",
       "packages/kb/src/connectors/web-stub.ts",
       "packages/kb/src/connectors/file-upload.ts",
@@ -29,7 +30,11 @@ const criteria = [
       "packages/kb/src/connectors/github.ts",
       "packages/kb/src/connectors/notion.ts",
     ],
-    contains: [["packages/kb/src/connectors/index.ts", "resolveKbConnectorForSource"]],
+    contains: [
+      ["packages/kb/src/connectors/types.ts", "configSchema()"],
+      ["packages/kb/src/connectors/schemas.ts", "configDocumentsConnectorConfigSchema"],
+      ["packages/kb/src/connectors/index.ts", "resolveKbConnectorForSource"],
+    ],
   },
   {
     id: "KB-SOURCES-EXTENDED",

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { emptyConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 const ARTICLES: Record<string, KbFetchedDocument> = {
@@ -27,6 +28,9 @@ export function createHelpCenterStubConnector(): KbConnector {
   return {
     name: "help-center-stub",
     type: "help_center",
+    configSchema() {
+      return emptyConnectorConfigSchema;
+    },
     async list(opts) {
       const refs = Object.values(ARTICLES).map((article) => ({
         externalId: article.externalId,

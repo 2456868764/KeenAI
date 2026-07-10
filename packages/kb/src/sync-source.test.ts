@@ -418,6 +418,16 @@ describe("KB source connectors", () => {
         ],
       });
       expect(connector).not.toBeNull();
+      expect(
+        connector?.configSchema().safeParse({
+          documents: [
+            {
+              rawContent: "Config schema proof",
+              updatedAt: "2026-07-01T00:00:00.000Z",
+            },
+          ],
+        }).success,
+      ).toBe(true);
 
       const result = await kb.syncSource({
         orgId: org.id,

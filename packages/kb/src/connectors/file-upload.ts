@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { KbSourceType } from "@keenai/storage/schema";
+import { fileUploadConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type FileConnectorDocument = {
@@ -57,6 +58,9 @@ export function createFileUploadConnector(
   return {
     name: "file-upload",
     type: options.type ?? "file",
+    configSchema() {
+      return fileUploadConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = documents.map((document) => ({
         externalId: document.externalId,

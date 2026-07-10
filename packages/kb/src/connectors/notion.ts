@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { notionConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type NotionPageConfig =
@@ -113,6 +114,9 @@ export function createNotionConnector(
   return {
     name: "notion",
     type: "notion",
+    configSchema() {
+      return notionConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = pages.map((page) => ({
         externalId: page.pageId,

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { emptyConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 const PAGES: Record<string, KbFetchedDocument> = {
@@ -18,6 +19,9 @@ export function createWebCrawlStubConnector(): KbConnector {
   return {
     name: "web-crawl-stub",
     type: "web",
+    configSchema() {
+      return emptyConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = Object.values(PAGES).map((page) => ({
         externalId: page.externalId,

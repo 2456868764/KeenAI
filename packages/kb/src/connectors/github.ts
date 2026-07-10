@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { githubConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type GitHubFileConfig =
@@ -90,6 +91,9 @@ export function createGitHubConnector(
   return {
     name: "github",
     type: "github",
+    configSchema() {
+      return githubConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = files.map((file) => ({
         externalId: file.url,

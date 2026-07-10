@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { KbSourceType } from "@keenai/storage/schema";
+import { configDocumentsConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 export type ConfigSourceDocument = {
@@ -81,6 +82,9 @@ export function createConfigDocumentsConnector(
   return {
     name: input.name,
     type: input.type,
+    configSchema() {
+      return configDocumentsConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = documents.map((document) => ({
         externalId: document.externalId,

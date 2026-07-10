@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { KbSourceType } from "@keenai/storage/schema";
+import { webCrawlConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type WebCrawlUrlConfig =
@@ -120,6 +121,9 @@ export function createWebCrawlConnector(
   return {
     name: "web-crawl",
     type: options.type ?? "web",
+    configSchema() {
+      return webCrawlConnectorConfigSchema;
+    },
     async list(opts) {
       const refs: KbResourceRef[] = pages.map((page) => ({
         externalId: page.url,
