@@ -44,6 +44,12 @@ function loadSupportFlowReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadSupportDogfoodReport() {
+  const reportPath = process.env.SUPPORT_DOGFOOD_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function loadCustomerReachabilityReport() {
   const reportPath = process.env.CUSTOMER_REACHABILITY_REPORT_JSON;
   if (!reportPath) return null;
@@ -244,6 +250,33 @@ function supportFlowSection(report) {
   ];
 }
 
+function supportDogfoodSection(report) {
+  if (!report) {
+    return [
+      "## Support Dogfood",
+      "",
+      "No support dogfood report was attached. Run `pnpm support:dogfood:report` to validate Dashboard login token handling, inbox list rendering, conversation selection, message rendering, agent reply, assignment, and close operations with the Dashboard API client in jsdom.",
+      "",
+    ];
+  }
+
+  const passedChecks = Object.values(report.checks ?? {}).filter(Boolean).length;
+  const totalChecks = Object.keys(report.checks ?? {}).length;
+  return [
+    "## Support Dogfood",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("conversation_id", report.conversationId),
+    row("checks", `${passedChecks}/${totalChecks}`),
+    row("api_calls", report.apiCalls?.length),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 function customerReachabilitySection(report) {
   if (!report) {
     return [
@@ -413,6 +446,7 @@ const ollamaOfflineReport = loadOllamaOfflineReport();
 const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const copilotAdoptionReport = loadCopilotAdoptionReport();
 const supportFlowReport = loadSupportFlowReport();
+const supportDogfoodReport = loadSupportDogfoodReport();
 const customerReachabilityReport = loadCustomerReachabilityReport();
 const widgetRuntimeReport = loadWidgetRuntimeReport();
 const autoResolutionReport = loadAutoResolutionReport();
@@ -446,9 +480,11 @@ const body = [
   "| Typecheck | `pnpm typecheck` | CI job must pass |",
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
+  "| Support dogfood | `pnpm support:dogfood:report` | CI job uploads JSON/Markdown dashboard evidence |",
   "| Widget runtime | `pnpm widget:runtime:report` | CI job uploads JSON/Markdown embed evidence |",
   "",
   ...supportFlowSection(supportFlowReport),
+  ...supportDogfoodSection(supportDogfoodReport),
   ...customerReachabilitySection(customerReachabilityReport),
   ...widgetRuntimeSection(widgetRuntimeReport),
   ...autoResolutionSection(autoResolutionReport),

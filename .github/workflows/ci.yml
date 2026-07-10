@@ -34,6 +34,7 @@ jobs:
       - run: pnpm quality:gate:report
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm support:flow:report
+      - run: pnpm support:dogfood:report
       - run: pnpm customer:reachability:report
       - run: pnpm widget:runtime:report
       - run: pnpm auto:resolution:report --fixture
@@ -57,6 +58,7 @@ jobs:
       - run: pnpm release:evidence
         env:
           SUPPORT_FLOW_REPORT_JSON: artifacts/release/support-flow.json
+          SUPPORT_DOGFOOD_REPORT_JSON: artifacts/release/support-dogfood.json
           CUSTOMER_REACHABILITY_REPORT_JSON: artifacts/release/customer-reachability.json
           WIDGET_RUNTIME_REPORT_JSON: artifacts/release/widget-runtime.json
           AUTO_RESOLUTION_REPORT_JSON: artifacts/release/auto-resolution.json
@@ -73,6 +75,8 @@ jobs:
             artifacts/release/v0.2.0-evidence.md
             artifacts/release/support-flow.json
             artifacts/release/support-flow.md
+            artifacts/release/support-dogfood.json
+            artifacts/release/support-dogfood.md
             artifacts/release/customer-reachability.json
             artifacts/release/customer-reachability.md
             artifacts/release/widget-runtime.json

@@ -81,7 +81,7 @@
 | P1-10 | `bun build --compile` 单二进制 demo | [x] |
 | P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [~] |
 | P1-12 | Alpha 公开发布验收（社区/文档就绪） | [x] |
-| P1-ACC-01 | 内部客服全程可用 | [~] `support:flow:report` 已验证 login→inbox→reply→assign→close fixture；真实 dogfood artifact 待外部附加 |
+| P1-ACC-01 | 内部客服全程可用 | [~] `support:flow:report` 已验证 login→inbox→reply→assign→close API fixture；`support:dogfood:report` 已验证 Dashboard token、inbox DOM、conversation select、message render、reply、assign、close；真实运行环境 dogfood artifact 待外部附加 |
 | P1-ACC-02 | Widget + Email 客户触达 | [~] `customer:reachability:report` 已验证 Widget HMAC→conversation→message list、Email webhook ingest/threading、agent inbox 可见；`widget:runtime:report` 已验证 embed boot、launcher、Widget API、WebSocket、客户发消息渲染；真实部署 embed/email runtime artifact 待外部附加 |
 | P1-ACC-03 | Copilot 采纳率 ≥ 30% | [~] `copilot:adoption:report` 已可产出 fixture/actual 证据；生产/prod-like 采纳率 artifact 待外部附加 |
 | P1-ACC-04 | `docker compose --profile lite up` < 30s | [~] `docker:lite:startup-report` 已可产出 dry-run/actual 证据；真实 Docker 计时 artifact 待外部附加 |

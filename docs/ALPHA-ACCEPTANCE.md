@@ -16,6 +16,7 @@
 | KB golden eval | `pnpm kb:eval` |
 | API binary (optional CI) | `pnpm verify:api-binary` |
 | Internal support flow | `pnpm support:flow:report` |
+| Dashboard dogfood flow | `pnpm support:dogfood:report` |
 | Customer reachability | `pnpm customer:reachability:report` |
 | Widget runtime embed | `pnpm widget:runtime:report` |
 | Copilot adoption report | `pnpm copilot:adoption:report --fixture` in CI; omit fixture against production/prod-like `copilot_events` |
@@ -26,7 +27,7 @@
 
 | ID | Criterion | How to verify |
 |----|-----------|---------------|
-| P1-ACC-01 | Internal support end-to-end | `pnpm support:flow:report` plus running-environment dogfood evidence |
+| P1-ACC-01 | Internal support end-to-end | `pnpm support:flow:report && pnpm support:dogfood:report` plus running-environment dogfood evidence |
 | P1-ACC-02 | Widget + Email reachability | `pnpm customer:reachability:report && pnpm widget:runtime:report` plus running-environment widget embed and SMTP/IMAP or webhook ingest evidence |
 | P1-ACC-03 | Copilot adoption ≥ 30% | `pnpm copilot:adoption:report` against production/prod-like `copilot_events` |
 | P1-ACC-04 | Docker lite < 30s | `pnpm docker:lite:startup-report` in a Docker-enabled release environment |

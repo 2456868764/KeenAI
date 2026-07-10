@@ -41,6 +41,7 @@
     "docker:lite:startup-report": "node scripts/docker-lite-startup-report.mjs",
     "copilot:adoption:report": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/copilot-adoption-report.mjs",
     "support:flow:report": "corepack pnpm --filter @keenai/api exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/support-flow-report.ts",
+    "support:dogfood:report": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/support-dogfood-report.mjs",
     "customer:reachability:report": "corepack pnpm --filter @keenai/api exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/customer-reachability-report.ts",
     "compile:api": "bash scripts/build-api-binary.sh",
     "check:widget": "node scripts/check-widget-bundle.mjs",
