@@ -33,6 +33,7 @@ jobs:
       - run: pnpm test:coverage
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm support:flow:report
+      - run: pnpm customer:reachability:report
       - run: pnpm docker:lite:startup-report
         env:
           DOCKER_LITE_STARTUP_DRY_RUN: true
@@ -52,6 +53,7 @@ jobs:
       - run: pnpm release:evidence
         env:
           SUPPORT_FLOW_REPORT_JSON: artifacts/release/support-flow.json
+          CUSTOMER_REACHABILITY_REPORT_JSON: artifacts/release/customer-reachability.json
           COPILOT_ADOPTION_REPORT_JSON: artifacts/release/copilot-adoption.json
           DOCKER_LITE_STARTUP_REPORT_JSON: artifacts/release/docker-lite-startup.json
           OLLAMA_OFFLINE_REPORT_JSON: artifacts/release/ollama-offline-demo.json
@@ -63,6 +65,8 @@ jobs:
             artifacts/release/v0.2.0-evidence.md
             artifacts/release/support-flow.json
             artifacts/release/support-flow.md
+            artifacts/release/customer-reachability.json
+            artifacts/release/customer-reachability.md
             artifacts/release/copilot-adoption.json
             artifacts/release/copilot-adoption.md
             artifacts/release/docker-lite-startup.json

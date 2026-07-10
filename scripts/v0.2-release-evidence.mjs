@@ -44,6 +44,12 @@ function loadSupportFlowReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadCustomerReachabilityReport() {
+  const reportPath = process.env.CUSTOMER_REACHABILITY_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -214,6 +220,36 @@ function supportFlowSection(report) {
   ];
 }
 
+function customerReachabilitySection(report) {
+  if (!report) {
+    return [
+      "## Customer Reachability",
+      "",
+      "No customer reachability report was attached. Run `pnpm customer:reachability:report` to validate Widget HMAC conversation creation, email webhook ingest/threading, and agent inbox visibility through the in-process API.",
+      "",
+    ];
+  }
+
+  return [
+    "## Customer Reachability",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("widget_conversation_id", report.widget?.conversationId),
+    row("widget_message_count", report.widget?.messageCount),
+    row("email_conversation_id", report.email?.conversationId),
+    row("email_message_count", report.email?.messageCount),
+    row("email_thread_match", report.email?.threadMatchReason),
+    row("inbox_count", report.inbox?.count),
+    row("widget_visible_in_inbox", report.inbox?.widgetVisible ? "yes" : "no"),
+    row("email_visible_in_inbox", report.inbox?.emailVisible ? "yes" : "no"),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -229,6 +265,7 @@ const ollamaOfflineReport = loadOllamaOfflineReport();
 const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const copilotAdoptionReport = loadCopilotAdoptionReport();
 const supportFlowReport = loadSupportFlowReport();
+const customerReachabilityReport = loadCustomerReachabilityReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -258,6 +295,7 @@ const body = [
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "",
   ...supportFlowSection(supportFlowReport),
+  ...customerReachabilitySection(customerReachabilityReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
