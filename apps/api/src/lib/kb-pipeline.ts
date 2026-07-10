@@ -5,6 +5,7 @@ import { kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 
 export const KB_INGEST_NOTIFY_CHANNEL = "kb.ingest.completed";
+export const KB_DOCUMENT_INDEXED_CHANNEL = "kb/document.indexed";
 
 export type KbIngestNotifyPayload = {
   orgId: string;
@@ -13,6 +14,16 @@ export type KbIngestNotifyPayload = {
   documentId?: string;
   ok: boolean;
   failedStep?: string;
+};
+
+export type KbDocumentIndexedPayload = {
+  orgId: string;
+  brandId: string;
+  sourceId: string;
+  documentIds: string[];
+  chunkCount: number;
+  cacheInvalidated: boolean;
+  agentReevaluationQueued: boolean;
 };
 
 function errorMessage(error: unknown): string {
@@ -114,6 +125,7 @@ export async function runKbIngestForSource(store: Store, payload: KbIngestPayloa
           });
           chunkCount += result.chunkCount;
         }
+        state.artifacts.indexed = { documentIds, chunkCount };
         return {
           detail: `indexed:${documentIds.length}`,
           metadata: { documents: documentIds.length, chunks: chunkCount, fts: !!chunkFtsIndexer },
@@ -126,6 +138,24 @@ export async function runKbIngestForSource(store: Store, payload: KbIngestPayloa
             .update(kbSources)
             .set({ status: "active", error: null, updatedAt: new Date() })
             .where(eq(kbSources.id, payload.sourceId));
+          const indexed =
+            typeof state.artifacts.indexed === "object" && state.artifacts.indexed !== null
+              ? (state.artifacts.indexed as { documentIds?: unknown; chunkCount?: unknown })
+              : {};
+          await store.notify<KbDocumentIndexedPayload>(KB_DOCUMENT_INDEXED_CHANNEL, {
+            orgId: payload.orgId,
+            brandId: payload.brandId,
+            sourceId: payload.sourceId,
+            documentIds: Array.isArray(indexed.documentIds)
+              ? indexed.documentIds.filter((id): id is string => typeof id === "string")
+              : [],
+            chunkCount:
+              typeof indexed.chunkCount === "number" && Number.isFinite(indexed.chunkCount)
+                ? indexed.chunkCount
+                : 0,
+            cacheInvalidated: true,
+            agentReevaluationQueued: true,
+          });
         } else {
           await markSourceError(store, payload.sourceId, `failed:${state.failedStep}`);
         }

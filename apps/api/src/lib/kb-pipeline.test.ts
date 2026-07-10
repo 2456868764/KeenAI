@@ -6,7 +6,9 @@ import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  KB_DOCUMENT_INDEXED_CHANNEL,
   KB_INGEST_NOTIFY_CHANNEL,
+  type KbDocumentIndexedPayload,
   type KbIngestNotifyPayload,
   runKbIngestForSource,
 } from "./kb-pipeline.js";
@@ -47,8 +49,12 @@ describe("runKbIngestForSource", () => {
       .returning();
     if (!source?.id) throw new Error("source_create_failed");
     const notifications: KbIngestNotifyPayload[] = [];
+    const indexedNotifications: KbDocumentIndexedPayload[] = [];
     await store.listen<KbIngestNotifyPayload>(KB_INGEST_NOTIFY_CHANNEL, (payload) => {
       notifications.push(payload);
+    });
+    await store.listen<KbDocumentIndexedPayload>(KB_DOCUMENT_INDEXED_CHANNEL, (payload) => {
+      indexedNotifications.push(payload);
     });
 
     const result = await runKbIngestForSource(store, {
@@ -64,6 +70,15 @@ describe("runKbIngestForSource", () => {
       fts: true,
     });
     expect(notifications).toEqual([expect.objectContaining({ sourceId: source.id, ok: true })]);
+    expect(indexedNotifications).toEqual([
+      expect.objectContaining({
+        sourceId: source.id,
+        chunkCount: expect.any(Number),
+        cacheInvalidated: true,
+        agentReevaluationQueued: true,
+      }),
+    ]);
+    expect(indexedNotifications[0]?.documentIds).toHaveLength(2);
 
     const [updatedSource] = await store.db
       .select()

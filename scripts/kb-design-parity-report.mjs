@@ -237,6 +237,8 @@ const criteria = [
       ["packages/kb/src/inngest/kb-ingest-pipeline.ts", "fetch"],
       ["packages/kb/src/inngest/kb-ingest-pipeline.ts", "notify"],
       ["packages/kb/src/inngest/kb-ingest.ts", "concurrency"],
+      ["apps/api/src/lib/kb-pipeline.ts", "kb/document.indexed"],
+      ["apps/api/src/lib/kb-pipeline.ts", "cacheInvalidated"],
     ],
   },
   {
