@@ -1,12 +1,15 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { deflateRawSync } from "node:zlib";
 import {
   chunkKbDocumentHierarchical,
   createHelpCenterStubConnector,
   createKeenaiKb,
   embedKbChunkStub,
   parseKbDocument,
+  parseKbDocxDocument,
   parseKbMarkdownDocument,
+  parseKbPdfDocument,
 } from "@keenai/kb";
 import { chunkKbDocument } from "@keenai/kb";
 import { createLibsqlKbChunkFtsStore, createLibsqlStore } from "@keenai/storage";
@@ -18,6 +21,23 @@ import { describe, expect, it } from "vitest";
 function requireRow<T>(row: T | undefined, label: string): T {
   if (!row) throw new Error(`${label} missing`);
   return row;
+}
+
+function createZipEntry(name: string, data: Buffer): Buffer {
+  const compressed = deflateRawSync(data);
+  const nameBytes = Buffer.from(name);
+  const localHeader = Buffer.alloc(30);
+  localHeader.writeUInt32LE(0x04034b50, 0);
+  localHeader.writeUInt16LE(20, 4);
+  localHeader.writeUInt16LE(0, 6);
+  localHeader.writeUInt16LE(8, 8);
+  localHeader.writeUInt32LE(0, 10);
+  localHeader.writeUInt32LE(0, 14);
+  localHeader.writeUInt32LE(compressed.length, 18);
+  localHeader.writeUInt32LE(data.length, 22);
+  localHeader.writeUInt16LE(nameBytes.length, 26);
+  localHeader.writeUInt16LE(0, 28);
+  return Buffer.concat([localHeader, nameBytes, compressed]);
 }
 
 describe("KB ingestion pipeline", () => {
@@ -55,6 +75,45 @@ describe("KB ingestion pipeline", () => {
     expect(parsed.sections[1]?.path).toEqual(["Billing", "Refunds"]);
     expect(parsed.sections[1]?.body).toContain("- Open the billing page.");
     expect(parsed.sections[2]?.id).toBe("billing-refunds-2");
+  });
+
+  it("extracts text from PDF text operators for KB-18 parsing", () => {
+    const parsed = parseKbPdfDocument({
+      title: "PDF Manual",
+      rawContent:
+        "%PDF-1.4\n1 0 obj <<>> stream\nBT (Refund policy) Tj [(Open ) 20 (Billing settings)] TJ <446f6e65> Tj ET\nendstream\n%%EOF",
+    });
+
+    expect(parsed.plainText).toContain("Refund policy");
+    expect(parsed.plainText).toContain("Open Billing settings");
+    expect(parsed.plainText).toContain("Done");
+    expect(chunkKbDocument(parsed)[0]?.content).toContain("Refund policy");
+  });
+
+  it("extracts text from DOCX word/document.xml for KB-18 parsing", () => {
+    const xml = Buffer.from(
+      [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        "<w:document>",
+        "<w:body>",
+        "<w:p><w:r><w:t>Billing FAQ</w:t></w:r></w:p>",
+        "<w:p><w:r><w:t>Refund window is 30 days.</w:t></w:r></w:p>",
+        "</w:body>",
+        "</w:document>",
+      ].join(""),
+    );
+    const docxPayload = Buffer.concat([createZipEntry("word/document.xml", xml)]).toString(
+      "base64",
+    );
+
+    const parsed = parseKbDocxDocument({
+      title: "DOCX Manual",
+      rawContent: docxPayload,
+    });
+
+    expect(parsed.plainText).toContain("Billing FAQ");
+    expect(parsed.plainText).toContain("Refund window is 30 days.");
+    expect(chunkKbDocument(parsed)[0]?.content).toContain("Billing FAQ");
   });
 
   it("chunks on paragraph and sentence boundaries with context overlap", () => {

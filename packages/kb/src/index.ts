@@ -46,7 +46,9 @@ export {
   type KbIndexedChunkSnapshot,
 } from "./ingest/diff-index.js";
 export { extractKbEntitiesFromDocument, KEENI_KB_KG05 } from "./ingest/extract-kb-entities.js";
+export { KEENI_KB_KB18_DOCX_PARSER, parseKbDocxDocument } from "./ingest/parsers/docx.js";
 export { parseKbMarkdownDocument, KEENI_KB_KB18_PARSER } from "./ingest/parsers/markdown.js";
+export { KEENI_KB_KB18_PDF_PARSER, parseKbPdfDocument } from "./ingest/parsers/pdf.js";
 export {
   KB_SOURCE_AUTHORITY,
   clampKbConfidence,

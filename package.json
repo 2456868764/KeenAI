@@ -23,6 +23,7 @@
     "kb:bench:local": "corepack pnpm --filter @keenai/kb exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/search-bench-local.ts",
     "kb:bench:api:local": "corepack pnpm --filter @keenai/api exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/kb-api-bench-local.ts",
     "kb:telemetry": "corepack pnpm --filter @keenai/kb exec node --import ../../node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs ./scripts/telemetry-report.ts",
+    "kb:design:report": "node scripts/kb-design-parity-report.mjs",
     "ollama:offline:demo": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/ollama-offline-demo.mjs",
     "release:evidence": "node scripts/v0.2-release-evidence.mjs",
     "release:verify-external": "node scripts/verify-v0.2-external-evidence.mjs",
