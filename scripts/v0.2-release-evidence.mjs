@@ -74,6 +74,12 @@ function loadFeaturebaseParityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadDocsReleaseReport() {
+  const reportPath = process.env.DOCS_RELEASE_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function loadQualityGateReport() {
   const reportPath = process.env.QUALITY_GATE_REPORT_JSON;
   if (!reportPath) return null;
@@ -396,6 +402,33 @@ function featurebaseParitySection(report) {
   ];
 }
 
+function docsReleaseSection(report) {
+  if (!report) {
+    return [
+      "## Docs And Tutorial Release",
+      "",
+      "No docs release report was attached. Run `pnpm docs:release:report` to validate the docs app, quickstart page, v0.2.0 tutorial scripts, captions, shot lists, and publishing checklist.",
+      "",
+    ];
+  }
+
+  return [
+    "## Docs And Tutorial Release",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("checks", `${report.passedChecks}/${report.totalChecks}`),
+    row("source_docs", report.sourceDocs?.join(", ")),
+    row(
+      "external_required",
+      report.externalRequired?.length ? report.externalRequired.join("; ") : "none",
+    ),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 function qualityGateSection(report) {
   if (!report) {
     return [
@@ -451,6 +484,7 @@ const customerReachabilityReport = loadCustomerReachabilityReport();
 const widgetRuntimeReport = loadWidgetRuntimeReport();
 const autoResolutionReport = loadAutoResolutionReport();
 const featurebaseParityReport = loadFeaturebaseParityReport();
+const docsReleaseReport = loadDocsReleaseReport();
 const qualityGateReport = loadQualityGateReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
@@ -482,6 +516,7 @@ const body = [
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
   "| Support dogfood | `pnpm support:dogfood:report` | CI job uploads JSON/Markdown dashboard evidence |",
   "| Widget runtime | `pnpm widget:runtime:report` | CI job uploads JSON/Markdown embed evidence |",
+  "| Docs release | `pnpm docs:release:report` | CI job uploads docs/tutorial readiness evidence; video uploads required before tag |",
   "",
   ...supportFlowSection(supportFlowReport),
   ...supportDogfoodSection(supportDogfoodReport),
@@ -489,6 +524,7 @@ const body = [
   ...widgetRuntimeSection(widgetRuntimeReport),
   ...autoResolutionSection(autoResolutionReport),
   ...featurebaseParitySection(featurebaseParityReport),
+  ...docsReleaseSection(docsReleaseReport),
   ...qualityGateSection(qualityGateReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),

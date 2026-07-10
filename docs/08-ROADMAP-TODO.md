@@ -79,7 +79,7 @@
 | P1-08 | Workflow Builder UI（React Flow 单层 → 完整） | [x] |
 | P1-09 | Docker Compose `lite` 单容器跑通 | [x] |
 | P1-10 | `bun build --compile` 单二进制 demo | [x] |
-| P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [~] |
+| P1-11 | Fumadocs 用户文档 + Quickstart 视频 | [~] `docs:release:report` 已验证 docs app、quickstart 页面、v0.2.0 教程脚本/字幕/shot list/publishing checklist；公开视频链接仍待外部附加 |
 | P1-12 | Alpha 公开发布验收（社区/文档就绪） | [x] |
 | P1-ACC-01 | 内部客服全程可用 | [~] `support:flow:report` 已验证 login→inbox→reply→assign→close API fixture；`support:dogfood:report` 已验证 Dashboard token、inbox DOM、conversation select、message render、reply、assign、close；真实运行环境 dogfood artifact 待外部附加 |
 | P1-ACC-02 | Widget + Email 客户触达 | [~] `customer:reachability:report` 已验证 Widget HMAC→conversation→message list、Email webhook ingest/threading、agent inbox 可见；`widget:runtime:report` 已验证 embed boot、launcher、Widget API、WebSocket、客户发消息渲染；真实部署 embed/email runtime artifact 待外部附加 |
@@ -130,7 +130,7 @@
 | P3-09 | Telegram · 钉钉/飞书渠道 | [x] |
 | P3-10 | 国产 LLM 全适配 + Prompt 中文优化 | [x] |
 | P3-11 | 10+ 语言 next-intl | [x] |
-| P3-12 | 视频教程（YouTube / B 站） | [ ] |
+| P3-12 | 视频教程（YouTube / B 站） | [~] `docs:release:report` 已验证两套 v0.2.0 录制脚本和发布 checklist；渲染 MP4 或 YouTube/Bilibili 链接仍待外部附加 |
 | P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
 | P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [x] |
 | P3-ACC-01 | 自动解决率 ≥ 50% | [~] `auto:resolution:report --fixture` 已验证 closed conversation resolution 分类和阈值报告；生产/prod-like telemetry artifact 待外部附加 |

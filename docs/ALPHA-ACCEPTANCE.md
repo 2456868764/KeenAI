@@ -22,6 +22,7 @@
 | Copilot adoption report | `pnpm copilot:adoption:report --fixture` in CI; omit fixture against production/prod-like `copilot_events` |
 | Docker lite startup report | `DOCKER_LITE_STARTUP_DRY_RUN=true pnpm docker:lite:startup-report` in CI; omit dry-run in a Docker-enabled release environment |
 | Quality gate report | `pnpm test:coverage && pnpm quality:gate:report` |
+| Docs release report | `pnpm docs:release:report` |
 
 ## Manual gates (P1-ACC)
 
@@ -50,7 +51,7 @@ docker compose --profile split up --build -d
 
 ## Community launch (P1-12)
 
-- [ ] `docs/ALPHA.md` + `/quickstart` up to date
+- [ ] `docs/ALPHA.md` + `/quickstart` up to date (`pnpm docs:release:report`)
 - [ ] `CONTRIBUTING.md` linked from README
 - [ ] GitHub Release notes draft (`docs/releases/v0.2.0.md`)
 - [ ] Product Hunt / HN — post when v0.2.0 tag ships (optional for Alpha)
