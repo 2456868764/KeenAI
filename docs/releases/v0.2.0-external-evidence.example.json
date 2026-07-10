@@ -1,5 +1,22 @@
 {
   "tag": "v0.2.0",
+  "phaseGateBlockers": {
+    "P1-11": "tutorials.selfHosted YouTube/Bilibili URLs",
+    "P1-ACC-01": "runningEnvironment.supportDogfoodUrl",
+    "P1-ACC-02": "runningEnvironment.customerReachabilityUrl",
+    "P1-ACC-03": "copilotAdoption actual JSON + artifact URL",
+    "P1-ACC-04": "dockerLiteStartup actual JSON + artifact URL",
+    "P1-ACC-06": "ciGreenRate URL/rate/threshold",
+    "P2-ACC-01": "featurebaseParity.artifactUrl",
+    "P2-ACC-02": "externalTeams artifact URL + count >= 3",
+    "P3-12": "tutorials selfHosted and kbImport YouTube/Bilibili URLs",
+    "P3-13": "productionTelemetry JSON + live source connector OAuth artifact URLs",
+    "P3-ACC-01": "autoResolution actual JSON + artifact URL",
+    "P3-ACC-02": "ollamaOffline real runtime artifact URL + model",
+    "P3-ACC-03": "featurebaseParity.artifactUrl",
+    "P3-ACC-04": "productionTelemetry JSON",
+    "P3-ACC-05": "productionTelemetry JSON"
+  },
   "remoteCiRunUrl": "https://github.com/OWNER/REPO/actions/runs/123456789",
   "githubReleaseUrl": "https://github.com/OWNER/REPO/releases/tag/v0.2.0",
   "ciGreenRate": {

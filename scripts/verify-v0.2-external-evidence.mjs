@@ -4,36 +4,17 @@ import { isAbsolute, join } from "node:path";
 
 const DEFAULT_MANIFEST = "artifacts/release/v0.2.0-external-evidence.json";
 
-const REQUIRED_URL_FIELDS = [
+const BASE_URL_FIELDS = [
   ["remoteCiRunUrl", "remote CI run URL"],
-  ["ciGreenRate.url", "CI green-rate evidence URL"],
   ["deployedKbBench.url", "deployed API kb:bench evidence URL"],
   ["helm.installArtifactUrl", "Helm install artifact URL"],
-  ["runningEnvironment.supportDogfoodUrl", "running-environment support dogfood evidence URL"],
-  [
-    "runningEnvironment.customerReachabilityUrl",
-    "running-environment customer reachability evidence URL",
-  ],
-  ["featurebaseParity.artifactUrl", "Featurebase parity artifact URL"],
-  ["externalTeams.artifactUrl", "external teams trial evidence URL"],
-  ["copilotAdoption.artifactUrl", "Copilot adoption artifact URL"],
-  ["autoResolution.artifactUrl", "auto resolution artifact URL"],
-  ["dockerLiteStartup.artifactUrl", "Docker lite startup artifact URL"],
-  ["liveSourceConnectors.githubOAuthArtifactUrl", "GitHub source OAuth evidence URL"],
-  ["liveSourceConnectors.notionOAuthArtifactUrl", "Notion source OAuth evidence URL"],
-  ["ollamaOffline.realRuntimeArtifactUrl", "real Ollama runtime evidence URL"],
-  ["tutorials.selfHosted.youtubeUrl", "self-hosted YouTube tutorial URL"],
-  ["tutorials.selfHosted.bilibiliUrl", "self-hosted Bilibili tutorial URL"],
-  ["tutorials.kbImport.youtubeUrl", "KB import/eval YouTube tutorial URL"],
-  ["tutorials.kbImport.bilibiliUrl", "KB import/eval Bilibili tutorial URL"],
   ["githubReleaseUrl", "GitHub Release URL"],
 ];
 
-const REQUIRED_TEXT_FIELDS = [
+const BASE_TEXT_FIELDS = [
   ["tag", "release tag"],
   ["ghcr.apiImage", "GHCR API image ref"],
   ["ghcr.dashboardImage", "GHCR Dashboard image ref"],
-  ["ollamaOffline.model", "real Ollama runtime model"],
 ];
 
 function usage() {
@@ -86,6 +67,14 @@ function checkUrl(value, label, failures) {
 
 function checkText(value, label, failures) {
   if (!isNonEmptyString(value)) failures.push(`${label} missing`);
+}
+
+function checkUrlField(manifest, path, label, failures) {
+  checkUrl(get(manifest, path), label, failures);
+}
+
+function checkTextField(manifest, path, label, failures) {
+  checkText(get(manifest, path), label, failures);
 }
 
 function loadJson(path) {
@@ -231,21 +220,223 @@ function checkDockerStartup(manifest, failures) {
   }
 }
 
+function checkSelfHostedTutorial(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "tutorials.selfHosted.youtubeUrl",
+    "self-hosted YouTube tutorial URL",
+    failures,
+  );
+  checkUrlField(
+    manifest,
+    "tutorials.selfHosted.bilibiliUrl",
+    "self-hosted Bilibili tutorial URL",
+    failures,
+  );
+}
+
+function checkAllTutorials(manifest, failures) {
+  checkSelfHostedTutorial(manifest, failures);
+  checkUrlField(
+    manifest,
+    "tutorials.kbImport.youtubeUrl",
+    "KB import/eval YouTube tutorial URL",
+    failures,
+  );
+  checkUrlField(
+    manifest,
+    "tutorials.kbImport.bilibiliUrl",
+    "KB import/eval Bilibili tutorial URL",
+    failures,
+  );
+}
+
+function checkRunningEnvironment(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "runningEnvironment.supportDogfoodUrl",
+    "running-environment support dogfood evidence URL",
+    failures,
+  );
+}
+
+function checkCustomerReachability(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "runningEnvironment.customerReachabilityUrl",
+    "running-environment customer reachability evidence URL",
+    failures,
+  );
+}
+
+function checkFeaturebaseParity(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "featurebaseParity.artifactUrl",
+    "Featurebase parity artifact URL",
+    failures,
+  );
+}
+
+function checkLiveSourceConnectors(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "liveSourceConnectors.githubOAuthArtifactUrl",
+    "GitHub source OAuth evidence URL",
+    failures,
+  );
+  checkUrlField(
+    manifest,
+    "liveSourceConnectors.notionOAuthArtifactUrl",
+    "Notion source OAuth evidence URL",
+    failures,
+  );
+}
+
+function checkOllamaRuntime(manifest, failures) {
+  checkUrlField(
+    manifest,
+    "ollamaOffline.realRuntimeArtifactUrl",
+    "real Ollama runtime evidence URL",
+    failures,
+  );
+  checkTextField(manifest, "ollamaOffline.model", "real Ollama runtime model", failures);
+}
+
+const BLOCKER_CHECKS = [
+  {
+    id: "P1-11",
+    label: "Fumadocs user docs + Quickstart video",
+    check: checkSelfHostedTutorial,
+  },
+  {
+    id: "P1-ACC-01",
+    label: "Internal support end-to-end",
+    check: checkRunningEnvironment,
+  },
+  {
+    id: "P1-ACC-02",
+    label: "Widget + Email customer reachability",
+    check: checkCustomerReachability,
+  },
+  {
+    id: "P1-ACC-03",
+    label: "Copilot adoption >= 30%",
+    check(manifest, failures) {
+      checkUrlField(
+        manifest,
+        "copilotAdoption.artifactUrl",
+        "Copilot adoption artifact URL",
+        failures,
+      );
+      checkCopilotAdoption(manifest, failures);
+    },
+  },
+  {
+    id: "P1-ACC-04",
+    label: "Docker lite startup < 30s",
+    check(manifest, failures) {
+      checkUrlField(
+        manifest,
+        "dockerLiteStartup.artifactUrl",
+        "Docker lite startup artifact URL",
+        failures,
+      );
+      checkDockerStartup(manifest, failures);
+    },
+  },
+  {
+    id: "P1-ACC-06",
+    label: "Coverage >= 70% and CI green rate >= 95%",
+    check(manifest, failures) {
+      checkUrlField(manifest, "ciGreenRate.url", "CI green-rate evidence URL", failures);
+      checkCiGreenRate(manifest, failures);
+    },
+  },
+  {
+    id: "P2-ACC-01",
+    label: "Featurebase 60% parity",
+    check: checkFeaturebaseParity,
+  },
+  {
+    id: "P2-ACC-02",
+    label: "At least three external teams",
+    check(manifest, failures) {
+      checkUrlField(
+        manifest,
+        "externalTeams.artifactUrl",
+        "external teams trial evidence URL",
+        failures,
+      );
+      checkExternalTeams(manifest, failures);
+    },
+  },
+  {
+    id: "P3-12",
+    label: "YouTube / Bilibili tutorial videos",
+    check: checkAllTutorials,
+  },
+  {
+    id: "P3-13",
+    label: "KB production depth",
+    check(manifest, failures) {
+      checkTelemetry(manifest, failures);
+      checkLiveSourceConnectors(manifest, failures);
+    },
+  },
+  {
+    id: "P3-ACC-01",
+    label: "Auto resolution >= 50%",
+    check(manifest, failures) {
+      checkUrlField(
+        manifest,
+        "autoResolution.artifactUrl",
+        "auto resolution artifact URL",
+        failures,
+      );
+      checkAutoResolution(manifest, failures);
+    },
+  },
+  {
+    id: "P3-ACC-02",
+    label: "Ollama fully offline demo",
+    check: checkOllamaRuntime,
+  },
+  {
+    id: "P3-ACC-03",
+    label: "Featurebase 90% parity",
+    check: checkFeaturebaseParity,
+  },
+  {
+    id: "P3-ACC-04",
+    label: "Mastra Eval faithfulness >= 0.85",
+    check: checkTelemetry,
+  },
+  {
+    id: "P3-ACC-05",
+    label: "Recall@5 and stale answer thresholds",
+    check: checkTelemetry,
+  },
+];
+
+function checkBlocker(manifest, blocker, failures) {
+  const blockerFailures = [];
+  blocker.check(manifest, blockerFailures);
+  for (const failure of blockerFailures) {
+    failures.push(`${blocker.id}: ${failure}`);
+  }
+}
+
 function verify(manifest) {
   const failures = [];
 
-  for (const [path, label] of REQUIRED_URL_FIELDS) checkUrl(get(manifest, path), label, failures);
-  for (const [path, label] of REQUIRED_TEXT_FIELDS) checkText(get(manifest, path), label, failures);
+  for (const [path, label] of BASE_URL_FIELDS) checkUrl(get(manifest, path), label, failures);
+  for (const [path, label] of BASE_TEXT_FIELDS) checkText(get(manifest, path), label, failures);
 
   if (get(manifest, "tag") !== "v0.2.0") failures.push("tag must be v0.2.0");
-  checkCiGreenRate(manifest, failures);
-  checkExternalTeams(manifest, failures);
-  checkTelemetry(manifest, failures);
   checkDeployedBench(manifest, failures);
   checkImages(manifest, failures);
-  checkCopilotAdoption(manifest, failures);
-  checkAutoResolution(manifest, failures);
-  checkDockerStartup(manifest, failures);
+  for (const blocker of BLOCKER_CHECKS) checkBlocker(manifest, blocker, failures);
 
   return failures;
 }
