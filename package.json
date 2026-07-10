@@ -29,6 +29,7 @@
     "quality:gate:report": "node scripts/quality-gate-report.mjs",
     "docs:release:report": "node scripts/docs-release-report.mjs",
     "core:parity:report": "node scripts/core-module-parity-report.mjs",
+    "phase:gate:report": "node scripts/phase-gate-status-report.mjs",
     "auto:resolution:report": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/auto-resolution-report.mjs",
     "featurebase:parity:report": "node scripts/featurebase-parity-report.mjs",
     "widget:runtime:report": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/widget-runtime-report.mjs",

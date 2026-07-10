@@ -144,7 +144,7 @@
 | ID | 项 | 状态 |
 |----|-----|------|
 | I119-01 | Recall@5 ≥ 88%（`pnpm kb:eval`） | [~] 本地 gate 与 `kb:eval:report` 可跑并进入 release evidence；生产/prod-like telemetry 仍需外部证据 |
-| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [~] 本地 lint/typecheck/test/eval/bench 与 `core:parity:report` 已有；远程 CI artifact 和 deployed API bench 仍需外部证据 |
+| I119-02 | CI 全绿 · `pnpm kb:bench` P95 记录 | [~] 本地 lint/typecheck/test/eval/bench、`core:parity:report`、`phase:gate:report` 已有；远程 CI artifact 和 deployed API bench 仍需外部证据 |
 | I119-03 | GHCR Docker `0.2.0` publish pipeline | [~] workflow 已有；实际 GHCR `0.2.0` image publish 未完成 |
 | I119-04 | Helm chart 可安装（超越 I114 skeleton） | [~] lint/template 本地可跑；远程 Helm install artifact 未完成 |
 | I120-01 | `CHANGELOG [0.2.0]` · `docs/releases/v0.2.0.md` | [~] release-candidate 草案已有；final release notes confirmation 未完成 |

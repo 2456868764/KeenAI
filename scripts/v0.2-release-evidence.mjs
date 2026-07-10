@@ -80,6 +80,12 @@ function loadCoreModuleParityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadPhaseGateStatusReport() {
+  const reportPath = process.env.PHASE_GATE_STATUS_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function loadDocsReleaseReport() {
   const reportPath = process.env.DOCS_RELEASE_REPORT_JSON;
   if (!reportPath) return null;
@@ -439,6 +445,42 @@ function coreModuleParitySection(report) {
   ];
 }
 
+function phaseGateStatusSection(report) {
+  if (!report) {
+    return [
+      "## Phase 0-3 Gate Status",
+      "",
+      "No Phase 0-3 gate status report was attached. Run `pnpm phase:gate:report` to summarize required Phase 0, Phase 1, Phase 2, and Phase 3 release checklist items from `docs/08-ROADMAP-TODO.md`.",
+      "",
+    ];
+  }
+
+  const phaseSummary = (report.phases ?? [])
+    .map((phase) => `${phase.label}:${phase.counts?.done ?? 0}/${phase.total}`)
+    .join(", ");
+
+  return [
+    "## Phase 0-3 Gate Status",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("source_doc", report.sourceDoc),
+    row("total_items", report.totalItems),
+    row("done_items", report.doneItems),
+    row("incomplete_items", report.incompleteItems?.length ?? 0),
+    row("phases", phaseSummary || "n/a"),
+    row(
+      "release_blockers",
+      report.incompleteItems?.length
+        ? report.incompleteItems.map((item) => item.id).join("; ")
+        : "none",
+    ),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 function docsReleaseSection(report) {
   if (!report) {
     return [
@@ -522,6 +564,7 @@ const widgetRuntimeReport = loadWidgetRuntimeReport();
 const autoResolutionReport = loadAutoResolutionReport();
 const featurebaseParityReport = loadFeaturebaseParityReport();
 const coreModuleParityReport = loadCoreModuleParityReport();
+const phaseGateStatusReport = loadPhaseGateStatusReport();
 const docsReleaseReport = loadDocsReleaseReport();
 const qualityGateReport = loadQualityGateReport();
 const body = [
@@ -555,6 +598,7 @@ const body = [
   "| Support dogfood | `pnpm support:dogfood:report` | CI job uploads JSON/Markdown dashboard evidence |",
   "| Widget runtime | `pnpm widget:runtime:report` | CI job uploads JSON/Markdown embed evidence |",
   "| Core module parity | `pnpm core:parity:report` | CI job uploads frontend/RAG/memory/storage/multimodal/agent/workflow parity evidence |",
+  "| Phase 0-3 gate status | `pnpm phase:gate:report` | CI job uploads must-complete checklist status and remaining blocker evidence |",
   "| Docs release | `pnpm docs:release:report` | CI job uploads docs/tutorial readiness evidence; video uploads required before tag |",
   "",
   ...supportFlowSection(supportFlowReport),
@@ -564,6 +608,7 @@ const body = [
   ...autoResolutionSection(autoResolutionReport),
   ...featurebaseParitySection(featurebaseParityReport),
   ...coreModuleParitySection(coreModuleParityReport),
+  ...phaseGateStatusSection(phaseGateStatusReport),
   ...docsReleaseSection(docsReleaseReport),
   ...qualityGateSection(qualityGateReport),
   ...copilotAdoptionSection(copilotAdoptionReport),

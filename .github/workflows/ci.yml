@@ -40,6 +40,7 @@ jobs:
       - run: pnpm auto:resolution:report --fixture
       - run: pnpm featurebase:parity:report
       - run: pnpm core:parity:report
+      - run: pnpm phase:gate:report
       - run: pnpm docs:release:report
       - run: pnpm docker:lite:startup-report
         env:
@@ -66,6 +67,7 @@ jobs:
           AUTO_RESOLUTION_REPORT_JSON: artifacts/release/auto-resolution.json
           FEATUREBASE_PARITY_REPORT_JSON: artifacts/release/featurebase-parity.json
           CORE_MODULE_PARITY_REPORT_JSON: artifacts/release/core-module-parity.json
+          PHASE_GATE_STATUS_REPORT_JSON: artifacts/release/phase-gate-status.json
           DOCS_RELEASE_REPORT_JSON: artifacts/release/docs-release.json
           QUALITY_GATE_REPORT_JSON: artifacts/release/quality-gate.json
           COPILOT_ADOPTION_REPORT_JSON: artifacts/release/copilot-adoption.json
@@ -91,6 +93,8 @@ jobs:
             artifacts/release/featurebase-parity.md
             artifacts/release/core-module-parity.json
             artifacts/release/core-module-parity.md
+            artifacts/release/phase-gate-status.json
+            artifacts/release/phase-gate-status.md
             artifacts/release/docs-release.json
             artifacts/release/docs-release.md
             artifacts/release/quality-gate.json
