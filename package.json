@@ -27,6 +27,7 @@
     "release:evidence": "node scripts/v0.2-release-evidence.mjs",
     "release:verify-external": "node scripts/verify-v0.2-external-evidence.mjs",
     "auto:resolution:report": "node --import ./node_modules/.pnpm/tsx@4.22.3/node_modules/tsx/dist/loader.mjs scripts/auto-resolution-report.mjs",
+    "featurebase:parity:report": "node scripts/featurebase-parity-report.mjs",
     "keenai": "pnpm --filter @keenai/memory-cli exec keenai",
     "test:watch": "vitest",
     "typecheck": "corepack pnpm -r --if-present typecheck",

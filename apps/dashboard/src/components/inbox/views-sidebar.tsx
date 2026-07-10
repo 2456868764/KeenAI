@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@keenai/ui";
-import { Inbox, MessageSquare, Moon, User } from "lucide-react";
+import { Bot, Inbox, MessageSquare, Moon, User } from "lucide-react";
 
 export type InboxView = "all" | "open" | "unassigned" | "mine";
 
@@ -51,6 +51,29 @@ export function ViewsSidebar({
             </button>
           );
         })}
+        <p className="px-2 pt-4 pb-1 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+          AI Agent
+        </p>
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+        >
+          <Bot className="size-4 shrink-0 text-[hsl(var(--primary))]" />
+          <span className="truncate">Resolved</span>
+          <span className="ml-auto rounded-full bg-[hsl(var(--surface-2))] px-1.5 py-0.5 text-[10px]">
+            0
+          </span>
+        </button>
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+        >
+          <User className="size-4 shrink-0 text-[hsl(var(--primary))]" />
+          <span className="truncate">Routed to human</span>
+          <span className="ml-auto rounded-full bg-[hsl(var(--surface-2))] px-1.5 py-0.5 text-[10px]">
+            0
+          </span>
+        </button>
       </nav>
     </aside>
   );

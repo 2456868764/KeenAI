@@ -1,6 +1,8 @@
 /** Injected into Shadow DOM — keeps host page CSS from leaking in/out. */
 export const WIDGET_CSS = `
 :host, .keenai-root {
+  --widget-user-bubble: #7c3aed;
+  --widget-agent-bubble: #27272a;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.4;
@@ -112,13 +114,13 @@ export const WIDGET_CSS = `
 
 .keenai-bubble--user {
   align-self: flex-end;
-  background: #7c3aed;
+  background: var(--widget-user-bubble);
   color: #fff;
 }
 
 .keenai-bubble--agent {
   align-self: flex-start;
-  background: #27272a;
+  background: var(--widget-agent-bubble);
   color: #f4f4f5;
 }
 

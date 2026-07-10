@@ -56,6 +56,12 @@ function loadAutoResolutionReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadFeaturebaseParityReport() {
+  const reportPath = process.env.FEATUREBASE_PARITY_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -288,6 +294,33 @@ function autoResolutionSection(report) {
   ];
 }
 
+function featurebaseParitySection(report) {
+  if (!report) {
+    return [
+      "## Featurebase Parity",
+      "",
+      "No Featurebase parity report was attached. Run `pnpm featurebase:parity:report` to validate local UI/API surface coverage against `docs/05-FRONTEND.md`.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+  return [
+    "## Featurebase Parity",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("source_doc", report.sourceDoc),
+    row("score", pct(report.score)),
+    row("threshold", pct(report.threshold)),
+    row("passed_weight", report.passedWeight),
+    row("total_weight", report.totalWeight),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -305,6 +338,7 @@ const copilotAdoptionReport = loadCopilotAdoptionReport();
 const supportFlowReport = loadSupportFlowReport();
 const customerReachabilityReport = loadCustomerReachabilityReport();
 const autoResolutionReport = loadAutoResolutionReport();
+const featurebaseParityReport = loadFeaturebaseParityReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -336,6 +370,7 @@ const body = [
   ...supportFlowSection(supportFlowReport),
   ...customerReachabilitySection(customerReachabilityReport),
   ...autoResolutionSection(autoResolutionReport),
+  ...featurebaseParitySection(featurebaseParityReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),

@@ -35,6 +35,7 @@ jobs:
       - run: pnpm support:flow:report
       - run: pnpm customer:reachability:report
       - run: pnpm auto:resolution:report --fixture
+      - run: pnpm featurebase:parity:report
       - run: pnpm docker:lite:startup-report
         env:
           DOCKER_LITE_STARTUP_DRY_RUN: true
@@ -56,6 +57,7 @@ jobs:
           SUPPORT_FLOW_REPORT_JSON: artifacts/release/support-flow.json
           CUSTOMER_REACHABILITY_REPORT_JSON: artifacts/release/customer-reachability.json
           AUTO_RESOLUTION_REPORT_JSON: artifacts/release/auto-resolution.json
+          FEATUREBASE_PARITY_REPORT_JSON: artifacts/release/featurebase-parity.json
           COPILOT_ADOPTION_REPORT_JSON: artifacts/release/copilot-adoption.json
           DOCKER_LITE_STARTUP_REPORT_JSON: artifacts/release/docker-lite-startup.json
           OLLAMA_OFFLINE_REPORT_JSON: artifacts/release/ollama-offline-demo.json
@@ -71,6 +73,8 @@ jobs:
             artifacts/release/customer-reachability.md
             artifacts/release/auto-resolution.json
             artifacts/release/auto-resolution.md
+            artifacts/release/featurebase-parity.json
+            artifacts/release/featurebase-parity.md
             artifacts/release/copilot-adoption.json
             artifacts/release/copilot-adoption.md
             artifacts/release/docker-lite-startup.json
