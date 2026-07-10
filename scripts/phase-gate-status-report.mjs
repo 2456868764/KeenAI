@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 const SOURCE_DOC = "docs/08-ROADMAP-TODO.md";
+const ROADMAP_DOC = "docs/08-ROADMAP.md";
 const PHASES = [
   { id: "phase-0", heading: "Phase 0", label: "Phase 0 · Engineering foundation" },
   { id: "phase-1", heading: "Phase 1", label: "Phase 1 · MVP" },
@@ -28,8 +29,21 @@ function writeOutput(path, body) {
 }
 
 function sectionForHeading(markdown, heading) {
-  const pattern = new RegExp(`^### ${heading}[^\\n]*\\n([\\s\\S]*?)(?=^### |^## |\\z)`, "m");
-  return markdown.match(pattern)?.[1] ?? "";
+  const lines = markdown.split("\n");
+  const start = lines.findIndex((line) => line.startsWith("### ") && line.includes(heading));
+  if (start < 0) return "";
+  const end = lines.findIndex(
+    (line, index) => index > start && (line.startsWith("### ") || line.startsWith("## ")),
+  );
+  return lines.slice(start + 1, end < 0 ? lines.length : end).join("\n");
+}
+
+function roadmapSectionForHeading(markdown, heading) {
+  const lines = markdown.split("\n");
+  const start = lines.findIndex((line) => line.startsWith("## ") && line.includes(heading));
+  if (start < 0) return "";
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+  return lines.slice(start + 1, end < 0 ? lines.length : end).join("\n");
 }
 
 function parseRows(section, phase) {
@@ -61,6 +75,34 @@ function parseRows(section, phase) {
     .filter(Boolean);
 }
 
+function parseRoadmapChecklist(section, phase) {
+  return section
+    .split("\n")
+    .map((line) => line.trim())
+    .map((line) => {
+      const match = line.match(/^-\s+\[([ xX~-])\]\s+(.+)$/);
+      if (!match) return null;
+      const marker = match[1].toLowerCase();
+      const item = match[2].trim();
+      const state =
+        marker === "x"
+          ? "done"
+          : marker === "~"
+            ? "partial"
+            : marker === "-"
+              ? "external_or_skipped"
+              : "todo";
+      return {
+        phase: phase.id,
+        phaseLabel: phase.label,
+        item,
+        state,
+        releaseBlocking: state !== "done",
+      };
+    })
+    .filter(Boolean);
+}
+
 function summarizePhase(phase, items) {
   const phaseItems = items.filter((item) => item.phase === phase.id);
   const counts = phaseItems.reduce(
@@ -82,6 +124,19 @@ function summarizePhase(phase, items) {
   };
 }
 
+function summarizeRoadmapPhase(phase, items) {
+  const phaseItems = items.filter((item) => item.phase === phase.id);
+  const incomplete = phaseItems.filter((item) => item.releaseBlocking);
+  return {
+    id: phase.id,
+    label: phase.label,
+    total: phaseItems.length,
+    done: phaseItems.length - incomplete.length,
+    incomplete: incomplete.length,
+    incompleteItems: incomplete,
+  };
+}
+
 function renderMarkdown(report) {
   const phaseRows = report.phases
     .map(
@@ -90,6 +145,17 @@ function renderMarkdown(report) {
           phase.counts.partial
         } | ${phase.counts.external_or_skipped} | ${phase.counts.todo} | ${
           phase.incompleteIds.length > 0 ? phase.incompleteIds.join(", ") : "none"
+        } |`,
+    )
+    .join("\n");
+
+  const roadmapRows = report.roadmapPhases
+    .map(
+      (phase) =>
+        `| ${phase.label} | ${phase.done}/${phase.total} | ${phase.incomplete} | ${
+          phase.incompleteItems.length > 0
+            ? phase.incompleteItems.map((item) => item.item).join("<br>")
+            : "none"
         } |`,
     )
     .join("\n");
@@ -112,9 +178,11 @@ function renderMarkdown(report) {
     "|-------|-------|",
     `| status | ${report.evidenceStatus} |`,
     `| source_doc | ${report.sourceDoc} |`,
+    `| roadmap_doc | ${report.roadmapDoc} |`,
     `| total_items | ${report.totalItems} |`,
     `| done_items | ${report.doneItems} |`,
     `| incomplete_items | ${report.incompleteItems.length} |`,
+    `| roadmap_open_items | ${report.roadmapOpenItems.length} |`,
     `| release_blockers | ${
       report.incompleteItems.length > 0
         ? report.incompleteItems.map((item) => item.id).join("; ")
@@ -126,6 +194,14 @@ function renderMarkdown(report) {
     "| Phase | Status | Done | Partial | External/Skipped | Todo | Incomplete IDs |",
     "|-------|--------|------|---------|------------------|------|----------------|",
     phaseRows,
+    "",
+    "## Roadmap Source Cross-check",
+    "",
+    `Source: ${report.roadmapDoc}`,
+    "",
+    "| Phase | Done | Open | Open roadmap items |",
+    "|-------|------|------|--------------------|",
+    roadmapRows,
     "",
     "## Required Items",
     "",
@@ -140,16 +216,32 @@ const sourcePath = join(ROOT, SOURCE_DOC);
 if (!existsSync(sourcePath)) {
   throw new Error(`Missing source doc: ${SOURCE_DOC}`);
 }
+const roadmapPath = join(ROOT, ROADMAP_DOC);
+if (!existsSync(roadmapPath)) {
+  throw new Error(`Missing roadmap doc: ${ROADMAP_DOC}`);
+}
 
 const markdown = readFileSync(sourcePath, "utf8");
+const roadmapMarkdown = readFileSync(roadmapPath, "utf8");
 const items = PHASES.flatMap((phase) =>
   parseRows(sectionForHeading(markdown, phase.heading), phase),
 );
+const roadmapItems = PHASES.flatMap((phase) =>
+  parseRoadmapChecklist(roadmapSectionForHeading(roadmapMarkdown, phase.heading), phase),
+);
 const phases = PHASES.map((phase) => summarizePhase(phase, items));
+const roadmapPhases = PHASES.map((phase) => summarizeRoadmapPhase(phase, roadmapItems));
 const incompleteItems = items.filter((item) => item.releaseBlocking);
+const roadmapOpenItems = roadmapItems.filter((item) => item.releaseBlocking);
 const parseFailures = phases.filter((phase) => phase.total === 0).map((phase) => phase.id);
+const roadmapParseFailures = roadmapPhases
+  .filter((phase) => phase.total === 0)
+  .map((phase) => phase.id);
 const failures = [
   ...parseFailures.map((phaseId) => `missing ${phaseId} rows in ${SOURCE_DOC}`),
+  ...roadmapParseFailures.map(
+    (phaseId) => `missing ${phaseId} roadmap checkboxes in ${ROADMAP_DOC}`,
+  ),
   ...items
     .filter((item) => item.state === "unknown")
     .map((item) => `${item.id} has unknown status`),
@@ -157,12 +249,21 @@ const failures = [
 
 const report = {
   generatedAt: new Date().toISOString(),
-  evidenceStatus: failures.length > 0 ? "fail" : incompleteItems.length > 0 ? "partial" : "pass",
+  evidenceStatus:
+    failures.length > 0
+      ? "fail"
+      : incompleteItems.length > 0 || roadmapOpenItems.length > 0
+        ? "partial"
+        : "pass",
   sourceDoc: SOURCE_DOC,
+  roadmapDoc: ROADMAP_DOC,
   totalItems: items.length,
   doneItems: items.filter((item) => item.state === "done").length,
   incompleteItems,
   phases,
+  roadmapPhases,
+  roadmapItems,
+  roadmapOpenItems,
   items,
   failures,
 };

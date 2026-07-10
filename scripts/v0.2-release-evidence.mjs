@@ -458,6 +458,9 @@ function phaseGateStatusSection(report) {
   const phaseSummary = (report.phases ?? [])
     .map((phase) => `${phase.label}:${phase.counts?.done ?? 0}/${phase.total}`)
     .join(", ");
+  const roadmapSummary = (report.roadmapPhases ?? [])
+    .map((phase) => `${phase.label}:${phase.done}/${phase.total}`)
+    .join(", ");
 
   return [
     "## Phase 0-3 Gate Status",
@@ -469,7 +472,9 @@ function phaseGateStatusSection(report) {
     row("total_items", report.totalItems),
     row("done_items", report.doneItems),
     row("incomplete_items", report.incompleteItems?.length ?? 0),
+    row("roadmap_open_items", report.roadmapOpenItems?.length ?? 0),
     row("phases", phaseSummary || "n/a"),
+    row("roadmap_phases", roadmapSummary || "n/a"),
     row(
       "release_blockers",
       report.incompleteItems?.length
