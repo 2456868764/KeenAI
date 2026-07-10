@@ -32,7 +32,11 @@ const criteria = [
     ],
     contains: [
       ["packages/kb/src/connectors/types.ts", "configSchema()"],
+      ["packages/kb/src/connectors/types.ts", "permissions"],
+      ["packages/kb/src/connectors/types.ts", "attachments"],
       ["packages/kb/src/connectors/schemas.ts", "configDocumentsConnectorConfigSchema"],
+      ["packages/kb/src/sync-source.ts", "permissions: fetched.permissions"],
+      ["packages/kb/src/sync-source.ts", "attachments: fetched.attachments"],
       ["packages/kb/src/connectors/index.ts", "resolveKbConnectorForSource"],
     ],
   },

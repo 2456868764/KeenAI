@@ -187,6 +187,7 @@ describe("KB ingestion pipeline", () => {
     expect(chunks.length).toBe(result.chunkCount);
     expect(chunks[0]?.content).toContain("contextual note");
     expect(chunks[0]?.contextPrefix).toContain("contextual note");
+    expect(chunks[0]?.permissions).toEqual({});
 
     const vectors = await db
       .select()

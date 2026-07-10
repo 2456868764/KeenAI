@@ -12,7 +12,7 @@ import {
   resolveKbConnectorForSource,
 } from "@keenai/kb";
 import { createLibsqlStore } from "@keenai/storage";
-import { brands, kbSources, organizations } from "@keenai/storage/schema";
+import { brands, kbDocuments, kbSources, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -166,6 +166,15 @@ describe("KB source connectors", () => {
             rawContent: "# Refund Policy\n\nRefunds are available within 14 days.",
             contentType: "text/markdown",
             canonicalLocale: "en",
+            permissions: { visibility: "role", roles: ["support_admin"] },
+            attachments: [
+              {
+                filename: "refund-policy.pdf",
+                mime: "application/pdf",
+                url: "https://cdn.example.com/refund-policy.pdf",
+                bytes: 1024,
+              },
+            ],
             updatedAt: "2026-07-01T00:00:00.000Z",
           },
         ],
@@ -175,6 +184,24 @@ describe("KB source connectors", () => {
     expect(result).toMatchObject({ listed: 1, synced: 1, skipped: 0 });
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("Refund Policy");
+    const [storedDocument] = await db
+      .select()
+      .from(kbDocuments)
+      .where(eq(kbDocuments.id, requireRow(documents[0], "stored document").id));
+    expect(storedDocument?.permissions).toEqual({
+      visibility: "role",
+      roles: ["support_admin"],
+    });
+    expect(storedDocument?.metadata).toMatchObject({
+      attachments: [
+        {
+          filename: "refund-policy.pdf",
+          mime: "application/pdf",
+          url: "https://cdn.example.com/refund-policy.pdf",
+          bytes: 1024,
+        },
+      ],
+    });
 
     await store.close();
   });

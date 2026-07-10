@@ -2,6 +2,22 @@ import { z } from "zod";
 
 export const emptyConnectorConfigSchema = z.object({}).passthrough();
 
+export const permissionsSchema = z
+  .object({
+    visibility: z.enum(["public", "customers", "paying_customers", "internal", "role"]),
+    roles: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+export const attachmentSchema = z
+  .object({
+    filename: z.string(),
+    mime: z.string(),
+    url: z.string().url(),
+    bytes: z.number().int().nonnegative(),
+  })
+  .passthrough();
+
 export const configDocumentSchema = z
   .object({
     externalId: z.string().optional(),
@@ -14,6 +30,8 @@ export const configDocumentSchema = z
     transcript: z.string().optional(),
     contentType: z.string().optional(),
     canonicalLocale: z.string().optional(),
+    permissions: permissionsSchema.optional(),
+    attachments: z.array(attachmentSchema).optional(),
     updatedAt: z.string().datetime().optional(),
   })
   .passthrough();

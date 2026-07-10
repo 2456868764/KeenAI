@@ -7,6 +7,25 @@ export type KbResourceRef = {
   etag?: string;
 };
 
+export type KbDocumentVisibility =
+  | "public"
+  | "customers"
+  | "paying_customers"
+  | "internal"
+  | "role";
+
+export type KbDocumentPermissions = {
+  visibility: KbDocumentVisibility;
+  roles?: string[];
+};
+
+export type KbDocumentAttachment = {
+  filename: string;
+  mime: string;
+  url: string;
+  bytes: number;
+};
+
 export type KbFetchedDocument = {
   externalId: string;
   title: string;
@@ -14,6 +33,8 @@ export type KbFetchedDocument = {
   rawContent: string;
   contentType?: string;
   canonicalLocale?: string;
+  permissions?: KbDocumentPermissions;
+  attachments?: KbDocumentAttachment[];
   updatedAt: string;
 };
 

@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 import type { KbSourceType } from "@keenai/storage/schema";
 import { fileUploadConnectorConfigSchema } from "./schemas.js";
-import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
+import type {
+  KbConnector,
+  KbDocumentAttachment,
+  KbDocumentPermissions,
+  KbFetchedDocument,
+  KbResourceRef,
+} from "./types.js";
 
 type FileConnectorDocument = {
   externalId?: unknown;
@@ -10,6 +16,8 @@ type FileConnectorDocument = {
   rawContent?: unknown;
   contentType?: unknown;
   canonicalLocale?: unknown;
+  permissions?: unknown;
+  attachments?: unknown;
   updatedAt?: unknown;
 };
 
@@ -23,6 +31,43 @@ export type FileUploadConnectorOptions = {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function normalizePermissions(value: unknown): KbDocumentPermissions | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const raw = value as { visibility?: unknown; roles?: unknown };
+  if (
+    raw.visibility !== "public" &&
+    raw.visibility !== "customers" &&
+    raw.visibility !== "paying_customers" &&
+    raw.visibility !== "internal" &&
+    raw.visibility !== "role"
+  ) {
+    return undefined;
+  }
+  return {
+    visibility: raw.visibility,
+    roles: Array.isArray(raw.roles)
+      ? raw.roles.filter((role): role is string => typeof role === "string")
+      : undefined,
+  };
+}
+
+function normalizeAttachments(value: unknown): KbDocumentAttachment[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const attachments = value
+    .map((attachment) => {
+      if (typeof attachment !== "object" || attachment === null) return null;
+      const raw = attachment as Record<string, unknown>;
+      const filename = asString(raw.filename);
+      const mime = asString(raw.mime);
+      const url = asString(raw.url);
+      const bytes = typeof raw.bytes === "number" && Number.isFinite(raw.bytes) ? raw.bytes : null;
+      if (!filename || !mime || !url || bytes === null || bytes < 0) return null;
+      return { filename, mime, url, bytes };
+    })
+    .filter((attachment): attachment is KbDocumentAttachment => !!attachment);
+  return attachments.length > 0 ? attachments : undefined;
 }
 
 function normalizeDocument(doc: FileConnectorDocument, index: number): KbFetchedDocument | null {
@@ -41,6 +86,8 @@ function normalizeDocument(doc: FileConnectorDocument, index: number): KbFetched
     rawContent,
     contentType: asString(doc.contentType) ?? "text/markdown",
     canonicalLocale: asString(doc.canonicalLocale),
+    permissions: normalizePermissions(doc.permissions),
+    attachments: normalizeAttachments(doc.attachments),
     updatedAt,
   };
 }
