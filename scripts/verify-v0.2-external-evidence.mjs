@@ -152,6 +152,47 @@ function checkExternalTeams(manifest, failures) {
   }
 }
 
+function checkGithubStars(manifest, failures, threshold = 5_000) {
+  const count = get(manifest, "githubStars.count");
+  checkUrlField(manifest, "githubStars.artifactUrl", "GitHub stars evidence URL", failures);
+  if (typeof count !== "number" || count < threshold) {
+    failures.push(`GitHub stars count must be >= ${threshold}`);
+  }
+}
+
+function checkDocsPageViews(manifest, failures) {
+  const monthlyPv = get(manifest, "docsTraffic.monthlyPv");
+  const threshold = get(manifest, "docsTraffic.threshold");
+  checkUrlField(manifest, "docsTraffic.artifactUrl", "docs traffic evidence URL", failures);
+  if (typeof monthlyPv !== "number" || monthlyPv < (threshold ?? 1_000)) {
+    failures.push(`docs monthly PV must be >= ${threshold ?? 1_000}`);
+  }
+}
+
+function checkSelfHostedInstances(manifest, failures) {
+  const count = get(manifest, "selfHostedInstances.count");
+  const threshold = get(manifest, "selfHostedInstances.threshold");
+  checkUrlField(
+    manifest,
+    "selfHostedInstances.artifactUrl",
+    "self-hosted instances evidence URL",
+    failures,
+  );
+  if (typeof count !== "number" || count < (threshold ?? 200)) {
+    failures.push(`self-hosted instances count must be >= ${threshold ?? 200}`);
+  }
+}
+
+function checkReleasePackaging(manifest, failures) {
+  checkUrlField(manifest, "remoteCiRunUrl", "remote CI run URL", failures);
+  checkUrlField(manifest, "githubReleaseUrl", "GitHub Release URL", failures);
+  checkUrlField(manifest, "helm.installArtifactUrl", "Helm install artifact URL", failures);
+  checkTextField(manifest, "tag", "release tag", failures);
+  checkTextField(manifest, "ghcr.apiImage", "GHCR API image ref", failures);
+  checkTextField(manifest, "ghcr.dashboardImage", "GHCR Dashboard image ref", failures);
+  checkImages(manifest, failures);
+}
+
 function checkJsonReport(path, label, failures) {
   checkFile(path, label, failures);
   if (!isNonEmptyString(path) || !existsSync(resolvePath(path))) return null;
@@ -416,6 +457,42 @@ const BLOCKER_CHECKS = [
     id: "P3-ACC-05",
     label: "Recall@5 and stale answer thresholds",
     check: checkTelemetry,
+  },
+  {
+    id: "KPI-GITHUB-STARS-500",
+    label: "GitHub Stars >= 500",
+    check(manifest, failures) {
+      checkGithubStars(manifest, failures, 500);
+    },
+  },
+  {
+    id: "KPI-GITHUB-STARS-2000",
+    label: "GitHub Stars >= 2000",
+    check(manifest, failures) {
+      checkGithubStars(manifest, failures, 2_000);
+    },
+  },
+  {
+    id: "KPI-GITHUB-STARS-5000",
+    label: "GitHub Stars >= 5000",
+    check(manifest, failures) {
+      checkGithubStars(manifest, failures, 5_000);
+    },
+  },
+  {
+    id: "KPI-DOCS-PV-1000",
+    label: "Docs site >= 1000 PV/month",
+    check: checkDocsPageViews,
+  },
+  {
+    id: "KPI-SELF-HOSTED-200",
+    label: "Self-hosted instances >= 200",
+    check: checkSelfHostedInstances,
+  },
+  {
+    id: "I120",
+    label: "v0.2.0 release packaging",
+    check: checkReleasePackaging,
   },
 ];
 

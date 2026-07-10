@@ -473,6 +473,8 @@ function phaseGateStatusSection(report) {
     row("done_items", report.doneItems),
     row("incomplete_items", report.incompleteItems?.length ?? 0),
     row("roadmap_open_items", report.roadmapOpenItems?.length ?? 0),
+    row("roadmap_unmapped_open_items", report.roadmapUnmappedOpenItems?.length ?? 0),
+    row("roadmap_todo_done_conflicts", report.roadmapTodoDoneConflicts?.length ?? 0),
     row("phases", phaseSummary || "n/a"),
     row("roadmap_phases", roadmapSummary || "n/a"),
     row(

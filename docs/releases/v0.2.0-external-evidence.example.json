@@ -9,13 +9,19 @@
     "P1-ACC-06": "ciGreenRate URL/rate/threshold",
     "P2-ACC-01": "featurebaseParity.artifactUrl",
     "P2-ACC-02": "externalTeams artifact URL + count >= 3",
+    "KPI-GITHUB-STARS-500": "githubStars artifact URL + count >= 500",
+    "KPI-GITHUB-STARS-2000": "githubStars artifact URL + count >= 2000",
+    "KPI-DOCS-PV-1000": "docsTraffic artifact URL + monthlyPv >= 1000",
     "P3-12": "tutorials selfHosted and kbImport YouTube/Bilibili URLs",
     "P3-13": "productionTelemetry JSON + live source connector OAuth artifact URLs",
     "P3-ACC-01": "autoResolution actual JSON + artifact URL",
     "P3-ACC-02": "ollamaOffline real runtime artifact URL + model",
     "P3-ACC-03": "featurebaseParity.artifactUrl",
     "P3-ACC-04": "productionTelemetry JSON",
-    "P3-ACC-05": "productionTelemetry JSON"
+    "P3-ACC-05": "productionTelemetry JSON",
+    "KPI-GITHUB-STARS-5000": "githubStars artifact URL + count >= 5000",
+    "KPI-SELF-HOSTED-200": "selfHostedInstances artifact URL + count >= 200",
+    "I120": "remote CI URL + GHCR images + Helm artifact + GitHub release URL"
   },
   "remoteCiRunUrl": "https://github.com/OWNER/REPO/actions/runs/123456789",
   "githubReleaseUrl": "https://github.com/OWNER/REPO/releases/tag/v0.2.0",
@@ -71,6 +77,24 @@
     "artifactUrl": "https://github.com/OWNER/REPO/actions/runs/123456789/artifacts/external-teams-trial-v0.2.0",
     "count": 3,
     "notes": "Evidence that at least three external teams tried the release candidate for P2-ACC-02."
+  },
+  "githubStars": {
+    "artifactUrl": "https://github.com/OWNER/REPO/actions/runs/123456789/artifacts/github-stars-v0.2.0",
+    "count": 5000,
+    "threshold": 5000,
+    "notes": "Raw roadmap KPI: GitHub Stars >= 5000 by v0.2.0. Also subsumes earlier 500 and 2000 star milestones."
+  },
+  "docsTraffic": {
+    "artifactUrl": "https://github.com/OWNER/REPO/actions/runs/123456789/artifacts/docs-traffic-v0.2.0",
+    "monthlyPv": 1000,
+    "threshold": 1000,
+    "notes": "Raw Phase 2 roadmap KPI: docs site visits >= 1000 PV/month."
+  },
+  "selfHostedInstances": {
+    "artifactUrl": "https://github.com/OWNER/REPO/actions/runs/123456789/artifacts/self-hosted-instances-v0.2.0",
+    "count": 200,
+    "threshold": 200,
+    "notes": "Raw Phase 3 roadmap KPI: self-hosted instances >= 200 from opt-in telemetry or equivalent evidence."
   },
   "liveSourceConnectors": {
     "githubOAuthArtifactUrl": "https://github.com/OWNER/REPO/actions/runs/123456789/artifacts/github-source-oauth-v0.2.0",
