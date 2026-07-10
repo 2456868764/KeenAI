@@ -133,7 +133,7 @@
 | P3-12 | 视频教程（YouTube / B 站） | [ ] |
 | P3-13 | KB-16/18/19/20/22 生产深度（[DESIGN-CODE-AUDIT.md](./DESIGN-CODE-AUDIT.md)） | [ ] |
 | P3-14 | Intercom 全量导入（conversations/users，非仅 articles） | [x] |
-| P3-ACC-01 | 自动解决率 ≥ 50% | [ ] |
+| P3-ACC-01 | 自动解决率 ≥ 50% | [~] `auto:resolution:report --fixture` 已验证 closed conversation resolution 分类和阈值报告；生产/prod-like telemetry artifact 待外部附加 |
 | P3-ACC-02 | Ollama 完全离线 demo | [~] `ollama:offline:demo` 可验证本地 Ollama-compatible 调用链；真实 Ollama 模型端到端运行证据待外部附加 |
 | P3-ACC-03 | Featurebase 90% 对齐 | [ ] |
 | P3-ACC-04 | Mastra Eval faithfulness ≥ 0.85 | [~] 本地 `kb:eval:report` 可生成发布证据；生产/prod-like eval artifact 待外部附加 |

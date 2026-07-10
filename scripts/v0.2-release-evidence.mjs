@@ -50,6 +50,12 @@ function loadCustomerReachabilityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadAutoResolutionReport() {
+  const reportPath = process.env.AUTO_RESOLUTION_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -250,6 +256,38 @@ function customerReachabilitySection(report) {
   ];
 }
 
+function autoResolutionSection(report) {
+  if (!report) {
+    return [
+      "## Auto Resolution",
+      "",
+      "No auto resolution report was attached. Run `pnpm auto:resolution:report --fixture` for CI-safe validation or `pnpm auto:resolution:report` with `DATABASE_URL` against production/prod-like closed conversations.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+  return [
+    "## Auto Resolution",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("total_closed_conversations", report.totalClosedConversations),
+    row("automated_resolved_conversations", report.automatedResolvedConversations),
+    row("auto_resolution_rate", pct(report.autoResolutionRate)),
+    row("threshold", pct(report.thresholds?.autoResolutionRateMin)),
+    row("min_closed_conversations", report.thresholds?.minClosedConversations),
+    row("confirmed", report.byResolution?.confirmed),
+    row("assumed", report.byResolution?.assumed),
+    row("unresolved", report.byResolution?.unresolved),
+    row("escalated", report.byResolution?.escalated),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -266,6 +304,7 @@ const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const copilotAdoptionReport = loadCopilotAdoptionReport();
 const supportFlowReport = loadSupportFlowReport();
 const customerReachabilityReport = loadCustomerReachabilityReport();
+const autoResolutionReport = loadAutoResolutionReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -296,6 +335,7 @@ const body = [
   "",
   ...supportFlowSection(supportFlowReport),
   ...customerReachabilitySection(customerReachabilityReport),
+  ...autoResolutionSection(autoResolutionReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
