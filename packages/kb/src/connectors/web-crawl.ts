@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { KbSourceType } from "@keenai/storage/schema";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type WebCrawlUrlConfig =
@@ -31,6 +32,7 @@ export type WebCrawlFetch = (
 export type WebCrawlConnectorOptions = {
   fetchFn?: WebCrawlFetch;
   now?: () => Date;
+  type?: Extract<KbSourceType, "web" | "web_crawl">;
 };
 
 type NormalizedUrl = {
@@ -117,7 +119,7 @@ export function createWebCrawlConnector(
 
   return {
     name: "web-crawl",
-    type: "web",
+    type: options.type ?? "web",
     async list(opts) {
       const refs: KbResourceRef[] = pages.map((page) => ({
         externalId: page.url,

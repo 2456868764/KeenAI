@@ -9,6 +9,7 @@ import {
   createWebCrawlConnector,
   createWebCrawlStubConnector,
   getKbStubConnector,
+  resolveKbConnectorForSource,
 } from "@keenai/kb";
 import { createLibsqlStore } from "@keenai/storage";
 import { brands, kbSources, organizations } from "@keenai/storage/schema";
@@ -361,6 +362,76 @@ describe("KB source connectors", () => {
     expect(result.synced).toBe(1);
     const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
     expect(documents[0]?.title).toBe("Refund Playbook");
+
+    await store.close();
+  });
+
+  it("syncs all design-listed config-backed source connectors", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "extended-sources", name: "Extended Sources" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const sourceTypes = [
+      "past_conversations",
+      "feedback",
+      "changelog",
+      "roadmap",
+      "confluence",
+      "google_drive",
+      "slack",
+      "discord",
+      "linear",
+      "jira",
+      "youtube",
+      "sql",
+    ] as const;
+    const kb = createKeenaiKb({ db });
+
+    for (const sourceType of sourceTypes) {
+      const [source] = await db
+        .insert(kbSources)
+        .values({ orgId: org.id, brandId: brand.id, type: sourceType, name: sourceType })
+        .returning();
+      const kbSource = requireRow(source, sourceType);
+      const connector = resolveKbConnectorForSource(sourceType, {
+        documents: [
+          {
+            externalId: `${sourceType}:doc-1`,
+            title: `${sourceType} KB document`,
+            rawContent: `# ${sourceType}\n\nUse this ${sourceType} source for support context.`,
+            updatedAt: "2026-07-01T00:00:00.000Z",
+          },
+        ],
+      });
+      expect(connector).not.toBeNull();
+
+      const result = await kb.syncSource({
+        orgId: org.id,
+        brandId: brand.id,
+        sourceId: kbSource.id,
+        connector: connector ?? createHelpCenterStubConnector(),
+      });
+
+      expect(result).toMatchObject({ listed: 1, synced: 1, skipped: 0 });
+    }
+
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents).toHaveLength(sourceTypes.length);
+    expect(documents.map((document) => document.title)).toContain("confluence KB document");
 
     await store.close();
   });

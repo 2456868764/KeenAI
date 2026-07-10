@@ -3,12 +3,26 @@ import { type KbRecencyTimestamp, kbRecencyBoost } from "../retriever/fuse.js";
 import type { KbChunkProvenance } from "./provenance.js";
 
 /** Per-source authority weights (KB-13). */
-export const KB_SOURCE_AUTHORITY: Record<KbSourceType, number> = {
+export const KB_SOURCE_AUTHORITY: Partial<Record<KbSourceType, number>> = {
   help_center: 0.95,
   file: 0.9,
+  file_upload: 0.9,
   notion: 0.9,
+  confluence: 0.9,
+  google_drive: 0.9,
   github: 0.85,
   web: 0.75,
+  web_crawl: 0.75,
+  changelog: 0.85,
+  roadmap: 0.8,
+  feedback: 0.75,
+  slack: 0.7,
+  discord: 0.7,
+  linear: 0.8,
+  jira: 0.8,
+  youtube: 0.65,
+  sql: 0.8,
+  past_conversations: 0.7,
   resolved_conversations: 0.7,
 };
 

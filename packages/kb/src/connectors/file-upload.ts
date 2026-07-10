@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { KbSourceType } from "@keenai/storage/schema";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
 
 type FileConnectorDocument = {
@@ -13,6 +14,10 @@ type FileConnectorDocument = {
 
 export type FileUploadConnectorConfig = {
   documents?: FileConnectorDocument[];
+};
+
+export type FileUploadConnectorOptions = {
+  type?: Extract<KbSourceType, "file" | "file_upload">;
 };
 
 function asString(value: unknown): string | undefined {
@@ -40,7 +45,10 @@ function normalizeDocument(doc: FileConnectorDocument, index: number): KbFetched
 }
 
 /** Config-backed file upload connector for release-ready local/imported file sources. */
-export function createFileUploadConnector(config: FileUploadConnectorConfig = {}): KbConnector {
+export function createFileUploadConnector(
+  config: FileUploadConnectorConfig = {},
+  options: FileUploadConnectorOptions = {},
+): KbConnector {
   const documents = (config.documents ?? [])
     .map((document, index) => normalizeDocument(document, index))
     .filter((document): document is KbFetchedDocument => !!document);
@@ -48,7 +56,7 @@ export function createFileUploadConnector(config: FileUploadConnectorConfig = {}
 
   return {
     name: "file-upload",
-    type: "file",
+    type: options.type ?? "file",
     async list(opts) {
       const refs: KbResourceRef[] = documents.map((document) => ({
         externalId: document.externalId,

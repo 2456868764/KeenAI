@@ -5,10 +5,24 @@ import { brands, organizations } from "./core";
 
 export const KB_SOURCE_TYPES = [
   "help_center",
+  "past_conversations",
+  "feedback",
+  "changelog",
+  "roadmap",
   "web",
+  "web_crawl",
   "file",
+  "file_upload",
   "notion",
+  "confluence",
   "github",
+  "google_drive",
+  "slack",
+  "discord",
+  "linear",
+  "jira",
+  "youtube",
+  "sql",
   "resolved_conversations",
 ] as const;
 

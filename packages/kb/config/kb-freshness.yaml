@@ -4,12 +4,40 @@ sources:
     halfLifeDays: null
   file:
     halfLifeDays: null
+  file_upload:
+    halfLifeDays: null
   notion:
+    halfLifeDays: null
+  confluence:
+    halfLifeDays: null
+  google_drive:
     halfLifeDays: null
   github:
     halfLifeDays: 60
   web:
     halfLifeDays: 30
+  web_crawl:
+    halfLifeDays: 30
+  changelog:
+    halfLifeDays: 60
+  roadmap:
+    halfLifeDays: 60
+  feedback:
+    halfLifeDays: 90
+  slack:
+    halfLifeDays: 30
+  discord:
+    halfLifeDays: 30
+  linear:
+    halfLifeDays: 60
+  jira:
+    halfLifeDays: 60
+  youtube:
+    halfLifeDays: 90
+  sql:
+    halfLifeDays: 30
+  past_conversations:
+    halfLifeDays: 90
   resolved_conversations:
     halfLifeDays: 90
 default:
