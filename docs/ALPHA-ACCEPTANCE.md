@@ -19,6 +19,7 @@
 | Customer reachability | `pnpm customer:reachability:report` |
 | Copilot adoption report | `pnpm copilot:adoption:report --fixture` in CI; omit fixture against production/prod-like `copilot_events` |
 | Docker lite startup report | `DOCKER_LITE_STARTUP_DRY_RUN=true pnpm docker:lite:startup-report` in CI; omit dry-run in a Docker-enabled release environment |
+| Quality gate report | `pnpm test:coverage && pnpm quality:gate:report` |
 
 ## Manual gates (P1-ACC)
 
@@ -29,7 +30,7 @@
 | P1-ACC-03 | Copilot adoption ≥ 30% | `pnpm copilot:adoption:report` against production/prod-like `copilot_events` |
 | P1-ACC-04 | Docker lite < 30s | `pnpm docker:lite:startup-report` in a Docker-enabled release environment |
 | P1-ACC-05 | Local bootstrap < 2min | `pnpm bootstrap:local` after `pnpm install` |
-| P1-ACC-06 | Tests + CI green | `pnpm test` · GitHub Actions |
+| P1-ACC-06 | Tests + CI green | `pnpm test:coverage && pnpm quality:gate:report` plus GitHub Actions history proving ≥95% green rate |
 
 ## Docker lite (single container)
 

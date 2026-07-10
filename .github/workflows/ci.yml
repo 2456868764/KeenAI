@@ -31,6 +31,7 @@ jobs:
       - run: 'echo "feat: ci smoke" | pnpm exec commitlint'
       - run: pnpm db:migrate
       - run: pnpm test:coverage
+      - run: pnpm quality:gate:report
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm support:flow:report
       - run: pnpm customer:reachability:report
@@ -58,6 +59,7 @@ jobs:
           CUSTOMER_REACHABILITY_REPORT_JSON: artifacts/release/customer-reachability.json
           AUTO_RESOLUTION_REPORT_JSON: artifacts/release/auto-resolution.json
           FEATUREBASE_PARITY_REPORT_JSON: artifacts/release/featurebase-parity.json
+          QUALITY_GATE_REPORT_JSON: artifacts/release/quality-gate.json
           COPILOT_ADOPTION_REPORT_JSON: artifacts/release/copilot-adoption.json
           DOCKER_LITE_STARTUP_REPORT_JSON: artifacts/release/docker-lite-startup.json
           OLLAMA_OFFLINE_REPORT_JSON: artifacts/release/ollama-offline-demo.json
@@ -75,6 +77,8 @@ jobs:
             artifacts/release/auto-resolution.md
             artifacts/release/featurebase-parity.json
             artifacts/release/featurebase-parity.md
+            artifacts/release/quality-gate.json
+            artifacts/release/quality-gate.md
             artifacts/release/copilot-adoption.json
             artifacts/release/copilot-adoption.md
             artifacts/release/docker-lite-startup.json

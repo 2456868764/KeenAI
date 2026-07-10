@@ -62,6 +62,12 @@ function loadFeaturebaseParityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadQualityGateReport() {
+  const reportPath = process.env.QUALITY_GATE_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function telemetrySection(report) {
   if (!report) {
     return [
@@ -321,6 +327,41 @@ function featurebaseParitySection(report) {
   ];
 }
 
+function qualityGateSection(report) {
+  if (!report) {
+    return [
+      "## Quality Gate",
+      "",
+      "No quality gate report was attached. Run `pnpm test:coverage`, then `pnpm quality:gate:report`, and pass `QUALITY_GATE_REPORT_JSON=artifacts/release/quality-gate.json` to embed P1-ACC-06 evidence.",
+      "",
+    ];
+  }
+
+  const pct = (value) => (value === null || value === undefined ? "n/a" : `${value.toFixed(2)}%`);
+  const rate = (value) => (value === null || value === undefined ? "n/a" : value.toFixed(3));
+  return [
+    "## Quality Gate",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("coverage_source", report.coverage?.source),
+    row("coverage_threshold", `${report.coverage?.thresholds?.minPct}%`),
+    row("lines", pct(report.coverage?.lines?.pct)),
+    row("statements", pct(report.coverage?.statements?.pct)),
+    row("functions", pct(report.coverage?.functions?.pct)),
+    row("branches_informational", pct(report.coverage?.branches?.pct)),
+    row("ci_green_rate_threshold", rate(report.ciHistory?.thresholds?.greenRateMin)),
+    row("ci_green_rate", rate(report.ciHistory?.greenRate)),
+    row(
+      "external_required",
+      report.externalRequired?.length ? report.externalRequired.join("; ") : "none",
+    ),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const gitSha = process.env.GITHUB_SHA ?? process.env.GIT_SHA ?? "local";
@@ -339,6 +380,7 @@ const supportFlowReport = loadSupportFlowReport();
 const customerReachabilityReport = loadCustomerReachabilityReport();
 const autoResolutionReport = loadAutoResolutionReport();
 const featurebaseParityReport = loadFeaturebaseParityReport();
+const qualityGateReport = loadQualityGateReport();
 const body = [
   "# KeenAI v0.2.0 Release Evidence",
   "",
@@ -360,6 +402,7 @@ const body = [
   "| P0 verify | `pnpm verify:p0` | CI job must pass |",
   "| Lint | `pnpm lint` | CI job must pass |",
   "| Tests / coverage | `pnpm test:coverage` | CI job must pass |",
+  "| Quality gate report | `pnpm quality:gate:report` | CI job uploads JSON/Markdown; remote green-rate history required before tag |",
   "| KB eval | `pnpm kb:eval` | CI job must pass |",
   "| Local KB P95 | `pnpm kb:bench:local` | CI job must pass |",
   "| API KB P95 | `pnpm kb:bench:api:local` | CI job must pass and upload `kb-api-bench.md` |",
@@ -371,6 +414,7 @@ const body = [
   ...customerReachabilitySection(customerReachabilityReport),
   ...autoResolutionSection(autoResolutionReport),
   ...featurebaseParitySection(featurebaseParityReport),
+  ...qualityGateSection(qualityGateReport),
   ...copilotAdoptionSection(copilotAdoptionReport),
   ...dockerLiteStartupSection(dockerLiteStartupReport),
   ...ollamaOfflineSection(ollamaOfflineReport),
@@ -379,6 +423,7 @@ const body = [
   "## Gates Requiring External Artifacts",
   "",
   "- API-level `pnpm kb:bench` P95 from the deployed service.",
+  "- CI run history proving green rate >= 95%.",
   "- Production/prod-like Copilot adoption report with `evidenceStatus: pass` and accept rate >= 30%.",
   "- Actual Docker lite startup timing report with `evidenceStatus: pass` from a Docker-enabled release environment.",
   "- Real `ollama serve` + local model runtime evidence for final P3-ACC-02 acceptance.",

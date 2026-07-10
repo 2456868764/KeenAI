@@ -86,7 +86,7 @@
 | P1-ACC-03 | Copilot 采纳率 ≥ 30% | [~] `copilot:adoption:report` 已可产出 fixture/actual 证据；生产/prod-like 采纳率 artifact 待外部附加 |
 | P1-ACC-04 | `docker compose --profile lite up` < 30s | [~] `docker:lite:startup-report` 已可产出 dry-run/actual 证据；真实 Docker 计时 artifact 待外部附加 |
 | P1-ACC-05 | `bun create keenai` 本地启动 < 2min | [x] |
-| P1-ACC-06 | 测试覆盖率 ≥ 70% · CI 绿率 ≥ 95% | [~] |
+| P1-ACC-06 | 测试覆盖率 ≥ 70% · CI 绿率 ≥ 95% | [~] `quality:gate:report` 已读取 `coverage/coverage-summary.json` 并验证 lines/statements 82.76%、functions 87.28% ≥ 70%；远程 CI 绿率 ≥95% artifact 待外部附加 |
 
 ### Phase 2 · 核心闭环（I117）
 
