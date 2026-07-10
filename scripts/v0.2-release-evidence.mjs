@@ -50,6 +50,12 @@ function loadCustomerReachabilityReport() {
   return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
+function loadWidgetRuntimeReport() {
+  const reportPath = process.env.WIDGET_RUNTIME_REPORT_JSON;
+  if (!reportPath) return null;
+  return JSON.parse(readFileSync(reportPath, "utf8"));
+}
+
 function loadAutoResolutionReport() {
   const reportPath = process.env.AUTO_RESOLUTION_REPORT_JSON;
   if (!reportPath) return null;
@@ -268,6 +274,36 @@ function customerReachabilitySection(report) {
   ];
 }
 
+function widgetRuntimeSection(report) {
+  if (!report) {
+    return [
+      "## Widget Runtime",
+      "",
+      "No widget runtime report was attached. Run `pnpm widget:runtime:report` to validate the embed boot path, launcher, Widget API calls, WebSocket connection, and customer message rendering in a jsdom fixture.",
+      "",
+    ];
+  }
+
+  const passedChecks = Object.values(report.checks ?? {}).filter(Boolean).length;
+  const totalChecks = Object.keys(report.checks ?? {}).length;
+  return [
+    "## Widget Runtime",
+    "",
+    "| Field | Value |",
+    "|-------|-------|",
+    row("status", report.evidenceStatus),
+    row("mode", report.mode),
+    row("checks", `${passedChecks}/${totalChecks}`),
+    row("api_calls", report.apiCalls?.length),
+    row(
+      "websocket_connections",
+      report.websocketEvents?.filter((event) => event.type === "connect").length,
+    ),
+    row("failures", report.failures?.length ? report.failures.join("; ") : "none"),
+    "",
+  ];
+}
+
 function autoResolutionSection(report) {
   if (!report) {
     return [
@@ -378,6 +414,7 @@ const dockerLiteStartupReport = loadDockerLiteStartupReport();
 const copilotAdoptionReport = loadCopilotAdoptionReport();
 const supportFlowReport = loadSupportFlowReport();
 const customerReachabilityReport = loadCustomerReachabilityReport();
+const widgetRuntimeReport = loadWidgetRuntimeReport();
 const autoResolutionReport = loadAutoResolutionReport();
 const featurebaseParityReport = loadFeaturebaseParityReport();
 const qualityGateReport = loadQualityGateReport();
@@ -409,9 +446,11 @@ const body = [
   "| Typecheck | `pnpm typecheck` | CI job must pass |",
   "| API binary | `pnpm verify:api-binary` | CI job must pass |",
   "| Alpha acceptance | `pnpm alpha:acceptance` | CI job must pass |",
+  "| Widget runtime | `pnpm widget:runtime:report` | CI job uploads JSON/Markdown embed evidence |",
   "",
   ...supportFlowSection(supportFlowReport),
   ...customerReachabilitySection(customerReachabilityReport),
+  ...widgetRuntimeSection(widgetRuntimeReport),
   ...autoResolutionSection(autoResolutionReport),
   ...featurebaseParitySection(featurebaseParityReport),
   ...qualityGateSection(qualityGateReport),

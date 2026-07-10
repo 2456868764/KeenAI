@@ -17,6 +17,7 @@
 | API binary (optional CI) | `pnpm verify:api-binary` |
 | Internal support flow | `pnpm support:flow:report` |
 | Customer reachability | `pnpm customer:reachability:report` |
+| Widget runtime embed | `pnpm widget:runtime:report` |
 | Copilot adoption report | `pnpm copilot:adoption:report --fixture` in CI; omit fixture against production/prod-like `copilot_events` |
 | Docker lite startup report | `DOCKER_LITE_STARTUP_DRY_RUN=true pnpm docker:lite:startup-report` in CI; omit dry-run in a Docker-enabled release environment |
 | Quality gate report | `pnpm test:coverage && pnpm quality:gate:report` |
@@ -26,7 +27,7 @@
 | ID | Criterion | How to verify |
 |----|-----------|---------------|
 | P1-ACC-01 | Internal support end-to-end | `pnpm support:flow:report` plus running-environment dogfood evidence |
-| P1-ACC-02 | Widget + Email reachability | `pnpm customer:reachability:report` plus running-environment widget embed and SMTP/IMAP or webhook ingest evidence |
+| P1-ACC-02 | Widget + Email reachability | `pnpm customer:reachability:report && pnpm widget:runtime:report` plus running-environment widget embed and SMTP/IMAP or webhook ingest evidence |
 | P1-ACC-03 | Copilot adoption ≥ 30% | `pnpm copilot:adoption:report` against production/prod-like `copilot_events` |
 | P1-ACC-04 | Docker lite < 30s | `pnpm docker:lite:startup-report` in a Docker-enabled release environment |
 | P1-ACC-05 | Local bootstrap < 2min | `pnpm bootstrap:local` after `pnpm install` |

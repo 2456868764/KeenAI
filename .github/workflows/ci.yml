@@ -35,6 +35,7 @@ jobs:
       - run: node scripts/check-e2e-route-coverage.mjs
       - run: pnpm support:flow:report
       - run: pnpm customer:reachability:report
+      - run: pnpm widget:runtime:report
       - run: pnpm auto:resolution:report --fixture
       - run: pnpm featurebase:parity:report
       - run: pnpm docker:lite:startup-report
@@ -57,6 +58,7 @@ jobs:
         env:
           SUPPORT_FLOW_REPORT_JSON: artifacts/release/support-flow.json
           CUSTOMER_REACHABILITY_REPORT_JSON: artifacts/release/customer-reachability.json
+          WIDGET_RUNTIME_REPORT_JSON: artifacts/release/widget-runtime.json
           AUTO_RESOLUTION_REPORT_JSON: artifacts/release/auto-resolution.json
           FEATUREBASE_PARITY_REPORT_JSON: artifacts/release/featurebase-parity.json
           QUALITY_GATE_REPORT_JSON: artifacts/release/quality-gate.json
@@ -73,6 +75,8 @@ jobs:
             artifacts/release/support-flow.md
             artifacts/release/customer-reachability.json
             artifacts/release/customer-reachability.md
+            artifacts/release/widget-runtime.json
+            artifacts/release/widget-runtime.md
             artifacts/release/auto-resolution.json
             artifacts/release/auto-resolution.md
             artifacts/release/featurebase-parity.json
