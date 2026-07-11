@@ -3,13 +3,26 @@ import { inflateRawSync } from "node:zlib";
 export type ParsedKbDocument = {
   title: string;
   plainText: string;
-  sections: Array<{ id: string; heading: string; body: string; level?: number; path?: string[] }>;
+  sections: Array<{
+    id: string;
+    heading: string;
+    body: string;
+    level?: number;
+    path?: string[];
+    pageNumber?: number;
+    blockType?: "heading" | "paragraph" | "table" | "list" | "code" | "figure" | "text";
+    metadata?: Record<string, unknown>;
+  }>;
+  parserProvider?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type ParseKbDocumentInput = {
   title: string;
   rawContent: string;
   contentType?: string | null;
+  url?: string | null;
+  fileName?: string | null;
 };
 
 function decodeHtmlEntities(text: string): string {

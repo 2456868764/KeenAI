@@ -78,6 +78,26 @@ services:
       keenai:
         condition: service_healthy
 
+  document-parser:
+    profiles: ["parser", "full"]
+    build:
+      context: .
+      dockerfile: services/document-parser/Dockerfile
+      args:
+        PARSER_EXTRAS: ${KEENAI_DOCUMENT_PARSER_EXTRAS:-}
+    ports:
+      - "8095:8095"
+    environment:
+      KEENAI_DOCUMENT_PARSER_TIMEOUT_SECONDS: "300"
+      MINERU_COMMAND: ${MINERU_COMMAND:-}
+      MINERU_HTML_COMMAND: ${MINERU_HTML_COMMAND:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   postgres:
     profiles: ["standard", "full"]
     image: pgvector/pgvector:pg16

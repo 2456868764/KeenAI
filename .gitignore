@@ -13,6 +13,7 @@ data/
 *.log
 .DS_Store
 .claude/
+__pycache__/
 
 plugin/scripts/*.map
 plugin/scripts/*.d.mts

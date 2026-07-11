@@ -62,6 +62,26 @@ export const apiEnvSchema = z.object({
   ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
   /** KB-19 optional LLM FAQ extract on conversation crystallize (requires OPENAI_API_KEY). */
   KEENAI_CRYSTALLIZE_MODEL: z.string().min(1).optional(),
+  /** KB document parser provider: lite | http | cloud. `http` targets services/document-parser. */
+  KEENAI_KB_DOCUMENT_PARSER: z.enum(["lite", "http", "cloud"]).default("lite"),
+  /** HTTP endpoint for the parser sidecar, for example http://127.0.0.1:8095/parse. */
+  KEENAI_KB_DOCUMENT_PARSER_URL: z.string().url().optional(),
+  /** Parser sidecar engine. Only docling and mineru are supported by the Python service. */
+  KEENAI_KB_DOCUMENT_PARSER_ENGINE: z.enum(["docling", "mineru"]).default("docling"),
+  /** Optional cloud document parser adapter name. */
+  KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER: z
+    .enum([
+      "azure-document-intelligence",
+      "google-document-ai",
+      "aws-textract",
+      "llamaparse",
+      "unstructured",
+      "mistral-ocr",
+      "landingai-ade",
+    ])
+    .optional(),
+  KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL: z.string().url().optional(),
+  KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),

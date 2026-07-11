@@ -190,6 +190,20 @@ export {
   type ParsedKbDocument,
   type ParseKbDocumentInput,
 } from "./ingest/parse-document.js";
+export {
+  createCloudKbDocumentParserProvider,
+  createHttpKbDocumentParserProvider,
+  createLiteKbDocumentParserProvider,
+  parseKbDocumentWithProvider,
+  resolveKbDocumentParserProviderFromEnv,
+  type KbDocumentParserCloudOptions,
+  type KbDocumentParserCloudProvider,
+  type KbDocumentParserHttpOptions,
+  type KbDocumentParserProvider,
+  type KbDocumentParserResult,
+  type KbParsedDocumentBlock,
+  type ResolveKbDocumentParserProviderEnv,
+} from "./ingest/providers.js";
 export { listKbDocuments } from "./list-documents.js";
 export {
   createStubKbQueryEmbedder,

@@ -1,5 +1,12 @@
-import { type KbChunkFtsIndexer, createKeenaiKb, resolveKbConnectorForSource } from "@keenai/kb";
+import {
+  type KbChunkFtsIndexer,
+  type KbDocumentParserProvider,
+  createKeenaiKb,
+  resolveKbConnectorForSource,
+  resolveKbDocumentParserProviderFromEnv,
+} from "@keenai/kb";
 import { type KbIngestPayload, runKbIngestPipeline } from "@keenai/kb/inngest";
+import type { ApiEnv } from "@keenai/shared";
 import { type LibsqlStore, type Store, createLibsqlKbChunkFtsStore } from "@keenai/storage";
 import { kbDocuments, kbSources } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
@@ -43,10 +50,33 @@ async function markSourceError(store: Store, sourceId: string, error: string) {
 }
 
 /** API wiring for KB-16 ingest pipeline: source connector sync -> document index -> notify. */
-export async function runKbIngestForSource(store: Store, payload: KbIngestPayload) {
+export type RunKbIngestForSourceOptions = {
+  parserProvider?: KbDocumentParserProvider;
+  env?: Pick<
+    ApiEnv,
+    | "KEENAI_KB_DOCUMENT_PARSER"
+    | "KEENAI_KB_DOCUMENT_PARSER_URL"
+    | "KEENAI_KB_DOCUMENT_PARSER_ENGINE"
+    | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER"
+    | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL"
+    | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY"
+  >;
+};
+
+export async function runKbIngestForSource(
+  store: Store,
+  payload: KbIngestPayload,
+  options: RunKbIngestForSourceOptions = {},
+) {
   const db = store.db;
   const kb = createKeenaiKb({ db });
   const chunkFtsIndexer = createChunkFtsIndexer(store);
+  const parserProvider =
+    options.parserProvider ??
+    (options.env?.KEENAI_KB_DOCUMENT_PARSER === "http" ||
+    options.env?.KEENAI_KB_DOCUMENT_PARSER === "cloud"
+      ? resolveKbDocumentParserProviderFromEnv(options.env)
+      : undefined);
   const [source] = await db
     .select()
     .from(kbSources)
@@ -122,6 +152,7 @@ export async function runKbIngestForSource(store: Store, payload: KbIngestPayloa
             brandId: payload.brandId,
             documentId,
             chunkFtsIndexer,
+            parserProvider,
           });
           chunkCount += result.chunkCount;
         }

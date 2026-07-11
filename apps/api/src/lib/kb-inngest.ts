@@ -10,7 +10,8 @@ import { runKbIngestForSource } from "./kb-pipeline.js";
 
 export function createKbInngestFunctions(client: Inngest, ctx: AppContext) {
   return createPackageKbInngestFunctions(client as never, {
-    runIngest: (payload: KbIngestPayload) => runKbIngestForSource(ctx.store, payload),
+    runIngest: (payload: KbIngestPayload) =>
+      runKbIngestForSource(ctx.store, payload, { env: ctx.env }),
     runCrystallize: (payload: KbCrystallizePayload) => runKbCrystallizeJob(ctx.store.db, payload),
   });
 }

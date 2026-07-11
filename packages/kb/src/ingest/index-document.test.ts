@@ -4,12 +4,16 @@ import { deflateRawSync } from "node:zlib";
 import {
   chunkKbDocumentHierarchical,
   createHelpCenterStubConnector,
+  createHttpKbDocumentParserProvider,
   createKeenaiKb,
+  createLiteKbDocumentParserProvider,
   embedKbChunkStub,
   parseKbDocument,
+  parseKbDocumentWithProvider,
   parseKbDocxDocument,
   parseKbMarkdownDocument,
   parseKbPdfDocument,
+  resolveKbDocumentParserProviderFromEnv,
 } from "@keenai/kb";
 import { chunkKbDocument } from "@keenai/kb";
 import { createLibsqlKbChunkFtsStore, createLibsqlStore } from "@keenai/storage";
@@ -114,6 +118,73 @@ describe("KB ingestion pipeline", () => {
     expect(parsed.plainText).toContain("Billing FAQ");
     expect(parsed.plainText).toContain("Refund window is 30 days.");
     expect(chunkKbDocument(parsed)[0]?.content).toContain("Billing FAQ");
+  });
+
+  it("uses the lite parser provider by default", async () => {
+    const parsed = await parseKbDocumentWithProvider(
+      {
+        title: "Lite Manual",
+        rawContent: "# Setup\n\nInstall the app.",
+        contentType: "text/markdown",
+      },
+      createLiteKbDocumentParserProvider(),
+    );
+
+    expect(parsed.parserProvider).toBe("lite");
+    expect(parsed.metadata?.parserProvider).toBe("lite");
+    expect(parsed.sections[0]?.heading).toBe("Setup");
+  });
+
+  it("posts documents to the HTTP parser provider with docling/mineru engines", async () => {
+    const requests: unknown[] = [];
+    const provider = createHttpKbDocumentParserProvider({
+      endpoint: "http://parser.local/parse",
+      engine: "mineru",
+      fetchFn: (async (_url, init) => {
+        requests.push(JSON.parse(String(init?.body ?? "{}")));
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              title: "HTTP Manual",
+              provider: "mineru-html",
+              markdown: "# Parsed\n\nHTML URL content.",
+              metadata: { engine: "mineru" },
+            };
+          },
+        } as Response;
+      }) as typeof fetch,
+    });
+
+    const parsed = await parseKbDocumentWithProvider(
+      {
+        title: "Remote",
+        rawContent: "",
+        contentType: "text/html",
+        url: "https://example.com/docs",
+      },
+      provider,
+    );
+
+    expect(requests[0]).toMatchObject({
+      engine: "mineru",
+      title: "Remote",
+      url: "https://example.com/docs",
+    });
+    expect(parsed.parserProvider).toBe("mineru-html");
+    expect(parsed.metadata?.engine).toBe("mineru");
+    expect(parsed.sections[0]?.heading).toBe("Parsed");
+  });
+
+  it("resolves HTTP parser provider from env", async () => {
+    const provider = resolveKbDocumentParserProviderFromEnv({
+      KEENAI_KB_DOCUMENT_PARSER: "http",
+      KEENAI_KB_DOCUMENT_PARSER_URL: "http://127.0.0.1:8095/parse",
+      KEENAI_KB_DOCUMENT_PARSER_ENGINE: "docling",
+    });
+
+    expect(provider.id).toBe("http:docling");
   });
 
   it("chunks on paragraph and sentence boundaries with context overlap", () => {

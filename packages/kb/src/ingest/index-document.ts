@@ -11,7 +11,11 @@ import { type AddKbContextualRetrievalOptions, addKbContextualRetrieval } from "
 import { hashKbChunkContent, planKbDocumentDiffIndex } from "./diff-index.js";
 import { type KbChunkEmbedder, createStubKbChunkEmbedder, embedKbChunk } from "./embedder.js";
 import { extractKbEntitiesFromDocument } from "./extract-kb-entities.js";
-import { parseKbDocument } from "./parse-document.js";
+import {
+  type KbDocumentParserProvider,
+  createLiteKbDocumentParserProvider,
+  parseKbDocumentWithProvider,
+} from "./providers.js";
 
 export type IndexKbDocumentInput = {
   orgId: string;
@@ -25,6 +29,8 @@ export type IndexKbDocumentInput = {
   extractEntities?: boolean;
   /** KB-18: optional Contextual Retrieval enrichment before embed/index. */
   contextualRetrieval?: false | AddKbContextualRetrievalOptions;
+  /** Document parsing provider. Defaults to the built-in lite parser. */
+  parserProvider?: KbDocumentParserProvider;
 };
 
 export type IndexKbDocumentResult = {
@@ -73,11 +79,15 @@ export async function indexKbDocument(
   const sourceType = (source?.type ?? "help_center") as KbSourceType;
   const halfLifeDays = getKbFreshnessHalfLifeDays(sourceType);
 
-  const parsed = parseKbDocument({
-    title: document.title,
-    rawContent: document.rawContent,
-    contentType: document.contentType,
-  });
+  const parsed = await parseKbDocumentWithProvider(
+    {
+      title: document.title,
+      rawContent: document.rawContent,
+      contentType: document.contentType,
+      url: document.url,
+    },
+    input.parserProvider ?? createLiteKbDocumentParserProvider(),
+  );
   const baseDrafts = chunkKbDocument(parsed);
   const drafts = input.contextualRetrieval
     ? await addKbContextualRetrieval(parsed, baseDrafts, input.contextualRetrieval)

@@ -223,12 +223,13 @@ export type ConnectorType =
 │       - 哈希去重（SHA-256）                                     │
 ├───────────────────────────────────────────────────────────────┤
 │  2. Parse（解析）                                               │
-│       - PDF → unpdf                                            │
-│       - DOCX → mammoth                                          │
-│       - HTML → cheerio + @mozilla/readability                  │
-│       - MD → marked / remark + remark-gfm                       │
-│       - 图片 → @paddleocr/paddleocr-js / tesseract.js           │
-│       - 视频 → openai whisper api / faster-whisper（外置）       │
+│       - 默认 provider：lite（内置 PDF/DOCX/HTML/Markdown 轻量解析）│
+│       - HTTP provider：FastAPI sidecar，engine=docling|mineru    │
+│       - docling：PDF / DOCX / HTML / URL → Markdown              │
+│       - mineru：PDF / DOCX → MinerU；HTML / URL → MinerU-HTML    │
+│       - cloud provider：Azure DI / Google Document AI / Textract │
+│         / LlamaParse / Unstructured / Mistral OCR / LandingAI ADE│
+│       - 图片/视频仍按多模态管线独立处理                           │
 ├───────────────────────────────────────────────────────────────┤
 │  3. Clean（清洗）                                                │
 │       - 去除导航 / 页脚 / 广告（@mozilla/readability）           │

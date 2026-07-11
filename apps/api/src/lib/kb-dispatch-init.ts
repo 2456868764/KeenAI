@@ -15,7 +15,7 @@ export function initKbDispatch(ctx: AppContext): KbDispatchAdapter {
     await runKbCrystallizeJob(ctx.store.db, payload);
   };
   const runIngest = async (payload: Parameters<typeof runKbIngestForSource>[1]) => {
-    await runKbIngestForSource(ctx.store, payload);
+    await runKbIngestForSource(ctx.store, payload, { env: ctx.env });
   };
 
   const client = getInngestClient();
