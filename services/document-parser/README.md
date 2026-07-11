@@ -38,7 +38,18 @@ KEENAI_KB_DOCUMENT_PARSER_ENGINE=docling
 
 ## MinerU
 
-Install MinerU and MinerU-HTML from their upstream repositories, then provide command templates:
+Install MinerU and MinerU-HTML through the bundled optional extra, then provide command templates:
+
+```bash
+cd services/document-parser
+python -m pip install -e ".[mineru]"
+```
+
+For MinerU-HTML deployments that need the vLLM backend:
+
+```bash
+python -m pip install -e ".[mineru-vllm]"
+```
 
 ```bash
 export MINERU_COMMAND='mineru -p {input} -o {output}'
