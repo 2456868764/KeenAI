@@ -19,6 +19,7 @@ export const messageMetadataSchema = z.object({
   enrichmentStatus: z.enum(["pending", "ready", "failed"]).optional(),
   imageInputMode: z.enum(["native", "text"]).optional(),
   platformMessageId: z.string().optional(),
+  platformMessageIds: z.array(z.string()).optional(),
   replyToMessageId: z.string().optional(),
   replyToPlainText: z.string().optional(),
   mediaGroupId: z.string().optional(),

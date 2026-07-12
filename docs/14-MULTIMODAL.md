@@ -193,7 +193,7 @@ Platform payload
 - **document 实为图片**：MIME `image/*` 或扩展名 → `messageKind: photo`
 - **Reply 上下文**：`metadata.replyToPlainText` 注入 Agent（Hermes `reply_to_text`）
 
-当前实现：IM 入站会保留 `platformMessageId`、`replyToMessageId`、`replyToPlainText`、`mediaGroupId` 到 `messages.metadata`；album merge 已具备 `mediaGroupId` 入库基础，跨 webhook 短窗口合并仍属于 Phase 4+ 增强。
+当前实现：IM 入站会保留 `platformMessageId`、`platformMessageIds`、`replyToMessageId`、`replyToPlainText`、`mediaGroupId` 到 `messages.metadata`；Telegram 同一 `media_group_id` 的连续图片 webhook 会合并回同一条 canonical message，并更新为 `messageKind: mixed`。
 
 ### 4.4 限制与安全
 

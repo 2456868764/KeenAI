@@ -84,6 +84,7 @@ describe("IM multimodal integration", () => {
         attachments: unknown[];
         metadata?: {
           platformMessageId?: string;
+          platformMessageIds?: string[];
           mediaGroupId?: string;
           enrichmentStatus?: string;
         };
@@ -96,10 +97,11 @@ describe("IM multimodal integration", () => {
     expect(webhookBody.message.plainText).toContain("[Image: photo.jpg");
     expect(webhookBody.message.attachments).toHaveLength(1);
     expect(webhookBody.message.metadata?.platformMessageId).toBe("100");
+    expect(webhookBody.message.metadata?.platformMessageIds).toEqual(["100"]);
     expect(webhookBody.message.metadata?.mediaGroupId).toBe("album-1");
     expect(webhookBody.message.metadata?.enrichmentStatus).toBe("ready");
 
-    const replyRes = await app.request("/api/v1/webhooks/im/telegram?org=im", {
+    const albumRes = await app.request("/api/v1/webhooks/im/telegram?org=im", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -108,8 +110,50 @@ describe("IM multimodal integration", () => {
           message_id: 101,
           from: { id: 42, first_name: "Alex" },
           chat: { id: 9001, type: "private" },
+          photo: [{ file_id: "photo-large", width: 180, height: 180, file_size: 700 }],
+          media_group_id: "album-1",
+        },
+      }),
+    });
+    expect(albumRes.status).toBe(202);
+    const albumBody = (await albumRes.json()) as {
+      created: boolean;
+      messageId: string;
+      message: {
+        id: string;
+        messageKind: string;
+        plainText: string;
+        attachments: unknown[];
+        metadata?: {
+          platformMessageId?: string;
+          platformMessageIds?: string[];
+          mediaGroupId?: string;
+          enrichmentStatus?: string;
+        };
+      };
+    };
+    expect(albumBody.created).toBe(false);
+    expect(albumBody.messageId).toBe(webhookBody.message.id);
+    expect(albumBody.message.messageKind).toBe("mixed");
+    expect(albumBody.message.attachments).toHaveLength(2);
+    expect(albumBody.message.plainText).toContain("Need help with billing");
+    expect(albumBody.message.plainText.match(/\[Image: photo.jpg/g)).toHaveLength(2);
+    expect(albumBody.message.metadata?.platformMessageId).toBe("100");
+    expect(albumBody.message.metadata?.platformMessageIds).toEqual(["100", "101"]);
+    expect(albumBody.message.metadata?.mediaGroupId).toBe("album-1");
+    expect(albumBody.message.metadata?.enrichmentStatus).toBe("ready");
+
+    const replyRes = await app.request("/api/v1/webhooks/im/telegram?org=im", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        update_id: 3,
+        message: {
+          message_id: 102,
+          from: { id: 42, first_name: "Alex" },
+          chat: { id: 9001, type: "private" },
           text: "Following up",
-          reply_to_message: { message_id: 100 },
+          reply_to_message: { message_id: 101 },
         },
       }),
     });
@@ -125,8 +169,8 @@ describe("IM multimodal integration", () => {
       };
     };
     expect(replyBody.message.inReplyTo).toBe(webhookBody.message.id);
-    expect(replyBody.message.metadata?.platformMessageId).toBe("101");
-    expect(replyBody.message.metadata?.replyToMessageId).toBe("100");
+    expect(replyBody.message.metadata?.platformMessageId).toBe("102");
+    expect(replyBody.message.metadata?.replyToMessageId).toBe("101");
     expect(replyBody.message.metadata?.replyToPlainText).toContain("Need help with billing");
 
     await store.close();

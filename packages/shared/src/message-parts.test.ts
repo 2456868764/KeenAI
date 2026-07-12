@@ -94,8 +94,9 @@ describe("message-parts", () => {
         messageKind: "photo",
         enrichmentStatus: "pending",
         imageInputMode: "native",
+        platformMessageIds: ["100", "101"],
         mediaGroupId: "album-1",
-      }).mediaGroupId,
-    ).toBe("album-1");
+      }).platformMessageIds,
+    ).toEqual(["100", "101"]);
   });
 });
