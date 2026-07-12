@@ -152,7 +152,7 @@ export type OutboundDirectives = {
 | 包 | 职责 |
 |----|------|
 | `@keenai/shared` | `MessagePart` / `InboundMessage` / `OutboundPart` Zod |
-| `@keenai/channels-core` | Normalizer 接口 · `parseAgentResponse` · MIME 策略 |
+| `@keenai/channels-core` | Normalizer 接口 · `parseAgentResponse` · `ChannelRenderer` 类型 · MIME 策略 |
 | `@keenai/channels-email` | MIME 附件 ingest · HTML+CID 出站 |
 | `@keenai/channels-widget` | presign 上传 · bubble 协议 |
 | `@keenai/conversation` | 消息 CRUD · attachment 关联 · plainText 合成 |
@@ -192,6 +192,8 @@ Platform payload
 - **多图 album**：同一 `media_group_id` / 短时间窗口 merge 为一条 `messageKind: mixed`
 - **document 实为图片**：MIME `image/*` 或扩展名 → `messageKind: photo`
 - **Reply 上下文**：`metadata.replyToPlainText` 注入 Agent（Hermes `reply_to_text`）
+
+当前实现：IM 入站会保留 `platformMessageId`、`replyToMessageId`、`replyToPlainText`、`mediaGroupId` 到 `messages.metadata`；album merge 已具备 `mediaGroupId` 入库基础，跨 webhook 短窗口合并仍属于 Phase 4+ 增强。
 
 ### 4.4 限制与安全
 
@@ -238,6 +240,8 @@ Platform payload
 | **text** | 非 vision 模型 / 显式 `text` / 独立 vision 后端 | 使用 `metadata.visionSummary` 或同步调用 vision 模型 |
 | **auto** | 默认 | 按模型能力 + `LLM_VISION_MODE` 环境变量 |
 
+当前实现：`LLM_VISION_MODE=auto|native|text`；`auto/native` 传 image part，`text` 将 `visionSummary`/图片占位注入草稿文本，并写入 `messages.metadata.imageInputMode`。
+
 ### 6.2 语音
 
 - Pipeline STT 完成后，`plainText` 含转写；Agent history 以文本呈现
@@ -269,6 +273,8 @@ Agent / Copilot / Workflow **优先产出 structured `OutboundPart[]`**；兼容
 2. **`MEDIA:{storageKey}` 标签**：Tool（TTS · 生图）嵌入；strip 后不入用户可见文本
 3. **Markdown 图片**：`![alt](https://...)` → 下载或引用已有 attachment
 4. **裸 URL / 路径**：`extractLocalFiles` 等价逻辑（Agent sandbox 产出）
+
+当前实现：`parseAgentResponse` 支持 structured parts、`MEDIA:{storageKey}`、Markdown attachment/storage refs、裸 `data/uploads/{storageKey}` 路径，并暴露 `externalUrls` 供后续 SSRF 安全下载策略接入。
 
 ### 7.2 发送顺序（对标 Hermes）
 

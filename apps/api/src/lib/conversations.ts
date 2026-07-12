@@ -1,6 +1,7 @@
 import type { AccessTokenClaims } from "@keenai/auth";
 import {
   type MessageKind,
+  type MessageMetadata,
   type MessagePart,
   attachmentMetadataSchema,
   buildPlainTextFromParts,
@@ -115,6 +116,7 @@ export function serializeMessage(row: typeof messages.$inferSelect) {
     inReplyTo: row.inReplyTo,
     sentVia: row.sentVia,
     deliveryStatus: row.deliveryStatus,
+    metadata: row.metadata,
     parts,
     messageKind,
     createdAt: row.createdAt.toISOString(),
@@ -209,6 +211,7 @@ export async function insertMessage(
     inReplyTo?: string;
     sentVia?: string;
     isAgentReply: boolean;
+    metadata?: MessageMetadata;
   },
 ) {
   const now = new Date();
@@ -239,6 +242,11 @@ export async function insertMessage(
 
   const triggerFirstMessage =
     input.senderType === "user" && !input.isInternal && !existingUserMessage;
+  const messageMetadata: MessageMetadata = {
+    ...input.metadata,
+    messageKind: prepared.messageKind,
+    ...(prepared.attachmentIds.length > 0 ? { enrichmentStatus: "pending" } : {}),
+  };
 
   const [message] = await db
     .insert(messages)
@@ -254,7 +262,7 @@ export async function insertMessage(
       inReplyTo: input.inReplyTo,
       sentVia: input.sentVia ?? "web",
       deliveryStatus: "sent",
-      metadata: { messageKind: prepared.messageKind },
+      metadata: messageMetadata,
     })
     .returning();
 

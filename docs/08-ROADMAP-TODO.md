@@ -122,7 +122,7 @@
 | P3-01 | `@keenai/memory` 4 层生产实现（非 stub） | [x] |
 | P3-02 | Knowledge Graph extractor（`generateObject`） | [x] |
 | P3-03 | Personality & Branding UI | [x] |
-| P3-04 | Multimodal MM-10～15 Agent 完整版 | [x] STT、image/video thumbnail、lite vision summary/extract_text、TTS、生图、IM 多模态均已落地 |
+| P3-04 | Multimodal MM-10～15 Agent 完整版 | [x] STT、image/video thumbnail、lite vision summary/extract_text、Copilot native/text vision route、TTS、生图、IM 多模态均已落地 |
 | P3-05 | Memory Tree MT-07～09 + Explorer UI | [x] |
 | P3-06 | Dashboard CA 完整 UI · Sandbox · MCP Server expose | [x] |
 | P3-07 | Roadmap Kanban / Timeline | [x] |

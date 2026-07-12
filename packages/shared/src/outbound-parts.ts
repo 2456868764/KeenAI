@@ -30,6 +30,8 @@ export const agentResponseParseResultSchema = z.object({
   plainText: z.string(),
   attachmentIds: z.array(z.string().min(1)),
   storageKeys: z.array(z.string().min(1)),
+  externalUrls: z.array(z.string().url()),
+  localPaths: z.array(z.string().min(1)),
   parts: z.array(outboundPartSchema),
   directives: outboundDirectivesSchema,
 });

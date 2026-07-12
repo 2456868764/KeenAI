@@ -37,5 +37,19 @@ describe("parseAgentResponse", () => {
     ]);
     expect(result.plainText).toBe("Invoice attached.");
     expect(result.attachmentIds).toEqual(["att-99"]);
+    expect(result.externalUrls).toEqual([]);
+    expect(result.localPaths).toEqual([]);
+  });
+
+  it("extracts bare upload paths and external urls", () => {
+    const storageKey = `${"b".repeat(32)}.png`;
+    const result = parseAgentResponse(
+      `Generated file: data/uploads/${storageKey}\nReference: https://example.com/public.png`,
+    );
+
+    expect(result.storageKeys).toEqual([storageKey]);
+    expect(result.localPaths).toEqual([`data/uploads/${storageKey}`]);
+    expect(result.externalUrls).toEqual(["https://example.com/public.png"]);
+    expect(result.plainText).toContain("[Link: https://example.com/public.png]");
   });
 });

@@ -156,7 +156,7 @@ export async function processMessageMedia(
     }
   }
 
-  if (transcribed === 0 && thumbnailed === 0 && visionSummarized === 0 && textExtracted === 0) {
+  if (rows.length === 0) {
     return { transcribed, thumbnailed, visionSummarized, textExtracted };
   }
 
@@ -171,7 +171,18 @@ export async function processMessageMedia(
     .limit(1);
   if (!message) return { transcribed, thumbnailed, visionSummarized, textExtracted };
 
-  const [serialized] = await serializeMessagesWithAttachments(db, [message]);
+  const [updatedMessage] = await db
+    .update(messages)
+    .set({
+      metadata: {
+        ...(message.metadata ?? {}),
+        enrichmentStatus: "ready",
+      },
+    })
+    .where(eq(messages.id, input.messageId))
+    .returning();
+
+  const [serialized] = await serializeMessagesWithAttachments(db, [updatedMessage ?? message]);
   publishConversation({
     type: "message.updated",
     conversationId: input.conversationId,

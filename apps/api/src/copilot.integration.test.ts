@@ -233,6 +233,7 @@ describe("copilot integration", () => {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
+        senderType: "user",
         plainText: "My phone screen is cracked — see photo",
         attachmentIds: [uploaded.attachmentId],
       }),
@@ -246,6 +247,131 @@ describe("copilot integration", () => {
     expect(draftRes.status).toBe(200);
     const body = await draftRes.text();
     expect(body).toContain("image");
+
+    const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const messagesBody = (await messagesRes.json()) as {
+      items: { metadata?: { imageInputMode?: string } }[];
+    };
+    expect(messagesBody.items.some((m) => m.metadata?.imageInputMode === "native")).toBe(true);
+
+    await store.close();
+  });
+
+  it("uses vision summary text fallback when LLM_VISION_MODE is text", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      LLM_VISION_MODE: "text",
+      UPLOAD_DIR: path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../data/test-copilot-vision-text",
+      ),
+    });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "w-vision-text",
+        subject: "Broken screen",
+      }),
+    });
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const presignRes = await app.request("/api/v1/uploads/presign", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: "screen.png",
+        contentType: "image/png",
+        sizeBytes: PNG_1X1.byteLength,
+      }),
+    });
+    const presigned = (await presignRes.json()) as { uploadUrl: string };
+    const uploadPath = new URL(presigned.uploadUrl).pathname;
+    const uploadRes = await app.request(uploadPath, {
+      method: "PUT",
+      headers: { ...auth, "Content-Type": "image/png" },
+      body: PNG_1X1,
+    });
+    const uploaded = (await uploadRes.json()) as { attachmentId: string };
+
+    await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        senderType: "user",
+        plainText: "My phone screen is cracked",
+        attachmentIds: [uploaded.attachmentId],
+      }),
+    });
+
+    const draftRes = await app.request("/api/v1/copilot/draft", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ conversationId: conversation.id }),
+    });
+    expect(draftRes.status).toBe(200);
+    const body = await draftRes.text();
+    expect(body).not.toContain("I reviewed the image");
+    expect(body).toContain("screen.png");
+
+    const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const messagesBody = (await messagesRes.json()) as {
+      items: { metadata?: { imageInputMode?: string } }[];
+    };
+    expect(messagesBody.items.some((m) => m.metadata?.imageInputMode === "text")).toBe(true);
 
     await store.close();
   });

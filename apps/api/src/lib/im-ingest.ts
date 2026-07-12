@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import type { ParsedInboundImMessage } from "@keenai/channels-im";
-import type { ApiEnv } from "@keenai/shared";
-import { conversations } from "@keenai/storage/schema";
-import { and, eq } from "drizzle-orm";
+import type { ApiEnv, MessageMetadata } from "@keenai/shared";
+import { conversations, messages } from "@keenai/storage/schema";
+import { and, desc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { buildPartsFromAttachments, insertAttachment } from "./attachments.js";
 import {
@@ -127,6 +127,16 @@ export async function ingestInboundIm(
       ? buildPartsFromAttachments(attachmentRows, input.parsed.plainText)
       : undefined;
 
+  const replyContext = input.parsed.replyToMessageId
+    ? await resolveImReplyContext(db, conversation.id, input.parsed.replyToMessageId)
+    : null;
+  const metadata: MessageMetadata = {
+    platformMessageId: input.parsed.platformMessageId,
+    ...(input.parsed.replyToMessageId ? { replyToMessageId: input.parsed.replyToMessageId } : {}),
+    ...(replyContext?.plainText ? { replyToPlainText: replyContext.plainText } : {}),
+    ...(input.parsed.mediaGroupId ? { mediaGroupId: input.parsed.mediaGroupId } : {}),
+  };
+
   const { message, serialized } = await insertMessage(db, {
     orgId: input.orgId,
     conversationId: conversation.id,
@@ -137,8 +147,10 @@ export async function ingestInboundIm(
     attachmentIds: attachmentRows.length > 0 ? attachmentRows.map((a) => a.id) : undefined,
     parts,
     isInternal: false,
+    inReplyTo: replyContext?.messageId,
     sentVia: channelType,
     isAgentReply: false,
+    metadata,
   });
 
   const [full] = await db
@@ -154,4 +166,24 @@ export async function ingestInboundIm(
     message: serialized,
     platformMessageId: input.parsed.platformMessageId,
   };
+}
+
+async function resolveImReplyContext(
+  db: AppVariables["store"]["db"],
+  conversationId: string,
+  platformMessageId: string,
+): Promise<{ messageId: string; plainText: string } | null> {
+  const rows = await db
+    .select({
+      id: messages.id,
+      plainText: messages.plainText,
+      metadata: messages.metadata,
+    })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(desc(messages.createdAt))
+    .limit(50);
+
+  const match = rows.find((row) => row.metadata?.platformMessageId === platformMessageId);
+  return match ? { messageId: match.id, plainText: match.plainText } : null;
 }

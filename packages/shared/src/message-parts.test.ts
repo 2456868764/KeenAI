@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildPlainTextFromParts, inferMessageKind } from "./message-parts.js";
+import {
+  buildPlainTextFromParts,
+  inboundMessageSchema,
+  inferMessageKind,
+  messageMetadataSchema,
+} from "./message-parts.js";
 
 describe("message-parts", () => {
   it("infers photo kind for single image part", () => {
@@ -68,5 +73,29 @@ describe("message-parts", () => {
     expect(buildPlainTextFromParts(parts, map)).toBe(
       "[Image: damaged package label]\n[File: manual.txt]\nReset steps",
     );
+  });
+
+  it("validates canonical inbound message and message metadata", () => {
+    expect(
+      inboundMessageSchema.parse({
+        parts: [{ type: "text", text: "replying with an image" }],
+        plainText: "replying with an image",
+        messageKind: "text",
+        metadata: {
+          platformMessageId: "100",
+          replyToMessageId: "99",
+          replyToPlainText: "previous text",
+        },
+      }).metadata?.replyToPlainText,
+    ).toBe("previous text");
+
+    expect(
+      messageMetadataSchema.parse({
+        messageKind: "photo",
+        enrichmentStatus: "pending",
+        imageInputMode: "native",
+        mediaGroupId: "album-1",
+      }).mediaGroupId,
+    ).toBe("album-1");
   });
 });

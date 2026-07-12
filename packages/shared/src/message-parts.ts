@@ -14,6 +14,18 @@ export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
 export const messageKindSchema = z.enum(MESSAGE_KINDS);
 
+export const messageMetadataSchema = z.object({
+  messageKind: messageKindSchema.optional(),
+  enrichmentStatus: z.enum(["pending", "ready", "failed"]).optional(),
+  imageInputMode: z.enum(["native", "text"]).optional(),
+  platformMessageId: z.string().optional(),
+  replyToMessageId: z.string().optional(),
+  replyToPlainText: z.string().optional(),
+  mediaGroupId: z.string().optional(),
+});
+
+export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
+
 export const messagePartSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("text"),
@@ -46,6 +58,21 @@ export const messagePartSchema = z.discriminatedUnion("type", [
 ]);
 
 export type MessagePart = z.infer<typeof messagePartSchema>;
+
+export const inboundMessageMetadataSchema = z.object({
+  platformMessageId: z.string().optional(),
+  replyToMessageId: z.string().optional(),
+  replyToPlainText: z.string().optional(),
+});
+
+export const inboundMessageSchema = z.object({
+  parts: z.array(messagePartSchema),
+  plainText: z.string(),
+  messageKind: messageKindSchema,
+  metadata: inboundMessageMetadataSchema.optional(),
+});
+
+export type InboundMessage = z.infer<typeof inboundMessageSchema>;
 
 export const serializedAttachmentSchema = z.object({
   id: z.string(),

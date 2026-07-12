@@ -48,6 +48,8 @@ export const apiEnvSchema = z.object({
   /** Image generation provider: stub | openai (auto: openai when OPENAI_API_KEY set, else stub) */
   IMAGE_GEN_PROVIDER: z.enum(["stub", "openai"]).optional(),
   OPENAI_IMAGE_MODEL: z.string().default("dall-e-3"),
+  /** Copilot image input mode: auto/native sends image parts; text injects visionSummary fallback. */
+  LLM_VISION_MODE: z.enum(["auto", "native", "text"]).default("auto"),
   /** Telegram Bot API token for IM webhooks and media download */
   TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   /** Slack Bot token for IM webhooks and media download */

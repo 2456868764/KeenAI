@@ -69,6 +69,7 @@ describe("IM multimodal integration", () => {
           chat: { id: 9001, type: "private" },
           photo: [{ file_id: "photo-small", width: 90, height: 90, file_size: 500 }],
           caption: "Need help with billing",
+          media_group_id: "album-1",
         },
       }),
     });
@@ -76,7 +77,17 @@ describe("IM multimodal integration", () => {
     const webhookBody = (await webhookRes.json()) as {
       accepted: boolean;
       created: boolean;
-      message: { messageKind: string; plainText: string; attachments: unknown[] };
+      message: {
+        id: string;
+        messageKind: string;
+        plainText: string;
+        attachments: unknown[];
+        metadata?: {
+          platformMessageId?: string;
+          mediaGroupId?: string;
+          enrichmentStatus?: string;
+        };
+      };
     };
     expect(webhookBody.accepted).toBe(true);
     expect(webhookBody.created).toBe(true);
@@ -84,6 +95,39 @@ describe("IM multimodal integration", () => {
     expect(webhookBody.message.plainText).toContain("Need help with billing");
     expect(webhookBody.message.plainText).toContain("[Image: photo.jpg");
     expect(webhookBody.message.attachments).toHaveLength(1);
+    expect(webhookBody.message.metadata?.platformMessageId).toBe("100");
+    expect(webhookBody.message.metadata?.mediaGroupId).toBe("album-1");
+    expect(webhookBody.message.metadata?.enrichmentStatus).toBe("ready");
+
+    const replyRes = await app.request("/api/v1/webhooks/im/telegram?org=im", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        update_id: 2,
+        message: {
+          message_id: 101,
+          from: { id: 42, first_name: "Alex" },
+          chat: { id: 9001, type: "private" },
+          text: "Following up",
+          reply_to_message: { message_id: 100 },
+        },
+      }),
+    });
+    expect(replyRes.status).toBe(202);
+    const replyBody = (await replyRes.json()) as {
+      message: {
+        inReplyTo?: string;
+        metadata?: {
+          platformMessageId?: string;
+          replyToMessageId?: string;
+          replyToPlainText?: string;
+        };
+      };
+    };
+    expect(replyBody.message.inReplyTo).toBe(webhookBody.message.id);
+    expect(replyBody.message.metadata?.platformMessageId).toBe("101");
+    expect(replyBody.message.metadata?.replyToMessageId).toBe("100");
+    expect(replyBody.message.metadata?.replyToPlainText).toContain("Need help with billing");
 
     await store.close();
   });

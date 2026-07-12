@@ -8,6 +8,9 @@ import {
 const STORAGE_KEY_RE = /^[a-f0-9]{32}(?:\.[a-zA-Z0-9]{1,32})?$/;
 const MEDIA_TAG_RE = /MEDIA:([a-f0-9]{32}(?:\.[a-zA-Z0-9]{1,32})?)/gi;
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
+const URL_RE = /\bhttps?:\/\/[^\s<>)]+/gi;
+const LOCAL_UPLOAD_PATH_RE =
+  /(?:^|\s)((?:\.\/)?data\/uploads\/[a-f0-9]{32}(?:\.[a-zA-Z0-9]{1,32})?|\/[^\s<>)]+\/data\/uploads\/[a-f0-9]{32}(?:\.[a-zA-Z0-9]{1,32})?)/gi;
 const DIRECTIVE_AS_VOICE_RE = /\[\[audio_as_voice\]\]/gi;
 const DIRECTIVE_AS_DOCUMENT_RE = /\[\[as_document\]\]/gi;
 
@@ -32,6 +35,8 @@ function parseStructuredParts(parts: OutboundPart[]): AgentResponseParseResult {
     plainText: textChunks.join("\n\n").trim(),
     attachmentIds,
     storageKeys: [],
+    externalUrls: [],
+    localPaths: [],
     parts: validated,
     directives: {},
   };
@@ -48,6 +53,8 @@ function parseAgentResponseText(text: string): AgentResponseParseResult {
   });
 
   const attachmentIds: string[] = [];
+  const externalUrls: string[] = [];
+  const localPaths: string[] = [];
   working = working.replace(MARKDOWN_IMAGE_RE, (_match, alt: string, target: string) => {
     const url = target.trim();
     const attachmentRef = parseAttachmentRef(url);
@@ -59,8 +66,24 @@ function parseAgentResponseText(text: string): AgentResponseParseResult {
       storageKeys.push(url);
       return "";
     }
+    if (/^https?:\/\//i.test(url)) {
+      externalUrls.push(url);
+    }
     const label = alt.trim() || url;
     return `[Image: ${label}]`;
+  });
+
+  working = working.replace(LOCAL_UPLOAD_PATH_RE, (match, localPath: string) => {
+    const storageKey = extractStorageKeyFromLocalPath(localPath);
+    if (!storageKey) return match;
+    localPaths.push(localPath);
+    storageKeys.push(storageKey);
+    return "";
+  });
+
+  working = working.replace(URL_RE, (url: string) => {
+    externalUrls.push(url);
+    return `[Link: ${url}]`;
   });
 
   const plainText = working.replace(/\n{3,}/g, "\n\n").trim();
@@ -75,6 +98,8 @@ function parseAgentResponseText(text: string): AgentResponseParseResult {
     plainText: plainText || "(attachment)",
     attachmentIds: [...new Set(attachmentIds)],
     storageKeys: [...new Set(storageKeys)],
+    externalUrls: [...new Set(externalUrls)],
+    localPaths: [...new Set(localPaths)],
     parts,
     directives,
   };
@@ -103,4 +128,9 @@ function parseAttachmentRef(url: string): string | null {
 
 export function isStorageKey(value: string): boolean {
   return STORAGE_KEY_RE.test(value);
+}
+
+function extractStorageKeyFromLocalPath(localPath: string): string | null {
+  const last = localPath.split("/").at(-1);
+  return last && STORAGE_KEY_RE.test(last) ? last : null;
 }

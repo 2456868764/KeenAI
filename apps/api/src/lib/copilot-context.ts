@@ -1,7 +1,7 @@
 import { assembleUnifiedAgentContext, buildKeeniAgentContext } from "@keenai/agent";
 import type { DraftMessage, DraftRequest } from "@keenai/llm";
 import type { MemoryScope } from "@keenai/memory-tree";
-import type { ApiEnv } from "@keenai/shared";
+import { type ApiEnv, attachmentMetadataSchema } from "@keenai/shared";
 import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
@@ -49,6 +49,7 @@ export async function buildCopilotDraftRequest(
       senderType: messages.senderType,
       plainText: messages.plainText,
       isInternal: messages.isInternal,
+      metadata: messages.metadata,
     })
     .from(messages)
     .where(and(eq(messages.conversationId, input.conversationId), eq(messages.orgId, input.orgId)))
@@ -63,15 +64,28 @@ export async function buildCopilotDraftRequest(
 
   let totalImages = 0;
   const draftMessages: DraftMessage[] = [];
+  const imageInputMode = env.LLM_VISION_MODE === "text" ? "text" : "native";
 
   for (const m of external) {
     const role = (m.senderType === "user" ? "user" : "agent") as "user" | "agent";
     const images: NonNullable<DraftMessage["images"]> = [];
+    const imageSummaries: string[] = [];
+    let sawImage = false;
 
     for (const att of attachmentMap.get(m.id) ?? []) {
       if (!isVisionMime(att.contentType)) continue;
-      if (images.length >= MAX_VISION_IMAGES_PER_MSG) break;
-      if (totalImages >= MAX_VISION_IMAGES_TOTAL) break;
+      sawImage = true;
+
+      const parsedMeta = attachmentMetadataSchema.safeParse(att.metadata ?? {});
+      const visionSummary = parsedMeta.success ? parsedMeta.data.visionSummary?.trim() : undefined;
+
+      if (imageInputMode === "text") {
+        imageSummaries.push(visionSummary || `${att.fileName ?? "image"} (${att.contentType})`);
+        continue;
+      }
+
+      if (images.length >= MAX_VISION_IMAGES_PER_MSG) continue;
+      if (totalImages >= MAX_VISION_IMAGES_TOTAL) continue;
 
       const buf = await readUploadFile(env, att.storageKey);
       if (!buf) continue;
@@ -83,9 +97,26 @@ export async function buildCopilotDraftRequest(
       totalImages++;
     }
 
+    if (sawImage) {
+      await db
+        .update(messages)
+        .set({
+          metadata: {
+            ...(m.metadata ?? {}),
+            imageInputMode,
+          },
+        })
+        .where(eq(messages.id, m.id));
+    }
+
+    const plainText =
+      imageInputMode === "text" && imageSummaries.length > 0
+        ? `${m.plainText}\n${imageSummaries.map((summary) => `[Image: ${summary}]`).join("\n")}`
+        : m.plainText;
+
     draftMessages.push({
       role,
-      plainText: m.plainText,
+      plainText,
       ...(images.length > 0 ? { images } : {}),
     });
   }
