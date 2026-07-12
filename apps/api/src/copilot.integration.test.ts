@@ -143,6 +143,110 @@ describe("copilot integration", () => {
     await store.close();
   });
 
+  it("emits attachment.ready for MEDIA refs in copilot draft SSE", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      UPLOAD_DIR: path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../data/test-copilot-attachment-ready",
+      ),
+    });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "w-media-ready",
+        subject: "Diagram",
+        initialMessage: { plainText: "Please send the generated diagram" },
+      }),
+    });
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const presignRes = await app.request("/api/v1/uploads/presign", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: "diagram.png",
+        contentType: "image/png",
+        sizeBytes: PNG_1X1.byteLength,
+      }),
+    });
+    const presigned = (await presignRes.json()) as { uploadUrl: string; storageKey: string };
+    const uploadRes = await app.request(new URL(presigned.uploadUrl).pathname, {
+      method: "PUT",
+      headers: { ...auth, "Content-Type": "image/png" },
+      body: PNG_1X1,
+    });
+    const uploaded = (await uploadRes.json()) as { attachmentId: string };
+
+    const draftRes = await app.request("/api/v1/copilot/draft", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversationId: conversation.id,
+        instruction: `Attach MEDIA:${presigned.storageKey}`,
+      }),
+    });
+
+    expect(draftRes.status).toBe(200);
+    const body = await draftRes.text();
+    expect(body).toContain("event: attachment.ready");
+    expect(body).toContain(`"attachmentId":"${uploaded.attachmentId}"`);
+    expect(body).toContain('"mime":"image/png"');
+    expect(body).not.toContain("MEDIA:");
+
+    await store.close();
+  });
+
   it("includes image attachments in stub copilot draft context", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

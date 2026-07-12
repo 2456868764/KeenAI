@@ -301,7 +301,7 @@ interface ChannelRenderer {
 
 ### 7.4 流式出站
 
-Copilot SSE  today 仅文本。扩展协议：
+Copilot SSE 支持文本 delta，并在 provider 输出包含可解析附件引用时，于流结束后补发附件 ready 事件：
 
 ```json
 { "type": "text-delta", "delta": "..." }
@@ -310,6 +310,8 @@ Copilot SSE  today 仅文本。扩展协议：
 ```
 
 Streaming 结束后补发附件（Hermes `_deliver_media_from_response` 同理）。
+
+当前实现：`POST /api/v1/copilot/draft` 会解析 provider 输出中的 `MEDIA:{storageKey}` / attachment refs，向前端输出剥离附件标签后的文本 delta，并为当前 org 可解析到的附件发送 `attachment.ready`。
 
 ### 7.5 Workflow `send_message` Block 扩展
 

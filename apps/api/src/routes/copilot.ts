@@ -1,7 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
+import { parseAgentResponse } from "@keenai/channels-core";
 import { createLlmRegistry } from "@keenai/llm";
+import type { AgentResponseParseResult } from "@keenai/shared";
 import { API_VERSION, copilotDraftBodySchema, copilotEventBodySchema } from "@keenai/shared";
-import { copilotEvents } from "@keenai/storage/schema";
+import { attachments, copilotEvents } from "@keenai/storage/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
@@ -70,18 +73,38 @@ export function copilotRoutes(ctx: AppContext) {
           : llm.resolveDraftProvider();
 
       return streamSSE(c, async (stream) => {
-        stream.writeSSE({
+        await stream.writeSSE({
           event: "meta",
           data: JSON.stringify({ providerId: provider.id, memoryScope, toolNames }),
         });
 
+        let rawText = "";
         for await (const chunk of provider.streamDraft(draftRequest)) {
           if (chunk.type === "text-delta") {
-            stream.writeSSE({ data: JSON.stringify({ text: chunk.text }) });
+            rawText += chunk.text;
           }
         }
 
-        stream.writeSSE({ event: "done", data: "{}" });
+        const parsed = parseAgentResponse(rawText);
+        for (let i = 0; i < parsed.plainText.length; i += 12) {
+          await stream.writeSSE({
+            data: JSON.stringify({ text: parsed.plainText.slice(i, i + 12) }),
+          });
+        }
+
+        const readyAttachments = await resolveReadyAttachments(
+          c.get("store").db,
+          auth.orgId,
+          parsed,
+        );
+        for (const item of readyAttachments) {
+          await stream.writeSSE({
+            event: "attachment.ready",
+            data: JSON.stringify(item),
+          });
+        }
+
+        await stream.writeSSE({ event: "done", data: "{}" });
       });
     },
   );
@@ -130,4 +153,44 @@ export function copilotRoutes(ctx: AppContext) {
   });
 
   return r;
+}
+
+async function resolveReadyAttachments(
+  db: AppVariables["store"]["db"],
+  orgId: string,
+  parsed: AgentResponseParseResult,
+): Promise<{ attachmentId: string; mime: string }[]> {
+  const rows = [];
+
+  if (parsed.attachmentIds.length > 0) {
+    rows.push(
+      ...(await db
+        .select()
+        .from(attachments)
+        .where(and(eq(attachments.orgId, orgId), inArray(attachments.id, parsed.attachmentIds)))),
+    );
+  }
+
+  if (parsed.storageKeys.length > 0) {
+    rows.push(
+      ...(await db
+        .select()
+        .from(attachments)
+        .where(
+          and(eq(attachments.orgId, orgId), inArray(attachments.storageKey, parsed.storageKeys)),
+        )),
+    );
+  }
+
+  const byId = new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        attachmentId: row.id,
+        mime: row.contentType ?? "application/octet-stream",
+      },
+    ]),
+  );
+
+  return [...byId.values()];
 }

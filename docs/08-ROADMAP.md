@@ -259,6 +259,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
 - [x] `@keenai/channels-core`：`parseAgentResponse` 骨架（Markdown 图 · 为出站预留）
 - [x] Upload 安全：`message_attachment` purpose · 20MB 默认上限 · MIME 白名单
 - [x] IM reply/mediaGroup metadata 入库；Telegram `media_group_id` 相册合并为 mixed message；Copilot `LLM_VISION_MODE` native/text 路由；`ChannelRenderer` 类型与裸 upload path 解析
+- [x] Copilot SSE 解析 `MEDIA:{storageKey}` / attachment refs，输出干净文本并在流结束后发送 `attachment.ready`
 
 #### Sprint 11-12（W25-W28）：Feedback + Help Center
 - [x] Drizzle schema：`feedback_boards / feedback_posts / feedback_votes / feedback_comments / feedback_subscriptions`
