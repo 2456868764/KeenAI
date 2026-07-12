@@ -129,7 +129,8 @@ describe("generate-image integration", () => {
         attachments: { id: string; contentType: string | null; metadata?: { source?: string } }[];
       };
     };
-    expect(msgBody.message.plainText).toBe("Network diagram");
+    expect(msgBody.message.plainText).toContain("Network diagram");
+    expect(msgBody.message.plainText).toContain("[Image: generated.png");
     expect(msgBody.message.messageKind).toBe("photo");
     expect(msgBody.message.attachments).toHaveLength(1);
     expect(msgBody.message.attachments[0]?.id).toBe(genBody.attachmentId);

@@ -9,7 +9,13 @@ const uploadsModuleDir = path.dirname(fileURLToPath(import.meta.url));
 
 const pending = new Map<
   string,
-  { storageKey: string; contentType: string; fileName: string; expiresAt: number }
+  {
+    storageKey: string;
+    contentType: string;
+    fileName: string;
+    expiresAt: number;
+    purpose: "message_attachment";
+  }
 >();
 
 export function resolveUploadDir(env: ApiEnv): string {
@@ -19,11 +25,19 @@ export function resolveUploadDir(env: ApiEnv): string {
 
 export function createPresignedUpload(
   env: ApiEnv,
-  input: { fileName: string; contentType: string; sizeBytes: number },
+  input: {
+    fileName: string;
+    contentType: string;
+    sizeBytes: number;
+    purpose?: "message_attachment";
+  },
   apiBaseUrl: string,
 ) {
   if (input.sizeBytes > env.UPLOAD_MAX_BYTES) {
     throw new Error("file_too_large");
+  }
+  if (!isAllowedUploadMime(input.contentType)) {
+    throw new Error("unsupported_mime_type");
   }
 
   const uploadId = randomBytes(16).toString("hex");
@@ -36,6 +50,7 @@ export function createPresignedUpload(
     contentType: input.contentType,
     fileName: input.fileName,
     expiresAt,
+    purpose: input.purpose ?? "message_attachment",
   });
 
   return {
@@ -44,6 +59,7 @@ export function createPresignedUpload(
     uploadUrl: `${apiBaseUrl}/api/v1/uploads/${uploadId}`,
     expiresAt: new Date(expiresAt).toISOString(),
     maxBytes: env.UPLOAD_MAX_BYTES,
+    purpose: input.purpose ?? "message_attachment",
   };
 }
 
@@ -128,7 +144,53 @@ export function guessContentType(storageKey: string): string {
       return "audio/webm";
     case ".m4a":
       return "audio/mp4";
+    case ".mp4":
+      return "video/mp4";
+    case ".mov":
+      return "video/quicktime";
+    case ".pdf":
+      return "application/pdf";
+    case ".txt":
+      return "text/plain";
+    case ".md":
+      return "text/markdown";
+    case ".csv":
+      return "text/csv";
+    case ".doc":
+      return "application/msword";
+    case ".docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case ".xls":
+      return "application/vnd.ms-excel";
+    case ".xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case ".ppt":
+      return "application/vnd.ms-powerpoint";
+    case ".pptx":
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
     default:
       return "application/octet-stream";
   }
 }
+
+export function isAllowedUploadMime(contentType: string): boolean {
+  const mime = contentType.toLowerCase().split(";")[0]?.trim() ?? "";
+  if (mime.startsWith("image/")) return true;
+  if (mime.startsWith("audio/")) return true;
+  if (mime.startsWith("video/")) return true;
+  if (mime.startsWith("text/")) return true;
+
+  return ALLOWED_UPLOAD_MIME_TYPES.has(mime);
+}
+
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/rtf",
+  "application/json",
+]);

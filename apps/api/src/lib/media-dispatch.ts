@@ -14,7 +14,12 @@ export type MediaDispatchAdapter = {
 };
 
 export type MediaDispatchHandlers = {
-  processMessageMedia: (payload: MediaMessageCreatedPayload) => Promise<{ transcribed: number }>;
+  processMessageMedia: (payload: MediaMessageCreatedPayload) => Promise<{
+    transcribed: number;
+    thumbnailed: number;
+    visionSummarized: number;
+    textExtracted: number;
+  }>;
 };
 
 export function createSyncMediaDispatch(handlers: MediaDispatchHandlers): MediaDispatchAdapter {

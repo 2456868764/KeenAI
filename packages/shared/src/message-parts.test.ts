@@ -38,6 +38,35 @@ describe("message-parts", () => {
         },
       ],
     ]);
-    expect(buildPlainTextFromParts(parts, map)).toBe("Please reset my password.");
+    expect(buildPlainTextFromParts(parts, map)).toBe('[Voice: "Please reset my password."]');
+  });
+
+  it("uses image vision summary and extracted file text when available", () => {
+    const parts = [
+      { type: "image" as const, attachmentId: "att-image" },
+      { type: "file" as const, attachmentId: "att-file", fileName: "manual.txt" },
+    ];
+    const map = new Map([
+      [
+        "att-image",
+        {
+          fileName: "photo.png",
+          contentType: "image/png",
+          visionSummary: "damaged package label",
+        },
+      ],
+      [
+        "att-file",
+        {
+          fileName: "manual.txt",
+          contentType: "text/plain",
+          extractedText: "Reset steps",
+        },
+      ],
+    ]);
+
+    expect(buildPlainTextFromParts(parts, map)).toBe(
+      "[Image: damaged package label]\n[File: manual.txt]\nReset steps",
+    );
   });
 });

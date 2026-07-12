@@ -180,11 +180,11 @@ Platform payload
 
 | Channel | Inbound | 备注 |
 |---------|---------|------|
-| **Widget** | 客户端 presign → PUT → `POST .../messages` 带 `attachmentIds[]` | 已有 presign MVP；需关联 message |
-| **Email** | mailparser `attachments[]` → 逐个 upload | `email-ingest.ts` 待扩展 |
-| **Dashboard** | Tiptap 粘贴/拖拽 → presign | Inbox composer |
-| **Telegram**（P3） | Bot API getFile → upload | 对标 Hermes telegram.py |
-| **Slack**（P2） | files.shared / block attachments | |
+| **Widget** | 客户端 presign → PUT → `POST .../messages` 带 `attachmentIds[]` | 已关联 message，支持图片 bubble |
+| **Email** | mailparser `attachments[]` → 逐个 upload | 已写入 attachments，`metadata.source=email` |
+| **Dashboard** | Tiptap 粘贴/拖拽 → presign | Inbox composer 已带 `attachmentIds` |
+| **Telegram**（P3） | Bot API getFile → upload | 已落地基础入站/出站；对标 Hermes telegram.py |
+| **Slack**（P2） | files.shared / block attachments | 已落地基础入站/出站 |
 | **WhatsApp**（P3） | Cloud API media_id 下载 | |
 
 ### 4.3 特殊合并逻辑（借鉴 Hermes）
@@ -203,6 +203,8 @@ Platform payload
 | URL 下载 | SSRF 校验（Hermes `is_safe_url`） |
 | 访问 | signed URL / auth proxy `GET /api/v1/attachments/:id/content` |
 
+当前实现：`UPLOAD_MAX_BYTES` 默认 20 MB；`POST /api/v1/uploads/presign` 接受 `purpose: "message_attachment"`（默认值）并拒绝非白名单 MIME。
+
 ---
 
 ## 五、Media Pipeline（Inngest）
@@ -217,6 +219,8 @@ Platform payload
 | `media.extract_text` | pdf / text doc | `metadata.extractedText`（供 Agent / RAG） |
 
 完成后：`publish conversation/message.updated` → Inbox / Widget 刷新 enrichment 状态。
+
+当前实现：同一个 `processMessageMedia` worker 内完成 STT、video thumbnail、image thumbnail/尺寸/轻量摘要、text/PDF lite 提取；OpenAI Whisper / ffmpeg 可按环境变量启用，vision summary 与 PDF extract 目前为 lite enrichment，后续可替换为视觉/OCR provider。
 
 **与 Workflow 关系**：Pipeline 完成后再触发 `dispatchFirstMessage` / Agent（或通过 `step.waitForEvent` 等待 `media.enriched`）。
 

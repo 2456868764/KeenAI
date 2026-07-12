@@ -132,7 +132,8 @@ describe("agent outbound integration", () => {
         attachments: { id: string; contentType: string | null }[];
       };
     };
-    expect(msgBody.message.plainText).toBe("Please see the screenshot below.");
+    expect(msgBody.message.plainText).toContain("Please see the screenshot below.");
+    expect(msgBody.message.plainText).toContain("[Image: fix.png");
     expect(msgBody.message.messageKind).toBe("photo");
     expect(msgBody.message.attachments).toHaveLength(1);
     expect(msgBody.message.attachments[0]?.contentType).toContain("image/");

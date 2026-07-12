@@ -81,7 +81,8 @@ describe("IM multimodal integration", () => {
     expect(webhookBody.accepted).toBe(true);
     expect(webhookBody.created).toBe(true);
     expect(webhookBody.message.messageKind).toBe("photo");
-    expect(webhookBody.message.plainText).toBe("Need help with billing");
+    expect(webhookBody.message.plainText).toContain("Need help with billing");
+    expect(webhookBody.message.plainText).toContain("[Image: photo.jpg");
     expect(webhookBody.message.attachments).toHaveLength(1);
 
     await store.close();

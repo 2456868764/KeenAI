@@ -140,10 +140,24 @@ describe("multimodal integration", () => {
     });
     expect(msgRes.status).toBe(201);
     const msgBody = (await msgRes.json()) as {
-      message: { attachments: { id: string; contentType: string | null }[]; messageKind: string };
+      message: {
+        plainText: string;
+        attachments: {
+          id: string;
+          contentType: string | null;
+          thumbnailUrl?: string;
+          metadata?: { visionSummary?: string; width?: number; height?: number };
+        }[];
+        messageKind: string;
+      };
     };
     expect(msgBody.message.messageKind).toBe("photo");
+    expect(msgBody.message.plainText).toContain("[Image: dot.png");
     expect(msgBody.message.attachments).toHaveLength(1);
+    expect(msgBody.message.attachments[0]?.thumbnailUrl).toContain("/thumbnail");
+    expect(msgBody.message.attachments[0]?.metadata?.visionSummary).toContain("dot.png");
+    expect(msgBody.message.attachments[0]?.metadata?.width).toBe(1);
+    expect(msgBody.message.attachments[0]?.metadata?.height).toBe(1);
 
     const listRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -159,6 +173,12 @@ describe("multimodal integration", () => {
     });
     expect(contentRes.status).toBe(200);
     expect(contentRes.headers.get("content-type")).toContain("image/png");
+
+    const thumbRes = await app.request(`/api/v1/attachments/${uploaded.attachmentId}/thumbnail`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    expect(thumbRes.status).toBe(200);
+    expect(thumbRes.headers.get("content-type")).toContain("image/png");
 
     await store.close();
   });

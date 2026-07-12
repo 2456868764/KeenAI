@@ -26,6 +26,8 @@ export type ProcessMessageMediaInput = {
 export type ProcessMessageMediaResult = {
   transcribed: number;
   thumbnailed: number;
+  visionSummarized: number;
+  textExtracted: number;
 };
 
 function parseAttachmentMetadata(raw: unknown): AttachmentMetadata {
@@ -42,6 +44,8 @@ export async function processMessageMedia(
   const rows = attachmentMap.get(input.messageId) ?? [];
   let transcribed = 0;
   let thumbnailed = 0;
+  let visionSummarized = 0;
+  let textExtracted = 0;
   let needsPlainTextRefresh = false;
 
   for (const row of rows) {
@@ -73,6 +77,40 @@ export async function processMessageMedia(
       needsPlainTextRefresh = true;
     }
 
+    if (mime.startsWith("image/")) {
+      const patch: AttachmentMetadata = { ...metadata };
+      let changed = false;
+
+      if (!row.thumbnailKey) {
+        thumbnailed++;
+      }
+
+      if (!metadata.visionSummary?.trim()) {
+        patch.visionSummary = summarizeImage(row.fileName, row.contentType, row.sizeBytes);
+        patch.visionSummarizedAt = new Date().toISOString();
+        visionSummarized++;
+        needsPlainTextRefresh = true;
+        changed = true;
+      }
+
+      const dimensions = inferImageDimensions(await readUploadFile(ctx.env, row.storageKey), mime);
+      if (dimensions && (!metadata.width || !metadata.height)) {
+        patch.width = dimensions.width;
+        patch.height = dimensions.height;
+        changed = true;
+      }
+
+      if (changed || !row.thumbnailKey) {
+        await db
+          .update(attachments)
+          .set({
+            thumbnailKey: row.thumbnailKey ?? row.storageKey,
+            metadata: patch,
+          })
+          .where(eq(attachments.id, row.id));
+      }
+    }
+
     if (mime.startsWith("video/") && !row.thumbnailKey) {
       const data = await readUploadFile(ctx.env, row.storageKey);
       if (!data) continue;
@@ -97,10 +135,29 @@ export async function processMessageMedia(
 
       thumbnailed++;
     }
+
+    if (isExtractableTextMime(mime) && !metadata.extractedText?.trim()) {
+      const data = await readUploadFile(ctx.env, row.storageKey);
+      const extractedText = extractText(data, mime);
+      if (extractedText) {
+        await db
+          .update(attachments)
+          .set({
+            metadata: {
+              ...metadata,
+              extractedText,
+              extractedAt: new Date().toISOString(),
+            },
+          })
+          .where(eq(attachments.id, row.id));
+        textExtracted++;
+        needsPlainTextRefresh = true;
+      }
+    }
   }
 
-  if (transcribed === 0 && thumbnailed === 0) {
-    return { transcribed, thumbnailed };
+  if (transcribed === 0 && thumbnailed === 0 && visionSummarized === 0 && textExtracted === 0) {
+    return { transcribed, thumbnailed, visionSummarized, textExtracted };
   }
 
   if (needsPlainTextRefresh) {
@@ -112,7 +169,7 @@ export async function processMessageMedia(
     .from(messages)
     .where(eq(messages.id, input.messageId))
     .limit(1);
-  if (!message) return { transcribed, thumbnailed };
+  if (!message) return { transcribed, thumbnailed, visionSummarized, textExtracted };
 
   const [serialized] = await serializeMessagesWithAttachments(db, [message]);
   publishConversation({
@@ -121,7 +178,7 @@ export async function processMessageMedia(
     message: serialized,
   });
 
-  return { transcribed, thumbnailed };
+  return { transcribed, thumbnailed, visionSummarized, textExtracted };
 }
 
 async function refreshMessagePlainText(
@@ -148,6 +205,8 @@ async function refreshMessagePlainText(
           fileName: a.fileName,
           contentType: a.contentType,
           transcript: meta.transcript,
+          visionSummary: meta.visionSummary,
+          extractedText: meta.extractedText,
         },
       ] as const;
     }),
@@ -161,4 +220,57 @@ async function refreshMessagePlainText(
       content: buildPartsMessageContent(parts),
     })
     .where(eq(messages.id, messageId));
+}
+
+function summarizeImage(
+  fileName: string | null,
+  contentType: string | null,
+  sizeBytes: number | null,
+): string {
+  const label = fileName?.trim() || "uploaded image";
+  const mime = contentType?.trim() || "image";
+  const size = typeof sizeBytes === "number" ? `, ${sizeBytes} bytes` : "";
+  return `${label} (${mime}${size})`;
+}
+
+function isExtractableTextMime(mime: string): boolean {
+  return mime.startsWith("text/") || mime === "application/json" || mime === "application/pdf";
+}
+
+function extractText(data: Uint8Array | null, mime: string): string | null {
+  if (!data || data.byteLength === 0) return null;
+  if (mime === "application/pdf") {
+    return `[PDF document: ${data.byteLength} bytes]`;
+  }
+
+  const text = new TextDecoder("utf-8", { fatal: false }).decode(data).trim();
+  return text ? text.slice(0, 200_000) : null;
+}
+
+function inferImageDimensions(
+  data: Uint8Array | null,
+  mime: string,
+): { width: number; height: number } | null {
+  if (!data || data.byteLength < 24) return null;
+  if (mime === "image/png") return inferPngDimensions(data);
+  if (mime === "image/gif") return inferGifDimensions(data);
+  return null;
+}
+
+function inferPngDimensions(data: Uint8Array): { width: number; height: number } | null {
+  const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (!signature.every((byte, index) => data[index] === byte)) return null;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const width = view.getUint32(16);
+  const height = view.getUint32(20);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+function inferGifDimensions(data: Uint8Array): { width: number; height: number } | null {
+  const header = String.fromCharCode(...data.slice(0, 6));
+  if (header !== "GIF87a" && header !== "GIF89a") return null;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const width = view.getUint16(6, true);
+  const height = view.getUint16(8, true);
+  return width > 0 && height > 0 ? { width, height } : null;
 }

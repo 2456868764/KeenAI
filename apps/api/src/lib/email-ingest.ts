@@ -86,6 +86,7 @@ export async function ingestInboundEmail(
       fileName: file.fileName,
       contentType: file.contentType,
       sizeBytes: file.sizeBytes,
+      metadata: { source: "email" },
     });
     attachmentRows.push(row);
   }

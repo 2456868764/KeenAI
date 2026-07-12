@@ -96,6 +96,8 @@ export function buildPlainTextFromParts(
       fileName: string | null;
       contentType: string | null;
       transcript?: string;
+      visionSummary?: string;
+      extractedText?: string;
     }
   >,
 ): string {
@@ -106,15 +108,27 @@ export function buildPlainTextFromParts(
       continue;
     }
     const att = attachments.get(part.attachmentId);
+    if (part.type === "image") {
+      const visionSummary = att?.visionSummary?.trim();
+      if (visionSummary) {
+        chunks.push(`[Image: ${visionSummary}]`);
+        continue;
+      }
+    }
     if (part.type === "audio") {
       const transcript = att?.transcript?.trim();
       if (transcript) {
-        chunks.push(transcript);
+        chunks.push(`[Voice: "${transcript}"]`);
         continue;
       }
     }
     const fileName = part.type === "file" ? part.fileName : (att?.fileName ?? "attachment");
-    chunks.push(attachmentPlaceholder(fileName, att?.contentType));
+    const placeholder = attachmentPlaceholder(fileName, att?.contentType);
+    if (part.type === "file" && att?.extractedText?.trim()) {
+      chunks.push(`${placeholder}\n${att.extractedText.trim()}`);
+    } else {
+      chunks.push(placeholder);
+    }
   }
   return chunks.join("\n").trim() || "(empty)";
 }

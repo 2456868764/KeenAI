@@ -35,7 +35,7 @@ export const apiEnvSchema = z.object({
   WIDGET_HMAC_SECRET: z.string().min(32).optional(),
   /** Local upload directory (default: `<repo>/data/uploads`) */
   UPLOAD_DIR: z.string().optional(),
-  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(20_971_520),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_WHISPER_MODEL: z.string().default("whisper-1"),

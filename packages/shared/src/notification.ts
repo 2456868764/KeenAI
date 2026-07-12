@@ -12,6 +12,7 @@ export const presignUploadSchema = z.object({
   fileName: z.string().min(1).max(255),
   contentType: z.string().min(1).max(128),
   sizeBytes: z.number().int().positive().max(52_428_800),
+  purpose: z.enum(["message_attachment"]).default("message_attachment"),
 });
 
 export const searchConversationsSchema = z.object({

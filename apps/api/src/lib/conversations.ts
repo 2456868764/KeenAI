@@ -176,6 +176,8 @@ async function resolveMessagePayload(
           fileName: a.fileName,
           contentType: a.contentType,
           transcript: meta.success ? meta.data.transcript : undefined,
+          visionSummary: meta.success ? meta.data.visionSummary : undefined,
+          extractedText: meta.success ? meta.data.extractedText : undefined,
         },
       ] as const;
     }),

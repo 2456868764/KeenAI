@@ -352,7 +352,7 @@ describe("workflow integration", () => {
       items: { plainText: string; sentVia?: string; attachments?: { id: string }[] }[];
     };
     const workflowMsg = body.items.find(
-      (m) => m.sentVia === "workflow" && m.plainText === "Here is the guide",
+      (m) => m.sentVia === "workflow" && m.plainText.includes("Here is the guide"),
     );
     expect(workflowMsg).toBeTruthy();
     expect(workflowMsg?.attachments?.some((a) => a.id === uploaded.attachmentId)).toBe(true);

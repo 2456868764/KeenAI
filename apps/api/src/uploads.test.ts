@@ -17,6 +17,8 @@ describe("uploads", () => {
     );
     expect(presigned.uploadUrl).toContain(presigned.uploadId);
     expect(presigned.storageKey).toContain(presigned.uploadId);
+    expect(presigned.maxBytes).toBe(20_971_520);
+    expect(presigned.purpose).toBe("message_attachment");
 
     expect(() =>
       createPresignedUpload(
@@ -29,6 +31,17 @@ describe("uploads", () => {
         "http://localhost:8090",
       ),
     ).toThrow("file_too_large");
+  });
+
+  it("rejects unsupported MIME types", () => {
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    expect(() =>
+      createPresignedUpload(
+        env,
+        { fileName: "run.sh", contentType: "application/x-sh", sizeBytes: 12 },
+        "http://localhost:8090",
+      ),
+    ).toThrow("unsupported_mime_type");
   });
 
   it("checksums file bytes", () => {

@@ -158,6 +158,9 @@ export function widgetRoutes() {
         if (e instanceof Error && e.message === "file_too_large") {
           return c.json({ error: "file_too_large", maxBytes: c.get("env").UPLOAD_MAX_BYTES }, 413);
         }
+        if (e instanceof Error && e.message === "unsupported_mime_type") {
+          return c.json({ error: "unsupported_mime_type" }, 415);
+        }
         throw e;
       }
     },
@@ -183,6 +186,7 @@ export function widgetRoutes() {
       fileName: entry.fileName,
       contentType: entry.contentType,
       sizeBytes: buf.byteLength,
+      metadata: { source: "upload" },
     });
 
     return c.json({
