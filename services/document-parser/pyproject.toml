@@ -13,14 +13,6 @@ dependencies = [
 docling = [
   "docling>=2.0.0",
 ]
-mineru = [
-  "mineru[all]",
-  "mineru_html",
-]
-mineru-vllm = [
-  "mineru[all]",
-  "mineru_html[vllm]",
-]
 
 [tool.ruff]
 line-length = 100

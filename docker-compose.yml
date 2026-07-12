@@ -89,8 +89,6 @@ services:
       - "8095:8095"
     environment:
       KEENAI_DOCUMENT_PARSER_TIMEOUT_SECONDS: "300"
-      MINERU_COMMAND: ${MINERU_COMMAND:-}
-      MINERU_HTML_COMMAND: ${MINERU_HTML_COMMAND:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/health').read()"]
       interval: 10s

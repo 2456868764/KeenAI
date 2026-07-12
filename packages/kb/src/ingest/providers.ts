@@ -30,7 +30,7 @@ export type KbDocumentParserProvider = {
 export type KbDocumentParserHttpOptions = {
   id?: string;
   endpoint: string;
-  engine?: "docling" | "mineru";
+  engine?: "docling";
   headers?: Record<string, string>;
   fetchFn?: typeof fetch;
 };
@@ -52,7 +52,7 @@ export type KbDocumentParserCloudOptions = Omit<KbDocumentParserHttpOptions, "id
 export type ResolveKbDocumentParserProviderEnv = {
   KEENAI_KB_DOCUMENT_PARSER?: "lite" | "http" | "cloud" | string;
   KEENAI_KB_DOCUMENT_PARSER_URL?: string;
-  KEENAI_KB_DOCUMENT_PARSER_ENGINE?: "docling" | "mineru" | string;
+  KEENAI_KB_DOCUMENT_PARSER_ENGINE?: "docling" | string;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER?: KbDocumentParserCloudProvider;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL?: string;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY?: string;
@@ -209,8 +209,8 @@ export function createCloudKbDocumentParserProvider(
   });
 }
 
-function isParserEngine(value: string | undefined): value is "docling" | "mineru" {
-  return value === "docling" || value === "mineru";
+function isParserEngine(value: string | undefined): value is "docling" {
+  return value === "docling";
 }
 
 export function resolveKbDocumentParserProviderFromEnv(

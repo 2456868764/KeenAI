@@ -16,7 +16,7 @@ class ParseRequest(BaseModel):
     content_type: str | None = None
     url: str | None = None
     file_name: str | None = None
-    engine: Literal["docling", "mineru"] = "docling"
+    engine: Literal["docling"] = "docling"
 
 
 class ParseResponse(BaseModel):

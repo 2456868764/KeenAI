@@ -224,9 +224,8 @@ export type ConnectorType =
 ├───────────────────────────────────────────────────────────────┤
 │  2. Parse（解析）                                               │
 │       - 默认 provider：lite（内置 PDF/DOCX/HTML/Markdown 轻量解析）│
-│       - HTTP provider：FastAPI sidecar，engine=docling|mineru    │
+│       - HTTP provider：FastAPI sidecar，engine=docling           │
 │       - docling：PDF / DOCX / HTML / URL → Markdown              │
-│       - mineru：PDF / DOCX → MinerU；HTML / URL → MinerU-HTML    │
 │       - cloud provider：Azure DI / Google Document AI / Textract │
 │         / LlamaParse / Unstructured / Mistral OCR / LandingAI ADE│
 │       - 图片/视频仍按多模态管线独立处理                           │

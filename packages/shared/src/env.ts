@@ -66,8 +66,8 @@ export const apiEnvSchema = z.object({
   KEENAI_KB_DOCUMENT_PARSER: z.enum(["lite", "http", "cloud"]).default("lite"),
   /** HTTP endpoint for the parser sidecar, for example http://127.0.0.1:8095/parse. */
   KEENAI_KB_DOCUMENT_PARSER_URL: z.string().url().optional(),
-  /** Parser sidecar engine. Only docling and mineru are supported by the Python service. */
-  KEENAI_KB_DOCUMENT_PARSER_ENGINE: z.enum(["docling", "mineru"]).default("docling"),
+  /** Parser sidecar engine. The Python service currently supports docling only. */
+  KEENAI_KB_DOCUMENT_PARSER_ENGINE: z.enum(["docling"]).default("docling"),
   /** Optional cloud document parser adapter name. */
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER: z
     .enum([

@@ -135,11 +135,11 @@ describe("KB ingestion pipeline", () => {
     expect(parsed.sections[0]?.heading).toBe("Setup");
   });
 
-  it("posts documents to the HTTP parser provider with docling/mineru engines", async () => {
+  it("posts documents to the HTTP parser provider with the docling engine", async () => {
     const requests: unknown[] = [];
     const provider = createHttpKbDocumentParserProvider({
       endpoint: "http://parser.local/parse",
-      engine: "mineru",
+      engine: "docling",
       fetchFn: (async (_url, init) => {
         requests.push(JSON.parse(String(init?.body ?? "{}")));
         return {
@@ -148,9 +148,9 @@ describe("KB ingestion pipeline", () => {
           async json() {
             return {
               title: "HTTP Manual",
-              provider: "mineru-html",
+              provider: "docling",
               markdown: "# Parsed\n\nHTML URL content.",
-              metadata: { engine: "mineru" },
+              metadata: { engine: "docling" },
             };
           },
         } as Response;
@@ -168,12 +168,12 @@ describe("KB ingestion pipeline", () => {
     );
 
     expect(requests[0]).toMatchObject({
-      engine: "mineru",
+      engine: "docling",
       title: "Remote",
       url: "https://example.com/docs",
     });
-    expect(parsed.parserProvider).toBe("mineru-html");
-    expect(parsed.metadata?.engine).toBe("mineru");
+    expect(parsed.parserProvider).toBe("docling");
+    expect(parsed.metadata?.engine).toBe("docling");
     expect(parsed.sections[0]?.heading).toBe("Parsed");
   });
 
