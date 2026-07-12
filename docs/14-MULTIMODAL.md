@@ -205,7 +205,7 @@ Platform payload
 | URL 下载 | SSRF 校验（Hermes `is_safe_url`） |
 | 访问 | signed URL / auth proxy `GET /api/v1/attachments/:id/content` |
 
-当前实现：`UPLOAD_MAX_BYTES` 默认 20 MB；`POST /api/v1/uploads/presign` 接受 `purpose: "message_attachment"`（默认值）并拒绝非白名单 MIME。
+当前实现：`UPLOAD_MAX_BYTES` 默认 20 MB；`POST /api/v1/uploads/presign` 接受 `purpose: "message_attachment"`（默认值）并拒绝非白名单 MIME。Agent outbound 外部 URL 下载会拒绝 localhost / private IP / 内网域名，DNS 解析后再次校验地址，并复用同一大小与 MIME 白名单。
 
 ---
 
@@ -274,7 +274,7 @@ Agent / Copilot / Workflow **优先产出 structured `OutboundPart[]`**；兼容
 3. **Markdown 图片**：`![alt](https://...)` → 下载或引用已有 attachment
 4. **裸 URL / 路径**：`extractLocalFiles` 等价逻辑（Agent sandbox 产出）
 
-当前实现：`parseAgentResponse` 支持 structured parts、`MEDIA:{storageKey}`、Markdown attachment/storage refs、裸 `data/uploads/{storageKey}` 路径，并暴露 `externalUrls` 供后续 SSRF 安全下载策略接入。
+当前实现：`parseAgentResponse` 支持 structured parts、`MEDIA:{storageKey}`、Markdown attachment/storage refs、裸 `data/uploads/{storageKey}` 路径和外部 URL；Agent outbound 会对外部 URL 做 SSRF 安全校验、下载为 pending attachment，再由消息发送流程绑定。
 
 ### 7.2 发送顺序（对标 Hermes）
 
@@ -337,8 +337,9 @@ Streaming 结束后补发附件（Hermes `_deliver_media_from_response` 同理�
   width?: number;
   height?: number;
   durationMs?: number;
-  source?: "upload" | "email" | "agent_tool" | "im_download";
+  source?: "upload" | "email" | "agent_tool" | "agent_url" | "im_download";
   platformRef?: string;        // 原始 platform file_id
+  url?: string;                // agent_url 下载来源
 }
 ```
 

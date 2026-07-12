@@ -338,6 +338,7 @@ export function conversationRoutes(ctx: AppContext) {
         try {
           const outbound = await buildAgentOutboundPayload(
             c.get("store").db,
+            ctx.env,
             auth.orgId,
             body.agentOutboundText,
           );

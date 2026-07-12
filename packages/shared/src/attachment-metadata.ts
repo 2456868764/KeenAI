@@ -10,8 +10,9 @@ export const attachmentMetadataSchema = z.object({
   transcribedAt: z.string().datetime().optional(),
   visionSummarizedAt: z.string().datetime().optional(),
   extractedAt: z.string().datetime().optional(),
-  source: z.enum(["upload", "email", "agent_tool", "im_download"]).optional(),
+  source: z.enum(["upload", "email", "agent_tool", "agent_url", "im_download"]).optional(),
   platformRef: z.string().max(512).optional(),
+  url: z.string().url().optional(),
 });
 
 export type AttachmentMetadata = z.infer<typeof attachmentMetadataSchema>;
