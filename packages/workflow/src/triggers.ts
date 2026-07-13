@@ -5,8 +5,11 @@ export function resolveInactivityMs(definition: {
   trigger: string;
   inactivityMinutes?: number;
 }): number {
+  const usesUnresponsiveDefault =
+    definition.trigger === "customer_unresponsive" ||
+    definition.trigger === "teammate_unresponsive";
   const minutes =
     definition.inactivityMinutes ??
-    (definition.trigger === "customer_unresponsive" ? DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES : 0);
+    (usesUnresponsiveDefault ? DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES : 0);
   return minutes * 60_000;
 }

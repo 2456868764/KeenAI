@@ -7,6 +7,12 @@ import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { executeWorkflow } from "./workflow-engine.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
+type UnresponsiveTrigger = "customer_unresponsive" | "teammate_unresponsive";
+
+const UNRESPONSIVE_TRIGGERS: UnresponsiveTrigger[] = [
+  "customer_unresponsive",
+  "teammate_unresponsive",
+];
 
 export type UnresponsiveScanResult = {
   scanned: number;
@@ -55,7 +61,7 @@ export async function scanCustomerUnresponsiveWorkflows(
   const now = opts?.now ?? new Date();
   const wfFilters = [
     eq(workflows.status, "published"),
-    eq(workflows.trigger, "customer_unresponsive"),
+    inArray(workflows.trigger, UNRESPONSIVE_TRIGGERS),
   ];
   if (opts?.orgId) wfFilters.push(eq(workflows.orgId, opts.orgId));
 
@@ -85,7 +91,7 @@ export async function scanCustomerUnresponsiveWorkflows(
 
   for (const conversation of openConversations) {
     const last = await lastPublicMessage(db, conversation.id);
-    if (!last || last.senderType !== "agent") continue;
+    if (!last) continue;
 
     const matching = published.filter(
       (wf) =>
@@ -93,6 +99,10 @@ export async function scanCustomerUnresponsiveWorkflows(
     );
 
     for (const workflow of matching) {
+      const trigger = workflow.trigger as UnresponsiveTrigger;
+      const requiredLastSender = trigger === "customer_unresponsive" ? "agent" : "user";
+      if (last.senderType !== requiredLastSender) continue;
+
       const definition = workflow.definition as WorkflowDefinition;
       const inactivityMs = resolveInactivityMs(definition);
       const elapsed = now.getTime() - last.createdAt.getTime();
@@ -101,7 +111,13 @@ export async function scanCustomerUnresponsiveWorkflows(
       const alreadyRan = await hasRunSince(db, workflow.id, conversation.id, last.createdAt);
       if (alreadyRan) continue;
 
-      const run = await executeWorkflow(db, workflow, conversation.id, opts.env, opts.authConfig);
+      const run = await executeWorkflow(db, workflow, conversation.id, opts.env, opts.authConfig, {
+        facts: {
+          channelType: conversation.channelType,
+          priority: conversation.priority ?? "normal",
+          conversationStatus: conversation.status,
+        },
+      });
       if (run) {
         runs.push(run.id);
         triggered += 1;

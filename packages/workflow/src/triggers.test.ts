@@ -30,6 +30,12 @@ describe("resolveInactivityMs", () => {
     );
   });
 
+  it("defaults teammate_unresponsive to 30 minutes", () => {
+    expect(resolveInactivityMs({ trigger: "teammate_unresponsive" })).toBe(
+      DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES * 60_000,
+    );
+  });
+
   it("uses explicit inactivityMinutes", () => {
     expect(resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 5 })).toBe(
       5 * 60_000,

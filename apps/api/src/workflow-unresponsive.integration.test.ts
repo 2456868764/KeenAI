@@ -39,7 +39,7 @@ async function loginToken(app: ReturnType<typeof createApp>) {
   return tokens.accessToken;
 }
 
-describe("customer unresponsive workflow", () => {
+describe("unresponsive workflow", () => {
   it("scan job runs workflow after agent reply with zero inactivity", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
@@ -157,6 +157,123 @@ describe("customer unresponsive workflow", () => {
     });
     const body = (await messagesRes.json()) as { items: { plainText: string }[] };
     expect(body.items.some((m) => m.plainText.includes("Still there? Happy to help"))).toBe(true);
+
+    await store.close();
+  });
+
+  it("scan job runs teammate_unresponsive workflow after customer message with zero inactivity", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Escalate teammate response",
+        brandId: brand.id,
+        definition: {
+          trigger: "teammate_unresponsive",
+          inactivityMinutes: 0,
+          blocks: [
+            {
+              id: "nudge",
+              type: "tag_conversation",
+              tags: ["needs-teammate-response"],
+              mode: "append",
+            },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "w2",
+        subject: "Teammate unresponsive test",
+        initialMessage: { plainText: "Can someone help?" },
+      }),
+    });
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const stale = new Date(Date.now() - 60_000);
+    await db
+      .update(messages)
+      .set({ createdAt: stale })
+      .where(eq(messages.conversationId, conversation.id));
+    await db
+      .update(conversations)
+      .set({ lastMessageAt: stale })
+      .where(eq(conversations.id, conversation.id));
+
+    const scan = await app.request("/api/v1/workflows/jobs/scan-unresponsive", {
+      method: "POST",
+      headers: auth,
+    });
+    expect(scan.status).toBe(200);
+    const scanBody = (await scan.json()) as { triggered: number };
+    expect(scanBody.triggered).toBeGreaterThan(0);
+
+    const [updated] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id))
+      .limit(1);
+    expect(updated?.tags).toContain("needs-teammate-response");
 
     await store.close();
   });
