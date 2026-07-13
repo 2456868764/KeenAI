@@ -69,6 +69,28 @@ describe("runWorkflow", () => {
     expect(result.steps).toEqual([{ blockId: "note", type: "add_note", status: "ok" }]);
   });
 
+  it("runs mark_priority blocks through the priority handler", async () => {
+    const markPriority = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "priority", type: "mark_priority", priority: "urgent" }],
+      },
+      { sendMessage: vi.fn(), markPriority, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(markPriority).toHaveBeenCalledWith({ priority: "urgent" });
+    expect(result.steps).toEqual([
+      {
+        blockId: "priority",
+        type: "mark_priority",
+        status: "ok",
+        output: { priority: "urgent" },
+      },
+    ]);
+  });
+
   it("stops on first block error", async () => {
     const sendMessage = vi.fn(async () => {
       throw new Error("send_failed");

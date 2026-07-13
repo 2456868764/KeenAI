@@ -290,7 +290,7 @@ function triggerToEventFilter(def: WorkflowDef): string {
 | 集成 | `webhook_emit` 🆕 | 同步 | 出站 Webhook |
 | 集成 | `mcp_call` 🆕 | 同步 | 调 MCP server tool（详见 09-AGENT-ENGINE.md） |
 
-当前实现：`@keenai/workflow` 的 `WORKFLOW_BLOCK_TYPES` 与执行器已落地 `send_message`、`assign`、`close`、`let_keeni_answer`、`wait`、`http_request`、`branches`、`apply_rules`、`convert_to_ticket`、`link_ticket`、`send_ticket_update`、`collect_data`、`reply_buttons`、`snooze`、`csat`、`tag_conversation`、`add_note`。其中 `collect_data` / `reply_buttons` / `csat(waitForRating)` 支持挂起恢复，`add_note` 会写入 `agent + isInternal + sentVia=workflow` 的内部消息且不会反向触发 `teammate_added_note` workflow。其余 Block 仍待按表逐项补齐。
+当前实现：`@keenai/workflow` 的 `WORKFLOW_BLOCK_TYPES` 与执行器已落地 `send_message`、`assign`、`close`、`let_keeni_answer`、`wait`、`http_request`、`branches`、`apply_rules`、`convert_to_ticket`、`link_ticket`、`send_ticket_update`、`collect_data`、`reply_buttons`、`snooze`、`csat`、`tag_conversation`、`add_note`、`mark_priority`。其中 `collect_data` / `reply_buttons` / `csat(waitForRating)` 支持挂起恢复，`add_note` 会写入 `agent + isInternal + sentVia=workflow` 的内部消息且不会反向触发 `teammate_added_note` workflow，`mark_priority` 会更新 conversation priority。其余 Block 仍待按表逐项补齐。
 
 ### 4.2 Block 接口
 
@@ -1240,7 +1240,7 @@ export async function runShadow(def: WorkflowDef, sampleConvs: Conversation[]) {
 | Featurebase 特性 | KeenAI 状态 | 实现位置 |
 |----|:---:|----|
 | 13 种 Trigger | ✅ | § 3 |
-| 全部 Action Block | 🚧 | § 4（当前已落地 17 类，剩余逐项补齐） |
+| 全部 Action Block | 🚧 | § 4（当前已落地 18 类，剩余逐项补齐） |
 | Customer-facing vs Background 分类 + 排序互斥 | ✅ | § 7.2 |
 | Wait 可中断（customer / teammate reply / close） | ✅ | § 4.6 |
 | Branches 首匹配 vs Apply Rules 全匹配并行 | ✅ | § 4.4 |

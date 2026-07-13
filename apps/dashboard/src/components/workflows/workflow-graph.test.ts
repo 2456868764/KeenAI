@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { WorkflowDefinition } from "../../lib/api";
-import { blockCategory, collectWorkflowEdges, highlightBlocksFromRunSteps } from "./workflow-graph";
+import {
+  blockCategory,
+  blockLabel,
+  collectWorkflowEdges,
+  highlightBlocksFromRunSteps,
+} from "./workflow-graph";
 
 const base: WorkflowDefinition = {
   trigger: "first_message",
@@ -63,6 +68,14 @@ describe("blockCategory", () => {
       "condition",
     );
     expect(blockCategory({ id: "3", type: "wait", seconds: 1 })).toBe("action");
+  });
+});
+
+describe("blockLabel", () => {
+  it("labels mark_priority blocks", () => {
+    expect(blockLabel({ id: "p", type: "mark_priority", priority: "urgent" })).toBe(
+      "Priority → urgent",
+    );
   });
 });
 

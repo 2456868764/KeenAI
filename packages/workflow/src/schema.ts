@@ -10,6 +10,7 @@ import {
   letKeeniAnswerBlockSchema,
 } from "./blocks/let-keeni-answer.js";
 import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
+import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-priority.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
@@ -54,6 +55,13 @@ export {
   TICKET_LINK_TYPES,
   type LinkTicketBlock,
 } from "./blocks/link-ticket.js";
+export {
+  markPriorityBlockSchema,
+  WORKFLOW_PRIORITIES,
+  type MarkPriorityBlock,
+  type MarkPriorityInput,
+  type WorkflowPriority,
+} from "./blocks/mark-priority.js";
 export {
   csatBlockSchema,
   type CsatBlock,
@@ -125,6 +133,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "csat",
   "tag_conversation",
   "add_note",
+  "mark_priority",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -189,6 +198,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   csatBlockSchema,
   tagConversationBlockSchema,
   addNoteBlockSchema,
+  markPriorityBlockSchema,
 ]);
 
 export const pageViewRuleSchema = z.object({
@@ -330,6 +340,7 @@ export type WorkflowActionHandlers = {
   snooze?: (input: SnoozeInput) => Promise<void>;
   csat?: (input: CsatInput) => Promise<void>;
   tagConversation?: (input: TagConversationInput) => Promise<void>;
+  markPriority?: (input: MarkPriorityInput) => Promise<void>;
 };
 
 export type WorkflowStepResult = {
@@ -360,6 +371,7 @@ export type WorkflowStepResult = {
     ratingRequested?: boolean;
     tags?: string[];
     tagMode?: "append" | "replace";
+    priority?: MarkPriorityInput["priority"];
   };
 };
 

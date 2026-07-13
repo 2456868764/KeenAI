@@ -464,6 +464,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "send_message", plainText: "Hello!" });
         } else if (type === "add_note") {
           onAdd({ id, type: "add_note", plainText: "Internal note" });
+        } else if (type === "mark_priority") {
+          onAdd({ id, type: "mark_priority", priority: "high" });
         } else if (type === "assign") {
           onAdd({ id, type: "assign", assigneeId: null });
         } else if (type === "close") {
@@ -548,6 +550,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="">+ Add block</option>
       <option value="send_message">Send message</option>
       <option value="add_note">Add internal note</option>
+      <option value="mark_priority">Mark priority</option>
       <option value="assign">Assign</option>
       <option value="close">Close conversation</option>
       <option value="let_keeni_answer">Let Keeni answer</option>

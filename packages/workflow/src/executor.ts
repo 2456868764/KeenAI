@@ -48,6 +48,18 @@ async function executeBlock(
       if (!handlers.addNote) throw new Error("add_note_handler_missing");
       await handlers.addNote({ plainText: block.plainText });
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "mark_priority":
+      if (!handlers.markPriority) throw new Error("mark_priority_handler_missing");
+      await handlers.markPriority({ priority: block.priority });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { priority: block.priority },
+        },
+        nextId,
+      };
     case "assign":
       await handlers.assign(block.assigneeId ?? null);
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };

@@ -705,6 +705,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     snooze: async () => {},
     csat: async () => {},
     tagConversation: async () => {},
+    markPriority: async () => {},
   };
 }
 

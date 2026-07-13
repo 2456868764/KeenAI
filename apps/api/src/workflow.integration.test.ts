@@ -1129,7 +1129,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("tag_conversation and add_note blocks update the conversation", async () => {
+  it("tag_conversation, add_note, and mark_priority blocks update the conversation", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -1197,6 +1197,11 @@ describe("workflow integration", () => {
               tags: ["vip", "billing"],
               mode: "append",
             },
+            {
+              id: "priority",
+              type: "mark_priority",
+              priority: "urgent",
+            },
           ],
         },
       }),
@@ -1229,9 +1234,10 @@ describe("workflow integration", () => {
     });
     expect(fetched.status).toBe(200);
     const fetchedBody = (await fetched.json()) as {
-      conversation: { tags: string[] };
+      conversation: { tags: string[]; priority: string };
     };
     expect(fetchedBody.conversation.tags).toEqual(["existing", "vip", "billing"]);
+    expect(fetchedBody.conversation.priority).toBe("urgent");
 
     const noteRows = await db
       .select()

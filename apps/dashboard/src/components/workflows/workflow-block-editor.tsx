@@ -96,6 +96,24 @@ export function WorkflowBlockEditor({
         />
       ) : null}
 
+      {block.type === "mark_priority" ? (
+        <select
+          value={block.priority}
+          onChange={(e) =>
+            onChange({
+              ...block,
+              priority: e.target.value as "low" | "normal" | "high" | "urgent",
+            })
+          }
+          className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+        >
+          <option value="low">Low</option>
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      ) : null}
+
       {block.type === "assign" ? (
         <Input
           placeholder="Assignee member ID (optional)"

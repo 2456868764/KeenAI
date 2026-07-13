@@ -5,6 +5,7 @@ import { conversations, type workflows } from "@keenai/storage/schema";
 import type {
   CollectDataInput,
   CsatInput,
+  MarkPriorityInput,
   ReplyButtonsInput,
   SnoozeInput,
   TagConversationInput,
@@ -255,6 +256,12 @@ export function createWorkflowActionHandlers(
       await db
         .update(conversations)
         .set({ tags, updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
+    },
+    markPriority: async ({ priority }: MarkPriorityInput) => {
+      await db
+        .update(conversations)
+        .set({ priority, updatedAt: new Date() })
         .where(eq(conversations.id, conversationId));
     },
   };

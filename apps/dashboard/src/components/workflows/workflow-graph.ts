@@ -192,6 +192,8 @@ export function blockLabel(block: WorkflowBlock): string {
     }
     case "add_note":
       return block.plainText.length > 48 ? `${block.plainText.slice(0, 48)}…` : block.plainText;
+    case "mark_priority":
+      return `Priority → ${block.priority}`;
     case "assign":
       return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
     case "close":
