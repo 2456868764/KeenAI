@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
 import type { WorkflowDefinitionJson } from "../_shared/workflow-definition-json.js";
@@ -53,5 +53,30 @@ export const workflowRuns = sqliteTable(
   (t) => ({
     idxConv: index("idx_workflow_runs_conv").on(t.conversationId, t.createdAt),
     idxWorkflow: index("idx_workflow_runs_workflow").on(t.workflowId, t.createdAt),
+  }),
+);
+
+export const workflowVersions = sqliteTable(
+  "workflow_versions",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    workflowId: text("workflow_id")
+      .notNull()
+      .references(() => workflows.id),
+    version: integer("version").notNull(),
+    snapshot: text("snapshot", { mode: "json" }).$type<WorkflowDefinitionJson>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    idxWorkflow: index("idx_workflow_versions_workflow").on(t.workflowId, t.version),
+    uqWorkflowVersion: uniqueIndex("uq_workflow_versions_workflow_version").on(
+      t.workflowId,
+      t.version,
+    ),
   }),
 );

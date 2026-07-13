@@ -956,6 +956,8 @@ export const workflowsRouter = new Hono()
   .get('/templates',       listTemplates);
 ```
 
+当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 以 shadow/dry-run handler 执行，不发送真实消息。
+
 ### 8.3 关键交互
 
 - **拖拽**：`+ Add step` 在画布上的固定锚点出现 step 类型选择（与 Featurebase 一致，不可任意拖动节点）

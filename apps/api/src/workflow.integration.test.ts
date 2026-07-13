@@ -124,6 +124,20 @@ describe("workflow integration", () => {
     expect(body.items.some((m) => m.plainText === "Hello from workflow!")).toBe(true);
     expect(body.items.some((m) => m.sentVia === "workflow")).toBe(true);
 
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as { items: { id: string; status: string }[] };
+    expect(runsBody.items[0]?.status).toBe("completed");
+
+    const runRes = await app.request(
+      `/api/v1/workflows/${workflow.id}/runs/${runsBody.items[0]?.id}`,
+      { headers: auth },
+    );
+    expect(runRes.status).toBe(200);
+    const runBody = (await runRes.json()) as { run: { id: string; workflowId: string } };
+    expect(runBody.run.id).toBe(runsBody.items[0]?.id);
+    expect(runBody.run.workflowId).toBe(workflow.id);
+
     await store.close();
   });
 
@@ -1078,6 +1092,162 @@ describe("workflow integration", () => {
     });
     const msgBody = (await messages.json()) as { items: { plainText: string }[] };
     expect(msgBody.items.some((m) => m.plainText === "Thanks for your feedback!")).toBe(true);
+
+    await store.close();
+  });
+
+  it("manages workflow publish versions, rollback, dry-run, duplicate, and archive", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Lifecycle workflow",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [{ id: "reply", type: "send_message", plainText: "Version one" }],
+        },
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const createBody = (await createRes.json()) as { workflow: { id: string } };
+    const workflowId = createBody.workflow.id;
+
+    const publishOne = await app.request(`/api/v1/workflows/${workflowId}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishOne.status).toBe(200);
+    const publishOneBody = (await publishOne.json()) as { version: { version: number } };
+    expect(publishOneBody.version.version).toBe(1);
+
+    const updateRes = await app.request(`/api/v1/workflows/${workflowId}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        definition: {
+          trigger: "first_message",
+          blocks: [{ id: "reply", type: "send_message", plainText: "Version two" }],
+        },
+      }),
+    });
+    expect(updateRes.status).toBe(200);
+
+    const publishTwo = await app.request(`/api/v1/workflows/${workflowId}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishTwo.status).toBe(200);
+    const publishTwoBody = (await publishTwo.json()) as { version: { version: number } };
+    expect(publishTwoBody.version.version).toBe(2);
+
+    const versionsRes = await app.request(`/api/v1/workflows/${workflowId}/versions`, {
+      headers: auth,
+    });
+    expect(versionsRes.status).toBe(200);
+    const versionsBody = (await versionsRes.json()) as { items: { version: number }[] };
+    expect(versionsBody.items.map((item) => item.version)).toEqual([2, 1]);
+
+    const rollbackRes = await app.request(`/api/v1/workflows/${workflowId}/rollback/1`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(rollbackRes.status).toBe(200);
+    const rollbackBody = (await rollbackRes.json()) as {
+      workflow: { definition: { blocks: { plainText?: string }[] } };
+    };
+    expect(rollbackBody.workflow.definition.blocks[0]?.plainText).toBe("Version one");
+
+    const testRes = await app.request(`/api/v1/workflows/${workflowId}/test`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(testRes.status).toBe(200);
+    const testBody = (await testRes.json()) as {
+      mode: string;
+      result: { steps: { blockId: string; status: string }[] };
+    };
+    expect(testBody.mode).toBe("dry-run");
+    expect(testBody.result.steps[0]).toMatchObject({ blockId: "reply", status: "ok" });
+
+    const unpublishRes = await app.request(`/api/v1/workflows/${workflowId}/unpublish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(unpublishRes.status).toBe(200);
+    const unpublishBody = (await unpublishRes.json()) as { workflow: { status: string } };
+    expect(unpublishBody.workflow.status).toBe("draft");
+
+    const duplicateRes = await app.request(`/api/v1/workflows/${workflowId}/duplicate`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(duplicateRes.status).toBe(201);
+    const duplicateBody = (await duplicateRes.json()) as {
+      workflow: { id: string; name: string; status: string };
+    };
+    expect(duplicateBody.workflow.id).not.toBe(workflowId);
+    expect(duplicateBody.workflow.name).toContain("copy");
+    expect(duplicateBody.workflow.status).toBe("draft");
+
+    const deleteRes = await app.request(`/api/v1/workflows/${workflowId}`, {
+      method: "DELETE",
+      headers: auth,
+    });
+    expect(deleteRes.status).toBe(204);
+
+    const listRes = await app.request("/api/v1/workflows", { headers: auth });
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as { items: { id: string }[] };
+    expect(listBody.items.some((item) => item.id === workflowId)).toBe(false);
+    expect(listBody.items.some((item) => item.id === duplicateBody.workflow.id)).toBe(true);
 
     await store.close();
   });

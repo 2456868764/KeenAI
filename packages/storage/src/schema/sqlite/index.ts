@@ -141,4 +141,4 @@ export {
   type ChangelogEntryRow,
   type ChangelogEntryStatus,
 } from "./changelog";
-export { workflowRuns, workflows } from "./workflow";
+export { workflowRuns, workflowVersions, workflows } from "./workflow";

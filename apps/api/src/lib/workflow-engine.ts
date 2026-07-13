@@ -1,7 +1,12 @@
 import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
-import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
+import {
+  conversations,
+  workflowRuns,
+  type workflowVersions,
+  workflows,
+} from "@keenai/storage/schema";
 import { WORKFLOW_INNGEST_EVENTS, runWorkflow } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import {
@@ -135,6 +140,17 @@ export function serializeWorkflowRun(row: typeof workflowRuns.$inferSelect) {
     conversationId: row.conversationId,
     status: row.status,
     steps: row.steps,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export function serializeWorkflowVersion(row: typeof workflowVersions.$inferSelect) {
+  return {
+    id: row.id,
+    orgId: row.orgId,
+    workflowId: row.workflowId,
+    version: row.version,
+    snapshot: row.snapshot,
     createdAt: row.createdAt.toISOString(),
   };
 }
