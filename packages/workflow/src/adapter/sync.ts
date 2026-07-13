@@ -7,6 +7,7 @@ export function createSyncWorkflowDispatch(
     mode: "sync",
     dispatchFirstMessage: handlers.dispatchFirstMessage,
     dispatchConversationTrigger: handlers.dispatchConversationTrigger,
+    dispatchTicketTrigger: handlers.dispatchTicketTrigger,
     scanCustomerUnresponsive: handlers.scanCustomerUnresponsive,
   };
 }

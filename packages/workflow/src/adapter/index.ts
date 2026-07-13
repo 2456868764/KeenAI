@@ -21,6 +21,8 @@ export type {
   WorkflowConversationTriggerContext,
   WorkflowDispatchContext,
   WorkflowDispatchHandlers,
+  WorkflowTicketTrigger,
+  WorkflowTicketTriggerContext,
   UnresponsiveScanSummary,
 } from "./types.js";
 export { createSyncWorkflowDispatch } from "./sync.js";

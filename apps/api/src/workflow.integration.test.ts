@@ -1700,4 +1700,158 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("runs ticket created and ticket state changed workflow triggers for linked conversations", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+    const [conversationRow] = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "ticket-trigger-1",
+        status: "open",
+        subject: "Ticket trigger target",
+      })
+      .returning();
+    const conversation = requireRow(conversationRow, "conversation");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    async function createAndPublishWorkflow(input: {
+      name: string;
+      trigger: string;
+      tags: string[];
+    }) {
+      const createRes = await app.request("/api/v1/workflows", {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: input.name,
+          brandId: brand.id,
+          definition: {
+            trigger: input.trigger,
+            blocks: [
+              {
+                id: "tag",
+                type: "tag_conversation",
+                tags: input.tags,
+                mode: "append",
+              },
+            ],
+          },
+        }),
+      });
+      expect(createRes.status).toBe(201);
+      const createBody = (await createRes.json()) as { workflow: { id: string } };
+      const publishRes = await app.request(`/api/v1/workflows/${createBody.workflow.id}/publish`, {
+        method: "POST",
+        headers: auth,
+      });
+      expect(publishRes.status).toBe(200);
+      return createBody.workflow.id;
+    }
+
+    const createdWorkflowId = await createAndPublishWorkflow({
+      name: "Ticket created tag",
+      trigger: "ticket_created",
+      tags: ["ticket-created"],
+    });
+    const stateWorkflowId = await createAndPublishWorkflow({
+      name: "Ticket state tag",
+      trigger: "ticket_state_changed",
+      tags: ["ticket-state-changed"],
+    });
+
+    const ticketRes = await app.request("/api/v1/tickets/from-conversation", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversationId: conversation.id,
+        title: "Workflow linked ticket",
+      }),
+    });
+    expect(ticketRes.status).toBe(201);
+    const ticketBody = (await ticketRes.json()) as { ticket: { id: string } };
+
+    const statusesRes = await app.request("/api/v1/tickets/meta/statuses", { headers: auth });
+    expect(statusesRes.status).toBe(200);
+    const statusesBody = (await statusesRes.json()) as {
+      items: { id: string; category: string; isDefault?: boolean }[];
+    };
+    const nextStatus =
+      statusesBody.items.find((status) => status.category === "done") ??
+      statusesBody.items.find((status) => !status.isDefault);
+    expect(nextStatus?.id).toBeTruthy();
+
+    const statusRes = await app.request(`/api/v1/tickets/${ticketBody.ticket.id}/status`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ statusId: nextStatus?.id }),
+    });
+    expect(statusRes.status).toBe(200);
+
+    const [updatedConversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id))
+      .limit(1);
+    expect(updatedConversation?.tags).toEqual(
+      expect.arrayContaining(["ticket-created", "ticket-state-changed"]),
+    );
+
+    for (const workflowId of [createdWorkflowId, stateWorkflowId]) {
+      const runsRes = await app.request(`/api/v1/workflows/${workflowId}/runs`, {
+        headers: auth,
+      });
+      expect(runsRes.status).toBe(200);
+      const runsBody = (await runsRes.json()) as { items: { status: string }[] };
+      expect(runsBody.items[0]?.status).toBe("completed");
+    }
+
+    await store.close();
+  });
 });

@@ -16,6 +16,7 @@ import { notifyTicketStatusChange } from "../lib/ticket-notify.js";
 import {
   createTicketFromConversation,
   ensureOrgTicketDefaults,
+  getConversationTicketId,
   getTicketForOrg,
   linkTickets,
   listTicketEventsForTicket,
@@ -31,6 +32,15 @@ import type { AppVariables } from "../types.js";
 export function ticketRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/tickets`;
+
+  async function dispatchTicketTrigger(input: {
+    orgId: string;
+    ticketId: string;
+    trigger: "ticket_created" | "ticket_state_changed";
+  }) {
+    const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+    await getWorkflowDispatch().dispatchTicketTrigger(input);
+  }
 
   r.get(prefix, requireAuth(), zValidator("query", listTicketsSchema), async (c) => {
     const auth = c.get("auth");
@@ -68,12 +78,20 @@ export function ticketRoutes() {
 
     if (body.conversationId) {
       try {
+        const existingTicketId = await getConversationTicketId(db, auth.orgId, body.conversationId);
         const ticket = await createTicketFromConversation(db, {
           orgId: auth.orgId,
           conversationId: body.conversationId,
           reporterId: auth.memberId,
           title: body.title,
         });
+        if (!existingTicketId) {
+          await dispatchTicketTrigger({
+            orgId: auth.orgId,
+            ticketId: ticket.id,
+            trigger: "ticket_created",
+          });
+        }
         return c.json({ ticket }, 201);
       } catch (err) {
         if (err instanceof Error && err.message === "conversation_not_found") {
@@ -108,6 +126,11 @@ export function ticketRoutes() {
     });
 
     const ticket = await loadTicketMeta(db, row);
+    await dispatchTicketTrigger({
+      orgId: auth.orgId,
+      ticketId: ticket.id,
+      trigger: "ticket_created",
+    });
     return c.json({ ticket }, 201);
   });
 
@@ -122,12 +145,24 @@ export function ticketRoutes() {
       const body = c.req.valid("json");
 
       try {
+        const existingTicketId = await getConversationTicketId(
+          c.get("store").db,
+          auth.orgId,
+          body.conversationId,
+        );
         const ticket = await createTicketFromConversation(c.get("store").db, {
           orgId: auth.orgId,
           conversationId: body.conversationId,
           reporterId: auth.memberId,
           title: body.title,
         });
+        if (!existingTicketId) {
+          await dispatchTicketTrigger({
+            orgId: auth.orgId,
+            ticketId: ticket.id,
+            trigger: "ticket_created",
+          });
+        }
         return c.json({ ticket }, 201);
       } catch (err) {
         if (err instanceof Error && err.message === "conversation_not_found") {
@@ -202,6 +237,7 @@ export function ticketRoutes() {
 
       const body = c.req.valid("json");
       try {
+        const existing = await getTicketForOrg(c.get("store").db, c.req.param("id"), auth.orgId);
         const ticket = await transitionTicketStatus(c.get("store").db, {
           ticketId: c.req.param("id"),
           orgId: auth.orgId,
@@ -209,6 +245,13 @@ export function ticketRoutes() {
           actorId: auth.memberId,
         });
         if (!ticket) return c.json({ error: "not_found" }, 404);
+        if (existing && body.statusId !== existing.statusId) {
+          await dispatchTicketTrigger({
+            orgId: auth.orgId,
+            ticketId: ticket.id,
+            trigger: "ticket_state_changed",
+          });
+        }
 
         if (ticket.statusName && ticket.customerId) {
           try {
@@ -254,6 +297,11 @@ export function ticketRoutes() {
           actorId: auth.memberId,
         });
         if (!transitioned) return c.json({ error: "not_found" }, 404);
+        await dispatchTicketTrigger({
+          orgId: auth.orgId,
+          ticketId: transitioned.id,
+          trigger: "ticket_state_changed",
+        });
         existing = (await getTicketForOrg(db, existing.id, auth.orgId)) ?? existing;
       } catch (err) {
         if (err instanceof Error && err.message === "status_not_found") {

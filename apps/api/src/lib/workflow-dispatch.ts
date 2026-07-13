@@ -10,6 +10,7 @@ import type { AppContext } from "../types.js";
 import {
   dispatchConversationTriggerWorkflows,
   dispatchFirstMessageWorkflows,
+  dispatchTicketTriggerWorkflows,
 } from "./workflow-engine.js";
 import { resumeCollectDataWorkflow, resumeReplyButtonsWorkflow } from "./workflow-resume.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
@@ -28,6 +29,9 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
     },
     dispatchConversationTrigger: async (input) => {
       await dispatchConversationTriggerWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
+    },
+    dispatchTicketTrigger: async (input) => {
+      await dispatchTicketTriggerWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
     },
     scanCustomerUnresponsive: (orgId) =>
       scanCustomerUnresponsiveWorkflows(ctx.store.db, {

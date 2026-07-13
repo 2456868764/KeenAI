@@ -64,6 +64,8 @@ export {
   type WorkflowConversationTriggerContext,
   type WorkflowDispatchContext,
   type WorkflowDispatchHandlers,
+  type WorkflowTicketTrigger,
+  type WorkflowTicketTriggerContext,
   type UnresponsiveScanSummary,
 } from "./adapter/index.js";
 export {

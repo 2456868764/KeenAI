@@ -1,6 +1,7 @@
 export const WORKFLOW_INNGEST_EVENTS = {
   FIRST_MESSAGE: "keenai/workflow.first_message",
   CONVERSATION_TRIGGER: "keenai/workflow.conversation_trigger",
+  TICKET_TRIGGER: "keenai/workflow.ticket_trigger",
   SCAN_UNRESPONSIVE: "keenai/workflow.scan_unresponsive",
   STEP_AWAITING_INPUT: "keenai/workflow.step_awaiting_input",
   CSAT_REQUEST: "keenai/workflow.csat_request",
@@ -26,6 +27,9 @@ export function createInngestWorkflowDispatch(
     },
     dispatchConversationTrigger: async (ctx) => {
       await send({ name: WORKFLOW_INNGEST_EVENTS.CONVERSATION_TRIGGER, data: ctx });
+    },
+    dispatchTicketTrigger: async (ctx) => {
+      await send({ name: WORKFLOW_INNGEST_EVENTS.TICKET_TRIGGER, data: ctx });
     },
     scanCustomerUnresponsive: async (orgId) => {
       await send({

@@ -13,8 +13,17 @@ export type WorkflowConversationTrigger =
   | "assigned_to_team"
   | "assigned_to_member";
 
+export type WorkflowTicketTrigger = "ticket_created" | "ticket_state_changed";
+
 export type WorkflowConversationTriggerContext = WorkflowDispatchContext & {
   trigger: WorkflowConversationTrigger;
+  facts?: WorkflowRunContext["facts"];
+};
+
+export type WorkflowTicketTriggerContext = {
+  orgId: string;
+  ticketId: string;
+  trigger: WorkflowTicketTrigger;
   facts?: WorkflowRunContext["facts"];
 };
 
@@ -29,6 +38,7 @@ export type UnresponsiveScanSummary = {
 export type WorkflowDispatchHandlers = {
   dispatchFirstMessage(ctx: WorkflowDispatchContext): Promise<void>;
   dispatchConversationTrigger(ctx: WorkflowConversationTriggerContext): Promise<void>;
+  dispatchTicketTrigger(ctx: WorkflowTicketTriggerContext): Promise<void>;
   scanCustomerUnresponsive(orgId?: string): Promise<Omit<UnresponsiveScanSummary, "mode">>;
 };
 

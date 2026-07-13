@@ -6,6 +6,7 @@ describe("workflow dispatch adapters", () => {
   it("sync adapter runs handlers inline", async () => {
     const dispatchFirstMessage = vi.fn(async () => {});
     const dispatchConversationTrigger = vi.fn(async () => {});
+    const dispatchTicketTrigger = vi.fn(async () => {});
     const scanCustomerUnresponsive = vi.fn(async () => ({
       scanned: 1,
       triggered: 2,
@@ -15,6 +16,7 @@ describe("workflow dispatch adapters", () => {
     const adapter = createSyncWorkflowDispatch({
       dispatchFirstMessage,
       dispatchConversationTrigger,
+      dispatchTicketTrigger,
       scanCustomerUnresponsive,
     });
 
@@ -29,11 +31,17 @@ describe("workflow dispatch adapters", () => {
       conversationId: "c1",
       trigger: "any_message",
     });
+    await adapter.dispatchTicketTrigger({
+      orgId: "o1",
+      ticketId: "t1",
+      trigger: "ticket_created",
+    });
     const result = await adapter.scanCustomerUnresponsive("o1");
 
     expect(adapter.mode).toBe("sync");
     expect(dispatchFirstMessage).toHaveBeenCalledOnce();
     expect(dispatchConversationTrigger).toHaveBeenCalledOnce();
+    expect(dispatchTicketTrigger).toHaveBeenCalledOnce();
     expect(result.triggered).toBe(2);
   });
 
@@ -42,6 +50,7 @@ describe("workflow dispatch adapters", () => {
     const handlers = {
       dispatchFirstMessage: vi.fn(async () => {}),
       dispatchConversationTrigger: vi.fn(async () => {}),
+      dispatchTicketTrigger: vi.fn(async () => {}),
       scanCustomerUnresponsive: vi.fn(async () => ({ triggered: 1 })),
     };
 
@@ -58,6 +67,11 @@ describe("workflow dispatch adapters", () => {
       trigger: "conversation_state_changed",
       facts: { conversationStatus: "closed" },
     });
+    await adapter.dispatchTicketTrigger({
+      orgId: "o1",
+      ticketId: "t1",
+      trigger: "ticket_state_changed",
+    });
     const result = await adapter.scanCustomerUnresponsive("o1");
 
     expect(adapter.mode).toBe("inngest");
@@ -73,6 +87,14 @@ describe("workflow dispatch adapters", () => {
         conversationId: "c1",
         trigger: "conversation_state_changed",
         facts: { conversationStatus: "closed" },
+      },
+    });
+    expect(send).toHaveBeenCalledWith({
+      name: WORKFLOW_INNGEST_EVENTS.TICKET_TRIGGER,
+      data: {
+        orgId: "o1",
+        ticketId: "t1",
+        trigger: "ticket_state_changed",
       },
     });
     expect(result.queued).toBe(true);

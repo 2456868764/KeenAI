@@ -3,6 +3,8 @@ import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import {
   conversations,
+  ticketConversations,
+  tickets,
   workflowRuns,
   type workflowVersions,
   workflows,
@@ -11,6 +13,7 @@ import {
   WORKFLOW_INNGEST_EVENTS,
   type WorkflowConversationTrigger,
   type WorkflowRunContext,
+  type WorkflowTicketTrigger,
   runWorkflow,
 } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
@@ -135,7 +138,7 @@ export async function dispatchConversationTriggerWorkflows(
     orgId: string;
     brandId: string;
     conversationId: string;
-    trigger: WorkflowConversationTrigger | "first_message";
+    trigger: WorkflowConversationTrigger | WorkflowTicketTrigger | "first_message";
     facts?: WorkflowRunContext["facts"];
   },
   env: ApiEnv,
@@ -162,6 +165,57 @@ export async function dispatchConversationTriggerWorkflows(
     if (run) runs.push(run);
   }
   return runs;
+}
+
+export async function dispatchTicketTriggerWorkflows(
+  db: Db,
+  input: {
+    orgId: string;
+    ticketId: string;
+    trigger: WorkflowTicketTrigger;
+    facts?: WorkflowRunContext["facts"];
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+) {
+  const [ticket] = await db
+    .select()
+    .from(tickets)
+    .where(and(eq(tickets.id, input.ticketId), eq(tickets.orgId, input.orgId)))
+    .limit(1);
+  if (!ticket) return [];
+
+  const [link] = await db
+    .select({ conversationId: ticketConversations.conversationId })
+    .from(ticketConversations)
+    .where(eq(ticketConversations.ticketId, input.ticketId))
+    .limit(1);
+  if (!link) return [];
+
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, link.conversationId), eq(conversations.orgId, input.orgId)))
+    .limit(1);
+  if (!conversation) return [];
+
+  return dispatchConversationTriggerWorkflows(
+    db,
+    {
+      orgId: input.orgId,
+      brandId: conversation.brandId,
+      conversationId: conversation.id,
+      trigger: input.trigger,
+      facts: {
+        channelType: conversation.channelType,
+        priority: ticket.priority ?? conversation.priority ?? "normal",
+        conversationStatus: conversation.status,
+        ...input.facts,
+      },
+    },
+    env,
+    authConfig,
+  );
 }
 
 export function serializeWorkflowRun(row: typeof workflowRuns.$inferSelect) {
