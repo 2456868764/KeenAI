@@ -5,6 +5,7 @@ import {
   presignUploadSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
+  widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
   widgetWorkflowButtonSchema,
@@ -120,6 +121,65 @@ export function widgetRoutes() {
         { conversation: result.conversation, message: result.message, created: true },
         201,
       );
+    },
+  );
+
+  r.post(
+    `${prefix}/page-view`,
+    requireWidgetAuth(),
+    zValidator("json", widgetPageViewSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const db = c.get("store").db;
+
+      const existing = await findOpenWidgetConversation(db, auth.orgId, auth.brandId, auth.sub);
+      let conversation = existing ? serializeConversation(existing) : null;
+      let created = false;
+
+      if (!conversation) {
+        const result = await createWidgetConversation(db, {
+          orgId: auth.orgId,
+          brandId: auth.brandId,
+          userId: auth.sub,
+          subject: body.title ? `Page view: ${body.title}` : "Page view",
+        });
+        conversation = result.conversation;
+        created = true;
+      }
+
+      await recordConversationEvent(db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        eventType: "widget.page_viewed",
+        actorType: "user",
+        actorId: auth.sub,
+        payload: {
+          url: body.url,
+          title: body.title,
+          timeOnPageSec: body.timeOnPageSec ?? 0,
+        },
+      });
+
+      const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+      await getWorkflowDispatch().dispatchConversationTrigger({
+        orgId: auth.orgId,
+        brandId: auth.brandId,
+        conversationId: conversation.id,
+        trigger: "page_view",
+        facts: {
+          channelType: conversation.channelType,
+          priority: conversation.priority ?? "normal",
+          conversationStatus: conversation.status,
+          pageUrl: body.url,
+          pageTitle: body.title,
+          timeOnPageSec: body.timeOnPageSec ?? 0,
+        },
+      });
+
+      return c.json({ conversation, created, dispatched: true }, created ? 201 : 200);
     },
   );
 

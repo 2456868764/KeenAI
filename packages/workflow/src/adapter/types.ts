@@ -7,6 +7,7 @@ export type WorkflowDispatchContext = {
 };
 
 export type WorkflowConversationTrigger =
+  | "page_view"
   | "new_messenger_conversation"
   | "any_message"
   | "teammate_message"

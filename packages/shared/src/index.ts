@@ -23,6 +23,7 @@ export {
 export {
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
+  widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
   widgetUserSchema,

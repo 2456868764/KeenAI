@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WORKFLOW_TRIGGERS } from "./schema.js";
+import { WORKFLOW_TRIGGERS, workflowDefinitionSchema } from "./schema.js";
 import { DEFAULT_CUSTOMER_UNRESPONSIVE_MINUTES, resolveInactivityMs } from "./triggers.js";
 
 describe("resolveInactivityMs", () => {
@@ -44,5 +44,18 @@ describe("resolveInactivityMs", () => {
 
   it("allows zero for immediate scan eligibility", () => {
     expect(resolveInactivityMs({ trigger: "customer_unresponsive", inactivityMinutes: 0 })).toBe(0);
+  });
+
+  it("accepts page_view URL rules", () => {
+    const parsed = workflowDefinitionSchema.parse({
+      trigger: "page_view",
+      pageRules: [{ urlOp: "contains", url: "/pricing", timeOnPageSec: 5 }],
+      blocks: [{ id: "reply", type: "send_message", plainText: "Need help?" }],
+    });
+    expect(parsed.pageRules?.[0]).toMatchObject({
+      urlOp: "contains",
+      url: "/pricing",
+      timeOnPageSec: 5,
+    });
   });
 });

@@ -12,6 +12,7 @@ import {
 import {
   WORKFLOW_INNGEST_EVENTS,
   type WorkflowConversationTrigger,
+  type WorkflowDefinition,
   type WorkflowRunContext,
   type WorkflowTicketTrigger,
   runWorkflow,
@@ -29,6 +30,31 @@ import {
 } from "./workflow-resume.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
+
+function pageUrlMatches(rule: NonNullable<WorkflowDefinition["pageRules"]>[number], url: string) {
+  if (rule.urlOp === "eq") return url === rule.url;
+  if (rule.urlOp === "contains") return url.includes(rule.url);
+  try {
+    return new RegExp(rule.url).test(url);
+  } catch {
+    return false;
+  }
+}
+
+function workflowMatchesPageView(
+  definition: WorkflowDefinition,
+  facts?: WorkflowRunContext["facts"],
+) {
+  const rules = definition.pageRules ?? [];
+  if (rules.length === 0) return true;
+  const pageUrl = facts?.pageUrl;
+  if (!pageUrl) return false;
+  const timeOnPageSec = facts?.timeOnPageSec ?? 0;
+  return rules.some((rule) => {
+    if (!pageUrlMatches(rule, pageUrl)) return false;
+    return rule.timeOnPageSec === undefined || timeOnPageSec >= rule.timeOnPageSec;
+  });
+}
 
 export async function executeWorkflow(
   db: Db,
@@ -159,6 +185,10 @@ export async function dispatchConversationTriggerWorkflows(
   const runs = [];
   for (const workflow of rows) {
     if (workflow.brandId && workflow.brandId !== input.brandId) continue;
+    const definition = resolveActiveWorkflowDefinition(workflow);
+    if (input.trigger === "page_view" && !workflowMatchesPageView(definition, input.facts)) {
+      continue;
+    }
     const run = await executeWorkflow(db, workflow, input.conversationId, env, authConfig, {
       facts: input.facts,
     });

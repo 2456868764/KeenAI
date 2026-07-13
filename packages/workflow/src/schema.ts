@@ -183,11 +183,19 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   tagConversationBlockSchema,
 ]);
 
+export const pageViewRuleSchema = z.object({
+  urlOp: z.enum(["contains", "eq", "matches"]),
+  url: z.string().min(1).max(2048),
+  timeOnPageSec: z.number().int().min(0).max(86_400).optional(),
+});
+
 export const workflowDefinitionSchema = z
   .object({
     trigger: z.enum(WORKFLOW_TRIGGERS),
     /** Minutes of customer silence after agent reply (customer_unresponsive only). */
     inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
+    /** Page URL rules for page_view workflows. Empty or omitted means every page view. */
+    pageRules: z.array(pageViewRuleSchema).max(16).optional(),
     blocks: z.array(workflowBlockSchema).min(1).max(32),
   })
   .superRefine((val, ctx) => {
@@ -206,6 +214,7 @@ export const workflowDefinitionSchema = z
   });
 
 export type WorkflowBlock = z.infer<typeof workflowBlockSchema>;
+export type PageViewRule = z.infer<typeof pageViewRuleSchema>;
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
 
 export const createWorkflowBodySchema = z.object({

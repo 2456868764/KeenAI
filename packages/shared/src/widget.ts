@@ -24,6 +24,12 @@ export const widgetCreateConversationSchema = z.object({
     .optional(),
 });
 
+export const widgetPageViewSchema = z.object({
+  url: z.string().url().max(2048),
+  title: z.string().max(500).optional(),
+  timeOnPageSec: z.number().int().min(0).max(86_400).optional(),
+});
+
 export const widgetPostMessageSchema = z
   .object({
     plainText: z.string().max(20_000).optional(),

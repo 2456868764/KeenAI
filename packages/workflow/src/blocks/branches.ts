@@ -30,6 +30,9 @@ export type WorkflowFacts = {
   channelType?: string;
   priority?: string;
   conversationStatus?: string;
+  pageUrl?: string;
+  pageTitle?: string;
+  timeOnPageSec?: number;
 };
 
 export function evaluateBranchCondition(
