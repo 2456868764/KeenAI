@@ -75,6 +75,30 @@ describe("MessagesPanel", () => {
     expect(fetchAttachmentBlob).toHaveBeenCalledWith("att-voice");
   });
 
+  it("disables customer replies without submitting messages", () => {
+    const container = document.createElement("div");
+    const onSend = vi.fn(async () => {});
+
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend,
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
+    panel.setCustomerReplyDisabled(true);
+
+    const form = container.querySelector("form") as HTMLFormElement;
+    const input = container.querySelector(".keenai-input") as HTMLInputElement;
+    input.value = "hello";
+    form.requestSubmit();
+
+    expect(input.disabled).toBe(true);
+    expect(input.placeholder).toBe("Replies are disabled");
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
   it("renders video and file attachments", async () => {
     const container = document.createElement("div");
     const fetchAttachmentBlob = vi.fn(async (id: string) => `blob:${id}`);

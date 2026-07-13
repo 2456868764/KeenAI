@@ -382,6 +382,29 @@ export function createWorkflowActionHandlers(
         isAgentReply: true,
       });
     },
+    disableCustomerReply: async (input) => {
+      const [row] = await db
+        .select({ attributes: conversations.attributes })
+        .from(conversations)
+        .where(eq(conversations.id, conversationId))
+        .limit(1);
+      const { workflowCustomerReplyDisabledReason: _previousReason, ...restAttributes } =
+        row?.attributes ?? {};
+      const nextAttributes = {
+        ...restAttributes,
+        workflowCustomerReplyDisabled: input.disabled,
+        ...(input.disabled && input.reason
+          ? { workflowCustomerReplyDisabledReason: input.reason }
+          : {}),
+      };
+
+      await db
+        .update(conversations)
+        .set({ attributes: nextAttributes, updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
+
+      return { disabled: input.disabled, reason: input.reason };
+    },
     snooze: async ({ minutes }) => {
       const until = new Date(Date.now() + minutes * 60_000);
       await db

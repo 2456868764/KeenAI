@@ -113,6 +113,9 @@ describe("blockLabel", () => {
     expect(
       blockLabel({ id: "reply-time", type: "show_expected_reply_time", fallbackMinutes: 90 }),
     ).toBe("Expected reply: 90 min");
+    expect(blockLabel({ id: "disable", type: "disable_customer_reply", disabled: true })).toBe(
+      "Disable customer replies",
+    );
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );

@@ -41,6 +41,17 @@ import {
 import { requireWidgetAuth } from "../middleware/widget-auth.js";
 import type { AppVariables } from "../types.js";
 
+function isCustomerReplyDisabled(attributes: Record<string, unknown> | null | undefined): boolean {
+  return attributes?.workflowCustomerReplyDisabled === true;
+}
+
+function serializeWidgetConversation(row: typeof conversations.$inferSelect) {
+  return {
+    ...serializeConversation(row),
+    customerReplyDisabled: isCustomerReplyDisabled(row.attributes),
+  };
+}
+
 export function widgetRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
   const prefix = `/api/${API_VERSION}/widget`;
@@ -91,7 +102,7 @@ export function widgetRoutes() {
 
       const existing = await findOpenWidgetConversation(db, auth.orgId, auth.brandId, auth.sub);
       if (existing) {
-        return c.json({ conversation: serializeConversation(existing), created: false });
+        return c.json({ conversation: serializeWidgetConversation(existing), created: false });
       }
 
       const result = await createWidgetConversation(db, {
@@ -118,7 +129,14 @@ export function widgetRoutes() {
       }
 
       return c.json(
-        { conversation: result.conversation, message: result.message, created: true },
+        {
+          conversation: {
+            ...result.conversation,
+            customerReplyDisabled: isCustomerReplyDisabled(result.conversation.attributes),
+          },
+          message: result.message,
+          created: true,
+        },
         201,
       );
     },
@@ -196,7 +214,7 @@ export function widgetRoutes() {
     if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
     if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
 
-    return c.json({ conversation: serializeConversation(conversation) });
+    return c.json({ conversation: serializeWidgetConversation(conversation) });
   });
 
   r.get(`${prefix}/conversations/:id/messages`, requireWidgetAuth(), async (c) => {
@@ -289,6 +307,9 @@ export function widgetRoutes() {
       const denied = assertWidgetConversation(conversation, auth);
       if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
       if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+      if (isCustomerReplyDisabled(conversation.attributes)) {
+        return c.json({ error: "customer_reply_disabled" }, 409);
+      }
 
       const body = c.req.valid("json");
       const result = await insertMessage(c.get("store").db, {

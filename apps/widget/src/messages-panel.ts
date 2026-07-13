@@ -21,8 +21,10 @@ export class MessagesPanel {
   readonly #form: HTMLFormElement;
   readonly #input: HTMLInputElement;
   readonly #fileInput: HTMLInputElement;
+  readonly #attachBtn: HTMLButtonElement;
   readonly #sendBtn: HTMLButtonElement;
   #sending = false;
+  #customerReplyDisabled = false;
 
   constructor(private readonly opts: MessagesPanelOptions) {
     this.#listEl = document.createElement("div");
@@ -44,19 +46,19 @@ export class MessagesPanel {
     this.#fileInput.accept = "image/*";
     this.#fileInput.hidden = true;
 
-    const attachBtn = document.createElement("button");
-    attachBtn.type = "button";
-    attachBtn.className = "keenai-attach";
-    attachBtn.textContent = "📷";
-    attachBtn.setAttribute("aria-label", "Attach image");
-    attachBtn.addEventListener("click", () => this.#fileInput.click());
+    this.#attachBtn = document.createElement("button");
+    this.#attachBtn.type = "button";
+    this.#attachBtn.className = "keenai-attach";
+    this.#attachBtn.textContent = "📷";
+    this.#attachBtn.setAttribute("aria-label", "Attach image");
+    this.#attachBtn.addEventListener("click", () => this.#fileInput.click());
 
     this.#sendBtn = document.createElement("button");
     this.#sendBtn.type = "submit";
     this.#sendBtn.className = "keenai-send";
     this.#sendBtn.textContent = "Send";
 
-    this.#form.append(attachBtn, this.#input, this.#sendBtn);
+    this.#form.append(this.#attachBtn, this.#input, this.#sendBtn);
     this.opts.container.append(this.#listEl, this.#form, this.#fileInput);
 
     this.#form.addEventListener("submit", (e) => void this.#onSubmit(e));
@@ -77,9 +79,23 @@ export class MessagesPanel {
 
   setSending(sending: boolean) {
     this.#sending = sending;
-    this.#input.disabled = sending;
-    this.#sendBtn.disabled = sending;
-    this.#sendBtn.textContent = sending ? "…" : "Send";
+    this.#updateComposerState();
+  }
+
+  setCustomerReplyDisabled(disabled: boolean) {
+    this.#customerReplyDisabled = disabled;
+    this.#updateComposerState();
+  }
+
+  #updateComposerState() {
+    const disabled = this.#sending || this.#customerReplyDisabled;
+    this.#input.disabled = disabled;
+    this.#attachBtn.disabled = disabled;
+    this.#sendBtn.disabled = disabled;
+    this.#input.placeholder = this.#customerReplyDisabled
+      ? "Replies are disabled"
+      : "Type a message…";
+    this.#sendBtn.textContent = this.#sending ? "…" : "Send";
   }
 
   #append(msg: MessageRow) {
@@ -171,7 +187,7 @@ export class MessagesPanel {
   async #onSubmit(e: Event) {
     e.preventDefault();
     const text = this.#input.value.trim();
-    if (!text || this.#sending) return;
+    if (!text || this.#sending || this.#customerReplyDisabled) return;
     this.#input.value = "";
     this.setSending(true);
     try {
@@ -185,7 +201,7 @@ export class MessagesPanel {
   async #onFileSelected() {
     const file = this.#fileInput.files?.[0];
     this.#fileInput.value = "";
-    if (!file || this.#sending) return;
+    if (!file || this.#sending || this.#customerReplyDisabled) return;
     this.setSending(true);
     try {
       const attachmentId = await this.opts.onUploadImage(file);

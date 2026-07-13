@@ -12,6 +12,7 @@ export type WidgetConversation = {
   id: string;
   status: string;
   subject: string | null;
+  customerReplyDisabled?: boolean;
 };
 
 export type WidgetMessage = WidgetMessagePayload & {

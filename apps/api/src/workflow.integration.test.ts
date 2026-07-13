@@ -1136,6 +1136,139 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("disable_customer_reply blocks prevent later widget customer messages", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const workflowRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Disable replies",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "disable",
+              type: "disable_customer_reply",
+              disabled: true,
+              reason: "A teammate is reviewing this conversation.",
+            },
+          ],
+        },
+      }),
+    });
+    expect(workflowRes.status).toBe(201);
+    const { workflow } = (await workflowRes.json()) as { workflow: { id: string } };
+    const publishRes = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-disabled-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash, email: "disabled@test.local" },
+      }),
+    });
+    expect(sessionRes.status).toBe(200);
+    const session = (await sessionRes.json()) as { accessToken: string };
+    const widgetAuth = { Authorization: `Bearer ${session.accessToken}` };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ initialMessage: { plainText: "Hi" } }),
+    });
+    expect(convRes.status).toBe(201);
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const widgetConversationRes = await app.request(
+      `/api/v1/widget/conversations/${conversation.id}`,
+      { headers: widgetAuth },
+    );
+    expect(widgetConversationRes.status).toBe(200);
+    const widgetConversationBody = (await widgetConversationRes.json()) as {
+      conversation: { customerReplyDisabled?: boolean };
+    };
+    expect(widgetConversationBody.conversation.customerReplyDisabled).toBe(true);
+
+    const blockedMessageRes = await app.request(
+      `/api/v1/widget/conversations/${conversation.id}/messages`,
+      {
+        method: "POST",
+        headers: { ...widgetAuth, "Content-Type": "application/json" },
+        body: JSON.stringify({ plainText: "Can I add more details?" }),
+      },
+    );
+    expect(blockedMessageRes.status).toBe(409);
+    expect(await blockedMessageRes.json()).toMatchObject({ error: "customer_reply_disabled" });
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: { steps: { type: string; output?: { customerReplyDisabled?: boolean } }[] }[];
+    };
+    const disableStep = runsBody.items[0]?.steps.find(
+      (step) => step.type === "disable_customer_reply",
+    );
+    expect(disableStep?.output?.customerReplyDisabled).toBe(true);
+
+    await store.close();
+  });
+
   it("collect_data suspends until widget submits workflow input", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

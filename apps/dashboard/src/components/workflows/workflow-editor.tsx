@@ -541,6 +541,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
               { id: "support", label: "Support", nextId: null },
             ],
           });
+        } else if (type === "disable_customer_reply") {
+          onAdd({ id, type: "disable_customer_reply", disabled: true });
         } else if (type === "snooze") {
           onAdd({ id, type: "snooze", minutes: 60 });
         } else if (type === "tag_conversation") {
@@ -581,6 +583,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="set_ticket_state">Set ticket state</option>
       <option value="collect_data">Collect data (suspend)</option>
       <option value="reply_buttons">Reply buttons (suspend)</option>
+      <option value="disable_customer_reply">Disable customer reply</option>
       <option value="snooze">Snooze conversation</option>
       <option value="tag_conversation">Tag conversation</option>
       <option value="csat">CSAT rating</option>

@@ -452,6 +452,7 @@ export type WorkflowBlock =
       buttons: { id: string; label: string; nextId: string | null }[];
       autoCloseMinutes?: number;
     }
+  | { id: string; type: "disable_customer_reply"; disabled?: boolean; reason?: string }
   | { id: string; type: "snooze"; minutes: number }
   | { id: string; type: "tag_conversation"; tags: string[]; mode?: "append" | "replace" }
   | {

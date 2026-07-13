@@ -137,6 +137,41 @@ describe("runWorkflow", () => {
     ]);
   });
 
+  it("runs disable_customer_reply blocks through the composer state handler", async () => {
+    const disableCustomerReply = vi.fn(async () => ({
+      disabled: true,
+      reason: "Waiting for teammate review",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "disable-reply",
+            type: "disable_customer_reply",
+            disabled: true,
+            reason: "Waiting for teammate review",
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), disableCustomerReply, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(disableCustomerReply).toHaveBeenCalledWith({
+      disabled: true,
+      reason: "Waiting for teammate review",
+    });
+    expect(result.steps).toEqual([
+      {
+        blockId: "disable-reply",
+        type: "disable_customer_reply",
+        status: "ok",
+        output: { customerReplyDisabled: true },
+      },
+    ]);
+  });
+
   it("runs reopen blocks through the reopen handler", async () => {
     const reopen = vi.fn(async () => {});
 

@@ -101,6 +101,7 @@ export function boot(options: KeenAIBootOptions): KeenAIWidget {
 
       const { conversation } = await getOrCreateWidgetConversation({ apiUrl, accessToken });
       conversationId = conversation.id;
+      messages.setCustomerReplyDisabled(conversation.customerReplyDisabled ?? false);
 
       const items = await fetchWidgetMessages({ apiUrl, accessToken, conversationId });
       messages.renderHistory(items);

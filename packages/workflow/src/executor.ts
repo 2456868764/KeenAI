@@ -286,6 +286,24 @@ async function executeBlock(
         suspended: { blockId: block.id, type: "reply_buttons" },
       };
     }
+    case "disable_customer_reply": {
+      if (!handlers.disableCustomerReply) {
+        throw new Error("disable_customer_reply_handler_missing");
+      }
+      const result = await handlers.disableCustomerReply({
+        disabled: block.disabled,
+        reason: block.reason,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { customerReplyDisabled: result.disabled },
+        },
+        nextId,
+      };
+    }
     case "snooze": {
       if (!handlers.snooze) throw new Error("snooze_handler_missing");
       await handlers.snooze({ minutes: block.minutes });

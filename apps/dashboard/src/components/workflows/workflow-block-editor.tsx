@@ -804,6 +804,24 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "disable_customer_reply" ? (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <input
+              type="checkbox"
+              checked={block.disabled ?? true}
+              onChange={(e) => onChange({ ...block, disabled: e.target.checked })}
+            />
+            Disable customer composer
+          </label>
+          <Input
+            placeholder="Reason (optional)"
+            value={block.reason ?? ""}
+            onChange={(e) => onChange({ ...block, reason: e.target.value.trim() || undefined })}
+          />
+        </div>
+      ) : null}
+
       {block.type === "snooze" ? (
         <>
           <Input

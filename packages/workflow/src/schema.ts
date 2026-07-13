@@ -9,6 +9,11 @@ import { branchesBlockSchema } from "./blocks/branches.js";
 import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import { type CsatInput, csatBlockSchema } from "./blocks/csat.js";
+import {
+  type DisableCustomerReplyInput,
+  type DisableCustomerReplyResult,
+  disableCustomerReplyBlockSchema,
+} from "./blocks/disable-customer-reply.js";
 import { endBlockSchema } from "./blocks/end.js";
 import { gotoBlockSchema } from "./blocks/goto.js";
 import {
@@ -67,6 +72,12 @@ export {
   convertToTicketBlockSchema,
   type ConvertToTicketBlock,
 } from "./blocks/convert-to-ticket.js";
+export {
+  disableCustomerReplyBlockSchema,
+  type DisableCustomerReplyBlock,
+  type DisableCustomerReplyInput,
+  type DisableCustomerReplyResult,
+} from "./blocks/disable-customer-reply.js";
 export {
   endBlockSchema,
   type EndBlock,
@@ -184,6 +195,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "set_ticket_state",
   "collect_data",
   "reply_buttons",
+  "disable_customer_reply",
   "snooze",
   "csat",
   "tag_conversation",
@@ -255,6 +267,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   setTicketStateBlockObjectSchema,
   collectDataBlockSchema,
   replyButtonsBlockSchema,
+  disableCustomerReplyBlockSchema,
   snoozeBlockSchema,
   csatBlockSchema,
   tagConversationBlockSchema,
@@ -423,6 +436,7 @@ export type WorkflowActionHandlers = {
   setTicketState?: (input: SetTicketStateInput) => Promise<SetTicketStateResult>;
   collectData?: (input: CollectDataInput) => Promise<void>;
   replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
+  disableCustomerReply?: (input: DisableCustomerReplyInput) => Promise<DisableCustomerReplyResult>;
   snooze?: (input: SnoozeInput) => Promise<void>;
   csat?: (input: CsatInput) => Promise<void>;
   tagConversation?: (input: TagConversationInput) => Promise<void>;
@@ -461,6 +475,7 @@ export type WorkflowStepResult = {
     buttonLabel?: string;
     rating?: number;
     ratingComment?: string;
+    customerReplyDisabled?: boolean;
     snoozeMinutes?: number;
     ratingRequested?: boolean;
     tags?: string[];

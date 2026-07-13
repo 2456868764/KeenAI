@@ -256,6 +256,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
     case "reply_buttons":
       return `${block.buttons.length} button(s)`;
+    case "disable_customer_reply":
+      return block.disabled === false ? "Enable customer replies" : "Disable customer replies";
     case "snooze":
       return `Snooze ${block.minutes} min`;
     case "tag_conversation":
