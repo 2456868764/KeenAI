@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { API_VERSION } from "@keenai/shared";
-import { workflowRuns, workflowVersions, workflows } from "@keenai/storage/schema";
+import { conversations, workflowRuns, workflowVersions, workflows } from "@keenai/storage/schema";
 import {
   type WorkflowActionHandlers,
   createWorkflowBodySchema,
@@ -9,8 +9,9 @@ import {
   updateWorkflowBodySchema,
   workflowDefinitionSchema,
 } from "@keenai/workflow";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { type SQL, and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import { assertBrandInOrg } from "../lib/conversations.js";
 import {
   serializeWorkflow,
@@ -19,6 +20,13 @@ import {
 } from "../lib/workflow-engine.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
+
+const workflowShadowBodySchema = z
+  .object({
+    limit: z.number().int().min(1).max(25).default(5),
+    conversationIds: z.array(z.string().min(1)).min(1).max(25).optional(),
+  })
+  .default({});
 
 export function workflowRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -407,6 +415,67 @@ export function workflowRoutes() {
     });
 
     return c.json({ mode: "dry-run", result });
+  });
+
+  r.post(`${prefix}/:id/shadow`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const parsedBody = workflowShadowBodySchema.safeParse(await c.req.json().catch(() => ({})));
+    if (!parsedBody.success) {
+      return c.json({ error: "invalid_body", issues: parsedBody.error.issues }, 400);
+    }
+
+    const [workflow] = await c
+      .get("store")
+      .db.select()
+      .from(workflows)
+      .where(and(eq(workflows.id, c.req.param("id")), eq(workflows.orgId, auth.orgId)))
+      .limit(1);
+    if (!workflow) return c.json({ error: "not_found" }, 404);
+
+    const filters: SQL[] = [
+      eq(conversations.orgId, auth.orgId),
+      eq(conversations.status, "closed"),
+    ];
+    if (workflow.brandId) filters.push(eq(conversations.brandId, workflow.brandId));
+    if (parsedBody.data.conversationIds) {
+      filters.push(inArray(conversations.id, parsedBody.data.conversationIds));
+    }
+
+    const samples = await c
+      .get("store")
+      .db.select()
+      .from(conversations)
+      .where(and(...filters))
+      .orderBy(desc(conversations.closedAt), desc(conversations.updatedAt))
+      .limit(parsedBody.data.limit);
+
+    const definition = workflowDefinitionSchema.parse(workflow.definition);
+    const items = [];
+    for (const conversation of samples) {
+      const result = await runWorkflow(definition, createDryRunWorkflowHandlers(), {
+        workflowId: workflow.id,
+        workflowRunId: `shadow-${conversation.id}`,
+        orgId: workflow.orgId,
+        brandId: conversation.brandId,
+        conversationId: conversation.id,
+        targetCustomerId: conversation.userId,
+        subject: conversation.subject ?? undefined,
+        isShadowRun: true,
+        facts: {
+          channelType: conversation.channelType,
+          priority: conversation.priority ?? undefined,
+          conversationStatus: conversation.status,
+        },
+      });
+      items.push({
+        conversationId: conversation.id,
+        result,
+      });
+    }
+
+    return c.json({ mode: "shadow", sampled: items.length, items });
   });
 
   r.post(`${prefix}/jobs/scan-unresponsive`, requireAuth(), async (c) => {

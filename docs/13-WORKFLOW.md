@@ -956,7 +956,7 @@ export const workflowsRouter = new Hono()
   .get('/templates',       listTemplates);
 ```
 
-当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test/listTemplates；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 以 shadow/dry-run handler 执行，不发送真实消息。
+当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test/shadow replay/listTemplates；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 与 `shadow` 均以 dry-run handler 执行，不发送真实消息。
 
 ### 8.3 关键交互
 
@@ -1171,6 +1171,8 @@ export const workflowAutoCloseConfig = pgTable('workflow_auto_close_config', {
 - 「以新版本 dry-run 在最近 N 条已关闭对话上重放」，不发任何外部消息 / 不写 Memory
 - 输出每条对话两版本的 path + 总成本 + AI 用量；对比版本 A/B
 - 用于评估升级风险
+
+当前实现：`POST /api/v1/workflows/:id/shadow` 读取最近 closed conversations 或指定 `conversationIds`，以当前 draft definition 运行 dry-run replay，返回每条 conversation 的 step trace；当前不写 `workflow_runs`，也不发送消息 / 写 Memory。
 
 ```ts
 // packages/workflow/src/shadow.ts

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { type AuthConfig, createWidgetUserHash, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, members, organizations } from "@keenai/storage/schema";
+import { accounts, brands, conversations, members, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -1248,6 +1248,39 @@ describe("workflow integration", () => {
     };
     expect(testBody.mode).toBe("dry-run");
     expect(testBody.result.steps[0]).toMatchObject({ blockId: "reply", status: "ok" });
+
+    const [shadowConversationRow] = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "shadow-1",
+        status: "closed",
+        subject: "Closed conversation",
+        closedAt: new Date(),
+      })
+      .returning();
+    const shadowConversation = requireRow(shadowConversationRow, "shadow conversation");
+
+    const shadowRes = await app.request(`/api/v1/workflows/${workflowId}/shadow`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ limit: 1 }),
+    });
+    expect(shadowRes.status).toBe(200);
+    const shadowBody = (await shadowRes.json()) as {
+      mode: string;
+      sampled: number;
+      items: { conversationId: string; result: { steps: { blockId: string; status: string }[] } }[];
+    };
+    expect(shadowBody.mode).toBe("shadow");
+    expect(shadowBody.sampled).toBe(1);
+    expect(shadowBody.items[0]?.conversationId).toBe(shadowConversation.id);
+    expect(shadowBody.items[0]?.result.steps[0]).toMatchObject({
+      blockId: "reply",
+      status: "ok",
+    });
 
     const unpublishRes = await app.request(`/api/v1/workflows/${workflowId}/unpublish`, {
       method: "POST",
