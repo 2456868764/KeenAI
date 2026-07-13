@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
-import { createLibsqlStore } from "@keenai/storage";
+import { createLibsqlFtsStore, createLibsqlStore } from "@keenai/storage";
 import { accounts, brands, members, organizations } from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -26,6 +26,7 @@ describe("multimodal integration", () => {
       "../../../packages/storage/migrations/libsql",
     );
     await migrate(db, { migrationsFolder });
+    const fts = createLibsqlFtsStore(store.client);
 
     const [orgRow] = await db
       .insert(organizations)
@@ -62,7 +63,7 @@ describe("multimodal integration", () => {
 
     const app = createApp({
       store,
-      fts: null,
+      fts,
       authConfig: {
         jwtSecret: "test-secret-at-least-32-characters-long!!",
         accessTtlSec: 900,
@@ -179,6 +180,15 @@ describe("multimodal integration", () => {
     });
     expect(thumbRes.status).toBe(200);
     expect(thumbRes.headers.get("content-type")).toContain("image/png");
+
+    const searchRes = await app.request("/api/v1/search/conversations?q=dot", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    expect(searchRes.status).toBe(200);
+    const searchBody = (await searchRes.json()) as {
+      items: { id: string; snippet?: string }[];
+    };
+    expect(searchBody.items.some((item) => item.id === conversation.id)).toBe(true);
 
     await store.close();
   });

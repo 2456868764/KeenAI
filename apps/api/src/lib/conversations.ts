@@ -184,8 +184,7 @@ async function resolveMessagePayload(
       ] as const;
     }),
   );
-  const plainText =
-    input.plainText?.trim() || buildPlainTextFromParts(parts, attMap) || "(attachment)";
+  const plainText = buildPlainTextFromParts(parts, attMap) || "(attachment)";
 
   return {
     plainText,

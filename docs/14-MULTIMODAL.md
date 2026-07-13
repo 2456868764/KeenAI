@@ -97,6 +97,8 @@ export type InboundMessage = {
 | 文件 | `[File: {fileName}]` |
 | 混合 | 各 part 占位 + 用户 caption |
 
+当前实现：`insertMessage` 对带附件消息统一从 canonical `MessagePart[]` 生成 `plainText`，因此混合消息会同时保留用户 caption 与图片/语音/视频/文件占位；`plainText` 会进入 Conversation FTS 索引。
+
 ### 2.3 OutboundPart（Agent / Workflow → Channel Renderer）
 
 ```ts
