@@ -4,6 +4,7 @@ import { workflowRuns, workflowVersions, workflows } from "@keenai/storage/schem
 import {
   type WorkflowActionHandlers,
   createWorkflowBodySchema,
+  listWorkflowTemplates,
   runWorkflow,
   updateWorkflowBodySchema,
   workflowDefinitionSchema,
@@ -78,6 +79,12 @@ export function workflowRoutes() {
 
     if (!row) return c.json({ error: "not_found" }, 404);
     return c.json({ run: serializeWorkflowRun(row) });
+  });
+
+  r.get(`${prefix}/templates`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+    return c.json({ items: listWorkflowTemplates() });
   });
 
   r.get(`${prefix}/:id`, requireAuth(), async (c) => {

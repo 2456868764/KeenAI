@@ -1144,6 +1144,38 @@ describe("workflow integration", () => {
     const token = await loginToken(app);
     const auth = { Authorization: `Bearer ${token}` };
 
+    const templatesRes = await app.request("/api/v1/workflows/templates", { headers: auth });
+    expect(templatesRes.status).toBe(200);
+    const templatesBody = (await templatesRes.json()) as {
+      items: {
+        id: string;
+        name: string;
+        definition: {
+          trigger: "first_message" | "customer_unresponsive";
+          blocks: { id: string; type: string }[];
+        };
+      }[];
+    };
+    expect(templatesBody.items).toHaveLength(11);
+    const keeniTemplate = templatesBody.items.find((item) => item.id === "tpl-keeni-answers-first");
+    expect(keeniTemplate?.definition.blocks[0]).toMatchObject({
+      id: "keeni_answer",
+      type: "let_keeni_answer",
+    });
+
+    const templateCreateRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: keeniTemplate?.name,
+        brandId: brand.id,
+        definition: keeniTemplate?.definition,
+      }),
+    });
+    expect(templateCreateRes.status).toBe(201);
+    const templateCreateBody = (await templateCreateRes.json()) as { workflow: { id: string } };
+    expect(templateCreateBody.workflow.id).toBeTruthy();
+
     const createRes = await app.request("/api/v1/workflows", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },

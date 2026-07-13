@@ -90,3 +90,9 @@ export {
   type WorkflowCsatTimerResult,
   type WorkflowTimerHandlers,
 } from "./inngest/timers.js";
+export {
+  WORKFLOW_TEMPLATES,
+  listWorkflowTemplates,
+  type WorkflowTemplate,
+  type WorkflowTemplateCategory,
+} from "./templates.js";

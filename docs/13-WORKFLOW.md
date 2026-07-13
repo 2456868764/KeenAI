@@ -956,7 +956,7 @@ export const workflowsRouter = new Hono()
   .get('/templates',       listTemplates);
 ```
 
-当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 以 shadow/dry-run handler 执行，不发送真实消息。
+当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test/listTemplates；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 以 shadow/dry-run handler 执行，不发送真实消息。
 
 ### 8.3 关键交互
 
@@ -1109,7 +1109,7 @@ export const workflowAutoCloseConfig = pgTable('workflow_auto_close_config', {
 
 ## 十二、模板库（覆盖 Featurebase 内置 5 个 + KeenAI 扩展）
 
-`packages/workflow/templates/*.json`，全部为 `WorkflowDef`：
+当前实现位于 `packages/workflow/src/templates.ts`，按现有 `WorkflowDefinition` DSL 提供 11 个可直接创建 Workflow 的模板：
 
 | ID | 名称 | 对标 Featurebase 模板 |
 |----|------|---------------------|
