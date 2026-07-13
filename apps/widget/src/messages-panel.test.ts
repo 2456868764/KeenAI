@@ -74,4 +74,54 @@ describe("MessagesPanel", () => {
     expect(audio.controls).toBe(true);
     expect(fetchAttachmentBlob).toHaveBeenCalledWith("att-voice");
   });
+
+  it("renders video and file attachments", async () => {
+    const container = document.createElement("div");
+    const fetchAttachmentBlob = vi.fn(async (id: string) => `blob:${id}`);
+
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob,
+    });
+
+    panel.renderHistory([
+      {
+        id: "m-video-file",
+        plainText: "See attached.",
+        senderType: "agent",
+        attachments: [
+          {
+            id: "att-video",
+            fileName: "demo.mp4",
+            contentType: "video/mp4",
+            sizeBytes: 2048,
+          },
+          {
+            id: "att-file",
+            fileName: "manual.pdf",
+            contentType: "application/pdf",
+            sizeBytes: 4096,
+          },
+        ],
+      },
+    ]);
+
+    const video = container.querySelector(".keenai-bubble__video") as HTMLVideoElement;
+    const file = container.querySelector(".keenai-bubble__file") as HTMLAnchorElement;
+
+    expect(video).toBeTruthy();
+    expect(video.controls).toBe(true);
+    expect(file).toBeTruthy();
+    expect(file.download).toBe("manual.pdf");
+    expect(file.textContent).toContain("manual.pdf");
+    expect(fetchAttachmentBlob).toHaveBeenCalledWith("att-video");
+    expect(fetchAttachmentBlob).toHaveBeenCalledWith("att-file");
+
+    await Promise.resolve();
+    expect(file.href).toBe("blob:att-file");
+  });
 });

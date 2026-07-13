@@ -386,6 +386,8 @@ WebSocket / SSE `message.created` payload 同步带 `attachments`。
 | Widget | 轻量图片上传 + 缩略图；控制 bundle 体积 |
 | 无障碍 | 图片 alt · 语音 transcript 可折叠展示 |
 
+当前实现：Inbox 与 Widget 均按附件 MIME 渲染 image/audio/video/file；文件类附件展示为鉴权下载链接，视频使用原生 `<video>` 播放器，语音 transcript 在 Inbox 可折叠查看。
+
 ---
 
 ## 十一、实施阶段

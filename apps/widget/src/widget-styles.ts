@@ -101,6 +101,29 @@ export const WIDGET_CSS = `
   height: 32px;
 }
 
+.keenai-bubble__video {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+}
+
+.keenai-bubble__file {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(244,244,245,.18);
+  padding: 6px 8px;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.keenai-bubble__file:hover {
+  background: rgba(244,244,245,.08);
+}
+
 .keenai-bubble__text--muted { opacity: 0.85; font-size: 12px; }
 
 .keenai-bubble {

@@ -208,6 +208,42 @@ function MessageVideo({ attachment }: { attachment: NonNullable<Message["attachm
   );
 }
 
+function MessageFile({ attachment }: { attachment: NonNullable<Message["attachments"]>[number] }) {
+  const [href, setHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    void fetchAttachmentBlob(attachment.id)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setHref(url);
+      })
+      .catch(() => setHref(null));
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachment.id]);
+
+  const label = formatAttachmentLabel(attachment.fileName ?? "attachment", attachment.sizeBytes);
+
+  return (
+    <a
+      href={href ?? undefined}
+      download={attachment.fileName ?? "attachment"}
+      className="mt-2 flex max-w-full items-center rounded-md border border-[hsl(var(--border))] px-2 py-1.5 text-xs underline-offset-2 hover:underline"
+    >
+      <span className="min-w-0 truncate">{label}</span>
+    </a>
+  );
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
@@ -217,6 +253,11 @@ function MessageBubble({ message }: { message: Message }) {
     message.attachments?.filter((a) => a.contentType?.startsWith("audio/")) ?? [];
   const videoAttachments =
     message.attachments?.filter((a) => a.contentType?.startsWith("video/")) ?? [];
+  const fileAttachments =
+    message.attachments?.filter((a) => {
+      const mime = a.contentType ?? "";
+      return !mime.startsWith("image/") && !mime.startsWith("audio/") && !mime.startsWith("video/");
+    }) ?? [];
   const showPlainText = Boolean(
     message.plainText?.trim() &&
       audioAttachments.length === 0 &&
@@ -253,6 +294,9 @@ function MessageBubble({ message }: { message: Message }) {
         {videoAttachments.map((att) => (
           <MessageVideo key={att.id} attachment={att} />
         ))}
+        {fileAttachments.map((att) => (
+          <MessageFile key={att.id} attachment={att} />
+        ))}
         <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
           {message.isInternal ? "internal note" : message.senderType}
           {isOptimistic ? " · sending" : ""}
@@ -260,4 +304,11 @@ function MessageBubble({ message }: { message: Message }) {
       </div>
     </div>
   );
+}
+
+function formatAttachmentLabel(fileName: string, sizeBytes: number | null | undefined): string {
+  if (!sizeBytes || sizeBytes < 1) return fileName;
+  if (sizeBytes < 1024) return `${fileName} · ${sizeBytes} B`;
+  if (sizeBytes < 1024 * 1024) return `${fileName} · ${(sizeBytes / 1024).toFixed(1)} KB`;
+  return `${fileName} · ${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }

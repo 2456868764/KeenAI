@@ -130,7 +130,30 @@ export class MessagesPanel {
           audio.src = url;
         });
         row.append(audio);
+        continue;
       }
+      if (mime.startsWith("video/")) {
+        const video = document.createElement("video");
+        video.className = "keenai-bubble__video";
+        video.controls = true;
+        video.preload = "metadata";
+        video.setAttribute("aria-label", att.fileName ?? "Video attachment");
+        void this.opts.fetchAttachmentBlob(att.id).then((url) => {
+          video.src = url;
+        });
+        row.append(video);
+        continue;
+      }
+
+      const link = document.createElement("a");
+      link.className = "keenai-bubble__file";
+      link.textContent = formatAttachmentLabel(att.fileName ?? "attachment", att.sizeBytes);
+      link.download = att.fileName ?? "attachment";
+      link.rel = "noopener";
+      void this.opts.fetchAttachmentBlob(att.id).then((url) => {
+        link.href = url;
+      });
+      row.append(link);
     }
 
     if (msg.createdAt) {
@@ -171,6 +194,13 @@ export class MessagesPanel {
       this.setSending(false);
     }
   }
+}
+
+function formatAttachmentLabel(fileName: string, sizeBytes: number | null | undefined): string {
+  if (!sizeBytes || sizeBytes < 1) return fileName;
+  if (sizeBytes < 1024) return `${fileName} · ${sizeBytes} B`;
+  if (sizeBytes < 1024 * 1024) return `${fileName} · ${(sizeBytes / 1024).toFixed(1)} KB`;
+  return `${fileName} · ${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatTime(iso: string): string {
