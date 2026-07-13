@@ -344,6 +344,45 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output).toMatchObject({ notificationSent: true });
   });
 
+  it("runs set_ticket_state block", async () => {
+    const setTicketState = vi.fn(async () => ({
+      ticketId: "ticket-42",
+      statusId: "status-done",
+      statusName: "Done",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "state-1",
+            type: "set_ticket_state",
+            ticketId: "ticket-42",
+            statusName: "Done",
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        setTicketState,
+      },
+    );
+
+    expect(setTicketState).toHaveBeenCalledWith({
+      ticketId: "ticket-42",
+      statusId: undefined,
+      statusName: "Done",
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      ticketId: "ticket-42",
+      statusId: "status-done",
+      statusName: "Done",
+    });
+  });
+
   it("runs wait and http_request blocks", async () => {
     const wait = vi.fn(async () => {});
     const httpRequest = vi.fn(async () => ({ status: 204, body: "" }));

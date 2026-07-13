@@ -741,7 +741,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("runs link_ticket and send_ticket_update workflow blocks", async () => {
+  it("runs link_ticket, set_ticket_state and send_ticket_update workflow blocks", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -819,6 +819,7 @@ describe("workflow integration", () => {
               childTicketId: childTicket.id,
               linkType: "relates",
             },
+            { id: "state", type: "set_ticket_state", statusName: "Done" },
             { id: "notify", type: "send_ticket_update" },
           ],
         },
@@ -859,6 +860,7 @@ describe("workflow integration", () => {
     expect(events.status).toBe(200);
     const eventsBody = (await events.json()) as { items: { eventType: string }[] };
     expect(eventsBody.items.some((e) => e.eventType === "ticket_linked")).toBe(true);
+    expect(eventsBody.items.some((e) => e.eventType === "status_changed")).toBe(true);
 
     const runs = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
     expect(runs.status).toBe(200);
@@ -868,6 +870,7 @@ describe("workflow integration", () => {
     const stepTypes = runsBody.items.flatMap((run) => run.steps.map((s) => s.type));
     expect(stepTypes).toContain("convert_to_ticket");
     expect(stepTypes).toContain("link_ticket");
+    expect(stepTypes).toContain("set_ticket_state");
     expect(stepTypes).toContain("send_ticket_update");
 
     await store.close();

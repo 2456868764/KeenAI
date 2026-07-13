@@ -178,6 +178,27 @@ async function executeBlock(
         nextId,
       };
     }
+    case "set_ticket_state": {
+      if (!handlers.setTicketState) throw new Error("set_ticket_state_handler_missing");
+      const result = await handlers.setTicketState({
+        ticketId: block.ticketId,
+        statusId: block.statusId,
+        statusName: block.statusName,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            ticketId: result.ticketId,
+            statusId: result.statusId,
+            statusName: result.statusName,
+          },
+        },
+        nextId,
+      };
+    }
     case "collect_data": {
       if (!handlers.collectData) throw new Error("collect_data_handler_missing");
       if (!context?.workflowRunId) throw new Error("workflow_run_id_required");

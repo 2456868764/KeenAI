@@ -538,6 +538,39 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "set_ticket_state" ? (
+        <>
+          <Input
+            placeholder="Ticket ID (optional — uses conversation ticket)"
+            value={block.ticketId ?? ""}
+            onChange={(e) => onChange({ ...block, ticketId: e.target.value.trim() || undefined })}
+          />
+          <Input
+            placeholder="Status ID (optional if status name is set)"
+            value={block.statusId ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                statusId: e.target.value.trim() || undefined,
+              })
+            }
+          />
+          <Input
+            placeholder="Status name (for example Done)"
+            value={block.statusName ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                statusName: e.target.value.trim() || undefined,
+              })
+            }
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Updates the linked ticket status. Status ID wins when both fields are set.
+          </p>
+        </>
+      ) : null}
+
       {block.type === "collect_data" ? (
         <>
           <textarea

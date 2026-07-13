@@ -25,7 +25,9 @@ import {
   getConversationTicketId,
   getTicketForOrg,
   linkTickets,
+  listTicketStatusesForOrg,
   loadTicketMeta,
+  transitionTicketStatus,
 } from "./tickets.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
 
@@ -200,6 +202,31 @@ export function createWorkflowActionHandlers(
         statusName: ticket.statusName,
       });
       return { sent: result.sent };
+    },
+    setTicketState: async ({ ticketId, statusId, statusName }) => {
+      const resolvedTicketId =
+        ticketId ?? (await getConversationTicketId(db, workflow.orgId, conversationId));
+      if (!resolvedTicketId) throw new Error("ticket_not_found");
+
+      let resolvedStatusId = statusId;
+      if (!resolvedStatusId && statusName) {
+        const normalized = statusName.trim().toLowerCase();
+        const statuses = await listTicketStatusesForOrg(db, workflow.orgId);
+        resolvedStatusId = statuses.find((status) => status.name.toLowerCase() === normalized)?.id;
+      }
+      if (!resolvedStatusId) throw new Error("status_not_found");
+
+      const ticket = await transitionTicketStatus(db, {
+        orgId: workflow.orgId,
+        ticketId: resolvedTicketId,
+        statusId: resolvedStatusId,
+      });
+      if (!ticket) throw new Error("ticket_not_found");
+      return {
+        ticketId: ticket.id,
+        statusId: ticket.statusId ?? resolvedStatusId,
+        statusName: ticket.statusName,
+      };
     },
     wait: async (ms) => {
       await new Promise((resolve) => setTimeout(resolve, ms));

@@ -541,6 +541,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "snooze", minutes: 60 });
         } else if (type === "tag_conversation") {
           onAdd({ id, type: "tag_conversation", tags: ["vip"], mode: "append" });
+        } else if (type === "set_ticket_state") {
+          onAdd({ id, type: "set_ticket_state", statusName: "Done" });
         } else if (type === "csat") {
           onAdd({
             id,
@@ -570,6 +572,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="convert_to_ticket">Convert to ticket</option>
       <option value="link_ticket">Link tickets</option>
       <option value="send_ticket_update">Send ticket update email</option>
+      <option value="set_ticket_state">Set ticket state</option>
       <option value="collect_data">Collect data (suspend)</option>
       <option value="reply_buttons">Reply buttons (suspend)</option>
       <option value="snooze">Snooze conversation</option>

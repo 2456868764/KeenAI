@@ -243,6 +243,10 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.ticketId
         ? `Notify ticket ${block.ticketId.slice(0, 8)}…`
         : "Notify conversation ticket";
+    case "set_ticket_state":
+      return block.statusName
+        ? `Ticket state → ${block.statusName}`
+        : `Ticket state → ${block.statusId?.slice(0, 8) ?? "status"}`;
     case "collect_data":
       return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
     case "reply_buttons":

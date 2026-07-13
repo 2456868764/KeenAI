@@ -422,6 +422,13 @@ export type WorkflowBlock =
   | { id: string; type: "send_ticket_update"; ticketId?: string }
   | {
       id: string;
+      type: "set_ticket_state";
+      ticketId?: string;
+      statusId?: string;
+      statusName?: string;
+    }
+  | {
+      id: string;
       type: "collect_data";
       prompt: string;
       allowFreeText?: boolean;

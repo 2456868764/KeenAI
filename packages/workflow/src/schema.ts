@@ -16,6 +16,12 @@ import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-p
 import { reopenBlockSchema } from "./blocks/reopen.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
+import {
+  type SetTicketStateInput,
+  type SetTicketStateResult,
+  setTicketStateBlockObjectSchema,
+  setTicketStateBlockSchema,
+} from "./blocks/set-ticket-state.js";
 import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
 import {
   type TagConversationInput,
@@ -98,6 +104,12 @@ export {
   type SendTicketUpdateBlock,
 } from "./blocks/send-ticket-update.js";
 export {
+  setTicketStateBlockSchema,
+  type SetTicketStateBlock,
+  type SetTicketStateInput,
+  type SetTicketStateResult,
+} from "./blocks/set-ticket-state.js";
+export {
   letKeeniAnswerBlockSchema,
   letKeeniAnswerOutcomeRoutingSchema,
   resolveLetKeeniAnswerNext,
@@ -145,6 +157,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "convert_to_ticket",
   "link_ticket",
   "send_ticket_update",
+  "set_ticket_state",
   "collect_data",
   "reply_buttons",
   "snooze",
@@ -213,6 +226,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   convertToTicketBlockSchema,
   linkTicketBlockSchema,
   sendTicketUpdateBlockSchema,
+  setTicketStateBlockObjectSchema,
   collectDataBlockSchema,
   replyButtonsBlockSchema,
   snoozeBlockSchema,
@@ -293,6 +307,14 @@ export const workflowDefinitionSchema = z
         }
       }
 
+      if (block.type === "set_ticket_state" && !block.statusId && !block.statusName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "statusId_or_statusName_required",
+          path: ["blocks", index, "statusId"],
+        });
+      }
+
       if (block.type !== "send_message") return;
       const text = block.plainText?.trim() ?? "";
       const attachments = block.attachmentIds?.length ?? 0;
@@ -368,6 +390,7 @@ export type WorkflowActionHandlers = {
     linkType: "tracks" | "relates" | "blocks";
   }) => Promise<{ parentTicketId: string; childTicketId: string }>;
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
+  setTicketState?: (input: SetTicketStateInput) => Promise<SetTicketStateResult>;
   collectData?: (input: CollectDataInput) => Promise<void>;
   replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
   snooze?: (input: SnoozeInput) => Promise<void>;
@@ -392,6 +415,8 @@ export type WorkflowStepResult = {
     branchLabel?: string;
     parentTicketId?: string;
     childTicketId?: string;
+    statusId?: string;
+    statusName?: string | null;
     notificationSent?: boolean;
     awaitingInput?: boolean;
     submittedAttributes?: Record<string, string>;

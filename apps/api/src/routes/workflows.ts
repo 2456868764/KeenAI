@@ -701,6 +701,11 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
       childTicketId: input.childTicketId,
     }),
     sendTicketUpdate: async () => ({ sent: true }),
+    setTicketState: async (input) => ({
+      ticketId: input.ticketId ?? "dry-run-ticket",
+      statusId: input.statusId ?? "dry-run-status",
+      statusName: input.statusName ?? null,
+    }),
     collectData: async () => {},
     replyButtons: async () => {},
     snooze: async () => {},
