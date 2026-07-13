@@ -128,6 +128,12 @@ export function WorkflowBlockEditor({
         </p>
       ) : null}
 
+      {block.type === "reopen" ? (
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          Reopens the conversation and clears closed or snoozed timestamps.
+        </p>
+      ) : null}
+
       {block.type === "end" ? (
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
           Ends this workflow path without running later linear blocks.

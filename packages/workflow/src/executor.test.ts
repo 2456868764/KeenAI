@@ -91,6 +91,21 @@ describe("runWorkflow", () => {
     ]);
   });
 
+  it("runs reopen blocks through the reopen handler", async () => {
+    const reopen = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "reopen", type: "reopen" }],
+      },
+      { sendMessage: vi.fn(), reopen, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(reopen).toHaveBeenCalledOnce();
+    expect(result.steps).toEqual([{ blockId: "reopen", type: "reopen", status: "ok" }]);
+  });
+
   it("ends the current path without running later linear blocks", async () => {
     const sendMessage = vi.fn(async () => {});
 

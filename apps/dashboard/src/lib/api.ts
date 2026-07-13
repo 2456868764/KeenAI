@@ -369,6 +369,7 @@ export type WorkflowBlock =
   | { id: string; type: "mark_priority"; priority: "low" | "normal" | "high" | "urgent" }
   | { id: string; type: "assign"; assigneeId?: string | null }
   | { id: string; type: "close" }
+  | { id: string; type: "reopen" }
   | { id: string; type: "end" }
   | {
       id: string;

@@ -12,6 +12,7 @@ import {
 } from "./blocks/let-keeni-answer.js";
 import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
 import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-priority.js";
+import { reopenBlockSchema } from "./blocks/reopen.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
@@ -55,6 +56,10 @@ export {
   type ReplyButtonsInput,
   type ReplyButtonsSubmission,
 } from "./blocks/reply-buttons.js";
+export {
+  reopenBlockSchema,
+  type ReopenBlock,
+} from "./blocks/reopen.js";
 export {
   linkTicketBlockSchema,
   TICKET_LINK_TYPES,
@@ -124,6 +129,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "send_message",
   "assign",
   "close",
+  "reopen",
   "end",
   "let_keeni_answer",
   "wait",
@@ -190,6 +196,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendMessageBlockObjectSchema,
   assignBlockSchema,
   closeBlockSchema,
+  reopenBlockSchema,
   endBlockSchema,
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
@@ -332,6 +339,7 @@ export type WorkflowActionHandlers = {
   addNote?: (input: { plainText: string }) => Promise<void>;
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
+  reopen?: () => Promise<void>;
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;

@@ -89,6 +89,7 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "p", type: "mark_priority", priority: "urgent" })).toBe(
       "Priority → urgent",
     );
+    expect(blockLabel({ id: "reopen", type: "reopen" })).toBe("Reopen conversation");
     expect(blockLabel({ id: "end", type: "end" })).toBe("End path");
   });
 });

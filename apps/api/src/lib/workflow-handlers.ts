@@ -150,6 +150,17 @@ export function createWorkflowActionHandlers(
         // KB crystallize is best-effort on close
       }
     },
+    reopen: async () => {
+      await db
+        .update(conversations)
+        .set({
+          status: "open",
+          closedAt: null,
+          snoozedUntil: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(conversations.id, conversationId));
+    },
     letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
     convertToTicket: async ({ title }) => {
       const ticket = await createTicketFromConversation(db, {

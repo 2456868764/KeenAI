@@ -687,6 +687,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     addNote: async () => {},
     assign: async () => {},
     close: async () => {},
+    reopen: async () => {},
     letKeeniAnswer: async () => ({
       replyText: "Dry-run Keeni response",
       resolution: { type: "unresolved", confidence: 0, evidence: "dry-run" },

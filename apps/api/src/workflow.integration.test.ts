@@ -1129,6 +1129,115 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("reopen block restores conversation status and clears closed or snoozed timestamps", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Reopen on first message",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            { id: "snooze", type: "snooze", minutes: 90 },
+            { id: "close", type: "close" },
+            { id: "reopen", type: "reopen" },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "reopen-1",
+        initialMessage: { plainText: "Hi" },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const fetched = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      headers: auth,
+    });
+    expect(fetched.status).toBe(200);
+    const fetchedBody = (await fetched.json()) as {
+      conversation: { status: string; closedAt: string | null; snoozedUntil: string | null };
+    };
+    expect(fetchedBody.conversation.status).toBe("open");
+    expect(fetchedBody.conversation.closedAt).toBeNull();
+    expect(fetchedBody.conversation.snoozedUntil).toBeNull();
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const runsBody = (await runsRes.json()) as {
+      items: { steps: { blockId: string; type: string; status: string }[] }[];
+    };
+    expect(runsBody.items[0]?.steps.map((step) => step.type)).toEqual([
+      "snooze",
+      "close",
+      "reopen",
+    ]);
+    expect(runsBody.items[0]?.steps.every((step) => step.status === "ok")).toBe(true);
+
+    await store.close();
+  });
+
   it("tag_conversation, add_note, and mark_priority blocks update the conversation", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
