@@ -238,10 +238,11 @@ const templateInputs = [
   {
     id: "tpl-schedule-weekly-survey",
     name: "Weekly NPS to active users",
-    description: "Start a survey-style workflow that can be scheduled by an external trigger.",
+    description: "Start a survey-style workflow on a weekly schedule.",
     category: "survey",
     definition: {
-      trigger: "first_message",
+      trigger: "schedule",
+      cron: "0 9 * * 1",
       blocks: [
         {
           id: "nps_buttons",

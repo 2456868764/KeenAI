@@ -33,6 +33,9 @@ export type WorkflowReplyButtonsResumePayload = {
 
 export type WorkflowInngestHandlers = WorkflowDispatchHandlers &
   Partial<WorkflowTimerHandlers> & {
+    scanScheduledWorkflows?: (
+      orgId?: string,
+    ) => Promise<{ scanned?: number; triggered: number; runs?: string[]; workflows?: number }>;
     resumeCollectData?: (
       payload: WorkflowCollectDataResumePayload,
     ) => Promise<{ resumed: boolean; status?: string }>;
@@ -99,8 +102,16 @@ export function createWorkflowInngestFunctions(
   const scanUnresponsiveCron = client.createFunction(
     { id: "keenai-workflow-scan-unresponsive-cron", retries: 2, concurrency: { limit: 1 } },
     { cron: scanCron },
-    async ({ step }) =>
-      step.run("scan-unresponsive-cron", () => handlers.scanCustomerUnresponsive(undefined)),
+    async ({ step }) => {
+      const unresponsive = await step.run("scan-unresponsive-cron", () =>
+        handlers.scanCustomerUnresponsive(undefined),
+      );
+      const scanScheduledWorkflows = handlers.scanScheduledWorkflows;
+      const scheduled = scanScheduledWorkflows
+        ? await step.run("scan-scheduled-cron", () => scanScheduledWorkflows(undefined))
+        : { triggered: 0 };
+      return { unresponsive, scheduled };
+    },
   );
 
   const timerFunctions = createWorkflowTimerInngestFunctions(client, timerHandlers);

@@ -59,6 +59,27 @@ describe("resolveInactivityMs", () => {
     });
   });
 
+  it("requires and accepts schedule cron config", () => {
+    expect(() =>
+      workflowDefinitionSchema.parse({
+        trigger: "schedule",
+        blocks: [{ id: "reply", type: "send_message", plainText: "Scheduled message." }],
+      }),
+    ).toThrow("cron_required");
+
+    const parsed = workflowDefinitionSchema.parse({
+      trigger: "schedule",
+      cron: "0 9 * * 1",
+      audience: {
+        match: "all",
+        rules: [{ field: "tags", op: "contains", value: "vip" }],
+      },
+      blocks: [{ id: "reply", type: "send_message", plainText: "Scheduled message." }],
+    });
+    expect(parsed.cron).toBe("0 9 * * 1");
+    expect(parsed.audience?.rules[0]).toMatchObject({ field: "tags", op: "contains" });
+  });
+
   it("requires and accepts event_match event names", () => {
     expect(() =>
       workflowDefinitionSchema.parse({

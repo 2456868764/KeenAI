@@ -116,12 +116,14 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               ...definition,
               trigger,
               eventName: trigger === "event_match" ? (definition.eventName ?? "") : undefined,
+              cron: trigger === "schedule" ? (definition.cron ?? "0 9 * * 1") : undefined,
             });
           }}
           className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 text-sm"
         >
           <option value="first_message">First customer message</option>
           <option value="customer_unresponsive">Customer unresponsive</option>
+          <option value="schedule">Schedule</option>
           <option value="webhook">Webhook</option>
           <option value="event_match">Custom event</option>
         </select>
@@ -166,6 +168,28 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               setDefinition({
                 ...definition,
                 eventName: e.target.value,
+              })
+            }
+          />
+        </section>
+      ) : null}
+
+      {definition.trigger === "schedule" ? (
+        <section className="space-y-2">
+          <label
+            htmlFor="workflow-cron"
+            className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+          >
+            Cron
+          </label>
+          <Input
+            id="workflow-cron"
+            value={definition.cron ?? ""}
+            placeholder="0 9 * * 1"
+            onChange={(e) =>
+              setDefinition({
+                ...definition,
+                cron: e.target.value,
               })
             }
           />

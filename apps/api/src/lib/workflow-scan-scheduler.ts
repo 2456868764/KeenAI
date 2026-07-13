@@ -2,6 +2,7 @@ import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import type { Logger } from "pino";
+import { scanScheduledWorkflows } from "./workflow-schedule-scan.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
 type Store = ReturnType<typeof createLibsqlStore>;
@@ -19,7 +20,11 @@ export function startWorkflowScanScheduler(
         env: deps.env,
         authConfig: deps.authConfig,
       });
-      deps.log.info(result, "workflow unresponsive scan completed");
+      const scheduled = await scanScheduledWorkflows(deps.store.db, {
+        env: deps.env,
+        authConfig: deps.authConfig,
+      });
+      deps.log.info({ unresponsive: result, scheduled }, "workflow scan completed");
     } catch (err) {
       deps.log.error({ err }, "workflow unresponsive scan failed");
     }

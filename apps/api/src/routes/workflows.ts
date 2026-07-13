@@ -26,6 +26,7 @@ import {
   serializeWorkflowRun,
   serializeWorkflowVersion,
 } from "../lib/workflow-engine.js";
+import { scanScheduledWorkflows } from "../lib/workflow-schedule-scan.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -663,6 +664,18 @@ export function workflowRoutes() {
     const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
     const result = await getWorkflowDispatch().scanCustomerUnresponsive(auth.orgId);
     return c.json({ mode: getWorkflowDispatch().mode, ...result });
+  });
+
+  r.post(`${prefix}/jobs/scan-scheduled`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const result = await scanScheduledWorkflows(c.get("store").db, {
+      orgId: auth.orgId,
+      env: c.get("env"),
+      authConfig: c.get("authConfig"),
+    });
+    return c.json({ mode: "sync", ...result });
   });
 
   return r;

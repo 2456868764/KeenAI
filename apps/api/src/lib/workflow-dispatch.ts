@@ -13,6 +13,7 @@ import {
   dispatchTicketTriggerWorkflows,
 } from "./workflow-engine.js";
 import { resumeCollectDataWorkflow, resumeReplyButtonsWorkflow } from "./workflow-resume.js";
+import { scanScheduledWorkflows } from "./workflow-schedule-scan.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
@@ -43,6 +44,12 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
         triggered: result.triggered,
         runs: result.runs,
       })),
+    scanScheduledWorkflows: (orgId) =>
+      scanScheduledWorkflows(ctx.store.db, {
+        orgId,
+        env: ctx.env,
+        authConfig: ctx.authConfig,
+      }),
     runAutoCloseTimer: timerHandlers.runAutoCloseTimer,
     runCsatTimer: timerHandlers.runCsatTimer,
     resumeCollectData: (payload) =>

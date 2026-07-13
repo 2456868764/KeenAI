@@ -1712,6 +1712,45 @@ describe("workflow integration", () => {
     );
     expect(eventPublishRes.status).toBe(200);
 
+    const scheduleCreateRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Scheduled VIP survey",
+        brandId: brand.id,
+        definition: {
+          trigger: "schedule",
+          cron: "*/60 * * * *",
+          audience: {
+            match: "all",
+            rules: [{ field: "tags", op: "contains", value: "vip" }],
+          },
+          blocks: [
+            {
+              id: "tag_scheduled",
+              type: "tag_conversation",
+              tags: ["scheduled-survey"],
+              mode: "append",
+            },
+          ],
+        },
+      }),
+    });
+    expect(scheduleCreateRes.status).toBe(201);
+    const scheduleCreateBody = (await scheduleCreateRes.json()) as {
+      workflow: { id: string; trigger: string };
+    };
+    expect(scheduleCreateBody.workflow.trigger).toBe("schedule");
+
+    const schedulePublishRes = await app.request(
+      `/api/v1/workflows/${scheduleCreateBody.workflow.id}/publish`,
+      {
+        method: "POST",
+        headers: auth,
+      },
+    );
+    expect(schedulePublishRes.status).toBe(200);
+
     const triggerRes = await app.request("/api/v1/workflows/webhooks/trigger", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -1788,10 +1827,29 @@ describe("workflow integration", () => {
       status: "completed",
     });
 
+    const scheduleScanRes = await app.request("/api/v1/workflows/jobs/scan-scheduled", {
+      method: "POST",
+      headers: auth,
+    });
+    expect(scheduleScanRes.status).toBe(200);
+    const scheduleScanBody = (await scheduleScanRes.json()) as {
+      mode: string;
+      triggered: number;
+      workflows: number;
+      runs: string[];
+    };
+    expect(scheduleScanBody).toMatchObject({
+      mode: "sync",
+      triggered: 1,
+      workflows: 1,
+    });
+    expect(scheduleScanBody.runs).toHaveLength(1);
+
     const updatedConversations = await db.select().from(conversations);
     const updated = updatedConversations.find((item) => item.id === conversation.id);
     expect(updated?.tags).toContain("vip");
     expect(updated?.tags).toContain("churn-risk");
+    expect(updated?.tags).toContain("scheduled-survey");
 
     await store.close();
   });

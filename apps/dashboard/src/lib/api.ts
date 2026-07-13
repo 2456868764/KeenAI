@@ -463,6 +463,11 @@ export type WorkflowDefinition = {
   inactivityMinutes?: number;
   pageRules?: { urlOp: "contains" | "eq" | "matches"; url: string; timeOnPageSec?: number }[];
   eventName?: string;
+  cron?: string;
+  audience?: {
+    match?: "all" | "any";
+    rules?: { field: string; op: string; value?: unknown }[];
+  };
   blocks: WorkflowBlock[];
 };
 

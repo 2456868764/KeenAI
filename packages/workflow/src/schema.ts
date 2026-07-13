@@ -189,6 +189,27 @@ export const pageViewRuleSchema = z.object({
   timeOnPageSec: z.number().int().min(0).max(86_400).optional(),
 });
 
+export const workflowAudienceRuleSchema = z.object({
+  field: z.string().min(1).max(128),
+  op: z.enum([
+    "eq",
+    "ne",
+    "in",
+    "nin",
+    "contains",
+    "starts_with",
+    "ends_with",
+    "matches",
+    "exists",
+  ]),
+  value: z.unknown().optional(),
+});
+
+export const workflowAudienceSchema = z.object({
+  match: z.enum(["all", "any"]).default("all"),
+  rules: z.array(workflowAudienceRuleSchema).max(32).default([]),
+});
+
 export const workflowDefinitionSchema = z
   .object({
     trigger: z.enum(WORKFLOW_TRIGGERS),
@@ -198,9 +219,21 @@ export const workflowDefinitionSchema = z
     pageRules: z.array(pageViewRuleSchema).max(16).optional(),
     /** Custom event name for event_match workflows, e.g. app/subscription.churned. */
     eventName: z.string().min(1).max(128).optional(),
+    /** Schedule cron for schedule workflows. */
+    cron: z.string().min(1).max(64).optional(),
+    /** Audience rules for schedule workflows. Empty or omitted means every open conversation. */
+    audience: workflowAudienceSchema.optional(),
     blocks: z.array(workflowBlockSchema).min(1).max(32),
   })
   .superRefine((val, ctx) => {
+    if (val.trigger === "schedule" && !val.cron?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "cron_required",
+        path: ["cron"],
+      });
+    }
+
     if (val.trigger === "event_match" && !val.eventName?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -225,6 +258,8 @@ export const workflowDefinitionSchema = z
 
 export type WorkflowBlock = z.infer<typeof workflowBlockSchema>;
 export type PageViewRule = z.infer<typeof pageViewRuleSchema>;
+export type WorkflowAudience = z.infer<typeof workflowAudienceSchema>;
+export type WorkflowAudienceRule = z.infer<typeof workflowAudienceRuleSchema>;
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
 
 export const createWorkflowBodySchema = z.object({

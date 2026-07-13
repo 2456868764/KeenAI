@@ -8,6 +8,11 @@ export type WorkflowDefinitionJson = {
   inactivityMinutes?: number;
   pageRules?: Array<{ urlOp: "contains" | "eq" | "matches"; url: string; timeOnPageSec?: number }>;
   eventName?: string;
+  cron?: string;
+  audience?: {
+    match?: "all" | "any";
+    rules?: Array<{ field: string; op: string; value?: unknown }>;
+  };
   blocks: Array<{
     id: string;
     type: string;

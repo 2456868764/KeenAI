@@ -9,6 +9,16 @@ vi.mock("./workflow-unresponsive-scan.js", () => ({
   })),
 }));
 
+vi.mock("./workflow-schedule-scan.js", () => ({
+  scanScheduledWorkflows: vi.fn(async () => ({
+    scanned: 3,
+    triggered: 2,
+    runs: ["run-2", "run-3"],
+    workflows: 1,
+  })),
+}));
+
+import { scanScheduledWorkflows } from "./workflow-schedule-scan.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
 
 describe("startWorkflowScanScheduler", () => {
@@ -33,6 +43,7 @@ describe("startWorkflowScanScheduler", () => {
     );
     vi.advanceTimersByTime(60_000);
     expect(scanCustomerUnresponsiveWorkflows).not.toHaveBeenCalled();
+    expect(scanScheduledWorkflows).not.toHaveBeenCalled();
     stop();
   });
 
@@ -45,6 +56,7 @@ describe("startWorkflowScanScheduler", () => {
 
     await vi.advanceTimersByTimeAsync(60_000);
     expect(scanCustomerUnresponsiveWorkflows).toHaveBeenCalledOnce();
+    expect(scanScheduledWorkflows).toHaveBeenCalledOnce();
     expect(log.info).toHaveBeenCalled();
 
     stop();
