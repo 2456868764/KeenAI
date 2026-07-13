@@ -702,6 +702,11 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     }),
     wait: async () => {},
     httpRequest: async () => ({ status: 200, body: "" }),
+    webhookEmit: async (input) => ({
+      status: 200,
+      body: "",
+      eventName: input.eventName?.trim() || "workflow.webhook_emit",
+    }),
     applySla: async (input) => ({
       policyId: input.policyId ?? "dry-run-sla-policy",
       breachCount: 0,

@@ -402,6 +402,14 @@ export type WorkflowBlock =
     }
   | {
       id: string;
+      type: "webhook_emit";
+      url: string;
+      eventName?: string;
+      payload?: string;
+      headers?: Record<string, string>;
+    }
+  | {
+      id: string;
       type: "branches";
       branches: {
         label?: string;

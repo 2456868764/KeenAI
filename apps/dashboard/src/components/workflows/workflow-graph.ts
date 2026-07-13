@@ -234,6 +234,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return `Wait ${block.seconds}s`;
     case "http_request":
       return `${block.method} ${block.url.length > 40 ? `${block.url.slice(0, 40)}…` : block.url}`;
+    case "webhook_emit":
+      return `Webhook → ${block.eventName?.trim() || block.url.slice(0, 40)}`;
     case "branches":
       return `${block.branches.length} branch(es)`;
     case "apply_rules":

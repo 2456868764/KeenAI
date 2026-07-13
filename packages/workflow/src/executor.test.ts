@@ -528,6 +528,48 @@ describe("runWorkflow", () => {
     expect(result.steps[1]?.output).toMatchObject({ httpStatus: 204 });
   });
 
+  it("runs webhook_emit blocks", async () => {
+    const webhookEmit = vi.fn(async () => ({
+      status: 202,
+      body: "accepted",
+      eventName: "crm.customer.updated",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "webhook",
+        blocks: [
+          {
+            id: "hook",
+            type: "webhook_emit",
+            url: "https://example.com/crm",
+            eventName: "crm.customer.updated",
+            payload: '{"tier":"enterprise"}',
+            headers: { Authorization: "Bearer test" },
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        webhookEmit,
+      },
+    );
+
+    expect(webhookEmit).toHaveBeenCalledWith({
+      blockId: "hook",
+      url: "https://example.com/crm",
+      eventName: "crm.customer.updated",
+      payload: '{"tier":"enterprise"}',
+      headers: { Authorization: "Bearer test" },
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      httpStatus: 202,
+      webhookEventName: "crm.customer.updated",
+    });
+  });
+
   it("records agent output from let_keeni_answer block", async () => {
     const letKeeniAnswer = vi.fn(async () => ({
       replyText: "Issue is resolved.",

@@ -317,6 +317,28 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "webhook_emit" ? (
+        <>
+          <Input
+            placeholder="Webhook URL"
+            value={block.url}
+            onChange={(e) => onChange({ ...block, url: e.target.value })}
+          />
+          <Input
+            placeholder="Event name (optional)"
+            value={block.eventName ?? ""}
+            onChange={(e) => onChange({ ...block, eventName: e.target.value.trim() || undefined })}
+          />
+          <textarea
+            value={block.payload ?? ""}
+            onChange={(e) => onChange({ ...block, payload: e.target.value })}
+            rows={4}
+            placeholder='Payload JSON (optional), e.g. {"plan":"pro"}'
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+        </>
+      ) : null}
+
       {block.type === "branches" ? (
         <div className="space-y-3">
           {block.branches.map((branch, branchIndex) => (

@@ -133,6 +133,25 @@ async function executeBlock(
         nextId,
       };
     }
+    case "webhook_emit": {
+      if (!handlers.webhookEmit) throw new Error("webhook_emit_handler_missing");
+      const result = await handlers.webhookEmit({
+        blockId: block.id,
+        url: block.url,
+        eventName: block.eventName,
+        payload: block.payload,
+        headers: block.headers,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { httpStatus: result.status, webhookEventName: result.eventName },
+        },
+        nextId,
+      };
+    }
     case "branches": {
       nextId = resolveBranchNext(block, facts);
       return {

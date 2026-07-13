@@ -484,6 +484,14 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "wait", seconds: 60 });
         } else if (type === "http_request") {
           onAdd({ id, type: "http_request", method: "GET", url: "https://example.com/hook" });
+        } else if (type === "webhook_emit") {
+          onAdd({
+            id,
+            type: "webhook_emit",
+            url: "https://example.com/webhook",
+            eventName: "workflow.event",
+            payload: "{}",
+          });
         } else if (type === "branches") {
           onAdd({
             id,
@@ -574,6 +582,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="let_keeni_answer">Let Keeni answer</option>
       <option value="wait">Wait</option>
       <option value="http_request">HTTP request</option>
+      <option value="webhook_emit">Emit webhook</option>
       <option value="branches">Branches</option>
       <option value="apply_rules">Apply rules (all-match)</option>
       <option value="apply_sla">Apply SLA</option>

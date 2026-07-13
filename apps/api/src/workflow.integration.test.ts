@@ -14,7 +14,7 @@ import {
 } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.js";
 import { widgetHmacSecret } from "./lib/widget.js";
 import { createLogger } from "./logger.js";
@@ -26,6 +26,10 @@ const authConfig: AuthConfig = {
   refreshTtlSec: 604_800,
   appUrl: "http://localhost:3000",
 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 async function loginToken(app: ReturnType<typeof createApp>) {
   const login = await app.request("/api/v1/auth/login", {
@@ -1265,6 +1269,157 @@ describe("workflow integration", () => {
       (step) => step.type === "disable_customer_reply",
     );
     expect(disableStep?.output?.customerReplyDisabled).toBe(true);
+
+    await store.close();
+  });
+
+  it("webhook_emit posts workflow context to an outbound webhook", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("accepted", { status: 202 }));
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const workflowRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Emit webhook",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "emit",
+              type: "webhook_emit",
+              url: "https://hooks.example.test/crm",
+              eventName: "crm.customer.created",
+              payload: '{"plan":"pro"}',
+              headers: { Authorization: "Bearer test-token" },
+            },
+          ],
+        },
+      }),
+    });
+    expect(workflowRes.status).toBe(201);
+    const { workflow } = (await workflowRes.json()) as { workflow: { id: string } };
+    const publishRes = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-webhook-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash, email: "webhook@test.local" },
+      }),
+    });
+    expect(sessionRes.status).toBe(200);
+    const session = (await sessionRes.json()) as { accessToken: string };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ initialMessage: { plainText: "Hi" } }),
+    });
+    expect(convRes.status).toBe(201);
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "https://hooks.example.test/crm",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          Authorization: "Bearer test-token",
+        }),
+      }),
+    );
+    const [, init] = fetchSpy.mock.calls[0] ?? [];
+    const body = JSON.parse(String((init as RequestInit | undefined)?.body)) as {
+      event: string;
+      payload: { plan: string };
+      context: { orgId: string; brandId: string; workflowId: string; blockId: string };
+    };
+    expect(body).toMatchObject({
+      event: "crm.customer.created",
+      payload: { plan: "pro" },
+      context: {
+        orgId: org.id,
+        brandId: brand.id,
+        workflowId: workflow.id,
+        blockId: "emit",
+      },
+    });
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: {
+        steps: {
+          type: string;
+          output?: { httpStatus?: number; webhookEventName?: string };
+        }[];
+      }[];
+    };
+    const emitStep = runsBody.items[0]?.steps.find((step) => step.type === "webhook_emit");
+    expect(emitStep?.output).toMatchObject({
+      httpStatus: 202,
+      webhookEventName: "crm.customer.created",
+    });
 
     await store.close();
   });

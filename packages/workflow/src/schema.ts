@@ -42,6 +42,11 @@ import {
   type TagConversationInput,
   tagConversationBlockSchema,
 } from "./blocks/tag-conversation.js";
+import {
+  type WebhookEmitInput,
+  type WebhookEmitResult,
+  webhookEmitBlockSchema,
+} from "./blocks/webhook-emit.js";
 
 export {
   applySlaBlockSchema,
@@ -127,6 +132,12 @@ export {
   type TagConversationInput,
 } from "./blocks/tag-conversation.js";
 export {
+  webhookEmitBlockSchema,
+  type WebhookEmitBlock,
+  type WebhookEmitInput,
+  type WebhookEmitResult,
+} from "./blocks/webhook-emit.js";
+export {
   sendTicketUpdateBlockSchema,
   type SendTicketUpdateBlock,
 } from "./blocks/send-ticket-update.js";
@@ -186,6 +197,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "let_keeni_answer",
   "wait",
   "http_request",
+  "webhook_emit",
   "branches",
   "apply_rules",
   "apply_sla",
@@ -258,6 +270,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
   httpRequestBlockSchema,
+  webhookEmitBlockSchema,
   branchesBlockSchema,
   applyRulesBlockSchema,
   applySlaBlockSchema,
@@ -425,6 +438,7 @@ export type WorkflowActionHandlers = {
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
+  webhookEmit?: (input: WebhookEmitInput) => Promise<WebhookEmitResult>;
   applySla?: (input: ApplySlaInput) => Promise<ApplySlaResult>;
   convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
   linkTicket?: (input: {
@@ -456,6 +470,7 @@ export type WorkflowStepResult = {
     insideOfficeHours?: boolean;
     policyName?: string;
     httpStatus?: number;
+    webhookEventName?: string;
     waitMs?: number;
     slaPolicyId?: string;
     slaBreachCount?: number;

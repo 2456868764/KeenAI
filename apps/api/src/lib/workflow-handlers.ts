@@ -42,6 +42,16 @@ type Db = ReturnType<typeof createLibsqlStore>["db"];
 type ConversationRow = typeof conversations.$inferSelect;
 type WorkflowRow = typeof workflows.$inferSelect;
 
+function parseWebhookPayload(payload: string | undefined): unknown {
+  const trimmed = payload?.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return trimmed;
+  }
+}
+
 export function buildCollectDataMessageContent(input: CollectDataInput): Record<string, unknown> {
   return {
     type: "workflow_collect_data",
@@ -344,6 +354,31 @@ export function createWorkflowActionHandlers(
       });
       const text = await res.text();
       return { status: res.status, body: text.slice(0, 4000) };
+    },
+    webhookEmit: async ({ blockId, url, eventName, payload, headers }) => {
+      const resolvedEventName = eventName?.trim() || "workflow.webhook_emit";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        body: JSON.stringify({
+          event: resolvedEventName,
+          payload: parseWebhookPayload(payload),
+          context: {
+            orgId: workflow.orgId,
+            brandId: conversation.brandId,
+            workflowId: workflow.id,
+            workflowRunId,
+            conversationId,
+            blockId,
+          },
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const text = await res.text();
+      return { status: res.status, body: text.slice(0, 4000), eventName: resolvedEventName };
     },
     applySla: async ({ policyId }) => {
       const result = await evaluateConversationSla(db, {
