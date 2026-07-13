@@ -1102,7 +1102,7 @@ export const workflowAutoCloseConfig = pgTable('workflow_auto_close_config', {
 | **Notify** | 任何后台 Block 都可发 Email / Slack / In-app 通知 |
 | **SLA** | `apply_sla` Block 调用 [04-MODULES § 4.4 SLA 引擎](04-MODULES.md) |
 | **Office Hours** | `availability.insideOfficeHours` Predicate + `sendTime` Trigger 配置共享同一服务 |
-| **Audit** | 每次 publish / unpublish / rollback / delete 写 `audit_logs` |
+| **Audit** | 每次 publish / unpublish / rollback / delete 写 `audit_logs`（当前已落地 SQLite `audit_logs` 与 Workflow 生命周期审计） |
 | **Webhook** | 入站 webhook 可作为 `webhook` trigger；出站 `webhook_emit` Block 复用 `@keenai/webhook` |
 
 ---
@@ -1197,7 +1197,7 @@ export async function runShadow(def: WorkflowDef, sampleConvs: Conversation[]) {
 - Audience 中 PII 字段（email / phone）匹配走脱敏哈希
 - HTTP / Script Block：默认禁用，需 Owner 启用；带域名白名单 + 速率限制 + 沙箱隔离
 - 所有 secrets（HMAC / Bearer）通过 `secrets` 表 + KMS 加密引用
-- Workflow publish 审计写 `audit_logs`
+- Workflow publish / unpublish / rollback / delete 审计写 `audit_logs`
 - 多租户 RLS（应用层 + 可选 PG RLS）：所有查询带 `org_id` 谓词
 
 ---

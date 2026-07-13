@@ -3,7 +3,14 @@ import { fileURLToPath } from "node:url";
 import { type AuthConfig, createWidgetUserHash, hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, conversations, members, organizations } from "@keenai/storage/schema";
+import {
+  accounts,
+  auditLogs,
+  brands,
+  conversations,
+  members,
+  organizations,
+} from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -1307,6 +1314,24 @@ describe("workflow integration", () => {
       headers: auth,
     });
     expect(deleteRes.status).toBe(204);
+
+    const auditRows = await db.select().from(auditLogs);
+    const workflowAuditRows = auditRows.filter((row) => row.resourceId === workflowId);
+    expect(workflowAuditRows.map((row) => row.action).sort()).toEqual([
+      "workflow.delete",
+      "workflow.publish",
+      "workflow.publish",
+      "workflow.rollback",
+      "workflow.unpublish",
+    ]);
+    expect(workflowAuditRows.every((row) => row.resourceType === "workflow")).toBe(true);
+    expect(workflowAuditRows.every((row) => row.actorType === "account")).toBe(true);
+    expect(workflowAuditRows.every((row) => row.actorId === account.id)).toBe(true);
+    const publishedVersions = workflowAuditRows
+      .filter((row) => row.action === "workflow.publish")
+      .map((row) => (row.changes as { version?: { version: number } } | null)?.version?.version)
+      .sort();
+    expect(publishedVersions).toEqual([1, 2]);
 
     const listRes = await app.request("/api/v1/workflows", { headers: auth });
     expect(listRes.status).toBe(200);

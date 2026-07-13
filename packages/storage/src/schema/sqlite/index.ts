@@ -1,3 +1,9 @@
+export {
+  AUDIT_ACTOR_TYPES,
+  auditLogs,
+  type AuditActorType,
+  type AuditLogRow,
+} from "./audit";
 export { magicLinks, sessions } from "./auth";
 export {
   accounts,

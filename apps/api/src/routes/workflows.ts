@@ -1,6 +1,12 @@
 import { zValidator } from "@hono/zod-validator";
 import { API_VERSION } from "@keenai/shared";
-import { conversations, workflowRuns, workflowVersions, workflows } from "@keenai/storage/schema";
+import {
+  auditLogs,
+  conversations,
+  workflowRuns,
+  workflowVersions,
+  workflows,
+} from "@keenai/storage/schema";
 import {
   type WorkflowActionHandlers,
   createWorkflowBodySchema,
@@ -10,7 +16,7 @@ import {
   workflowDefinitionSchema,
 } from "@keenai/workflow";
 import { type SQL, and, desc, eq, inArray, ne } from "drizzle-orm";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { assertBrandInOrg } from "../lib/conversations.js";
 import {
@@ -27,6 +33,9 @@ const workflowShadowBodySchema = z
     conversationIds: z.array(z.string().min(1)).min(1).max(25).optional(),
   })
   .default({});
+
+type WorkflowRouteContext = Context<{ Variables: AppVariables }>;
+type WorkflowAuditAuth = { orgId: string; sub: string };
 
 export function workflowRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -239,6 +248,16 @@ export function workflowRoutes() {
       })
       .returning();
 
+    await writeWorkflowAudit(c, auth, {
+      action: "workflow.publish",
+      workflowId: existing.id,
+      changes: {
+        before: { status: existing.status, publishedDefinition: existing.publishedDefinition },
+        after: { status: row.status, publishedDefinition: row.publishedDefinition },
+        version: version ? serializeWorkflowVersion(version) : null,
+      },
+    });
+
     return c.json({
       workflow: serializeWorkflow(row),
       version: version ? serializeWorkflowVersion(version) : null,
@@ -265,6 +284,14 @@ export function workflowRoutes() {
       .returning();
 
     if (!row) return c.json({ error: "update_failed" }, 500);
+    await writeWorkflowAudit(c, auth, {
+      action: "workflow.unpublish",
+      workflowId: existing.id,
+      changes: {
+        before: { status: existing.status },
+        after: { status: row.status },
+      },
+    });
     return c.json({ workflow: serializeWorkflow(row) });
   });
 
@@ -314,6 +341,15 @@ export function workflowRoutes() {
       .db.update(workflows)
       .set({ status: "archived", updatedAt: new Date() })
       .where(eq(workflows.id, existing.id));
+
+    await writeWorkflowAudit(c, auth, {
+      action: "workflow.delete",
+      workflowId: existing.id,
+      changes: {
+        before: { status: existing.status },
+        after: { status: "archived" },
+      },
+    });
 
     return c.body(null, 204);
   });
@@ -386,6 +422,23 @@ export function workflowRoutes() {
       .returning();
 
     if (!row) return c.json({ error: "rollback_failed" }, 500);
+    await writeWorkflowAudit(c, auth, {
+      action: "workflow.rollback",
+      workflowId: existing.id,
+      changes: {
+        before: {
+          status: existing.status,
+          definition: existing.definition,
+          publishedDefinition: existing.publishedDefinition,
+        },
+        after: {
+          status: row.status,
+          definition: row.definition,
+          publishedDefinition: row.publishedDefinition,
+        },
+        version: serializeWorkflowVersion(snapshot),
+      },
+    });
     return c.json({
       workflow: serializeWorkflow(row),
       version: serializeWorkflowVersion(snapshot),
@@ -514,4 +567,25 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     csat: async () => {},
     tagConversation: async () => {},
   };
+}
+
+async function writeWorkflowAudit(
+  c: WorkflowRouteContext,
+  auth: WorkflowAuditAuth,
+  input: { action: string; workflowId: string; changes?: Record<string, unknown> },
+) {
+  await c
+    .get("store")
+    .db.insert(auditLogs)
+    .values({
+      orgId: auth.orgId,
+      actorType: "account",
+      actorId: auth.sub,
+      action: input.action,
+      resourceType: "workflow",
+      resourceId: input.workflowId,
+      changes: input.changes,
+      ipAddress: c.req.header("x-forwarded-for")?.split(",")[0]?.trim(),
+      userAgent: c.req.header("user-agent"),
+    });
 }
