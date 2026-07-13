@@ -338,7 +338,7 @@ P4:    SSO + Audit + Mobile App + Surveys + 云版 SaaS
   - [x] Inngest `media.transcribe` / `media.thumbnail` / `media.vision_summary`
   - [x] Keeni outbound：`parseAgentResponse` + 生图 / TTS Tools
   - [x] Widget 语音播放 · 视频 bubble
-  - [x] Telegram / Slack IM 原生多模态收发
+  - [x] Telegram / Slack / WhatsApp IM 原生多模态收发
 
 #### Sprint 15（W33-W34）：KB / RAG Phase A — 检索质量
 

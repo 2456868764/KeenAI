@@ -72,7 +72,9 @@ export async function ingestInboundIm(
             ? `Feishu ${input.parsed.channelId}`
             : channelType === "dingtalk"
               ? `DingTalk ${input.parsed.channelId}`
-              : `Slack ${input.parsed.channelId}`;
+              : channelType === "whatsapp"
+                ? `WhatsApp ${input.parsed.channelId}`
+                : `Slack ${input.parsed.channelId}`;
 
     const [row] = await db
       .insert(conversations)

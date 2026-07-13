@@ -1074,7 +1074,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 
 ---
 
-## Iteration 22（Telegram/Slack IM 多模态 · MM-15）
+## Iteration 22（Telegram/Slack/WhatsApp IM 多模态 · MM-15）
 
 | ID | 项 | 状态 |
 |----|-----|------|
@@ -1104,7 +1104,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 | MM-12 | parseAgentResponse + Keeni outbound 图 | [x] |
 | MM-13 | TTS tool + audio 出站 | [x] |
 | MM-14 | generate_image tool | [x] |
-| MM-15 | Telegram/Slack IM 多模态 | [x] |
+| MM-15 | Telegram/Slack/WhatsApp IM 多模态 | [x] |
 
 ## Phase 3 · Memory Tree（[15-MEMORY-TREE.md](./15-MEMORY-TREE.md)）
 

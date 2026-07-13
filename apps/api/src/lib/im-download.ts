@@ -21,6 +21,10 @@ export async function downloadImAttachment(
     return downloadTelegramFile(env, attachment);
   }
 
+  if (attachment.platform === "whatsapp") {
+    return downloadWhatsAppMedia(env, attachment);
+  }
+
   return downloadSlackFile(env, attachment);
 }
 
@@ -63,6 +67,32 @@ async function downloadSlackFile(
   });
   if (!res.ok) throw new Error("slack_download_failed");
   return new Uint8Array(await res.arrayBuffer());
+}
+
+async function downloadWhatsAppMedia(
+  env: ApiEnv,
+  attachment: ImPendingAttachment,
+): Promise<Uint8Array> {
+  const token = env.WHATSAPP_ACCESS_TOKEN;
+  if (!token) return stubBytesForMime(attachment.contentType);
+
+  const version = env.WHATSAPP_GRAPH_API_VERSION || "v20.0";
+  const metaRes = await fetch(
+    `https://graph.facebook.com/${version}/${encodeURIComponent(attachment.platformRef)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!metaRes.ok) throw new Error("whatsapp_media_lookup_failed");
+
+  const meta = (await metaRes.json()) as { url?: string };
+  if (!meta.url?.startsWith("https://")) throw new Error("whatsapp_media_url_missing");
+
+  const contentRes = await fetch(meta.url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!contentRes.ok) throw new Error("whatsapp_media_download_failed");
+  return new Uint8Array(await contentRes.arrayBuffer());
 }
 
 function stubBytesForMime(contentType: string): Uint8Array {

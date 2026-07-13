@@ -1,6 +1,6 @@
 import type { MessageKind, MessagePart, OutboundDirectives } from "@keenai/shared";
 
-export type ImPlatform = "telegram" | "slack" | "discord" | "feishu" | "dingtalk";
+export type ImPlatform = "telegram" | "slack" | "discord" | "feishu" | "dingtalk" | "whatsapp";
 
 export type ImPendingAttachment = {
   fileName: string;
@@ -98,12 +98,44 @@ export type DingTalkOutboundAction = {
   text: string;
 };
 
+export type WhatsAppOutboundAction =
+  | { platform: "whatsapp"; method: "messages.text"; to: string; text: string }
+  | {
+      platform: "whatsapp";
+      method: "messages.image";
+      to: string;
+      imageUrl: string;
+      caption?: string;
+    }
+  | {
+      platform: "whatsapp";
+      method: "messages.audio";
+      to: string;
+      audioUrl: string;
+    }
+  | {
+      platform: "whatsapp";
+      method: "messages.video";
+      to: string;
+      videoUrl: string;
+      caption?: string;
+    }
+  | {
+      platform: "whatsapp";
+      method: "messages.document";
+      to: string;
+      documentUrl: string;
+      fileName?: string;
+      caption?: string;
+    };
+
 export type ImOutboundAction =
   | TelegramOutboundAction
   | SlackOutboundAction
   | DiscordOutboundAction
   | FeishuOutboundAction
-  | DingTalkOutboundAction;
+  | DingTalkOutboundAction
+  | WhatsAppOutboundAction;
 
 export type PlanImOutboundInput = {
   platform: ImPlatform;

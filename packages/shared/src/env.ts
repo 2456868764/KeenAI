@@ -54,6 +54,11 @@ export const apiEnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   /** Slack Bot token for IM webhooks and media download */
   SLACK_BOT_TOKEN: z.string().min(1).optional(),
+  /** WhatsApp Cloud API bearer token for media download/send adapters */
+  WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
+  /** WhatsApp Cloud API webhook verification token */
+  WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
+  WHATSAPP_GRAPH_API_VERSION: z.string().min(1).default("v20.0"),
   /** Video/image thumbnail provider: stub | ffmpeg */
   THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | qwen | zhipu | gemini | ollama (auto if unset) */

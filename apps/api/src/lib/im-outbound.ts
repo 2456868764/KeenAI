@@ -40,7 +40,8 @@ export async function planConversationImOutbound(
     conversation.channelType !== "slack" &&
     conversation.channelType !== "discord" &&
     conversation.channelType !== "feishu" &&
-    conversation.channelType !== "dingtalk"
+    conversation.channelType !== "dingtalk" &&
+    conversation.channelType !== "whatsapp"
   ) {
     return null;
   }
@@ -99,7 +100,8 @@ export async function planConversationImOutbound(
     conversation.channelType === "slack" ||
     conversation.channelType === "discord" ||
     conversation.channelType === "feishu" ||
-    conversation.channelType === "dingtalk"
+    conversation.channelType === "dingtalk" ||
+    conversation.channelType === "whatsapp"
       ? conversation.channelType
       : "slack";
 

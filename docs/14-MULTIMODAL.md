@@ -185,7 +185,7 @@ Platform payload
 | **Dashboard** | Tiptap 粘贴/拖拽 → presign | Inbox composer 已带 `attachmentIds` |
 | **Telegram**（P3） | Bot API getFile → upload | 已落地基础入站/出站；对标 Hermes telegram.py |
 | **Slack**（P2） | files.shared / block attachments | 已落地基础入站/出站 |
-| **WhatsApp**（P3） | Cloud API media_id 下载 | |
+| **WhatsApp**（P3） | Cloud API media_id 下载 | 已落地 Cloud API webhook normalize、media_id 下载、本地 stub fallback、link-based 出站规划 |
 
 ### 4.3 特殊合并逻辑（借鉴 Hermes）
 
@@ -193,7 +193,7 @@ Platform payload
 - **document 实为图片**：MIME `image/*` 或扩展名 → `messageKind: photo`
 - **Reply 上下文**：`metadata.replyToPlainText` 注入 Agent（Hermes `reply_to_text`）
 
-当前实现：IM 入站会保留 `platformMessageId`、`platformMessageIds`、`replyToMessageId`、`replyToPlainText`、`mediaGroupId` 到 `messages.metadata`；Telegram 同一 `media_group_id` 的连续图片 webhook 会合并回同一条 canonical message，并更新为 `messageKind: mixed`。
+当前实现：IM 入站会保留 `platformMessageId`、`platformMessageIds`、`replyToMessageId`、`replyToPlainText`、`mediaGroupId` 到 `messages.metadata`；Telegram 同一 `media_group_id` 的连续图片 webhook 会合并回同一条 canonical message，并更新为 `messageKind: mixed`；WhatsApp Cloud API payload 会归一化 `text/image/audio/video/document`，并将 `phone_number_id` 等业务号信息写入 conversation attributes。
 
 ### 4.4 限制与安全
 
@@ -409,7 +409,7 @@ WebSocket / SSE `message.created` payload 同步带 `attachments`。
 | MM-12 | `parseAgentResponse` + Keeni outbound 图片 |
 | MM-13 | Tool `text_to_speech` + Widget audio 播放 |
 | MM-14 | Tool `generate_image` + outbound |
-| MM-15 | Telegram / Slack IM adapter 多模态 |
+| MM-15 | Telegram / Slack / WhatsApp IM adapter 多模态 |
 
 ### Phase 4+ — 增强
 

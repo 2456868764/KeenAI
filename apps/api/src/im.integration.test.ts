@@ -379,6 +379,115 @@ describe("IM multimodal integration", () => {
     await store.close();
   });
 
+  it("ingests WhatsApp Cloud API image webhook", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "whatsapp", name: "WhatsApp" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    requireRow(brandRow, "brand");
+
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      UPLOAD_DIR: path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../data/test-im-whatsapp",
+      ),
+    });
+
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: {
+        jwtSecret: "test-secret-at-least-32-characters-long!!",
+        accessTtlSec: 900,
+        refreshTtlSec: 604_800,
+        appUrl: "http://localhost:3000",
+      },
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const verifyRes = await app.request(
+      "/api/v1/webhooks/im/whatsapp?hub.mode=subscribe&hub.challenge=challenge-1",
+    );
+    expect(verifyRes.status).toBe(200);
+    expect(await verifyRes.text()).toBe("challenge-1");
+
+    const webhookRes = await app.request("/api/v1/webhooks/im/whatsapp?org=whatsapp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        object: "whatsapp_business_account",
+        entry: [
+          {
+            id: "waba-1",
+            changes: [
+              {
+                field: "messages",
+                value: {
+                  metadata: {
+                    display_phone_number: "15550000000",
+                    phone_number_id: "phone-1",
+                  },
+                  contacts: [{ wa_id: "15551234567", profile: { name: "Jane" } }],
+                  messages: [
+                    {
+                      id: "wamid.1",
+                      from: "15551234567",
+                      timestamp: "1710000000",
+                      type: "image",
+                      image: {
+                        id: "media-image-1",
+                        mime_type: "image/jpeg",
+                        caption: "Checkout screenshot",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    expect(webhookRes.status).toBe(202);
+    const body = (await webhookRes.json()) as {
+      accepted: boolean;
+      conversation: { channelType: string; channelId: string; attributes: Record<string, unknown> };
+      message: {
+        messageKind: string;
+        plainText: string;
+        attachments: unknown[];
+        metadata?: { platformMessageId?: string };
+      };
+    };
+    expect(body.accepted).toBe(true);
+    expect(body.conversation.channelType).toBe("whatsapp");
+    expect(body.conversation.channelId).toBe("15551234567");
+    expect(body.conversation.attributes.whatsappPhoneNumberId).toBe("phone-1");
+    expect(body.message.messageKind).toBe("photo");
+    expect(body.message.plainText).toContain("Checkout screenshot");
+    expect(body.message.attachments).toHaveLength(1);
+    expect(body.message.metadata?.platformMessageId).toBe("wamid.1");
+
+    await store.close();
+  });
+
   it("ingests Discord MESSAGE_CREATE webhook", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

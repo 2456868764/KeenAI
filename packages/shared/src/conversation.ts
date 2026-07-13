@@ -16,6 +16,7 @@ export const CHANNEL_TYPES = [
   "telegram",
   "feishu",
   "dingtalk",
+  "whatsapp",
 ] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
