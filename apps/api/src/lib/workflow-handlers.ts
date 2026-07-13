@@ -115,6 +115,19 @@ export function createWorkflowActionHandlers(
         }
       }
     },
+    addNote: async ({ plainText }) => {
+      await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText,
+        content: buildMessageContent(plainText),
+        isInternal: true,
+        sentVia: "workflow",
+        isAgentReply: false,
+        metadata: { source: "workflow_add_note", workflowId: workflow.id, workflowRunId },
+      });
+    },
     assign: async (assigneeId) => {
       await db
         .update(conversations)

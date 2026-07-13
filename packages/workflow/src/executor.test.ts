@@ -54,6 +54,21 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("runs add_note blocks through the note handler", async () => {
+    const addNote = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "note", type: "add_note", plainText: "Investigate billing account." }],
+      },
+      { sendMessage: vi.fn(), addNote, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(addNote).toHaveBeenCalledWith({ plainText: "Investigate billing account." });
+    expect(result.steps).toEqual([{ blockId: "note", type: "add_note", status: "ok" }]);
+  });
+
   it("stops on first block error", async () => {
     const sendMessage = vi.fn(async () => {
       throw new Error("send_failed");

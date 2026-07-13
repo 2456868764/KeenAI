@@ -44,6 +44,10 @@ async function executeBlock(
         attachmentIds: block.attachmentIds,
       });
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "add_note":
+      if (!handlers.addNote) throw new Error("add_note_handler_missing");
+      await handlers.addNote({ plainText: block.plainText });
+      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
     case "assign":
       await handlers.assign(block.assigneeId ?? null);
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };

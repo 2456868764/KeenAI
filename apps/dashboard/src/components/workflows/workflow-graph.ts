@@ -190,6 +190,8 @@ export function blockLabel(block: WorkflowBlock): string {
       const count = block.attachmentIds?.length ?? 0;
       return count > 0 ? `${count} attachment(s)` : "(empty message)";
     }
+    case "add_note":
+      return block.plainText.length > 48 ? `${block.plainText.slice(0, 48)}…` : block.plainText;
     case "assign":
       return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
     case "close":

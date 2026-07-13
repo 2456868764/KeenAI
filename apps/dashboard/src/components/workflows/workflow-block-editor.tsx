@@ -86,6 +86,16 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "add_note" ? (
+        <textarea
+          value={block.plainText}
+          onChange={(e) => onChange({ ...block, plainText: e.target.value })}
+          rows={4}
+          placeholder="Internal note"
+          className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+        />
+      ) : null}
+
       {block.type === "assign" ? (
         <Input
           placeholder="Assignee member ID (optional)"

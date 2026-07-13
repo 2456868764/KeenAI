@@ -124,6 +124,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "snooze",
   "csat",
   "tag_conversation",
+  "add_note",
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
@@ -148,6 +149,12 @@ export const assignBlockSchema = z.object({
 export const closeBlockSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("close"),
+});
+
+export const addNoteBlockSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.literal("add_note"),
+  plainText: z.string().min(1).max(10_000),
 });
 
 export const waitBlockSchema = z.object({
@@ -181,6 +188,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   snoozeBlockSchema,
   csatBlockSchema,
   tagConversationBlockSchema,
+  addNoteBlockSchema,
 ]);
 
 export const pageViewRuleSchema = z.object({
@@ -257,6 +265,7 @@ export const workflowDefinitionSchema = z
   });
 
 export type WorkflowBlock = z.infer<typeof workflowBlockSchema>;
+export type AddNoteBlock = z.infer<typeof addNoteBlockSchema>;
 export type PageViewRule = z.infer<typeof pageViewRuleSchema>;
 export type WorkflowAudience = z.infer<typeof workflowAudienceSchema>;
 export type WorkflowAudienceRule = z.infer<typeof workflowAudienceRuleSchema>;
@@ -303,6 +312,7 @@ export type HttpRequestResult = {
 
 export type WorkflowActionHandlers = {
   sendMessage: (input: SendMessageInput) => Promise<void>;
+  addNote?: (input: { plainText: string }) => Promise<void>;
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;

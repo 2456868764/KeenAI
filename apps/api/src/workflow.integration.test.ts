@@ -9,6 +9,7 @@ import {
   brands,
   conversations,
   members,
+  messages,
   organizations,
 } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
@@ -1128,7 +1129,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("tag_conversation block appends tags to the conversation", async () => {
+  it("tag_conversation and add_note blocks update the conversation", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -1180,11 +1181,16 @@ describe("workflow integration", () => {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: "Tag VIP conversations",
+        name: "Tag and note VIP conversations",
         brandId: brand.id,
         definition: {
           trigger: "first_message",
           blocks: [
+            {
+              id: "note",
+              type: "add_note",
+              plainText: "Workflow internal note",
+            },
             {
               id: "tag",
               type: "tag_conversation",
@@ -1226,6 +1232,21 @@ describe("workflow integration", () => {
       conversation: { tags: string[] };
     };
     expect(fetchedBody.conversation.tags).toEqual(["existing", "vip", "billing"]);
+
+    const noteRows = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversation.id));
+    const workflowNote = noteRows.find((message) => message.plainText === "Workflow internal note");
+    expect(workflowNote).toMatchObject({
+      senderType: "agent",
+      isInternal: true,
+      sentVia: "workflow",
+    });
+    expect(workflowNote?.metadata).toMatchObject({
+      source: "workflow_add_note",
+      workflowId: workflow.id,
+    });
 
     await store.close();
   });

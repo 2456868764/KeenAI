@@ -684,6 +684,7 @@ export function workflowRoutes() {
 function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
   return {
     sendMessage: async () => {},
+    addNote: async () => {},
     assign: async () => {},
     close: async () => {},
     letKeeniAnswer: async () => ({

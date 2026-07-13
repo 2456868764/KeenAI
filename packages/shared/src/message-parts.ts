@@ -15,6 +15,7 @@ export type MessageKind = (typeof MESSAGE_KINDS)[number];
 export const messageKindSchema = z.enum(MESSAGE_KINDS);
 
 export const messageMetadataSchema = z.object({
+  source: z.string().optional(),
   messageKind: messageKindSchema.optional(),
   enrichmentStatus: z.enum(["pending", "ready", "failed"]).optional(),
   imageInputMode: z.enum(["native", "text"]).optional(),
@@ -23,6 +24,8 @@ export const messageMetadataSchema = z.object({
   replyToMessageId: z.string().optional(),
   replyToPlainText: z.string().optional(),
   mediaGroupId: z.string().optional(),
+  workflowId: z.string().optional(),
+  workflowRunId: z.string().optional(),
 });
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;

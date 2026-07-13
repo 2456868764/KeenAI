@@ -91,11 +91,14 @@ describe("message-parts", () => {
 
     expect(
       messageMetadataSchema.parse({
+        source: "workflow_add_note",
         messageKind: "photo",
         enrichmentStatus: "pending",
         imageInputMode: "native",
         platformMessageIds: ["100", "101"],
         mediaGroupId: "album-1",
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
       }).platformMessageIds,
     ).toEqual(["100", "101"]);
   });
