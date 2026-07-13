@@ -24,6 +24,13 @@ export async function sendOutboundEmail(
     html: input.html,
     inReplyTo: input.inReplyTo,
     references: input.references?.join(" "),
+    attachments: input.attachments?.map((attachment) => ({
+      filename: attachment.fileName,
+      contentType: attachment.contentType,
+      content: Buffer.from(attachment.contentBase64, "base64"),
+      cid: attachment.contentId,
+      disposition: attachment.inline ? "inline" : "attachment",
+    })),
   });
 
   const messageId =
@@ -47,5 +54,6 @@ export async function sendAgentReply(
     html: renderAgentReplyHtml(vars),
     inReplyTo: headers?.inReplyTo,
     references: headers?.references,
+    attachments: vars.attachments,
   });
 }

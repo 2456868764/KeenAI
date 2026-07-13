@@ -376,11 +376,15 @@ export function conversationRoutes(ctx: AppContext) {
         payload: { messageId: result.message.id },
       });
 
-      if (isAgentReply && !body.isInternal && plainText?.trim()) {
-        const emailJob = await buildEmailSendJob(c.get("store").db, {
+      if (
+        isAgentReply &&
+        !body.isInternal &&
+        (result.message.plainText.trim() || (attachmentIds?.length ?? 0) > 0)
+      ) {
+        const emailJob = await buildEmailSendJob(c.get("store").db, ctx.env, {
           orgId: auth.orgId,
           conversationId: conversation.id,
-          plainText,
+          plainText: result.message.plainText,
           messageId: result.message.id,
         });
         if (emailJob) {

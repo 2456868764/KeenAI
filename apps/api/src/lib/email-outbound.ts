@@ -7,9 +7,10 @@ import {
   startEmailSendWorker,
 } from "@keenai/channels-email";
 import type { ApiEnv } from "@keenai/shared";
-import { conversations, messages } from "@keenai/storage/schema";
+import { attachments, conversations, messages } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
+import { readUploadFile } from "./uploads.js";
 
 type Db = AppVariables["store"]["db"];
 
@@ -33,6 +34,7 @@ export function initEmailSendQueue(env: ApiEnv, authConfig: AuthConfig) {
 
 export async function buildEmailSendJob(
   db: Db,
+  env: ApiEnv,
   input: {
     conversationId: string;
     orgId: string;
@@ -65,6 +67,9 @@ export async function buildEmailSendJob(
 
   const inReplyTo = lastInbound?.inReplyTo ?? conversation.channelId ?? undefined;
   const references = inReplyTo ? [inReplyTo] : undefined;
+  const outboundAttachments = input.messageId
+    ? await buildOutboundEmailAttachments(db, env, input.orgId, input.messageId)
+    : [];
 
   return {
     to: conversation.userId,
@@ -74,9 +79,34 @@ export async function buildEmailSendJob(
     conversationSubject: conversation.subject ?? "Support",
     inReplyTo,
     references,
+    attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
     conversationId: conversation.id,
     messageId: input.messageId,
   };
+}
+
+async function buildOutboundEmailAttachments(
+  db: Db,
+  env: ApiEnv,
+  orgId: string,
+  messageId: string,
+): Promise<NonNullable<EmailSendJobData["attachments"]>> {
+  const rows = await db
+    .select()
+    .from(attachments)
+    .where(and(eq(attachments.orgId, orgId), eq(attachments.messageId, messageId)));
+
+  const out: NonNullable<EmailSendJobData["attachments"]> = [];
+  for (const row of rows) {
+    const bytes = await readUploadFile(env, row.storageKey);
+    if (!bytes) continue;
+    out.push({
+      fileName: row.fileName ?? "attachment",
+      contentType: row.contentType ?? undefined,
+      contentBase64: Buffer.from(bytes).toString("base64"),
+    });
+  }
+  return out;
 }
 
 export async function dispatchEmailOutbound(

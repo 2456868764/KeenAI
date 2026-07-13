@@ -1101,7 +1101,7 @@ KB-04（RRF baseline）──► KB-07 embedder ──► KB-08 reranker
 |-------|-----|------|
 | MM-10 | STT transcribe pipeline + voice plainText fallback | [x] |
 | MM-11 | image/video thumbnail + lite vision/extract_text enrichment | [x] |
-| MM-12 | parseAgentResponse + Keeni outbound 图 | [x] |
+| MM-12 | parseAgentResponse + Keeni outbound 图 + Email MIME 附件出站 | [x] |
 | MM-13 | TTS tool + audio 出站 | [x] |
 | MM-14 | generate_image tool | [x] |
 | MM-15 | Telegram/Slack/WhatsApp IM 多模态 | [x] |

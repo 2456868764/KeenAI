@@ -103,11 +103,11 @@ export function createWorkflowActionHandlers(
         isAgentReply: true,
       });
 
-      if (plainText && authConfig) {
-        const job = await buildEmailSendJob(db, {
+      if (authConfig && (message.plainText.trim() || (attachmentIds?.length ?? 0) > 0)) {
+        const job = await buildEmailSendJob(db, env, {
           orgId: workflow.orgId,
           conversationId,
-          plainText,
+          plainText: message.plainText,
           messageId: message.id,
         });
         if (job) {

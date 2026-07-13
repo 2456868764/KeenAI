@@ -181,7 +181,7 @@ Platform payload
 | Channel | Inbound | 备注 |
 |---------|---------|------|
 | **Widget** | 客户端 presign → PUT → `POST .../messages` 带 `attachmentIds[]` | 已关联 message，支持图片 bubble |
-| **Email** | mailparser `attachments[]` → 逐个 upload | 已写入 attachments，`metadata.source=email` |
+| **Email** | mailparser `attachments[]` → 逐个 upload | 已写入 attachments，`metadata.source=email`；Agent/Workflow 回复可将 message attachments 作为 MIME 附件出站 |
 | **Dashboard** | Tiptap 粘贴/拖拽 → presign | Inbox composer 已带 `attachmentIds` |
 | **Telegram**（P3） | Bot API getFile → upload | 已落地基础入站/出站；对标 Hermes telegram.py |
 | **Slack**（P2） | files.shared / block attachments | 已落地基础入站/出站 |
@@ -298,6 +298,8 @@ interface ChannelRenderer {
 | Widget / Inbox | `<img>` bubble + signed URL | `<audio>` player | `<video>` player | 下载链接 |
 | Email | CID inline 或 linked | 附件 | 附件 | 附件 |
 | Telegram | `sendPhoto` / `sendDocument` | `sendVoice` | `sendVideo` | `sendDocument` |
+
+当前实现：Email 出站 job 会按 `messageId` 读取已关联 attachments，编码为 MIME attachments 交给 `nodemailer`；没有 SMTP 时仍返回 skipped，但 job 保留完整附件 payload，队列模式使用 base64 以保证 Redis 序列化稳定。
 
 ### 7.4 流式出站
 

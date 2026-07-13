@@ -3,6 +3,7 @@ export type ReplyTemplateVars = {
   plainText: string;
   conversationSubject: string;
   footer?: string;
+  attachments?: import("./types.js").OutboundEmailAttachment[];
 };
 
 /** Plain-text agent reply template (React Email templates can replace this later). */

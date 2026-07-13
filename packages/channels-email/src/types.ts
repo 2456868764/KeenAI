@@ -41,6 +41,15 @@ export type OutboundEmailInput = {
   html?: string;
   inReplyTo?: string;
   references?: string[];
+  attachments?: OutboundEmailAttachment[];
+};
+
+export type OutboundEmailAttachment = {
+  fileName: string;
+  contentType?: string;
+  contentBase64: string;
+  contentId?: string;
+  inline?: boolean;
 };
 
 export type ThreadCandidate = {

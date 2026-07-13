@@ -1,4 +1,5 @@
 export type {
+  OutboundEmailAttachment,
   OutboundEmailInput,
   ParsedEmailAttachment,
   ParsedInboundEmail,

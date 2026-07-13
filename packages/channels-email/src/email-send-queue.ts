@@ -1,7 +1,7 @@
 import { Queue, Worker } from "bullmq";
 import type { RedisOptions } from "ioredis";
 import { createSmtpTransport, sendAgentReply } from "./outbound.js";
-import type { SmtpTransportConfig } from "./types.js";
+import type { OutboundEmailAttachment, SmtpTransportConfig } from "./types.js";
 
 export const EMAIL_SEND_QUEUE = "email:send";
 export const EMAIL_SEND_DLQ = "email:send:dlq";
@@ -14,6 +14,7 @@ export type EmailSendJobData = {
   conversationSubject: string;
   inReplyTo?: string;
   references?: string[];
+  attachments?: OutboundEmailAttachment[];
   conversationId?: string;
   messageId?: string;
 };
@@ -75,6 +76,7 @@ export async function sendEmailNow(
       agentName: data.agentName,
       plainText: data.plainText,
       conversationSubject: data.conversationSubject,
+      attachments: data.attachments,
     },
     { inReplyTo: data.inReplyTo, references: data.references },
   );
