@@ -235,6 +235,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return `${block.branches.length} branch(es)`;
     case "apply_rules":
       return `${block.rules.length} rule(s) · all-match`;
+    case "apply_sla":
+      return block.policyId ? `Apply SLA ${block.policyId.slice(0, 8)}…` : "Apply active SLA";
     case "convert_to_ticket":
       return block.title?.trim() || "Convert conversation to ticket";
     case "link_ticket":

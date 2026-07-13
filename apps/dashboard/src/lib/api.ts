@@ -411,6 +411,7 @@ export type WorkflowBlock =
         nextId: string;
       }[];
     }
+  | { id: string; type: "apply_sla"; policyId?: string }
   | { id: string; type: "convert_to_ticket"; title?: string }
   | {
       id: string;

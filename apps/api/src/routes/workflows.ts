@@ -695,6 +695,10 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     }),
     wait: async () => {},
     httpRequest: async () => ({ status: 200, body: "" }),
+    applySla: async (input) => ({
+      policyId: input.policyId ?? "dry-run-sla-policy",
+      breachCount: 0,
+    }),
     convertToTicket: async () => ({ ticketId: "dry-run-ticket" }),
     linkTicket: async (input) => ({
       parentTicketId: input.parentTicketId ?? "dry-run-parent-ticket",

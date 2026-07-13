@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { applyRulesBlockSchema } from "./blocks/apply-rules.js";
+import {
+  type ApplySlaInput,
+  type ApplySlaResult,
+  applySlaBlockSchema,
+} from "./blocks/apply-sla.js";
 import { branchesBlockSchema } from "./blocks/branches.js";
 import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
@@ -28,6 +33,12 @@ import {
   tagConversationBlockSchema,
 } from "./blocks/tag-conversation.js";
 
+export {
+  applySlaBlockSchema,
+  type ApplySlaBlock,
+  type ApplySlaInput,
+  type ApplySlaResult,
+} from "./blocks/apply-sla.js";
 export {
   applyRulesBlockSchema,
   resolveApplyRulesMatches,
@@ -154,6 +165,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "http_request",
   "branches",
   "apply_rules",
+  "apply_sla",
   "convert_to_ticket",
   "link_ticket",
   "send_ticket_update",
@@ -223,6 +235,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   httpRequestBlockSchema,
   branchesBlockSchema,
   applyRulesBlockSchema,
+  applySlaBlockSchema,
   convertToTicketBlockSchema,
   linkTicketBlockSchema,
   sendTicketUpdateBlockSchema,
@@ -383,6 +396,7 @@ export type WorkflowActionHandlers = {
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
+  applySla?: (input: ApplySlaInput) => Promise<ApplySlaResult>;
   convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
   linkTicket?: (input: {
     parentTicketId?: string;
@@ -410,6 +424,9 @@ export type WorkflowStepResult = {
     nextBlockId?: string | null;
     httpStatus?: number;
     waitMs?: number;
+    slaPolicyId?: string;
+    slaBreachCount?: number;
+    slaSkipped?: string;
     ticketId?: string;
     matchedBranches?: string[];
     branchLabel?: string;

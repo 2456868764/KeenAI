@@ -507,6 +507,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
               },
             ],
           });
+        } else if (type === "apply_sla") {
+          onAdd({ id, type: "apply_sla" });
         } else if (type === "convert_to_ticket") {
           onAdd({ id, type: "convert_to_ticket", title: "" });
         } else if (type === "link_ticket") {
@@ -569,6 +571,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="http_request">HTTP request</option>
       <option value="branches">Branches</option>
       <option value="apply_rules">Apply rules (all-match)</option>
+      <option value="apply_sla">Apply SLA</option>
       <option value="convert_to_ticket">Convert to ticket</option>
       <option value="link_ticket">Link tickets</option>
       <option value="send_ticket_update">Send ticket update email</option>

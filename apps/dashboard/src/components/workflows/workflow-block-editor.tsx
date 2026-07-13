@@ -494,6 +494,19 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "apply_sla" ? (
+        <>
+          <Input
+            placeholder="SLA policy ID (optional — uses active policy)"
+            value={block.policyId ?? ""}
+            onChange={(e) => onChange({ ...block, policyId: e.target.value.trim() || undefined })}
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Evaluates SLA thresholds for the current conversation and records any breach events.
+          </p>
+        </>
+      ) : null}
+
       {block.type === "link_ticket" ? (
         <>
           <Input

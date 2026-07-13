@@ -228,7 +228,7 @@ export async function recordSlaThresholdBreaches(
 
 export async function evaluateConversationSla(
   db: Db,
-  input: { orgId: string; conversationId: string; now?: Date },
+  input: { orgId: string; conversationId: string; policyId?: string; now?: Date },
 ) {
   const now = input.now ?? new Date();
   const [conversation] = await db
@@ -239,10 +239,14 @@ export async function evaluateConversationSla(
 
   if (!conversation || conversation.status === "closed") return { breaches: [] };
 
+  const policyFilters = [eq(slaPolicies.orgId, input.orgId), eq(slaPolicies.enabled, true)];
+  if (input.policyId) policyFilters.push(eq(slaPolicies.id, input.policyId));
+
   const policies = await db
     .select()
     .from(slaPolicies)
-    .where(and(eq(slaPolicies.orgId, input.orgId), eq(slaPolicies.enabled, true)))
+    .where(and(...policyFilters))
+    .orderBy(desc(slaPolicies.updatedAt))
     .limit(1);
 
   const policy = policies[0];
@@ -250,7 +254,7 @@ export async function evaluateConversationSla(
 
   const hours = await getOfficeHoursForOrg(db, input.orgId);
   if (policy.operationalHoursOnly && hours && !isWithinOfficeHours(hours, now)) {
-    return { breaches: [], skipped: "outside_office_hours" as const };
+    return { breaches: [], policyId: policy.id, skipped: "outside_office_hours" as const };
   }
 
   const startedAt = conversation.createdAt;

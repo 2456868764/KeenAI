@@ -286,6 +286,32 @@ describe("runWorkflow", () => {
     expect(result.steps.filter((s) => s.type === "send_message")).toHaveLength(2);
   });
 
+  it("runs apply_sla block", async () => {
+    const applySla = vi.fn(async () => ({
+      policyId: "policy-1",
+      breachCount: 2,
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "sla", type: "apply_sla", policyId: "policy-1" }],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        applySla,
+      },
+    );
+
+    expect(applySla).toHaveBeenCalledWith({ policyId: "policy-1" });
+    expect(result.steps[0]?.output).toMatchObject({
+      slaPolicyId: "policy-1",
+      slaBreachCount: 2,
+    });
+  });
+
   it("runs link_ticket block", async () => {
     const linkTicket = vi.fn(async () => ({
       parentTicketId: "parent-1",

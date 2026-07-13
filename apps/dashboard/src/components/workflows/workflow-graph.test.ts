@@ -106,6 +106,7 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "reopen", type: "reopen" })).toBe("Reopen conversation");
     expect(blockLabel({ id: "end", type: "end" })).toBe("End path");
     expect(blockLabel({ id: "goto", type: "goto", targetBlockId: "target" })).toBe("Go to target");
+    expect(blockLabel({ id: "sla", type: "apply_sla" })).toBe("Apply active SLA");
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );

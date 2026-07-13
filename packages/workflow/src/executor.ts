@@ -132,6 +132,23 @@ async function executeBlock(
         forkTargets: matched,
       };
     }
+    case "apply_sla": {
+      if (!handlers.applySla) throw new Error("apply_sla_handler_missing");
+      const result = await handlers.applySla({ policyId: block.policyId });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            slaPolicyId: result.policyId,
+            slaBreachCount: result.breachCount,
+            slaSkipped: result.skipped,
+          },
+        },
+        nextId,
+      };
+    }
     case "convert_to_ticket": {
       if (!handlers.convertToTicket) throw new Error("convert_to_ticket_handler_missing");
       const result = await handlers.convertToTicket({ title: block.title });

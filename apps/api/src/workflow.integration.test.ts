@@ -876,6 +876,135 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("runs apply_sla workflow block against a selected SLA policy", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const policyRes = await app.request("/api/v1/sla/policies", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Workflow SLA",
+        firstResponseSec: 60,
+        resolutionSec: 120,
+        operationalHoursOnly: false,
+      }),
+    });
+    expect(policyRes.status).toBe(201);
+    const { policy } = (await policyRes.json()) as { policy: { id: string } };
+
+    const conversationRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "wf-apply-sla",
+        subject: "Apply SLA",
+        initialMessage: { plainText: "Need help" },
+      }),
+    });
+    expect(conversationRes.status).toBe(201);
+    const { conversation } = (await conversationRes.json()) as { conversation: { id: string } };
+
+    await db
+      .update(conversations)
+      .set({ createdAt: new Date(Date.now() - 90_000) })
+      .where(eq(conversations.id, conversation.id));
+
+    const workflowRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Apply SLA",
+        brandId: brand.id,
+        definition: {
+          trigger: "webhook",
+          blocks: [{ id: "sla", type: "apply_sla", policyId: policy.id }],
+        },
+      }),
+    });
+    expect(workflowRes.status).toBe(201);
+    const { workflow } = (await workflowRes.json()) as { workflow: { id: string } };
+    const publishRes = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const triggerRes = await app.request("/api/v1/workflows/webhooks/trigger", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        conversationId: conversation.id,
+        eventName: "sla/apply",
+      }),
+    });
+    expect(triggerRes.status).toBe(200);
+
+    const breachesRes = await app.request(`/api/v1/sla/conversations/${conversation.id}/breaches`, {
+      headers: auth,
+    });
+    expect(breachesRes.status).toBe(200);
+    const breachesBody = (await breachesRes.json()) as { items: { thresholdPct: number }[] };
+    expect(breachesBody.items.some((b) => b.thresholdPct === 50)).toBe(true);
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: { steps: { type: string; output?: { slaBreachCount?: number } }[] }[];
+    };
+    const applySlaStep = runsBody.items[0]?.steps.find((step) => step.type === "apply_sla");
+    expect(applySlaStep?.output?.slaBreachCount).toBeGreaterThan(0);
+
+    await store.close();
+  });
+
   it("collect_data suspends until widget submits workflow input", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

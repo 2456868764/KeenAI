@@ -19,6 +19,7 @@ import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
+import { evaluateConversationSla } from "./sla.js";
 import { notifyTicketStatusChange } from "./ticket-notify.js";
 import {
   createTicketFromConversation,
@@ -240,6 +241,19 @@ export function createWorkflowActionHandlers(
       });
       const text = await res.text();
       return { status: res.status, body: text.slice(0, 4000) };
+    },
+    applySla: async ({ policyId }) => {
+      const result = await evaluateConversationSla(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        policyId,
+      });
+      if (policyId && !result.policyId) throw new Error("sla_policy_not_found");
+      return {
+        policyId: result.policyId,
+        breachCount: result.breaches.length,
+        skipped: result.skipped,
+      };
     },
     collectData: async (input) => {
       await insertMessage(db, {
