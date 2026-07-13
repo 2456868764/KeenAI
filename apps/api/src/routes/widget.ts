@@ -101,6 +101,21 @@ export function widgetRoutes() {
         initialMessage: body.initialMessage,
       });
 
+      if (!body.initialMessage) {
+        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+        await getWorkflowDispatch().dispatchConversationTrigger({
+          orgId: auth.orgId,
+          brandId: auth.brandId,
+          conversationId: result.conversation.id,
+          trigger: "new_messenger_conversation",
+          facts: {
+            channelType: result.conversation.channelType,
+            priority: result.conversation.priority ?? "normal",
+            conversationStatus: result.conversation.status,
+          },
+        });
+      }
+
       return c.json(
         { conversation: result.conversation, message: result.message, created: true },
         201,

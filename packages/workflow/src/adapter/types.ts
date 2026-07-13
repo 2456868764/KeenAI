@@ -7,6 +7,7 @@ export type WorkflowDispatchContext = {
 };
 
 export type WorkflowConversationTrigger =
+  | "new_messenger_conversation"
   | "any_message"
   | "teammate_message"
   | "teammate_added_note"
