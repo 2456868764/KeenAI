@@ -5,6 +5,7 @@ import { createSyncWorkflowDispatch } from "./sync.js";
 describe("workflow dispatch adapters", () => {
   it("sync adapter runs handlers inline", async () => {
     const dispatchFirstMessage = vi.fn(async () => {});
+    const dispatchConversationTrigger = vi.fn(async () => {});
     const scanCustomerUnresponsive = vi.fn(async () => ({
       scanned: 1,
       triggered: 2,
@@ -13,6 +14,7 @@ describe("workflow dispatch adapters", () => {
 
     const adapter = createSyncWorkflowDispatch({
       dispatchFirstMessage,
+      dispatchConversationTrigger,
       scanCustomerUnresponsive,
     });
 
@@ -21,10 +23,17 @@ describe("workflow dispatch adapters", () => {
       brandId: "b1",
       conversationId: "c1",
     });
+    await adapter.dispatchConversationTrigger({
+      orgId: "o1",
+      brandId: "b1",
+      conversationId: "c1",
+      trigger: "any_message",
+    });
     const result = await adapter.scanCustomerUnresponsive("o1");
 
     expect(adapter.mode).toBe("sync");
     expect(dispatchFirstMessage).toHaveBeenCalledOnce();
+    expect(dispatchConversationTrigger).toHaveBeenCalledOnce();
     expect(result.triggered).toBe(2);
   });
 
@@ -32,6 +41,7 @@ describe("workflow dispatch adapters", () => {
     const send = vi.fn(async () => {});
     const handlers = {
       dispatchFirstMessage: vi.fn(async () => {}),
+      dispatchConversationTrigger: vi.fn(async () => {}),
       scanCustomerUnresponsive: vi.fn(async () => ({ triggered: 1 })),
     };
 
@@ -41,12 +51,29 @@ describe("workflow dispatch adapters", () => {
       brandId: "b1",
       conversationId: "c1",
     });
+    await adapter.dispatchConversationTrigger({
+      orgId: "o1",
+      brandId: "b1",
+      conversationId: "c1",
+      trigger: "conversation_state_changed",
+      facts: { conversationStatus: "closed" },
+    });
     const result = await adapter.scanCustomerUnresponsive("o1");
 
     expect(adapter.mode).toBe("inngest");
     expect(send).toHaveBeenCalledWith({
       name: WORKFLOW_INNGEST_EVENTS.FIRST_MESSAGE,
       data: { orgId: "o1", brandId: "b1", conversationId: "c1" },
+    });
+    expect(send).toHaveBeenCalledWith({
+      name: WORKFLOW_INNGEST_EVENTS.CONVERSATION_TRIGGER,
+      data: {
+        orgId: "o1",
+        brandId: "b1",
+        conversationId: "c1",
+        trigger: "conversation_state_changed",
+        facts: { conversationStatus: "closed" },
+      },
     });
     expect(result.queued).toBe(true);
   });

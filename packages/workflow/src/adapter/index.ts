@@ -17,6 +17,8 @@ export function createWorkflowDispatch(config: WorkflowDispatchConfig): Workflow
 
 export type {
   WorkflowDispatchAdapter,
+  WorkflowConversationTrigger,
+  WorkflowConversationTriggerContext,
   WorkflowDispatchContext,
   WorkflowDispatchHandlers,
   UnresponsiveScanSummary,

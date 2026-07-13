@@ -1,7 +1,19 @@
+import type { WorkflowRunContext } from "../schema.js";
+
 export type WorkflowDispatchContext = {
   orgId: string;
   brandId: string;
   conversationId: string;
+};
+
+export type WorkflowConversationTrigger =
+  | "any_message"
+  | "teammate_message"
+  | "conversation_state_changed";
+
+export type WorkflowConversationTriggerContext = WorkflowDispatchContext & {
+  trigger: WorkflowConversationTrigger;
+  facts?: WorkflowRunContext["facts"];
 };
 
 export type UnresponsiveScanSummary = {
@@ -14,6 +26,7 @@ export type UnresponsiveScanSummary = {
 
 export type WorkflowDispatchHandlers = {
   dispatchFirstMessage(ctx: WorkflowDispatchContext): Promise<void>;
+  dispatchConversationTrigger(ctx: WorkflowConversationTriggerContext): Promise<void>;
   scanCustomerUnresponsive(orgId?: string): Promise<Omit<UnresponsiveScanSummary, "mode">>;
 };
 

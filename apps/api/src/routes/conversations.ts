@@ -241,6 +241,21 @@ export function conversationRoutes(ctx: AppContext) {
         }
       }
 
+      if (updated.status !== conversation.status) {
+        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+        await getWorkflowDispatch().dispatchConversationTrigger({
+          orgId: auth.orgId,
+          brandId: updated.brandId,
+          conversationId: updated.id,
+          trigger: "conversation_state_changed",
+          facts: {
+            channelType: updated.channelType,
+            priority: updated.priority ?? "normal",
+            conversationStatus: updated.status,
+          },
+        });
+      }
+
       if (
         body.assigneeId !== undefined &&
         body.assigneeId &&

@@ -60,6 +60,8 @@ export {
   createInngestWorkflowDispatch,
   WORKFLOW_INNGEST_EVENTS,
   type WorkflowDispatchAdapter,
+  type WorkflowConversationTrigger,
+  type WorkflowConversationTriggerContext,
   type WorkflowDispatchContext,
   type WorkflowDispatchHandlers,
   type UnresponsiveScanSummary,

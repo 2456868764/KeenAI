@@ -6,6 +6,7 @@ export function createSyncWorkflowDispatch(
   return {
     mode: "sync",
     dispatchFirstMessage: handlers.dispatchFirstMessage,
+    dispatchConversationTrigger: handlers.dispatchConversationTrigger,
     scanCustomerUnresponsive: handlers.scanCustomerUnresponsive,
   };
 }

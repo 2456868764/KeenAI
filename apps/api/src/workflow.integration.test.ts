@@ -11,6 +11,7 @@ import {
   members,
   organizations,
 } from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -1454,6 +1455,197 @@ describe("workflow integration", () => {
     const updatedConversations = await db.select().from(conversations);
     const updated = updatedConversations.find((item) => item.id === conversation.id);
     expect(updated?.tags).toContain("vip");
+
+    await store.close();
+  });
+
+  it("runs customer message, teammate message, and state changed workflow triggers", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+    const [conversationRow] = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "conversation-trigger-1",
+        status: "open",
+        priority: "high",
+        subject: "Conversation trigger target",
+      })
+      .returning();
+    const conversation = requireRow(conversationRow, "conversation");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    async function createAndPublishWorkflow(input: {
+      name: string;
+      trigger: string;
+      blocks: unknown[];
+    }) {
+      const createRes = await app.request("/api/v1/workflows", {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: input.name,
+          brandId: brand.id,
+          definition: {
+            trigger: input.trigger,
+            blocks: input.blocks,
+          },
+        }),
+      });
+      expect(createRes.status).toBe(201);
+      const createBody = (await createRes.json()) as { workflow: { id: string } };
+      const publishRes = await app.request(`/api/v1/workflows/${createBody.workflow.id}/publish`, {
+        method: "POST",
+        headers: auth,
+      });
+      expect(publishRes.status).toBe(200);
+      return createBody.workflow.id;
+    }
+
+    const anyMessageWorkflowId = await createAndPublishWorkflow({
+      name: "Any customer message",
+      trigger: "any_message",
+      blocks: [{ id: "reply", type: "send_message", plainText: "Customer message received" }],
+    });
+    const teammateWorkflowId = await createAndPublishWorkflow({
+      name: "Teammate reply",
+      trigger: "teammate_message",
+      blocks: [
+        {
+          id: "tag_teammate",
+          type: "tag_conversation",
+          tags: ["teammate-replied"],
+          mode: "append",
+        },
+      ],
+    });
+    const stateWorkflowId = await createAndPublishWorkflow({
+      name: "State changed",
+      trigger: "conversation_state_changed",
+      blocks: [
+        {
+          id: "closed_branch",
+          type: "branches",
+          branches: [
+            {
+              condition: { field: "conversationStatus", op: "eq", value: "closed" },
+              nextId: "tag_closed",
+            },
+          ],
+          elseNextId: null,
+        },
+        {
+          id: "tag_closed",
+          type: "tag_conversation",
+          tags: ["state-closed"],
+          mode: "append",
+        },
+      ],
+    });
+
+    const customerMessage = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        plainText: "Customer asks for help",
+        senderType: "user",
+      }),
+    });
+    expect(customerMessage.status).toBe(201);
+
+    const teammateMessage = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        plainText: "Agent is handling this",
+        senderType: "agent",
+      }),
+    });
+    expect(teammateMessage.status).toBe(201);
+
+    const closeRes = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "closed" }),
+    });
+    expect(closeRes.status).toBe(200);
+
+    const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    expect(messagesRes.status).toBe(200);
+    const messagesBody = (await messagesRes.json()) as {
+      items: { plainText: string; sentVia?: string }[];
+    };
+    expect(
+      messagesBody.items.some(
+        (message) =>
+          message.sentVia === "workflow" && message.plainText === "Customer message received",
+      ),
+    ).toBe(true);
+
+    const [updatedConversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id))
+      .limit(1);
+    expect(updatedConversation?.tags).toEqual(
+      expect.arrayContaining(["teammate-replied", "state-closed"]),
+    );
+
+    for (const workflowId of [anyMessageWorkflowId, teammateWorkflowId, stateWorkflowId]) {
+      const runsRes = await app.request(`/api/v1/workflows/${workflowId}/runs`, {
+        headers: auth,
+      });
+      expect(runsRes.status).toBe(200);
+      const runsBody = (await runsRes.json()) as { items: { status: string }[] };
+      expect(runsBody.items[0]?.status).toBe("completed");
+    }
 
     await store.close();
   });

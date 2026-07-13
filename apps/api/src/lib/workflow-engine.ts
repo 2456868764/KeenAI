@@ -7,7 +7,12 @@ import {
   type workflowVersions,
   workflows,
 } from "@keenai/storage/schema";
-import { WORKFLOW_INNGEST_EVENTS, runWorkflow } from "@keenai/workflow";
+import {
+  WORKFLOW_INNGEST_EVENTS,
+  type WorkflowConversationTrigger,
+  type WorkflowRunContext,
+  runWorkflow,
+} from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import {
   createWorkflowActionHandlers,
@@ -28,6 +33,7 @@ export async function executeWorkflow(
   conversationId: string,
   env: ApiEnv,
   authConfig?: AuthConfig,
+  options?: { facts?: WorkflowRunContext["facts"] },
 ) {
   const [conversation] = await db
     .select()
@@ -59,7 +65,11 @@ export async function executeWorkflow(
     authConfig,
     run.id,
   );
-  const context = createWorkflowRunContext(workflow, conversation, run.id);
+  const baseContext = createWorkflowRunContext(workflow, conversation, run.id);
+  const context: WorkflowRunContext = {
+    ...baseContext,
+    facts: { ...baseContext.facts, ...options?.facts },
+  };
 
   const result = await runWorkflow(definition, handlers, context);
   const status = resolveRunStatus(result.steps, Boolean(result.suspended));
@@ -111,6 +121,26 @@ export async function dispatchFirstMessageWorkflows(
   env: ApiEnv,
   authConfig?: AuthConfig,
 ) {
+  return dispatchConversationTriggerWorkflows(
+    db,
+    { ...input, trigger: "first_message" },
+    env,
+    authConfig,
+  );
+}
+
+export async function dispatchConversationTriggerWorkflows(
+  db: Db,
+  input: {
+    orgId: string;
+    brandId: string;
+    conversationId: string;
+    trigger: WorkflowConversationTrigger | "first_message";
+    facts?: WorkflowRunContext["facts"];
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+) {
   const rows = await db
     .select()
     .from(workflows)
@@ -118,7 +148,7 @@ export async function dispatchFirstMessageWorkflows(
       and(
         eq(workflows.orgId, input.orgId),
         eq(workflows.status, "published"),
-        eq(workflows.trigger, "first_message"),
+        eq(workflows.trigger, input.trigger),
       ),
     )
     .orderBy(desc(workflows.updatedAt));
@@ -126,7 +156,9 @@ export async function dispatchFirstMessageWorkflows(
   const runs = [];
   for (const workflow of rows) {
     if (workflow.brandId && workflow.brandId !== input.brandId) continue;
-    const run = await executeWorkflow(db, workflow, input.conversationId, env, authConfig);
+    const run = await executeWorkflow(db, workflow, input.conversationId, env, authConfig, {
+      facts: input.facts,
+    });
     if (run) runs.push(run);
   }
   return runs;

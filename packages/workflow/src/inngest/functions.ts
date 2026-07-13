@@ -65,6 +65,19 @@ export function createWorkflowInngestFunctions(
     },
   );
 
+  const conversationTrigger = client.createFunction(
+    { id: "keenai-workflow-conversation-trigger", retries: 3, concurrency: { limit: 20 } },
+    { event: WORKFLOW_INNGEST_EVENTS.CONVERSATION_TRIGGER },
+    async ({ event, step }) => {
+      const data = event.data as Parameters<
+        WorkflowDispatchHandlers["dispatchConversationTrigger"]
+      >[0];
+      await step.run("dispatch-conversation-trigger", () =>
+        handlers.dispatchConversationTrigger(data),
+      );
+    },
+  );
+
   const scanUnresponsive = client.createFunction(
     { id: "keenai-workflow-scan-unresponsive", retries: 2, concurrency: { limit: 5 } },
     { event: WORKFLOW_INNGEST_EVENTS.SCAN_UNRESPONSIVE },
@@ -111,6 +124,7 @@ export function createWorkflowInngestFunctions(
 
   return [
     firstMessage,
+    conversationTrigger,
     scanUnresponsive,
     scanUnresponsiveCron,
     ...timerFunctions,

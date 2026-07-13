@@ -7,7 +7,10 @@ import {
 } from "@keenai/workflow";
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
-import { dispatchFirstMessageWorkflows } from "./workflow-engine.js";
+import {
+  dispatchConversationTriggerWorkflows,
+  dispatchFirstMessageWorkflows,
+} from "./workflow-engine.js";
 import { resumeCollectDataWorkflow, resumeReplyButtonsWorkflow } from "./workflow-resume.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
 import { scanCustomerUnresponsiveWorkflows } from "./workflow-unresponsive-scan.js";
@@ -22,6 +25,9 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
   const handlers: WorkflowInngestHandlers = {
     dispatchFirstMessage: async (input) => {
       await dispatchFirstMessageWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
+    },
+    dispatchConversationTrigger: async (input) => {
+      await dispatchConversationTriggerWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
     },
     scanCustomerUnresponsive: (orgId) =>
       scanCustomerUnresponsiveWorkflows(ctx.store.db, {

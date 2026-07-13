@@ -7,13 +7,15 @@ describe("createWorkflowInngestFunctions", () => {
     const client = new Inngest({ id: "test" });
     const handlers = {
       dispatchFirstMessage: vi.fn(async () => {}),
+      dispatchConversationTrigger: vi.fn(async () => {}),
       scanCustomerUnresponsive: vi.fn(async () => ({ scanned: 0, triggered: 0, runs: [] })),
     };
 
     const fns = createWorkflowInngestFunctions(client, handlers);
-    expect(fns).toHaveLength(7);
+    expect(fns).toHaveLength(8);
     expect(fns.map((fn) => fn.id())).toEqual([
       "keenai-workflow-first-message",
+      "keenai-workflow-conversation-trigger",
       "keenai-workflow-scan-unresponsive",
       "keenai-workflow-scan-unresponsive-cron",
       "keenai-workflow-auto-close-timer",
@@ -27,12 +29,13 @@ describe("createWorkflowInngestFunctions", () => {
     const client = new Inngest({ id: "test" });
     const handlers = {
       dispatchFirstMessage: vi.fn(async () => {}),
+      dispatchConversationTrigger: vi.fn(async () => {}),
       scanCustomerUnresponsive: vi.fn(async () => ({ scanned: 0, triggered: 0, runs: [] })),
     };
 
     const fns = createWorkflowInngestFunctions(client, handlers, { scanCron: "0 * * * *" });
-    expect(fns).toHaveLength(7);
-    expect(fns[2]?.id()).toBe("keenai-workflow-scan-unresponsive-cron");
+    expect(fns).toHaveLength(8);
+    expect(fns[3]?.id()).toBe("keenai-workflow-scan-unresponsive-cron");
   });
 
   it("defaults scan cron", () => {
