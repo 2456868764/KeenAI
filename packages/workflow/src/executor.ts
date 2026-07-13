@@ -60,9 +60,27 @@ async function executeBlock(
         },
         nextId,
       };
-    case "assign":
-      await handlers.assign(block.assigneeId ?? null);
-      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "assign": {
+      const input = {
+        assigneeId: block.assigneeId ?? null,
+        teamId: block.teamId ?? null,
+        strategy: block.strategy ?? "direct",
+      };
+      const result = await handlers.assign(input);
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            assigneeId: result?.assigneeId ?? input.assigneeId,
+            teamId: result?.teamId ?? input.teamId,
+            assignStrategy: result?.strategy ?? input.strategy,
+          },
+        },
+        nextId,
+      };
+    }
     case "close":
       await handlers.close();
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };

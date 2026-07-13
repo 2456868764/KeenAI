@@ -6,7 +6,7 @@ import { type WorkflowDefinition, workflowDefinitionSchema } from "./schema.js";
 describe("runWorkflow", () => {
   it("runs send_message, assign and close blocks in order", async () => {
     const sendMessage = vi.fn(async () => {});
-    const assign = vi.fn(async () => {});
+    const assign = vi.fn(async () => undefined);
     const close = vi.fn(async () => {});
 
     const definition: WorkflowDefinition = {
@@ -24,10 +24,41 @@ describe("runWorkflow", () => {
       plainText: "Thanks for reaching out!",
       attachmentIds: undefined,
     });
-    expect(assign).toHaveBeenCalledWith("member-1");
+    expect(assign).toHaveBeenCalledWith({
+      assigneeId: "member-1",
+      teamId: null,
+      strategy: "direct",
+    });
     expect(close).toHaveBeenCalledOnce();
     expect(result.steps).toHaveLength(3);
     expect(result.steps.every((s) => s.status === "ok")).toBe(true);
+  });
+
+  it("runs team assignment strategies with structured output", async () => {
+    const assign = vi.fn(async () => ({
+      assigneeId: "member-2",
+      teamId: "team-1",
+      strategy: "least_busy" as const,
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [{ id: "assign", type: "assign", teamId: "team-1", strategy: "least_busy" }],
+      },
+      { sendMessage: vi.fn(), assign, close: vi.fn() },
+    );
+
+    expect(assign).toHaveBeenCalledWith({
+      assigneeId: null,
+      teamId: "team-1",
+      strategy: "least_busy",
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      assigneeId: "member-2",
+      teamId: "team-1",
+      assignStrategy: "least_busy",
+    });
   });
 
   it("passes attachmentIds to sendMessage handler", async () => {

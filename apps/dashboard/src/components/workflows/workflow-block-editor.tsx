@@ -156,11 +156,32 @@ export function WorkflowBlockEditor({
       ) : null}
 
       {block.type === "assign" ? (
-        <Input
-          placeholder="Assignee member ID (optional)"
-          value={block.assigneeId ?? ""}
-          onChange={(e) => onChange({ ...block, assigneeId: e.target.value.trim() || null })}
-        />
+        <>
+          <select
+            value={block.strategy ?? "direct"}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                strategy: e.target.value as "direct" | "round_robin" | "least_busy",
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="direct">Direct</option>
+            <option value="round_robin">Round robin</option>
+            <option value="least_busy">Least busy</option>
+          </select>
+          <Input
+            placeholder="Assignee member ID (optional)"
+            value={block.assigneeId ?? ""}
+            onChange={(e) => onChange({ ...block, assigneeId: e.target.value.trim() || null })}
+          />
+          <Input
+            placeholder="Team ID (optional)"
+            value={block.teamId ?? ""}
+            onChange={(e) => onChange({ ...block, teamId: e.target.value.trim() || null })}
+          />
+        </>
       ) : null}
 
       {block.type === "close" ? (

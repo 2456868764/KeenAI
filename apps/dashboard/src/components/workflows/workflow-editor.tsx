@@ -469,7 +469,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
         } else if (type === "mark_priority") {
           onAdd({ id, type: "mark_priority", priority: "high" });
         } else if (type === "assign") {
-          onAdd({ id, type: "assign", assigneeId: null });
+          onAdd({ id, type: "assign", assigneeId: null, teamId: null, strategy: "direct" });
         } else if (type === "close") {
           onAdd({ id, type: "close" });
         } else if (type === "reopen") {

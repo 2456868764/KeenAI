@@ -685,7 +685,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
   return {
     sendMessage: async () => {},
     addNote: async () => {},
-    assign: async () => {},
+    assign: async (input) => input,
     close: async () => {},
     reopen: async () => {},
     showExpectedReplyTime: async (input) => ({

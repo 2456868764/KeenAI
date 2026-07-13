@@ -1,8 +1,10 @@
 import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
-import { conversations, type workflows } from "@keenai/storage/schema";
+import { conversations, members, teamMembers, type workflows } from "@keenai/storage/schema";
 import type {
+  AssignInput,
+  AssignResult,
   CollectDataInput,
   CsatInput,
   MarkPriorityInput,
@@ -15,7 +17,7 @@ import type {
   WorkflowRunContext,
   WorkflowStepResult,
 } from "@keenai/workflow";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
@@ -50,6 +52,85 @@ function parseWebhookPayload(payload: string | undefined): unknown {
   } catch {
     return trimmed;
   }
+}
+
+function stableHash(input: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+async function listActiveTeamMemberIds(db: Db, orgId: string, teamId: string): Promise<string[]> {
+  const rows = await db
+    .select({ memberId: teamMembers.memberId })
+    .from(teamMembers)
+    .innerJoin(members, eq(members.id, teamMembers.memberId))
+    .where(
+      and(eq(teamMembers.teamId, teamId), eq(members.orgId, orgId), eq(members.status, "active")),
+    )
+    .orderBy(teamMembers.memberId);
+  return rows.map((row) => row.memberId);
+}
+
+async function openConversationCountsByAssignee(
+  db: Db,
+  orgId: string,
+  memberIds: string[],
+): Promise<Map<string, number>> {
+  if (memberIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      assigneeId: conversations.assigneeId,
+      count: sql<number>`count(*)`,
+    })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.orgId, orgId),
+        eq(conversations.status, "open"),
+        inArray(conversations.assigneeId, memberIds),
+      ),
+    )
+    .groupBy(conversations.assigneeId);
+
+  return new Map(
+    rows.flatMap((row) => (row.assigneeId ? [[row.assigneeId, Number(row.count)]] : [])),
+  );
+}
+
+async function resolveWorkflowAssignment(
+  db: Db,
+  workflow: WorkflowRow,
+  conversation: ConversationRow,
+  input: AssignInput,
+): Promise<AssignResult> {
+  if (input.strategy === "direct") {
+    return input;
+  }
+
+  if (!input.teamId) throw new Error("assign_team_required");
+
+  const memberIds = await listActiveTeamMemberIds(db, workflow.orgId, input.teamId);
+  if (memberIds.length === 0) throw new Error("assign_team_members_missing");
+
+  if (input.strategy === "round_robin") {
+    const index = stableHash(conversation.id) % memberIds.length;
+    return { ...input, assigneeId: memberIds[index] ?? null };
+  }
+
+  const counts = await openConversationCountsByAssignee(db, workflow.orgId, memberIds);
+  const assigneeId = memberIds.reduce((best, candidate) => {
+    const bestCount = counts.get(best) ?? 0;
+    const candidateCount = counts.get(candidate) ?? 0;
+    if (candidateCount < bestCount) return candidate;
+    if (candidateCount === bestCount && candidate < best) return candidate;
+    return best;
+  }, memberIds[0] ?? "");
+
+  return { ...input, assigneeId: assigneeId || null };
 }
 
 export function buildCollectDataMessageContent(input: CollectDataInput): Record<string, unknown> {
@@ -213,11 +294,13 @@ export function createWorkflowActionHandlers(
         metadata: { source: "workflow_add_note", workflowId: workflow.id, workflowRunId },
       });
     },
-    assign: async (assigneeId) => {
+    assign: async (input) => {
+      const result = await resolveWorkflowAssignment(db, workflow, conversation, input);
       await db
         .update(conversations)
-        .set({ assigneeId, updatedAt: new Date() })
+        .set({ assigneeId: result.assigneeId, teamId: result.teamId, updatedAt: new Date() })
         .where(eq(conversations.id, conversationId));
+      return result;
     },
     close: async () => {
       await db

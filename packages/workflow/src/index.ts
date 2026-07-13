@@ -28,6 +28,8 @@ export {
   reopenBlockSchema,
   type WorkflowActionHandlers,
   type AddNoteBlock,
+  type AssignInput,
+  type AssignResult,
   type ApplySlaBlock,
   type ApplySlaInput,
   type ApplySlaResult,

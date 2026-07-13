@@ -232,6 +232,8 @@ export const assignBlockSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("assign"),
   assigneeId: z.string().nullable().optional(),
+  teamId: z.string().nullable().optional(),
+  strategy: z.enum(["direct", "round_robin", "least_busy"]).optional(),
 });
 
 export const closeBlockSchema = z.object({
@@ -426,10 +428,22 @@ export type HttpRequestResult = {
   body: string;
 };
 
+export type AssignInput = {
+  assigneeId: string | null;
+  teamId: string | null;
+  strategy: "direct" | "round_robin" | "least_busy";
+};
+
+export type AssignResult = {
+  assigneeId: string | null;
+  teamId: string | null;
+  strategy: AssignInput["strategy"];
+};
+
 export type WorkflowActionHandlers = {
   sendMessage: (input: SendMessageInput) => Promise<void>;
   addNote?: (input: { plainText: string }) => Promise<void>;
-  assign: (assigneeId: string | null) => Promise<void>;
+  assign: (input: AssignInput) => Promise<AssignResult | undefined>;
   close: () => Promise<void>;
   reopen?: () => Promise<void>;
   showExpectedReplyTime?: (
@@ -483,6 +497,9 @@ export type WorkflowStepResult = {
     statusId?: string;
     statusName?: string | null;
     notificationSent?: boolean;
+    assigneeId?: string | null;
+    teamId?: string | null;
+    assignStrategy?: AssignInput["strategy"];
     awaitingInput?: boolean;
     submittedAttributes?: Record<string, string>;
     freeText?: string;

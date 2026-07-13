@@ -375,7 +375,13 @@ export type WorkflowBlock =
     }
   | { id: string; type: "add_note"; plainText: string }
   | { id: string; type: "mark_priority"; priority: "low" | "normal" | "high" | "urgent" }
-  | { id: string; type: "assign"; assigneeId?: string | null }
+  | {
+      id: string;
+      type: "assign";
+      assigneeId?: string | null;
+      teamId?: string | null;
+      strategy?: "direct" | "round_robin" | "least_busy";
+    }
   | { id: string; type: "close" }
   | { id: string; type: "reopen" }
   | { id: string; type: "end" }

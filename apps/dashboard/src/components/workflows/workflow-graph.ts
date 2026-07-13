@@ -215,7 +215,10 @@ export function blockLabel(block: WorkflowBlock): string {
     case "mark_priority":
       return `Priority → ${block.priority}`;
     case "assign":
-      return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
+      if (block.strategy === "round_robin") return `Assign round-robin → ${block.teamId ?? "team"}`;
+      if (block.strategy === "least_busy") return `Assign least-busy → ${block.teamId ?? "team"}`;
+      if (block.assigneeId) return `Assign → ${block.assigneeId}`;
+      return block.teamId ? `Assign team → ${block.teamId}` : "Assign (unassigned)";
     case "close":
       return "Close conversation";
     case "reopen":

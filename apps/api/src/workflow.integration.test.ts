@@ -11,6 +11,8 @@ import {
   members,
   messages,
   organizations,
+  teamMembers,
+  teams,
 } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
@@ -1419,6 +1421,194 @@ describe("workflow integration", () => {
     expect(emitStep?.output).toMatchObject({
       httpStatus: 202,
       webhookEventName: "crm.customer.created",
+    });
+
+    await store.close();
+  });
+
+  it("assign least_busy chooses the least loaded active team member", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+
+    const [adminAccountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const adminAccount = requireRow(adminAccountRow, "admin account");
+    const [busyAccountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "busy@acme.test",
+        name: "Busy Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const busyAccount = requireRow(busyAccountRow, "busy account");
+    const [freeAccountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "free@acme.test",
+        name: "Free Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const freeAccount = requireRow(freeAccountRow, "free account");
+
+    const [adminMemberRow] = await db
+      .insert(members)
+      .values({
+        orgId: org.id,
+        accountId: adminAccount.id,
+        role: "admin",
+        status: "active",
+      })
+      .returning();
+    requireRow(adminMemberRow, "admin member");
+    const [busyMemberRow] = await db
+      .insert(members)
+      .values({
+        orgId: org.id,
+        accountId: busyAccount.id,
+        role: "member",
+        status: "active",
+      })
+      .returning();
+    const busyMember = requireRow(busyMemberRow, "busy member");
+    const [freeMemberRow] = await db
+      .insert(members)
+      .values({
+        orgId: org.id,
+        accountId: freeAccount.id,
+        role: "member",
+        status: "active",
+      })
+      .returning();
+    const freeMember = requireRow(freeMemberRow, "free member");
+    const [teamRow] = await db.insert(teams).values({ orgId: org.id, name: "Support" }).returning();
+    const supportTeam = requireRow(teamRow, "team");
+    await db.insert(teamMembers).values([
+      { teamId: supportTeam.id, memberId: busyMember.id },
+      { teamId: supportTeam.id, memberId: freeMember.id },
+    ]);
+    await db.insert(conversations).values({
+      orgId: org.id,
+      brandId: brand.id,
+      channelType: "messenger",
+      channelId: "busy-load",
+      assigneeId: busyMember.id,
+      teamId: supportTeam.id,
+      status: "open",
+      subject: "Existing busy conversation",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const workflowRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Least busy assign",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "assign_team",
+              type: "assign",
+              teamId: supportTeam.id,
+              strategy: "least_busy",
+            },
+          ],
+        },
+      }),
+    });
+    expect(workflowRes.status).toBe(201);
+    const { workflow } = (await workflowRes.json()) as { workflow: { id: string } };
+    const publishRes = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-least-busy-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash, email: "least-busy@test.local" },
+      }),
+    });
+    expect(sessionRes.status).toBe(200);
+    const session = (await sessionRes.json()) as { accessToken: string };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ initialMessage: { plainText: "Route me" } }),
+    });
+    expect(convRes.status).toBe(201);
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const [updatedConversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id));
+    expect(updatedConversation?.teamId).toBe(supportTeam.id);
+    expect(updatedConversation?.assigneeId).toBe(freeMember.id);
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: {
+        steps: {
+          type: string;
+          output?: { assigneeId?: string | null; teamId?: string | null; assignStrategy?: string };
+        }[];
+      }[];
+    };
+    const assignStep = runsBody.items[0]?.steps.find((step) => step.type === "assign");
+    expect(assignStep?.output).toMatchObject({
+      assigneeId: freeMember.id,
+      teamId: supportTeam.id,
+      assignStrategy: "least_busy",
     });
 
     await store.close();

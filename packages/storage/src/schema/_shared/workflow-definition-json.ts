@@ -19,6 +19,8 @@ export type WorkflowDefinitionJson = {
     plainText?: string;
     attachmentIds?: string[];
     assigneeId?: string | null;
+    teamId?: string | null;
+    strategy?: "direct" | "round_robin" | "least_busy";
     instructions?: string;
     maxSteps?: number;
     toolFilter?: string[];
