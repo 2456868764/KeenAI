@@ -4,6 +4,7 @@ import { branchesBlockSchema } from "./blocks/branches.js";
 import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import { type CsatInput, csatBlockSchema } from "./blocks/csat.js";
+import { endBlockSchema } from "./blocks/end.js";
 import {
   type LetKeeniAnswerInput,
   type LetKeeniAnswerResult,
@@ -42,6 +43,10 @@ export {
   convertToTicketBlockSchema,
   type ConvertToTicketBlock,
 } from "./blocks/convert-to-ticket.js";
+export {
+  endBlockSchema,
+  type EndBlock,
+} from "./blocks/end.js";
 export {
   replyButtonsBlockSchema,
   resolveReplyButtonsNext,
@@ -119,6 +124,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "send_message",
   "assign",
   "close",
+  "end",
   "let_keeni_answer",
   "wait",
   "http_request",
@@ -184,6 +190,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendMessageBlockObjectSchema,
   assignBlockSchema,
   closeBlockSchema,
+  endBlockSchema,
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
   httpRequestBlockSchema,

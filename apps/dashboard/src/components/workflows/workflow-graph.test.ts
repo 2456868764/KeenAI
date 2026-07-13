@@ -59,6 +59,19 @@ describe("collectWorkflowEdges", () => {
       true,
     );
   });
+
+  it("does not create a linear edge after end blocks", () => {
+    const edges = collectWorkflowEdges({
+      trigger: "first_message",
+      blocks: [
+        { id: "a", type: "send_message", plainText: "Hi" },
+        { id: "stop", type: "end" },
+        { id: "after", type: "send_message", plainText: "Later" },
+      ],
+    });
+
+    expect(edges.some((edge) => edge.source === "stop" && edge.target === "after")).toBe(false);
+  });
 });
 
 describe("blockCategory", () => {
@@ -76,6 +89,7 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "p", type: "mark_priority", priority: "urgent" })).toBe(
       "Priority → urgent",
     );
+    expect(blockLabel({ id: "end", type: "end" })).toBe("End path");
   });
 });
 

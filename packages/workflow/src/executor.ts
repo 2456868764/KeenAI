@@ -66,6 +66,8 @@ async function executeBlock(
     case "close":
       await handlers.close();
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
+    case "end":
+      return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId: null };
     case "wait": {
       const ms = block.seconds * 1000;
       if (handlers.wait) await handlers.wait(ms);

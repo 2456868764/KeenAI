@@ -91,6 +91,24 @@ describe("runWorkflow", () => {
     ]);
   });
 
+  it("ends the current path without running later linear blocks", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          { id: "end", type: "end" },
+          { id: "after", type: "send_message", plainText: "Should not run" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(result.steps).toEqual([{ blockId: "end", type: "end", status: "ok" }]);
+  });
+
   it("stops on first block error", async () => {
     const sendMessage = vi.fn(async () => {
       throw new Error("send_failed");

@@ -134,6 +134,10 @@ export function collectWorkflowEdges(definition: WorkflowDefinition): WorkflowGr
       continue;
     }
 
+    if (block.type === "end") {
+      continue;
+    }
+
     if (linearNext) {
       edges.push({
         id: `${block.id}-linear`,
@@ -198,6 +202,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.assigneeId ? `Assign → ${block.assigneeId}` : "Assign (unassigned)";
     case "close":
       return "Close conversation";
+    case "end":
+      return "End path";
     case "let_keeni_answer":
       return block.instructions?.trim()
         ? block.instructions.length > 48
