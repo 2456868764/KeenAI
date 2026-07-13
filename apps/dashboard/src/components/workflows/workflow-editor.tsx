@@ -474,6 +474,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           onAdd({ id, type: "reopen" });
         } else if (type === "end") {
           onAdd({ id, type: "end" });
+        } else if (type === "goto") {
+          onAdd({ id, type: "goto", targetBlockId: "" });
         } else if (type === "let_keeni_answer") {
           onAdd({ id, type: "let_keeni_answer", maxSteps: 8, instructions: "" });
         } else if (type === "wait") {
@@ -559,6 +561,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="close">Close conversation</option>
       <option value="reopen">Reopen conversation</option>
       <option value="end">End path</option>
+      <option value="goto">Go to block</option>
       <option value="let_keeni_answer">Let Keeni answer</option>
       <option value="wait">Wait</option>
       <option value="http_request">HTTP request</option>

@@ -72,6 +72,20 @@ describe("collectWorkflowEdges", () => {
 
     expect(edges.some((edge) => edge.source === "stop" && edge.target === "after")).toBe(false);
   });
+
+  it("renders goto target edges instead of linear next edges", () => {
+    const edges = collectWorkflowEdges({
+      trigger: "first_message",
+      blocks: [
+        { id: "jump", type: "goto", targetBlockId: "target" },
+        { id: "skipped", type: "send_message", plainText: "Skipped" },
+        { id: "target", type: "send_message", plainText: "Target" },
+      ],
+    });
+
+    expect(edges.some((edge) => edge.source === "jump" && edge.target === "target")).toBe(true);
+    expect(edges.some((edge) => edge.source === "jump" && edge.target === "skipped")).toBe(false);
+  });
 });
 
 describe("blockCategory", () => {
@@ -91,6 +105,7 @@ describe("blockLabel", () => {
     );
     expect(blockLabel({ id: "reopen", type: "reopen" })).toBe("Reopen conversation");
     expect(blockLabel({ id: "end", type: "end" })).toBe("End path");
+    expect(blockLabel({ id: "goto", type: "goto", targetBlockId: "target" })).toBe("Go to target");
   });
 });
 

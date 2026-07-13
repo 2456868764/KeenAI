@@ -150,6 +150,112 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("runs goto workflow blocks and skips the linear next block", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Goto target",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            { id: "jump", type: "goto", targetBlockId: "target" },
+            { id: "skipped", type: "send_message", plainText: "Skipped by goto" },
+            { id: "target", type: "send_message", plainText: "Reached goto target" },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+    const published = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(published.status).toBe(200);
+
+    const created = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "goto-1",
+        initialMessage: { plainText: "Hi" },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { conversation } = (await created.json()) as { conversation: { id: string } };
+
+    const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const messagesBody = (await messagesRes.json()) as { items: { plainText: string }[] };
+    expect(messagesBody.items.some((message) => message.plainText === "Skipped by goto")).toBe(
+      false,
+    );
+    expect(messagesBody.items.some((message) => message.plainText === "Reached goto target")).toBe(
+      true,
+    );
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const runsBody = (await runsRes.json()) as {
+      items: { steps: { blockId: string; type: string; status: string }[] }[];
+    };
+    expect(runsBody.items[0]?.steps.map((step) => step.blockId)).toEqual(["jump", "target"]);
+    expect(runsBody.items[0]?.steps.every((step) => step.status === "ok")).toBe(true);
+
+    await store.close();
+  });
+
   it("runs new_messenger_conversation workflow when a visitor opens messenger without a message", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

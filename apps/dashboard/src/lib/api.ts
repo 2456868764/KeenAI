@@ -371,6 +371,7 @@ export type WorkflowBlock =
   | { id: string; type: "close" }
   | { id: string; type: "reopen" }
   | { id: string; type: "end" }
+  | { id: string; type: "goto"; targetBlockId: string }
   | {
       id: string;
       type: "let_keeni_answer";

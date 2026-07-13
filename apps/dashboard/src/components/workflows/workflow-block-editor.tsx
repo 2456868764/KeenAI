@@ -140,6 +140,21 @@ export function WorkflowBlockEditor({
         </p>
       ) : null}
 
+      {block.type === "goto" ? (
+        <div className="space-y-2">
+          <NextBlockSelect
+            value={block.targetBlockId}
+            blocks={allBlocks}
+            currentId={block.id}
+            onChange={(targetBlockId) => onChange({ ...block, targetBlockId: targetBlockId ?? "" })}
+            placeholder="Target block"
+          />
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Jumps directly to the selected block and skips the linear next block.
+          </p>
+        </div>
+      ) : null}
+
       {block.type === "let_keeni_answer" ? (
         <>
           <textarea

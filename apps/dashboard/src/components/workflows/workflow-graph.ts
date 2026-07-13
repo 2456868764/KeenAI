@@ -138,6 +138,19 @@ export function collectWorkflowEdges(definition: WorkflowDefinition): WorkflowGr
       continue;
     }
 
+    if (block.type === "goto") {
+      if (block.targetBlockId && blockIds.has(block.targetBlockId)) {
+        edges.push({
+          id: `${block.id}-goto`,
+          source: block.id,
+          target: block.targetBlockId,
+          label: "Goto",
+          kind: "branch",
+        });
+      }
+      continue;
+    }
+
     if (linearNext) {
       edges.push({
         id: `${block.id}-linear`,
@@ -206,6 +219,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return "Reopen conversation";
     case "end":
       return "End path";
+    case "goto":
+      return block.targetBlockId ? `Go to ${block.targetBlockId}` : "Go to block";
     case "let_keeni_answer":
       return block.instructions?.trim()
         ? block.instructions.length > 48

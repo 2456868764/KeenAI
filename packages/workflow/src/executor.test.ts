@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveLetKeeniAnswerNext } from "./blocks/let-keeni-answer.js";
 import { runWorkflow } from "./executor.js";
-import type { WorkflowDefinition } from "./schema.js";
+import { type WorkflowDefinition, workflowDefinitionSchema } from "./schema.js";
 
 describe("runWorkflow", () => {
   it("runs send_message, assign and close blocks in order", async () => {
@@ -122,6 +122,47 @@ describe("runWorkflow", () => {
 
     expect(sendMessage).not.toHaveBeenCalled();
     expect(result.steps).toEqual([{ blockId: "end", type: "end", status: "ok" }]);
+  });
+
+  it("jumps to goto target blocks and skips the linear next block", async () => {
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          { id: "jump", type: "goto", targetBlockId: "target" },
+          { id: "skipped", type: "send_message", plainText: "Should not run" },
+          { id: "target", type: "send_message", plainText: "Reached target" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(sendMessage).toHaveBeenCalledOnce();
+    expect(sendMessage).toHaveBeenCalledWith({
+      plainText: "Reached target",
+      attachmentIds: undefined,
+    });
+    expect(result.steps).toEqual([
+      {
+        blockId: "jump",
+        type: "goto",
+        status: "ok",
+        output: { nextBlockId: "target" },
+      },
+      { blockId: "target", type: "send_message", status: "ok" },
+    ]);
+  });
+
+  it("rejects goto blocks that target missing block ids", () => {
+    const parsed = workflowDefinitionSchema.safeParse({
+      trigger: "first_message",
+      blocks: [{ id: "jump", type: "goto", targetBlockId: "missing" }],
+    });
+
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues[0]?.message).toBe("goto_target_not_found");
   });
 
   it("stops on first block error", async () => {

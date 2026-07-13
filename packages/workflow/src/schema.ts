@@ -5,6 +5,7 @@ import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import { type CsatInput, csatBlockSchema } from "./blocks/csat.js";
 import { endBlockSchema } from "./blocks/end.js";
+import { gotoBlockSchema } from "./blocks/goto.js";
 import {
   type LetKeeniAnswerInput,
   type LetKeeniAnswerResult,
@@ -48,6 +49,10 @@ export {
   endBlockSchema,
   type EndBlock,
 } from "./blocks/end.js";
+export {
+  gotoBlockSchema,
+  type GotoBlock,
+} from "./blocks/goto.js";
 export {
   replyButtonsBlockSchema,
   resolveReplyButtonsNext,
@@ -131,6 +136,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "close",
   "reopen",
   "end",
+  "goto",
   "let_keeni_answer",
   "wait",
   "http_request",
@@ -198,6 +204,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   closeBlockSchema,
   reopenBlockSchema,
   endBlockSchema,
+  gotoBlockSchema,
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
   httpRequestBlockSchema,
@@ -275,6 +282,17 @@ export const workflowDefinitionSchema = z
     }
 
     val.blocks.forEach((block, index) => {
+      if (block.type === "goto") {
+        const targetExists = val.blocks.some((candidate) => candidate.id === block.targetBlockId);
+        if (!targetExists) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "goto_target_not_found",
+            path: ["blocks", index, "targetBlockId"],
+          });
+        }
+      }
+
       if (block.type !== "send_message") return;
       const text = block.plainText?.trim() ?? "";
       const attachments = block.attachmentIds?.length ?? 0;
