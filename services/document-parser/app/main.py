@@ -38,6 +38,8 @@ def health() -> dict[str, str]:
 def parse(request: ParseRequest) -> ParseResponse:
     if not request.raw_content and not request.url:
         raise HTTPException(status_code=400, detail="raw_content_or_url_required")
+    if request.raw_content and request.url:
+        raise HTTPException(status_code=400, detail="raw_content_or_url_exclusive")
 
     try:
         result = parse_document(

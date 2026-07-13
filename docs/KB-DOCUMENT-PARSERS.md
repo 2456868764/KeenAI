@@ -29,7 +29,7 @@ KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY=...
 
 ## Python Sidecar Engines
 
-The sidecar currently exposes only one engine:
+The sidecar currently exposes only one engine.
 
 | Engine | PDF | DOCX | HTML | URL |
 |--------|-----|------|------|-----|

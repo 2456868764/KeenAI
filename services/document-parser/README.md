@@ -10,12 +10,22 @@ POST /parse
   "engine": "docling",
   "title": "Manual",
   "raw_content": "<base64 or text>",
-  "content_type": "application/pdf",
+  "content_type": "application/pdf"
+}
+```
+
+For URL parsing, send `url` instead of `raw_content`:
+
+```bash
+POST /parse
+{
+  "engine": "docling",
+  "title": "Manual",
   "url": "https://example.com/manual.html"
 }
 ```
 
-Supported engine values are only:
+`raw_content` and `url` are alternative inputs; send exactly one of them. Supported engine values are only:
 
 - `docling`: uses `docling-project/docling`. It can parse PDF, DOCX, HTML, and URL inputs supported by Docling.
 
@@ -23,7 +33,7 @@ Supported engine values are only:
 
 ```bash
 cd services/document-parser
-python -m pip install -e ".[docling]"
+python -m pip install -e .
 uvicorn app.main:app --host 127.0.0.1 --port 8095
 ```
 
