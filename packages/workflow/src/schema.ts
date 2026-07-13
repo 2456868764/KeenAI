@@ -196,9 +196,19 @@ export const workflowDefinitionSchema = z
     inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
     /** Page URL rules for page_view workflows. Empty or omitted means every page view. */
     pageRules: z.array(pageViewRuleSchema).max(16).optional(),
+    /** Custom event name for event_match workflows, e.g. app/subscription.churned. */
+    eventName: z.string().min(1).max(128).optional(),
     blocks: z.array(workflowBlockSchema).min(1).max(32),
   })
   .superRefine((val, ctx) => {
+    if (val.trigger === "event_match" && !val.eventName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "eventName_required",
+        path: ["eventName"],
+      });
+    }
+
     val.blocks.forEach((block, index) => {
       if (block.type !== "send_message") return;
       const text = block.plainText?.trim() ?? "";

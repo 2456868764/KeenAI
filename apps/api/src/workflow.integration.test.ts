@@ -1595,7 +1595,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("runs published webhook trigger workflows for an authorized conversation", async () => {
+  it("runs published webhook and custom event trigger workflows for an authorized conversation", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -1677,6 +1677,41 @@ describe("workflow integration", () => {
     });
     expect(publishRes.status).toBe(200);
 
+    const eventCreateRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Churn event tag",
+        brandId: brand.id,
+        definition: {
+          trigger: "event_match",
+          eventName: "app/subscription.churned",
+          blocks: [
+            {
+              id: "tag_churn",
+              type: "tag_conversation",
+              tags: ["churn-risk"],
+              mode: "append",
+            },
+          ],
+        },
+      }),
+    });
+    expect(eventCreateRes.status).toBe(201);
+    const eventCreateBody = (await eventCreateRes.json()) as {
+      workflow: { id: string; trigger: string };
+    };
+    expect(eventCreateBody.workflow.trigger).toBe("event_match");
+
+    const eventPublishRes = await app.request(
+      `/api/v1/workflows/${eventCreateBody.workflow.id}/publish`,
+      {
+        method: "POST",
+        headers: auth,
+      },
+    );
+    expect(eventPublishRes.status).toBe(200);
+
     const triggerRes = await app.request("/api/v1/workflows/webhooks/trigger", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -1704,9 +1739,59 @@ describe("workflow integration", () => {
       status: "completed",
     });
 
+    const unmatchedEventRes = await app.request("/api/v1/workflows/events/trigger", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        conversationId: conversation.id,
+        eventName: "app/subscription.renewed",
+        payload: { plan: "team" },
+      }),
+    });
+    expect(unmatchedEventRes.status).toBe(200);
+    const unmatchedEventBody = (await unmatchedEventRes.json()) as {
+      mode: string;
+      eventName: string;
+      triggered: number;
+    };
+    expect(unmatchedEventBody).toMatchObject({
+      mode: "event_match",
+      eventName: "app/subscription.renewed",
+      triggered: 0,
+    });
+
+    const matchedEventRes = await app.request("/api/v1/workflows/events/trigger", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        conversationId: conversation.id,
+        eventName: "app/subscription.churned",
+        payload: { plan: "team" },
+      }),
+    });
+    expect(matchedEventRes.status).toBe(200);
+    const matchedEventBody = (await matchedEventRes.json()) as {
+      mode: string;
+      eventName: string;
+      triggered: number;
+      runs: { workflowId: string; status: string }[];
+    };
+    expect(matchedEventBody).toMatchObject({
+      mode: "event_match",
+      eventName: "app/subscription.churned",
+      triggered: 1,
+    });
+    expect(matchedEventBody.runs[0]).toMatchObject({
+      workflowId: eventCreateBody.workflow.id,
+      status: "completed",
+    });
+
     const updatedConversations = await db.select().from(conversations);
     const updated = updatedConversations.find((item) => item.id === conversation.id);
     expect(updated?.tags).toContain("vip");
+    expect(updated?.tags).toContain("churn-risk");
 
     await store.close();
   });

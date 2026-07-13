@@ -33,6 +33,8 @@ export type WorkflowFacts = {
   pageUrl?: string;
   pageTitle?: string;
   timeOnPageSec?: number;
+  eventName?: string;
+  eventPayload?: Record<string, unknown>;
 };
 
 export function evaluateBranchCondition(

@@ -14,7 +14,8 @@ export type WorkflowConversationTrigger =
   | "teammate_added_note"
   | "conversation_state_changed"
   | "assigned_to_team"
-  | "assigned_to_member";
+  | "assigned_to_member"
+  | "event_match";
 
 export type WorkflowTicketTrigger = "ticket_created" | "ticket_state_changed";
 

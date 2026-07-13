@@ -56,6 +56,12 @@ function workflowMatchesPageView(
   });
 }
 
+function workflowMatchesEvent(definition: WorkflowDefinition, facts?: WorkflowRunContext["facts"]) {
+  const expected = definition.eventName?.trim();
+  if (!expected) return false;
+  return facts?.eventName === expected;
+}
+
 export async function executeWorkflow(
   db: Db,
   workflow: typeof workflows.$inferSelect,
@@ -187,6 +193,9 @@ export async function dispatchConversationTriggerWorkflows(
     if (workflow.brandId && workflow.brandId !== input.brandId) continue;
     const definition = resolveActiveWorkflowDefinition(workflow);
     if (input.trigger === "page_view" && !workflowMatchesPageView(definition, input.facts)) {
+      continue;
+    }
+    if (input.trigger === "event_match" && !workflowMatchesEvent(definition, input.facts)) {
       continue;
     }
     const run = await executeWorkflow(db, workflow, input.conversationId, env, authConfig, {

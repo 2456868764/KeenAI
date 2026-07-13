@@ -461,6 +461,8 @@ export type WorkflowDefinition = {
     | "webhook"
     | "event_match";
   inactivityMinutes?: number;
+  pageRules?: { urlOp: "contains" | "eq" | "matches"; url: string; timeOnPageSec?: number }[];
+  eventName?: string;
   blocks: WorkflowBlock[];
 };
 

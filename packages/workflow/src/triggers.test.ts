@@ -58,4 +58,20 @@ describe("resolveInactivityMs", () => {
       timeOnPageSec: 5,
     });
   });
+
+  it("requires and accepts event_match event names", () => {
+    expect(() =>
+      workflowDefinitionSchema.parse({
+        trigger: "event_match",
+        blocks: [{ id: "reply", type: "send_message", plainText: "We saw this event." }],
+      }),
+    ).toThrow("eventName_required");
+
+    const parsed = workflowDefinitionSchema.parse({
+      trigger: "event_match",
+      eventName: "app/subscription.churned",
+      blocks: [{ id: "reply", type: "send_message", plainText: "We saw this event." }],
+    });
+    expect(parsed.eventName).toBe("app/subscription.churned");
+  });
 });

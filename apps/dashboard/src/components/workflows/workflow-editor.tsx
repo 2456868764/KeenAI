@@ -110,17 +110,20 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         <select
           id="workflow-trigger"
           value={definition.trigger}
-          onChange={(e) =>
+          onChange={(e) => {
+            const trigger = e.target.value as WorkflowDefinition["trigger"];
             setDefinition({
               ...definition,
-              trigger: e.target.value as WorkflowDefinition["trigger"],
-            })
-          }
+              trigger,
+              eventName: trigger === "event_match" ? (definition.eventName ?? "") : undefined,
+            });
+          }}
           className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 text-sm"
         >
           <option value="first_message">First customer message</option>
           <option value="customer_unresponsive">Customer unresponsive</option>
           <option value="webhook">Webhook</option>
+          <option value="event_match">Custom event</option>
         </select>
       </section>
 
@@ -141,6 +144,28 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               setDefinition({
                 ...definition,
                 inactivityMinutes: Number.parseInt(e.target.value, 10) || 0,
+              })
+            }
+          />
+        </section>
+      ) : null}
+
+      {definition.trigger === "event_match" ? (
+        <section className="space-y-2">
+          <label
+            htmlFor="workflow-event-name"
+            className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+          >
+            Event name
+          </label>
+          <Input
+            id="workflow-event-name"
+            value={definition.eventName ?? ""}
+            placeholder="app/subscription.churned"
+            onChange={(e) =>
+              setDefinition({
+                ...definition,
+                eventName: e.target.value,
               })
             }
           />

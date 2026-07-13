@@ -20,11 +20,12 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { assertBrandInOrg } from "../lib/conversations.js";
 import {
+  dispatchConversationTriggerWorkflows,
+  executeWorkflow,
   serializeWorkflow,
   serializeWorkflowRun,
   serializeWorkflowVersion,
 } from "../lib/workflow-engine.js";
-import { executeWorkflow } from "../lib/workflow-engine.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -39,6 +40,13 @@ const workflowWebhookTriggerBodySchema = z.object({
   brandId: z.string().min(1).optional(),
   conversationId: z.string().min(1),
   eventName: z.string().min(1).max(128).default("webhook/inbound.received"),
+  payload: z.record(z.unknown()).default({}),
+});
+
+const workflowEventTriggerBodySchema = z.object({
+  brandId: z.string().min(1).optional(),
+  conversationId: z.string().min(1),
+  eventName: z.string().min(1).max(128),
   payload: z.record(z.unknown()).default({}),
 });
 
@@ -166,6 +174,57 @@ export function workflowRoutes() {
         eventName: body.eventName,
         triggered: runs.length,
         runs,
+      });
+    },
+  );
+
+  r.post(
+    `${prefix}/events/trigger`,
+    requireAuth(),
+    zValidator("json", workflowEventTriggerBodySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const [conversation] = await c
+        .get("store")
+        .db.select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.id, body.conversationId),
+            eq(conversations.orgId, auth.orgId),
+            ...(body.brandId ? [eq(conversations.brandId, body.brandId)] : []),
+          ),
+        )
+        .limit(1);
+      if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
+
+      const runs = await dispatchConversationTriggerWorkflows(
+        c.get("store").db,
+        {
+          orgId: auth.orgId,
+          brandId: conversation.brandId,
+          conversationId: conversation.id,
+          trigger: "event_match",
+          facts: {
+            channelType: conversation.channelType,
+            priority: conversation.priority ?? undefined,
+            conversationStatus: conversation.status,
+            eventName: body.eventName,
+            eventPayload: body.payload,
+          },
+        },
+        c.get("env"),
+        c.get("authConfig"),
+      );
+
+      return c.json({
+        mode: "event_match",
+        eventName: body.eventName,
+        triggered: runs.length,
+        runs: runs.map(serializeWorkflowRun),
       });
     },
   );
