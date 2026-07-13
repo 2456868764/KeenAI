@@ -263,10 +263,10 @@ const templateInputs = [
   {
     id: "tpl-webhook-tag-from-crm",
     name: "CRM webhook tag VIP",
-    description: "Tag likely VIP conversations until webhook triggers are available in the DSL.",
+    description: "Tag VIP conversations when a CRM webhook event arrives.",
     category: "crm",
     definition: {
-      trigger: "first_message",
+      trigger: "webhook",
       blocks: [
         { id: "tag_vip", type: "tag_conversation", tags: ["vip"], mode: "append" },
         { id: "assign_priority", type: "assign", assigneeId: null },

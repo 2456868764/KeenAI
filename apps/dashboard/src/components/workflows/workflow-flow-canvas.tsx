@@ -22,6 +22,7 @@ import {
   blockLabel,
   collectWorkflowEdges,
   layoutWorkflowNodes,
+  triggerLabel,
   workflowNodeSize,
 } from "./workflow-graph";
 
@@ -98,8 +99,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
 function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
   const styles = categoryStyles.trigger;
-  const label =
-    data.trigger === "first_message" ? "First customer message" : "Customer unresponsive";
+  const label = triggerLabel(data.trigger);
 
   return (
     <div

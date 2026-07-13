@@ -24,6 +24,7 @@ import {
   serializeWorkflowRun,
   serializeWorkflowVersion,
 } from "../lib/workflow-engine.js";
+import { executeWorkflow } from "../lib/workflow-engine.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -33,6 +34,13 @@ const workflowShadowBodySchema = z
     conversationIds: z.array(z.string().min(1)).min(1).max(25).optional(),
   })
   .default({});
+
+const workflowWebhookTriggerBodySchema = z.object({
+  brandId: z.string().min(1).optional(),
+  conversationId: z.string().min(1),
+  eventName: z.string().min(1).max(128).default("webhook/inbound.received"),
+  payload: z.record(z.unknown()).default({}),
+});
 
 type WorkflowRouteContext = Context<{ Variables: AppVariables }>;
 type WorkflowAuditAuth = { orgId: string; sub: string };
@@ -103,6 +111,64 @@ export function workflowRoutes() {
     if (!auth) return c.json({ error: "unauthorized" }, 401);
     return c.json({ items: listWorkflowTemplates() });
   });
+
+  r.post(
+    `${prefix}/webhooks/trigger`,
+    requireAuth(),
+    zValidator("json", workflowWebhookTriggerBodySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const [conversation] = await c
+        .get("store")
+        .db.select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.id, body.conversationId),
+            eq(conversations.orgId, auth.orgId),
+            ...(body.brandId ? [eq(conversations.brandId, body.brandId)] : []),
+          ),
+        )
+        .limit(1);
+      if (!conversation) return c.json({ error: "conversation_not_found" }, 404);
+
+      const rows = await c
+        .get("store")
+        .db.select()
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.orgId, auth.orgId),
+            eq(workflows.status, "published"),
+            eq(workflows.trigger, "webhook"),
+          ),
+        )
+        .orderBy(desc(workflows.updatedAt));
+
+      const runs = [];
+      for (const workflow of rows) {
+        if (workflow.brandId && workflow.brandId !== conversation.brandId) continue;
+        const run = await executeWorkflow(
+          c.get("store").db,
+          workflow,
+          conversation.id,
+          c.get("env"),
+          c.get("authConfig"),
+        );
+        if (run) runs.push(serializeWorkflowRun(run));
+      }
+
+      return c.json({
+        mode: "webhook",
+        eventName: body.eventName,
+        triggered: runs.length,
+        runs,
+      });
+    },
+  );
 
   r.get(`${prefix}/:id`, requireAuth(), async (c) => {
     const auth = c.get("auth");

@@ -107,6 +107,8 @@
 | 15 | `webhook` 🆕 | External | `webhook/inbound.received` | 入站 Webhook |
 | 16 | `event_match` 🆕 | Custom | `app/*` | 业务自定义事件（如 `app/subscription.churned`） |
 
+当前实现：`@keenai/workflow` 的 `WORKFLOW_TRIGGERS` / `WorkflowDefinition` 已支持以上 16 类 trigger；运行时已落地 `first_message`、`customer_unresponsive` 与登录态 `POST /api/v1/workflows/webhooks/trigger` 触发的 `webhook` workflow，其余 trigger 的自动派发仍待按来源事件逐项补齐。
+
 ### 3.2 Trigger 配置（与 Featurebase 同构）
 
 每个 Workflow 的 Trigger Block 都暴露以下配置面：
@@ -956,7 +958,7 @@ export const workflowsRouter = new Hono()
   .get('/templates',       listTemplates);
 ```
 
-当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test/shadow replay/listTemplates；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 与 `shadow` 均以 dry-run handler 执行，不发送真实消息。
+当前实现：`apps/api/src/routes/workflows.ts` 已支持 list/create/get/update/publish/unpublish/duplicate/archive/delete/listRuns/getRun/listVersions/rollback/dry-run test/shadow replay/listTemplates/webhook trigger；每次 publish 会写入 `workflow_versions` snapshot，rollback 可恢复指定 published 版本，`test` 与 `shadow` 均以 dry-run handler 执行，不发送真实消息。
 
 ### 8.3 关键交互
 

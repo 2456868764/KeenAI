@@ -441,7 +441,23 @@ export type WorkflowBlock =
     };
 
 export type WorkflowDefinition = {
-  trigger: "first_message" | "customer_unresponsive";
+  trigger:
+    | "page_view"
+    | "new_messenger_conversation"
+    | "first_message"
+    | "any_message"
+    | "teammate_message"
+    | "conversation_state_changed"
+    | "assigned_to_team"
+    | "assigned_to_member"
+    | "customer_unresponsive"
+    | "teammate_unresponsive"
+    | "teammate_added_note"
+    | "ticket_created"
+    | "ticket_state_changed"
+    | "schedule"
+    | "webhook"
+    | "event_match";
   inactivityMinutes?: number;
   blocks: WorkflowBlock[];
 };

@@ -84,7 +84,24 @@ export {
   type LetKeeniAnswerResult,
 } from "./blocks/let-keeni-answer.js";
 
-export const WORKFLOW_TRIGGERS = ["first_message", "customer_unresponsive"] as const;
+export const WORKFLOW_TRIGGERS = [
+  "page_view",
+  "new_messenger_conversation",
+  "first_message",
+  "any_message",
+  "teammate_message",
+  "conversation_state_changed",
+  "assigned_to_team",
+  "assigned_to_member",
+  "customer_unresponsive",
+  "teammate_unresponsive",
+  "teammate_added_note",
+  "ticket_created",
+  "ticket_state_changed",
+  "schedule",
+  "webhook",
+  "event_match",
+] as const;
 export type WorkflowTrigger = (typeof WORKFLOW_TRIGGERS)[number];
 
 export const WORKFLOW_STATUSES = ["draft", "published"] as const;

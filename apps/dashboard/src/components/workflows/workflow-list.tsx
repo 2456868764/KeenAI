@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { triggerLabel } from "./workflow-graph";
 
 export function WorkflowListShell() {
   const router = useRouter();
@@ -112,7 +113,7 @@ function WorkflowRow({
           {workflow.name}
         </Link>
         <p className="mt-0.5 text-xs text-[hsl(var(--muted-foreground))]">
-          {workflow.definition.trigger.replace("_", " ")} · {blockSummary}
+          {triggerLabel(workflow.definition.trigger)} · {blockSummary}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

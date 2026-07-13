@@ -1341,4 +1341,120 @@ describe("workflow integration", () => {
 
     await store.close();
   });
+
+  it("runs published webhook trigger workflows for an authorized conversation", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        passwordHash: await hashPassword("password12345"),
+        name: "Agent",
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+    const [conversationRow] = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        channelType: "api",
+        channelId: "crm-1",
+        status: "open",
+        subject: "CRM webhook target",
+      })
+      .returning();
+    const conversation = requireRow(conversationRow, "conversation");
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Webhook VIP tag",
+        brandId: brand.id,
+        definition: {
+          trigger: "webhook",
+          blocks: [{ id: "tag_vip", type: "tag_conversation", tags: ["vip"], mode: "append" }],
+        },
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const createBody = (await createRes.json()) as { workflow: { id: string; trigger: string } };
+    expect(createBody.workflow.trigger).toBe("webhook");
+
+    const publishRes = await app.request(`/api/v1/workflows/${createBody.workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const triggerRes = await app.request("/api/v1/workflows/webhooks/trigger", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        conversationId: conversation.id,
+        eventName: "crm/contact.updated",
+        payload: { tier: "vip" },
+      }),
+    });
+    expect(triggerRes.status).toBe(200);
+    const triggerBody = (await triggerRes.json()) as {
+      mode: string;
+      eventName: string;
+      triggered: number;
+      runs: { workflowId: string; status: string }[];
+    };
+    expect(triggerBody).toMatchObject({
+      mode: "webhook",
+      eventName: "crm/contact.updated",
+      triggered: 1,
+    });
+    expect(triggerBody.runs[0]).toMatchObject({
+      workflowId: createBody.workflow.id,
+      status: "completed",
+    });
+
+    const updatedConversations = await db.select().from(conversations);
+    const updated = updatedConversations.find((item) => item.id === conversation.id);
+    expect(updated?.tags).toContain("vip");
+
+    await store.close();
+  });
 });

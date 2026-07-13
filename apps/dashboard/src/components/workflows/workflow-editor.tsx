@@ -120,6 +120,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         >
           <option value="first_message">First customer message</option>
           <option value="customer_unresponsive">Customer unresponsive</option>
+          <option value="webhook">Webhook</option>
         </select>
       </section>
 

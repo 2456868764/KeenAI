@@ -16,6 +16,13 @@ const NODE_HEIGHT = 72;
 const TRIGGER_WIDTH = 168;
 const TRIGGER_HEIGHT = 56;
 
+export function triggerLabel(trigger: WorkflowDefinition["trigger"]): string {
+  return trigger
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
   switch (block.type) {
     case "send_message":
@@ -43,7 +50,7 @@ export function collectWorkflowEdges(definition: WorkflowDefinition): WorkflowGr
       id: "trigger-first",
       source: "__trigger__",
       target: first.id,
-      label: definition.trigger.replace("_", " "),
+      label: triggerLabel(definition.trigger),
       kind: "trigger",
     });
   }
