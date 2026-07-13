@@ -83,8 +83,6 @@ services:
     build:
       context: .
       dockerfile: services/document-parser/Dockerfile
-      args:
-        PARSER_EXTRAS: ${KEENAI_DOCUMENT_PARSER_EXTRAS:-}
     ports:
       - "8095:8095"
     environment:

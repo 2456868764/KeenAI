@@ -29,6 +29,10 @@ POST /parse
 
 - `docling`: uses `docling-project/docling`. It can parse PDF, DOCX, HTML, and URL inputs supported by Docling.
 
+MinerU is intentionally not included in this Python sidecar for now. The service ships one
+engine, `docling`, and the TypeScript provider defaults invalid or missing engine config back to
+`docling`.
+
 ## Local Run
 
 ```bash
