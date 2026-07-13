@@ -9,6 +9,7 @@ export type Conversation = {
   status: string;
   channelType: string;
   assigneeId?: string | null;
+  teamId?: string | null;
   tags?: string[];
   snoozedUntil?: string | null;
   priority?: string | null;
@@ -311,6 +312,7 @@ export async function updateConversation(
   patch: {
     status?: string;
     assigneeId?: string | null;
+    teamId?: string | null;
     subject?: string;
     tags?: string[];
     snoozedUntil?: string | null;

@@ -1459,7 +1459,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("runs customer message, teammate message, and state changed workflow triggers", async () => {
+  it("runs conversation message, state, and assignment workflow triggers", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -1587,6 +1587,30 @@ describe("workflow integration", () => {
         },
       ],
     });
+    const assignedMemberWorkflowId = await createAndPublishWorkflow({
+      name: "Assigned to member",
+      trigger: "assigned_to_member",
+      blocks: [
+        {
+          id: "tag_assigned_member",
+          type: "tag_conversation",
+          tags: ["assigned-member"],
+          mode: "append",
+        },
+      ],
+    });
+    const assignedTeamWorkflowId = await createAndPublishWorkflow({
+      name: "Assigned to team",
+      trigger: "assigned_to_team",
+      blocks: [
+        {
+          id: "tag_assigned_team",
+          type: "tag_conversation",
+          tags: ["assigned-team"],
+          mode: "append",
+        },
+      ],
+    });
 
     const customerMessage = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
       method: "POST",
@@ -1615,6 +1639,20 @@ describe("workflow integration", () => {
     });
     expect(closeRes.status).toBe(200);
 
+    const assignMemberRes = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ assigneeId: "member-target-1" }),
+    });
+    expect(assignMemberRes.status).toBe(200);
+
+    const assignTeamRes = await app.request(`/api/v1/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ teamId: "team-target-1" }),
+    });
+    expect(assignTeamRes.status).toBe(200);
+
     const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
       headers: auth,
     });
@@ -1635,10 +1673,23 @@ describe("workflow integration", () => {
       .where(eq(conversations.id, conversation.id))
       .limit(1);
     expect(updatedConversation?.tags).toEqual(
-      expect.arrayContaining(["teammate-replied", "state-closed"]),
+      expect.arrayContaining([
+        "teammate-replied",
+        "state-closed",
+        "assigned-member",
+        "assigned-team",
+      ]),
     );
+    expect(updatedConversation?.assigneeId).toBe("member-target-1");
+    expect(updatedConversation?.teamId).toBe("team-target-1");
 
-    for (const workflowId of [anyMessageWorkflowId, teammateWorkflowId, stateWorkflowId]) {
+    for (const workflowId of [
+      anyMessageWorkflowId,
+      teammateWorkflowId,
+      stateWorkflowId,
+      assignedMemberWorkflowId,
+      assignedTeamWorkflowId,
+    ]) {
       const runsRes = await app.request(`/api/v1/workflows/${workflowId}/runs`, {
         headers: auth,
       });

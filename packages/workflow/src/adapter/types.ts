@@ -9,7 +9,9 @@ export type WorkflowDispatchContext = {
 export type WorkflowConversationTrigger =
   | "any_message"
   | "teammate_message"
-  | "conversation_state_changed";
+  | "conversation_state_changed"
+  | "assigned_to_team"
+  | "assigned_to_member";
 
 export type WorkflowConversationTriggerContext = WorkflowDispatchContext & {
   trigger: WorkflowConversationTrigger;

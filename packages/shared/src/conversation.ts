@@ -93,6 +93,7 @@ export const updateConversationSchema = z
   .object({
     status: conversationStatusSchema.optional(),
     assigneeId: z.string().min(1).nullable().optional(),
+    teamId: z.string().min(1).nullable().optional(),
     subject: z.string().max(500).optional(),
     tags: z.array(z.string().min(1).max(64)).max(32).optional(),
     snoozedUntil: z.string().datetime().nullable().optional(),
@@ -104,6 +105,7 @@ export const updateConversationSchema = z
     (v) =>
       v.status !== undefined ||
       v.assigneeId !== undefined ||
+      v.teamId !== undefined ||
       v.subject !== undefined ||
       v.tags !== undefined ||
       v.snoozedUntil !== undefined ||

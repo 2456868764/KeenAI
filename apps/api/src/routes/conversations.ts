@@ -185,6 +185,7 @@ export function conversationRoutes(ctx: AppContext) {
         patch.closedAt = body.status === "closed" ? now : body.status === "open" ? null : undefined;
       }
       if (body.assigneeId !== undefined) patch.assigneeId = body.assigneeId;
+      if (body.teamId !== undefined) patch.teamId = body.teamId;
       if (body.subject !== undefined) patch.subject = body.subject;
       if (body.tags !== undefined) patch.tags = body.tags;
       if (body.priority !== undefined) patch.priority = body.priority;
@@ -248,6 +249,40 @@ export function conversationRoutes(ctx: AppContext) {
           brandId: updated.brandId,
           conversationId: updated.id,
           trigger: "conversation_state_changed",
+          facts: {
+            channelType: updated.channelType,
+            priority: updated.priority ?? "normal",
+            conversationStatus: updated.status,
+          },
+        });
+      }
+
+      if (
+        body.assigneeId !== undefined &&
+        body.assigneeId &&
+        body.assigneeId !== conversation.assigneeId
+      ) {
+        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+        await getWorkflowDispatch().dispatchConversationTrigger({
+          orgId: auth.orgId,
+          brandId: updated.brandId,
+          conversationId: updated.id,
+          trigger: "assigned_to_member",
+          facts: {
+            channelType: updated.channelType,
+            priority: updated.priority ?? "normal",
+            conversationStatus: updated.status,
+          },
+        });
+      }
+
+      if (body.teamId !== undefined && body.teamId && body.teamId !== conversation.teamId) {
+        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+        await getWorkflowDispatch().dispatchConversationTrigger({
+          orgId: auth.orgId,
+          brandId: updated.brandId,
+          conversationId: updated.id,
+          trigger: "assigned_to_team",
           facts: {
             channelType: updated.channelType,
             priority: updated.priority ?? "normal",
