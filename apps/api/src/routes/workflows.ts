@@ -688,6 +688,13 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     assign: async () => {},
     close: async () => {},
     reopen: async () => {},
+    showExpectedReplyTime: async (input) => ({
+      plainText: input.insideOfficeHoursText ?? "We usually reply within 4 hours.",
+      expectedReplyMinutes: input.fallbackMinutes,
+      insideOfficeHours: true,
+      policyId: input.policyId ?? "dry-run-sla-policy",
+      policyName: "Dry-run SLA",
+    }),
     letKeeniAnswer: async () => ({
       replyText: "Dry-run Keeni response",
       resolution: { type: "unresolved", confidence: 0, evidence: "dry-run" },

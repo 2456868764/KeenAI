@@ -26,6 +26,7 @@ export function triggerLabel(trigger: WorkflowDefinition["trigger"]): string {
 export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
   switch (block.type) {
     case "send_message":
+    case "show_expected_reply_time":
     case "let_keeni_answer":
     case "collect_data":
     case "reply_buttons":
@@ -207,6 +208,8 @@ export function blockLabel(block: WorkflowBlock): string {
       const count = block.attachmentIds?.length ?? 0;
       return count > 0 ? `${count} attachment(s)` : "(empty message)";
     }
+    case "show_expected_reply_time":
+      return `Expected reply: ${block.fallbackMinutes ?? 240} min`;
     case "add_note":
       return block.plainText.length > 48 ? `${block.plainText.slice(0, 48)}…` : block.plainText;
     case "mark_priority":

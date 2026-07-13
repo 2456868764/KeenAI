@@ -91,6 +91,9 @@ describe("collectWorkflowEdges", () => {
 describe("blockCategory", () => {
   it("maps block types to visual categories", () => {
     expect(blockCategory({ id: "1", type: "send_message" })).toBe("message");
+    expect(
+      blockCategory({ id: "reply-time", type: "show_expected_reply_time", fallbackMinutes: 120 }),
+    ).toBe("message");
     expect(blockCategory({ id: "2", type: "branches", branches: [{ nextId: null }] })).toBe(
       "condition",
     );
@@ -107,6 +110,9 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "end", type: "end" })).toBe("End path");
     expect(blockLabel({ id: "goto", type: "goto", targetBlockId: "target" })).toBe("Go to target");
     expect(blockLabel({ id: "sla", type: "apply_sla" })).toBe("Apply active SLA");
+    expect(
+      blockLabel({ id: "reply-time", type: "show_expected_reply_time", fallbackMinutes: 90 }),
+    ).toBe("Expected reply: 90 min");
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );

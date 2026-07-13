@@ -86,6 +86,47 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "show_expected_reply_time" ? (
+        <div className="space-y-2">
+          <Input
+            placeholder="SLA policy ID (optional; active policy is used by default)"
+            value={block.policyId ?? ""}
+            onChange={(e) => onChange({ ...block, policyId: e.target.value.trim() || undefined })}
+          />
+          <Input
+            type="number"
+            min={1}
+            max={20160}
+            placeholder="Fallback reply time (minutes)"
+            value={block.fallbackMinutes ?? 240}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                fallbackMinutes: Number.parseInt(e.target.value, 10) || 240,
+              })
+            }
+          />
+          <textarea
+            value={block.insideOfficeHoursText ?? ""}
+            onChange={(e) =>
+              onChange({ ...block, insideOfficeHoursText: e.target.value || undefined })
+            }
+            rows={3}
+            placeholder="Inside office hours text, e.g. We usually reply within {{replyTime}}."
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <textarea
+            value={block.outsideOfficeHoursText ?? ""}
+            onChange={(e) =>
+              onChange({ ...block, outsideOfficeHoursText: e.target.value || undefined })
+            }
+            rows={3}
+            placeholder="Outside office hours text, e.g. We are away and usually reply within {{replyTime}}."
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+        </div>
+      ) : null}
+
       {block.type === "add_note" ? (
         <textarea
           value={block.plainText}

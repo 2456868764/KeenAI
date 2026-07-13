@@ -82,6 +82,32 @@ async function executeBlock(
         },
         nextId: block.targetBlockId,
       };
+    case "show_expected_reply_time": {
+      if (!handlers.showExpectedReplyTime) {
+        throw new Error("show_expected_reply_time_handler_missing");
+      }
+      const result = await handlers.showExpectedReplyTime({
+        policyId: block.policyId,
+        fallbackMinutes: block.fallbackMinutes,
+        insideOfficeHoursText: block.insideOfficeHoursText,
+        outsideOfficeHoursText: block.outsideOfficeHoursText,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            replyText: result.plainText,
+            expectedReplyMinutes: result.expectedReplyMinutes,
+            insideOfficeHours: result.insideOfficeHours,
+            slaPolicyId: result.policyId,
+            policyName: result.policyName,
+          },
+        },
+        nextId,
+      };
+    }
     case "wait": {
       const ms = block.seconds * 1000;
       if (handlers.wait) await handlers.wait(ms);

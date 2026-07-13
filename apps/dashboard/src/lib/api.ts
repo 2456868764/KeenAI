@@ -365,6 +365,14 @@ export async function searchConversations(
 
 export type WorkflowBlock =
   | { id: string; type: "send_message"; plainText?: string; attachmentIds?: string[] }
+  | {
+      id: string;
+      type: "show_expected_reply_time";
+      policyId?: string;
+      fallbackMinutes?: number;
+      insideOfficeHoursText?: string;
+      outsideOfficeHoursText?: string;
+    }
   | { id: string; type: "add_note"; plainText: string }
   | { id: string; type: "mark_priority"; priority: "low" | "normal" | "high" | "urgent" }
   | { id: string; type: "assign"; assigneeId?: string | null }

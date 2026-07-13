@@ -462,6 +462,8 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
         const id = newBlockId();
         if (type === "send_message") {
           onAdd({ id, type: "send_message", plainText: "Hello!" });
+        } else if (type === "show_expected_reply_time") {
+          onAdd({ id, type: "show_expected_reply_time", fallbackMinutes: 240 });
         } else if (type === "add_note") {
           onAdd({ id, type: "add_note", plainText: "Internal note" });
         } else if (type === "mark_priority") {
@@ -559,6 +561,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
     >
       <option value="">+ Add block</option>
       <option value="send_message">Send message</option>
+      <option value="show_expected_reply_time">Show expected reply time</option>
       <option value="add_note">Add internal note</option>
       <option value="mark_priority">Mark priority</option>
       <option value="assign">Assign</option>

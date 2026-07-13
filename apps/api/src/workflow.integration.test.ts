@@ -1005,6 +1005,137 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("runs show_expected_reply_time workflow block and sends a customer-visible message", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const policyRes = await app.request("/api/v1/sla/policies", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Standard response",
+        firstResponseSec: 7200,
+        resolutionSec: 86_400,
+        operationalHoursOnly: false,
+      }),
+    });
+    expect(policyRes.status).toBe(201);
+    const { policy } = (await policyRes.json()) as { policy: { id: string } };
+
+    const workflowRes = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Expected reply time",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "reply-time",
+              type: "show_expected_reply_time",
+              policyId: policy.id,
+              fallbackMinutes: 240,
+            },
+          ],
+        },
+      }),
+    });
+    expect(workflowRes.status).toBe(201);
+    const { workflow } = (await workflowRes.json()) as { workflow: { id: string } };
+
+    const publishRes = await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(publishRes.status).toBe(200);
+
+    const conversationRes = await app.request("/api/v1/conversations", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        channelType: "messenger",
+        channelId: "wf-reply-time",
+        subject: "Expected reply time",
+        initialMessage: { plainText: "How long will this take?" },
+      }),
+    });
+    expect(conversationRes.status).toBe(201);
+    const { conversation } = (await conversationRes.json()) as { conversation: { id: string } };
+
+    const messagesRes = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    expect(messagesRes.status).toBe(200);
+    const messagesBody = (await messagesRes.json()) as {
+      items: { plainText: string; sentVia?: string }[];
+    };
+    expect(
+      messagesBody.items.some(
+        (message) =>
+          message.sentVia === "workflow" &&
+          message.plainText === "We usually reply within 2 hours.",
+      ),
+    ).toBe(true);
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: { steps: { type: string; output?: { expectedReplyMinutes?: number } }[] }[];
+    };
+    const replyTimeStep = runsBody.items[0]?.steps.find(
+      (step) => step.type === "show_expected_reply_time",
+    );
+    expect(replyTimeStep?.output?.expectedReplyMinutes).toBe(120);
+
+    await store.close();
+  });
+
   it("collect_data suspends until widget submits workflow input", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

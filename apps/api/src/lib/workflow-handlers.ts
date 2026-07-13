@@ -7,6 +7,7 @@ import type {
   CsatInput,
   MarkPriorityInput,
   ReplyButtonsInput,
+  ShowExpectedReplyTimeInput,
   SnoozeInput,
   TagConversationInput,
   WorkflowActionHandlers,
@@ -19,7 +20,12 @@ import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
-import { evaluateConversationSla } from "./sla.js";
+import {
+  evaluateConversationSla,
+  getOfficeHoursForOrg,
+  isWithinOfficeHours,
+  listSlaPolicies,
+} from "./sla.js";
 import { notifyTicketStatusChange } from "./ticket-notify.js";
 import {
   createTicketFromConversation,
@@ -81,6 +87,71 @@ export function buildCsatMessageContent(input: CsatInput): Record<string, unknow
 export function mergeConversationTags(existing: string[], input: TagConversationInput): string[] {
   if (input.mode === "replace") return [...new Set(input.tags)];
   return [...new Set([...existing, ...input.tags])];
+}
+
+function formatReplyTime(minutes: number): string {
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"}`;
+  const days = Math.ceil(hours / 24);
+  return `${days} business day${days === 1 ? "" : "s"}`;
+}
+
+function renderExpectedReplyTemplate(
+  template: string,
+  values: {
+    replyTime: string;
+    replyTimeMinutes: number;
+    insideOfficeHours?: boolean;
+    policyName?: string;
+  },
+): string {
+  return template
+    .replaceAll("{{replyTime}}", values.replyTime)
+    .replaceAll("{{replyTimeMinutes}}", String(values.replyTimeMinutes))
+    .replaceAll("{{insideOfficeHours}}", String(values.insideOfficeHours ?? "unknown"))
+    .replaceAll("{{policyName}}", values.policyName ?? "Standard");
+}
+
+export async function resolveExpectedReplyTimeMessage(
+  db: Db,
+  orgId: string,
+  input: ShowExpectedReplyTimeInput,
+  now = new Date(),
+) {
+  const policies = await listSlaPolicies(db, orgId);
+  const policy = input.policyId
+    ? policies.find((candidate) => candidate.id === input.policyId && candidate.enabled)
+    : policies.find((candidate) => candidate.enabled);
+
+  if (input.policyId && !policy) throw new Error("sla_policy_not_found");
+
+  const expectedReplyMinutes = Math.max(
+    1,
+    Math.ceil((policy?.firstResponseSec ?? input.fallbackMinutes * 60) / 60),
+  );
+  const hours = await getOfficeHoursForOrg(db, orgId);
+  const insideOfficeHours = hours ? isWithinOfficeHours(hours, now) : undefined;
+  const replyTime = formatReplyTime(expectedReplyMinutes);
+  const template =
+    insideOfficeHours === false
+      ? (input.outsideOfficeHoursText ??
+        "We are currently outside office hours. We usually reply within {{replyTime}} once we are back.")
+      : (input.insideOfficeHoursText ?? "We usually reply within {{replyTime}}.");
+  const plainText = renderExpectedReplyTemplate(template, {
+    replyTime,
+    replyTimeMinutes: expectedReplyMinutes,
+    insideOfficeHours,
+    policyName: policy?.name,
+  });
+
+  return {
+    plainText,
+    expectedReplyMinutes,
+    insideOfficeHours,
+    policyId: policy?.id,
+    policyName: policy?.name,
+  };
 }
 
 export function createWorkflowActionHandlers(
@@ -163,6 +234,38 @@ export function createWorkflowActionHandlers(
           updatedAt: new Date(),
         })
         .where(eq(conversations.id, conversationId));
+    },
+    showExpectedReplyTime: async (input) => {
+      const result = await resolveExpectedReplyTimeMessage(db, workflow.orgId, input);
+      const { message } = await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText: result.plainText,
+        content: buildMessageContent(result.plainText),
+        isInternal: false,
+        sentVia: "workflow",
+        isAgentReply: true,
+        metadata: {
+          source: "workflow_show_expected_reply_time",
+          workflowId: workflow.id,
+          workflowRunId,
+        },
+      });
+
+      if (authConfig && message.plainText.trim()) {
+        const job = await buildEmailSendJob(db, env, {
+          orgId: workflow.orgId,
+          conversationId,
+          plainText: message.plainText,
+          messageId: message.id,
+        });
+        if (job) {
+          await dispatchEmailOutbound(db, env, authConfig, job);
+        }
+      }
+
+      return result;
     },
     letKeeniAnswer: (input) => runLetKeeniAnswerBlock(db, env, input),
     convertToTicket: async ({ title }) => {

@@ -27,6 +27,11 @@ import {
   setTicketStateBlockObjectSchema,
   setTicketStateBlockSchema,
 } from "./blocks/set-ticket-state.js";
+import {
+  type ShowExpectedReplyTimeInput,
+  type ShowExpectedReplyTimeResult,
+  showExpectedReplyTimeBlockSchema,
+} from "./blocks/show-expected-reply-time.js";
 import { type SnoozeInput, snoozeBlockSchema } from "./blocks/snooze.js";
 import {
   type TagConversationInput,
@@ -121,6 +126,12 @@ export {
   type SetTicketStateResult,
 } from "./blocks/set-ticket-state.js";
 export {
+  showExpectedReplyTimeBlockSchema,
+  type ShowExpectedReplyTimeBlock,
+  type ShowExpectedReplyTimeInput,
+  type ShowExpectedReplyTimeResult,
+} from "./blocks/show-expected-reply-time.js";
+export {
   letKeeniAnswerBlockSchema,
   letKeeniAnswerOutcomeRoutingSchema,
   resolveLetKeeniAnswerNext,
@@ -160,6 +171,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "reopen",
   "end",
   "goto",
+  "show_expected_reply_time",
   "let_keeni_answer",
   "wait",
   "http_request",
@@ -230,6 +242,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   reopenBlockSchema,
   endBlockSchema,
   gotoBlockSchema,
+  showExpectedReplyTimeBlockSchema,
   letKeeniAnswerBlockSchema,
   waitBlockSchema,
   httpRequestBlockSchema,
@@ -393,6 +406,9 @@ export type WorkflowActionHandlers = {
   assign: (assigneeId: string | null) => Promise<void>;
   close: () => Promise<void>;
   reopen?: () => Promise<void>;
+  showExpectedReplyTime?: (
+    input: ShowExpectedReplyTimeInput,
+  ) => Promise<ShowExpectedReplyTimeResult>;
   letKeeniAnswer?: (input: LetKeeniAnswerInput) => Promise<LetKeeniAnswerResult>;
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
@@ -422,6 +438,9 @@ export type WorkflowStepResult = {
     replyText?: string;
     resolutionType?: string;
     nextBlockId?: string | null;
+    expectedReplyMinutes?: number;
+    insideOfficeHours?: boolean;
+    policyName?: string;
     httpStatus?: number;
     waitMs?: number;
     slaPolicyId?: string;

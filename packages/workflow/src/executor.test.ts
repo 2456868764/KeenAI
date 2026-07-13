@@ -54,6 +54,52 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("runs show_expected_reply_time blocks through the reply time handler", async () => {
+    const showExpectedReplyTime = vi.fn(async () => ({
+      plainText: "We usually reply within 2 hours.",
+      expectedReplyMinutes: 120,
+      insideOfficeHours: true,
+      policyId: "policy-1",
+      policyName: "Standard",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "reply-time",
+            type: "show_expected_reply_time",
+            policyId: "policy-1",
+            fallbackMinutes: 240,
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), showExpectedReplyTime, assign: vi.fn(), close: vi.fn() },
+    );
+
+    expect(showExpectedReplyTime).toHaveBeenCalledWith({
+      policyId: "policy-1",
+      fallbackMinutes: 240,
+      insideOfficeHoursText: undefined,
+      outsideOfficeHoursText: undefined,
+    });
+    expect(result.steps).toEqual([
+      {
+        blockId: "reply-time",
+        type: "show_expected_reply_time",
+        status: "ok",
+        output: {
+          replyText: "We usually reply within 2 hours.",
+          expectedReplyMinutes: 120,
+          insideOfficeHours: true,
+          slaPolicyId: "policy-1",
+          policyName: "Standard",
+        },
+      },
+    ]);
+  });
+
   it("runs add_note blocks through the note handler", async () => {
     const addNote = vi.fn(async () => {});
 
