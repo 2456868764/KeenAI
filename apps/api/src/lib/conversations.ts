@@ -357,6 +357,8 @@ export async function insertMessage(
   const isCustomerMessage = input.senderType === "user" && !input.isInternal;
   const isTeammateMessage =
     input.senderType === "agent" && !input.isInternal && input.sentVia !== "workflow";
+  const isTeammateNote =
+    input.senderType === "agent" && input.isInternal && input.sentVia !== "workflow";
 
   if (isCustomerMessage && triggerFirstMessage) {
     const { getWorkflowDispatch } = await import("./workflow-dispatch.js");
@@ -374,6 +376,21 @@ export async function insertMessage(
       brandId: current.brandId,
       conversationId: input.conversationId,
       trigger: isCustomerMessage ? "any_message" : "teammate_message",
+      facts: {
+        channelType: current.channelType,
+        priority: current.priority ?? "normal",
+        conversationStatus: updated?.status ?? current.status,
+      },
+    });
+  }
+
+  if (isTeammateNote) {
+    const { getWorkflowDispatch } = await import("./workflow-dispatch.js");
+    await getWorkflowDispatch().dispatchConversationTrigger({
+      orgId: input.orgId,
+      brandId: current.brandId,
+      conversationId: input.conversationId,
+      trigger: "teammate_added_note",
       facts: {
         channelType: current.channelType,
         priority: current.priority ?? "normal",

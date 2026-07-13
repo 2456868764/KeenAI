@@ -1564,6 +1564,18 @@ describe("workflow integration", () => {
         },
       ],
     });
+    const teammateNoteWorkflowId = await createAndPublishWorkflow({
+      name: "Teammate note",
+      trigger: "teammate_added_note",
+      blocks: [
+        {
+          id: "tag_teammate_note",
+          type: "tag_conversation",
+          tags: ["teammate-note"],
+          mode: "append",
+        },
+      ],
+    });
     const stateWorkflowId = await createAndPublishWorkflow({
       name: "State changed",
       trigger: "conversation_state_changed",
@@ -1632,6 +1644,17 @@ describe("workflow integration", () => {
     });
     expect(teammateMessage.status).toBe(201);
 
+    const teammateNote = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        plainText: "Internal investigation note",
+        senderType: "agent",
+        isInternal: true,
+      }),
+    });
+    expect(teammateNote.status).toBe(201);
+
     const closeRes = await app.request(`/api/v1/conversations/${conversation.id}`, {
       method: "PATCH",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -1675,6 +1698,7 @@ describe("workflow integration", () => {
     expect(updatedConversation?.tags).toEqual(
       expect.arrayContaining([
         "teammate-replied",
+        "teammate-note",
         "state-closed",
         "assigned-member",
         "assigned-team",
@@ -1686,6 +1710,7 @@ describe("workflow integration", () => {
     for (const workflowId of [
       anyMessageWorkflowId,
       teammateWorkflowId,
+      teammateNoteWorkflowId,
       stateWorkflowId,
       assignedMemberWorkflowId,
       assignedTeamWorkflowId,

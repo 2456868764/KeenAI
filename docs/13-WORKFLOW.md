@@ -107,7 +107,7 @@
 | 15 | `webhook` 🆕 | External | `webhook/inbound.received` | 入站 Webhook |
 | 16 | `event_match` 🆕 | Custom | `app/*` | 业务自定义事件（如 `app/subscription.churned`） |
 
-当前实现：`@keenai/workflow` 的 `WORKFLOW_TRIGGERS` / `WorkflowDefinition` 已支持以上 16 类 trigger；运行时已落地 `first_message`、`any_message`、`teammate_message`、`conversation_state_changed`、`assigned_to_member`、`assigned_to_team`、`customer_unresponsive`、`ticket_created`、`ticket_state_changed` 与登录态 `POST /api/v1/workflows/webhooks/trigger` 触发的 `webhook` workflow，其余 trigger 的自动派发仍待按来源事件逐项补齐。
+当前实现：`@keenai/workflow` 的 `WORKFLOW_TRIGGERS` / `WorkflowDefinition` 已支持以上 16 类 trigger；运行时已落地 `first_message`、`any_message`、`teammate_message`、`teammate_added_note`、`conversation_state_changed`、`assigned_to_member`、`assigned_to_team`、`customer_unresponsive`、`ticket_created`、`ticket_state_changed` 与登录态 `POST /api/v1/workflows/webhooks/trigger` 触发的 `webhook` workflow，其余 trigger 的自动派发仍待按来源事件逐项补齐。
 
 ### 3.2 Trigger 配置（与 Featurebase 同构）
 
