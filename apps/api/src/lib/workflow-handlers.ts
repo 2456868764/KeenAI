@@ -1,3 +1,4 @@
+import vm from "node:vm";
 import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
@@ -19,6 +20,8 @@ import type {
   McpCallInput,
   McpCallResult,
   ReplyButtonsInput,
+  ScriptInput,
+  ScriptResult,
   SendTicketFormInput,
   SendTicketFormResult,
   ShowExpectedReplyTimeInput,
@@ -67,6 +70,57 @@ function parseWebhookPayload(payload: string | undefined): unknown {
   } catch {
     return trimmed;
   }
+}
+
+function normalizeScriptResult(result: unknown): unknown {
+  if (result === undefined || result === null) return result;
+  const type = typeof result;
+  if (type === "string" || type === "number" || type === "boolean") return result;
+  if (type === "bigint") return result.toString();
+  if (type === "symbol" || type === "function") {
+    throw new Error("script_result_not_json_serializable");
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(result)) as unknown;
+  } catch {
+    throw new Error("script_result_not_json_serializable");
+  }
+}
+
+export function runWorkflowScriptBlock(env: ApiEnv, input: ScriptInput): ScriptResult {
+  if (!env.WORKFLOW_SCRIPT_ENABLED) {
+    throw new Error("workflow_script_disabled");
+  }
+
+  const sandbox = vm.createContext({
+    context: input.context
+      ? Object.freeze({
+          workflowId: input.context.workflowId,
+          workflowRunId: input.context.workflowRunId,
+          orgId: input.context.orgId,
+          brandId: input.context.brandId,
+          conversationId: input.context.conversationId,
+          targetCustomerId: input.context.targetCustomerId,
+          subject: input.context.subject,
+          isShadowRun: input.context.isShadowRun,
+        })
+      : undefined,
+    facts: Object.freeze({ ...input.facts }),
+    JSON,
+    Math,
+  });
+  const script = new vm.Script(`"use strict";\n(() => {\n${input.code}\n})()`, {
+    filename: "workflow-script.js",
+  });
+  const result = script.runInContext(sandbox, {
+    timeout: input.timeoutMs,
+    displayErrors: false,
+  }) as unknown;
+  if (typeof (result as Promise<unknown> | undefined)?.then === "function") {
+    throw new Error("async_script_not_supported");
+  }
+  return { result: normalizeScriptResult(result) };
 }
 
 function stableHash(input: string): number {
@@ -569,6 +623,7 @@ export function createWorkflowActionHandlers(
       const result = await host.callTool(serverId, toolName, args);
       return { serverId, toolName, result };
     },
+    script: async (input: ScriptInput): Promise<ScriptResult> => runWorkflowScriptBlock(env, input),
     applySla: async ({ policyId }) => {
       const result = await evaluateConversationSla(db, {
         orgId: workflow.orgId,

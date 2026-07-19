@@ -712,6 +712,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
       toolName: input.toolName,
       result: { ok: true, mode: "dry-run" },
     }),
+    script: async () => ({ result: { ok: true, mode: "dry-run" } }),
     applySla: async (input) => ({
       policyId: input.policyId ?? "dry-run-sla-policy",
       breachCount: 0,

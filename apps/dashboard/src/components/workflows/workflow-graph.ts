@@ -243,6 +243,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return `Webhook → ${block.eventName?.trim() || block.url.slice(0, 40)}`;
     case "mcp_call":
       return `MCP ${block.serverId}.${block.toolName}`;
+    case "script":
+      return `Script (${block.timeoutMs ?? 2000}ms)`;
     case "branches":
       return `${block.branches.length} branch(es)`;
     case "apply_rules":

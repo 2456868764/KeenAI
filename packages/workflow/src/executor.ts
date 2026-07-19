@@ -196,6 +196,25 @@ async function executeBlock(
         nextId,
       };
     }
+    case "script": {
+      if (!handlers.script) throw new Error("script_handler_missing");
+      const result = await handlers.script({
+        code: block.code,
+        timeoutMs: block.timeoutMs,
+        memoryMb: block.memoryMb,
+        context,
+        facts,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { scriptResultPreview: previewUnknown(result.result) },
+        },
+        nextId,
+      };
+    }
     case "branches": {
       nextId = resolveBranchNext(block, facts);
       return {

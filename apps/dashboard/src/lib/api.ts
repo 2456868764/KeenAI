@@ -423,6 +423,13 @@ export type WorkflowBlock =
     }
   | {
       id: string;
+      type: "script";
+      code: string;
+      timeoutMs?: number;
+      memoryMb?: number;
+    }
+  | {
+      id: string;
       type: "branches";
       branches: {
         label?: string;

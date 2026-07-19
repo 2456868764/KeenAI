@@ -401,6 +401,38 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "script" ? (
+        <>
+          <textarea
+            value={block.code}
+            onChange={(e) => onChange({ ...block, code: e.target.value })}
+            rows={8}
+            placeholder="JavaScript body. Return a JSON-serializable value."
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 font-mono text-sm"
+          />
+          <Input
+            type="number"
+            min={1}
+            max={5000}
+            placeholder="Timeout (ms)"
+            value={block.timeoutMs ?? 2000}
+            onChange={(e) =>
+              onChange({ ...block, timeoutMs: Number.parseInt(e.target.value, 10) || 2000 })
+            }
+          />
+          <Input
+            type="number"
+            min={1}
+            max={128}
+            placeholder="Memory hint (MB)"
+            value={block.memoryMb ?? 32}
+            onChange={(e) =>
+              onChange({ ...block, memoryMb: Number.parseInt(e.target.value, 10) || 32 })
+            }
+          />
+        </>
+      ) : null}
+
       {block.type === "branches" ? (
         <div className="space-y-3">
           {block.branches.map((branch, branchIndex) => (

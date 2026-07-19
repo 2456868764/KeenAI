@@ -1,6 +1,6 @@
 import { parseApiEnv } from "@keenai/shared";
 import { describe, expect, it, vi } from "vitest";
-import { createWorkflowActionHandlers } from "./workflow-handlers.js";
+import { createWorkflowActionHandlers, runWorkflowScriptBlock } from "./workflow-handlers.js";
 
 const callTool = vi.fn();
 
@@ -32,6 +32,45 @@ describe("workflow action handlers", () => {
       serverId: "stub",
       toolName: "echo",
       result: { echoed: "hello-mcp" },
+    });
+  });
+
+  it("keeps workflow script blocks disabled by default", () => {
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+
+    expect(() =>
+      runWorkflowScriptBlock(env, {
+        code: "return 1;",
+        timeoutMs: 1000,
+        memoryMb: 32,
+        facts: {},
+      }),
+    ).toThrow("workflow_script_disabled");
+  });
+
+  it("runs enabled workflow script blocks in a timeout-limited vm context", () => {
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      WORKFLOW_SCRIPT_ENABLED: "true",
+    });
+
+    const result = runWorkflowScriptBlock(env, {
+      code: "return { channel: facts.channelType, workflowId: context.workflowId };",
+      timeoutMs: 1000,
+      memoryMb: 32,
+      facts: { channelType: "email" },
+      context: {
+        workflowId: "workflow-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conversation-1",
+      },
+    });
+
+    expect(result).toEqual({
+      result: { channel: "email", workflowId: "workflow-1" },
     });
   });
 });

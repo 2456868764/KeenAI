@@ -642,6 +642,60 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("runs script blocks through the script handler", async () => {
+    const script = vi.fn(async () => ({
+      result: { channel: "email", urgent: false },
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "event_match",
+        eventName: "app/subscription.churned",
+        blocks: [
+          {
+            id: "script",
+            type: "script",
+            code: "return { channel: facts.channelType };",
+            timeoutMs: 1000,
+            memoryMb: 32,
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        script,
+      },
+      {
+        workflowId: "workflow-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conversation-1",
+        facts: { channelType: "email" },
+      },
+    );
+
+    expect(script).toHaveBeenCalledWith({
+      code: "return { channel: facts.channelType };",
+      timeoutMs: 1000,
+      memoryMb: 32,
+      context: {
+        workflowId: "workflow-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conversation-1",
+        facts: { channelType: "email" },
+      },
+      facts: { channelType: "email" },
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      scriptResultPreview: '{"channel":"email","urgent":false}',
+    });
+  });
+
   it("sends ticket forms and suspends until customer submission", async () => {
     const sendTicketForm = vi.fn(async () => ({ ticketId: "ticket-1" }));
 

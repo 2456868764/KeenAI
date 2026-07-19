@@ -500,6 +500,14 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
             toolName: "echo",
             arguments: { message: "hello" },
           });
+        } else if (type === "script") {
+          onAdd({
+            id,
+            type: "script",
+            code: 'return { channel: facts.channelType, priority: facts.priority ?? "normal" };',
+            timeoutMs: 2000,
+            memoryMb: 32,
+          });
         } else if (type === "branches") {
           onAdd({
             id,
@@ -608,6 +616,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="http_request">HTTP request</option>
       <option value="webhook_emit">Emit webhook</option>
       <option value="mcp_call">MCP call</option>
+      <option value="script">Script</option>
       <option value="branches">Branches</option>
       <option value="apply_rules">Apply rules (all-match)</option>
       <option value="apply_sla">Apply SLA</option>

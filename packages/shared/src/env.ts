@@ -26,6 +26,11 @@ export const apiEnvSchema = z.object({
     .transform((v) => v === "1" || v === "true"),
   /** JSON array of stdio MCP server configs — see @keenai/mcp */
   MCP_SERVERS: z.string().optional(),
+  /** Enable workflow script blocks. Disabled by default; use only in trusted deployments. */
+  WORKFLOW_SCRIPT_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v === "1" || v === "true"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USER: z.string().optional(),

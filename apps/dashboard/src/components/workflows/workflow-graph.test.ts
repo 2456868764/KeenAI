@@ -146,6 +146,15 @@ describe("blockLabel", () => {
         arguments: { message: "hello" },
       }),
     ).toBe("MCP stub.echo");
+    expect(
+      blockLabel({
+        id: "script",
+        type: "script",
+        code: "return facts.channelType;",
+        timeoutMs: 1000,
+        memoryMb: 32,
+      }),
+    ).toBe("Script (1000ms)");
   });
 });
 

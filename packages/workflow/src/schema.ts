@@ -30,6 +30,7 @@ import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-p
 import { type McpCallInput, type McpCallResult, mcpCallBlockSchema } from "./blocks/mcp-call.js";
 import { reopenBlockSchema } from "./blocks/reopen.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
+import { type ScriptInput, type ScriptResult, scriptBlockSchema } from "./blocks/script.js";
 import {
   type SendTicketFormInput,
   type SendTicketFormResult,
@@ -124,6 +125,12 @@ export {
   reopenBlockSchema,
   type ReopenBlock,
 } from "./blocks/reopen.js";
+export {
+  scriptBlockSchema,
+  type ScriptBlock,
+  type ScriptInput,
+  type ScriptResult,
+} from "./blocks/script.js";
 export {
   linkTicketBlockSchema,
   TICKET_LINK_TYPES,
@@ -241,6 +248,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "http_request",
   "webhook_emit",
   "mcp_call",
+  "script",
   "branches",
   "apply_rules",
   "apply_sla",
@@ -320,6 +328,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   httpRequestBlockSchema,
   webhookEmitBlockSchema,
   mcpCallBlockSchema,
+  scriptBlockSchema,
   branchesBlockSchema,
   applyRulesBlockSchema,
   applySlaBlockSchema,
@@ -504,6 +513,7 @@ export type WorkflowActionHandlers = {
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
   webhookEmit?: (input: WebhookEmitInput) => Promise<WebhookEmitResult>;
   mcpCall?: (input: McpCallInput) => Promise<McpCallResult>;
+  script?: (input: ScriptInput) => Promise<ScriptResult>;
   applySla?: (input: ApplySlaInput) => Promise<ApplySlaResult>;
   convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
   linkTicket?: (input: {
@@ -542,6 +552,7 @@ export type WorkflowStepResult = {
     mcpServerId?: string;
     mcpToolName?: string;
     mcpResultPreview?: string;
+    scriptResultPreview?: string;
     waitMs?: number;
     slaPolicyId?: string;
     slaBreachCount?: number;
