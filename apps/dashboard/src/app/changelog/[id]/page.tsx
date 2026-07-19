@@ -8,7 +8,7 @@ export default async function ChangelogEntryPage({
 }) {
   const { id } = await params;
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Changelog" />
       <main className="flex-1 overflow-y-auto">
         <ChangelogEntryEditor entryId={id} />

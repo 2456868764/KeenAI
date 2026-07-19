@@ -104,7 +104,7 @@ export function HelpCenterShell() {
   const articles = articlesData?.items ?? [];
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Help Center" />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 gap-6 overflow-hidden p-6">

@@ -1,7 +1,6 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { SettingsNav } from "@/components/settings/settings-nav";
 import { type Brand, createBrand, listBrands, updateBrand } from "@/lib/api";
 import { Button, Input } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,11 +29,10 @@ export default function BrandsSettingsPage() {
   const items = data?.items ?? [];
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Settings" />
 
       <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">
-        <SettingsNav />
         <p className="mb-6 text-sm text-[hsl(var(--muted-foreground))]">
           Multi-brand workspaces share one org with separate widget slugs, email routing, and
           workflows.

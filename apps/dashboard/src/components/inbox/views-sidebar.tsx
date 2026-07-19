@@ -3,7 +3,7 @@
 import { cn } from "@keenai/ui";
 import { Bot, Inbox, MessageSquare, Moon, User } from "lucide-react";
 
-export type InboxView = "all" | "open" | "unassigned" | "mine";
+export type InboxView = "all" | "open" | "unassigned" | "mine" | "created" | "resolved" | "routed";
 
 const VIEWS: { id: InboxView; label: string; icon: typeof Inbox }[] = [
   { id: "all", label: "All messages", icon: MessageSquare },

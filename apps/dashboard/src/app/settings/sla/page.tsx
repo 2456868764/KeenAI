@@ -1,7 +1,6 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { SettingsNav } from "@/components/settings/settings-nav";
 import {
   type OfficeHours,
   type SlaPolicy,
@@ -306,12 +305,10 @@ export default function SlaSettingsPage() {
   const policies = policiesData?.items ?? [];
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Settings" />
 
       <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">
-        <SettingsNav />
-
         <p className="mb-6 text-sm text-[hsl(var(--muted-foreground))]">
           SLA policies track first response and resolution time. Breaches are recorded at 50%, 80%,
           and 100% thresholds and shown in the Inbox.

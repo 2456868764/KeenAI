@@ -122,7 +122,7 @@ export function AnalyticsShell() {
   const dashboard = data?.dashboard;
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Analytics" />
 
       <main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto p-6">

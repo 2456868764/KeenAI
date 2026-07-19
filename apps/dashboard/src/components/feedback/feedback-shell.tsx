@@ -73,7 +73,7 @@ export function FeedbackShell() {
   const items = data?.items ?? [];
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Feedback" />
 
       <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">

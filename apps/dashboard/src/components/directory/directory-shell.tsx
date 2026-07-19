@@ -36,7 +36,7 @@ export function DirectoryShell() {
   const newCount = Math.min(3, activeCount);
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))]">
       <AppHeader title="Directory" />
 
       <main className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)]">

@@ -62,7 +62,7 @@ export function TicketDetailShell({ ticketId }: { ticketId: string }) {
   });
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Ticket">
         <Link
           href="/tickets"

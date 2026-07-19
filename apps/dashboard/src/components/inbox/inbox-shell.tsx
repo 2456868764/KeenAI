@@ -9,11 +9,25 @@ import { ConversationList } from "./conversation-list";
 import { CopilotCommand } from "./copilot-command";
 import { MessageThread } from "./message-thread";
 import { NotificationBell } from "./notification-bell";
-import { type InboxView, ViewsSidebar, viewToStatusFilter } from "./views-sidebar";
+import { type InboxView, viewToStatusFilter } from "./views-sidebar";
+
+const inboxViews = new Set<InboxView>([
+  "all",
+  "open",
+  "unassigned",
+  "mine",
+  "created",
+  "resolved",
+  "routed",
+]);
+
+function parseInboxView(value: string | null): InboxView {
+  return value && inboxViews.has(value as InboxView) ? (value as InboxView) : "all";
+}
 
 export function InboxShell() {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<InboxView>("all");
+  const view = parseInboxView(searchParams.get("view"));
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     searchParams.get("conversation"),
   );
@@ -82,10 +96,9 @@ export function InboxShell() {
   }, [items, selectedId]);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <div className="flex min-h-0 flex-1">
-        <ViewsSidebar active={view} onChange={setView} />
         <ConversationList
           items={items}
           selectedId={selectedId}

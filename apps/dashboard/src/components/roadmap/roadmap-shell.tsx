@@ -103,7 +103,7 @@ export function RoadmapShell() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[hsl(var(--surface-0))]">
+    <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Roadmap">
         <div className="flex items-center gap-1 rounded-md border border-[hsl(var(--border))] p-0.5">
           <ViewToggle active={view === "kanban"} onClick={() => setView("kanban")}>
