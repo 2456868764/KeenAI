@@ -8,6 +8,7 @@ import {
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
+  widgetTicketFormInputSchema,
   widgetWorkflowButtonSchema,
   widgetWorkflowInputSchema,
 } from "@keenai/shared";
@@ -476,6 +477,57 @@ export function widgetRoutes() {
       });
 
       return c.json({ ok: true, status: result.status });
+    },
+  );
+
+  r.post(
+    `${prefix}/conversations/:id/workflow-ticket-form`,
+    requireWidgetAuth(),
+    zValidator("json", widgetTicketFormInputSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      const denied = assertWidgetConversation(conversation, auth);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
+      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+
+      const body = c.req.valid("json");
+      const { emitTicketFormSubmitted, resumeTicketFormWorkflow } = await import(
+        "../lib/workflow-resume.js"
+      );
+      const result = await resumeTicketFormWorkflow(
+        c.get("store").db,
+        {
+          orgId: auth.orgId,
+          workflowRunId: body.workflowRunId,
+          blockId: body.blockId,
+          ticketId: body.ticketId,
+          values: body.values,
+        },
+        c.get("env"),
+        c.get("authConfig"),
+      );
+
+      if (!result.resumed || !result.ticketId) {
+        return c.json({ error: result.reason ?? "resume_failed" }, 400);
+      }
+
+      await emitTicketFormSubmitted({
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        workflowRunId: body.workflowRunId,
+        blockId: body.blockId,
+        ticketId: result.ticketId,
+        values: body.values,
+      });
+
+      return c.json({ ok: true, status: result.status, ticketId: result.ticketId });
     },
   );
 

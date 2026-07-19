@@ -271,6 +271,29 @@ async function executeBlock(
         nextId,
       };
     }
+    case "send_ticket_form": {
+      if (!handlers.sendTicketForm) throw new Error("send_ticket_form_handler_missing");
+      if (!context?.workflowRunId) throw new Error("workflow_run_id_required");
+      const result = await handlers.sendTicketForm({
+        blockId: block.id,
+        prompt: block.prompt,
+        title: block.title,
+        ticketId: block.ticketId,
+        fields: block.fields,
+        workflowRunId: context.workflowRunId,
+        autoCloseMinutes: block.autoCloseMinutes,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { awaitingInput: true, ticketId: result.ticketId },
+        },
+        nextId: null,
+        suspended: { blockId: block.id, type: "send_ticket_form" },
+      };
+    }
     case "send_ticket_update": {
       if (!handlers.sendTicketUpdate) throw new Error("send_ticket_update_handler_missing");
       const result = await handlers.sendTicketUpdate({ ticketId: block.ticketId });

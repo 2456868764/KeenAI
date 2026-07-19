@@ -13,12 +13,14 @@ import {
 } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
 import {
+  applyTicketFormSubmission,
   createWorkflowActionHandlers,
   createWorkflowRunContext,
   patchCollectCustomerReplyStep,
   patchCollectDataStep,
   patchCsatStep,
   patchReplyButtonsStep,
+  patchTicketFormStep,
   resolveActiveWorkflowDefinition,
 } from "./workflow-handlers.js";
 
@@ -33,6 +35,7 @@ async function emitWorkflowAwaitingInput(payload: {
   blockId?: string;
   awaitEvent?:
     | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+    | typeof WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED
     | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
     | typeof WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED;
 }): Promise<void> {
@@ -50,6 +53,7 @@ async function emitWorkflowAwaitingInput(payload: {
 async function emitWorkflowInputEvent(payload: {
   name:
     | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
+    | typeof WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED
     | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
     | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED
     | typeof WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED;
@@ -95,6 +99,7 @@ function autoCloseMsForBlock(definition: WorkflowDefinition, blockId: string): n
   if (
     !block ||
     (block.type !== "collect_data" &&
+      block.type !== "send_ticket_form" &&
       block.type !== "collect_customer_reply" &&
       block.type !== "reply_buttons")
   ) {
@@ -126,7 +131,12 @@ async function finalizeResumedRun(
     steps: WorkflowStepResult[];
     suspended?: {
       blockId: string;
-      type: "collect_data" | "collect_customer_reply" | "reply_buttons" | "csat";
+      type:
+        | "collect_data"
+        | "send_ticket_form"
+        | "collect_customer_reply"
+        | "reply_buttons"
+        | "csat";
     };
   },
 ): Promise<string> {
@@ -161,9 +171,11 @@ async function finalizeResumedRun(
           awaitEvent:
             input.suspended.type === "collect_data"
               ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-              : input.suspended.type === "collect_customer_reply"
-                ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
-                : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
+              : input.suspended.type === "send_ticket_form"
+                ? WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED
+                : input.suspended.type === "collect_customer_reply"
+                  ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
+                  : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
         });
       }
     }
@@ -178,7 +190,12 @@ async function resumeFromSuspendedBlock(
     orgId: string;
     workflowRunId: string;
     blockId: string;
-    expectedType: "collect_data" | "collect_customer_reply" | "reply_buttons" | "csat";
+    expectedType:
+      | "collect_data"
+      | "send_ticket_form"
+      | "collect_customer_reply"
+      | "reply_buttons"
+      | "csat";
     resumeFrom: string | null;
     patchedSteps: WorkflowStepResult[];
   },
@@ -366,6 +383,75 @@ export async function resumeCollectDataWorkflow(
   );
 }
 
+export async function resumeTicketFormWorkflow(
+  db: Db,
+  input: {
+    orgId: string;
+    workflowRunId: string;
+    blockId: string;
+    ticketId?: string;
+    values: Record<string, unknown>;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string; ticketId?: string }> {
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, input.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "run_not_found" };
+
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+
+  const definition = resolveActiveWorkflowDefinition(workflow);
+  const block = definition.blocks.find((item) => item.id === input.blockId);
+  if (!block || block.type !== "send_ticket_form") {
+    return { resumed: false, reason: "block_not_send_ticket_form" };
+  }
+
+  const steps = run.steps as WorkflowStepResult[];
+  const step = steps.find((item) => item.blockId === input.blockId);
+  const ticketId = input.ticketId ?? step?.output?.ticketId;
+  if (!ticketId) return { resumed: false, reason: "ticket_not_found" };
+
+  try {
+    const submission = await applyTicketFormSubmission(db, {
+      orgId: input.orgId,
+      ticketId,
+      block,
+      values: input.values,
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+    });
+    const patchedSteps = patchTicketFormStep(steps, input.blockId, submission);
+
+    const result = await resumeFromSuspendedBlock(
+      db,
+      {
+        orgId: input.orgId,
+        workflowRunId: input.workflowRunId,
+        blockId: input.blockId,
+        expectedType: "send_ticket_form",
+        resumeFrom: nextBlockAfter(definition, input.blockId),
+        patchedSteps,
+      },
+      env,
+      authConfig,
+    );
+
+    return { ...result, ticketId: submission.ticketId };
+  } catch (err) {
+    if (err instanceof Error) return { resumed: false, reason: err.message };
+    return { resumed: false, reason: "ticket_form_submit_failed" };
+  }
+}
+
 export async function resumeReplyButtonsWorkflow(
   db: Db,
   input: {
@@ -478,6 +564,20 @@ export async function emitCollectDataSubmitted(payload: {
 }) {
   await emitWorkflowInputEvent({
     name: WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED,
+    data: payload,
+  });
+}
+
+export async function emitTicketFormSubmitted(payload: {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  ticketId: string;
+  values: Record<string, unknown>;
+}) {
+  await emitWorkflowInputEvent({
+    name: WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED,
     data: payload,
   });
 }

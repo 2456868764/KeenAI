@@ -13,6 +13,8 @@ import {
   organizations,
   teamMembers,
   teams,
+  ticketEvents,
+  tickets,
 } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
@@ -1750,6 +1752,194 @@ describe("workflow integration", () => {
     });
     const msgBody = (await messages.json()) as { items: { plainText: string }[] };
     expect(msgBody.items.some((m) => m.plainText === "Thanks, we will follow up!")).toBe(true);
+
+    await store.close();
+  });
+
+  it("send_ticket_form updates ticket fields and resumes workflow", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Ticket form",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "ticket-form",
+              type: "send_ticket_form",
+              prompt: "Please share the ticket details.",
+              title: "Form-created ticket",
+              fields: [
+                { key: "impact", label: "Impact", type: "text", required: true },
+                {
+                  key: "severity",
+                  label: "Severity",
+                  type: "select",
+                  required: true,
+                  options: ["high", "low"],
+                },
+                { key: "affected_users", label: "Affected users", type: "number", required: false },
+              ],
+            },
+            { id: "thanks", type: "send_message", plainText: "Ticket details saved." },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-ticket-form-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash, email: "ticket-form@test.local" },
+      }),
+    });
+    expect(sessionRes.status).toBe(200);
+    const session = (await sessionRes.json()) as { accessToken: string };
+    const widgetAuth = { Authorization: `Bearer ${session.accessToken}` };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ initialMessage: { plainText: "Need a ticket" } }),
+    });
+    expect(convRes.status).toBe(201);
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const runsBody = (await runsRes.json()) as {
+      items: {
+        id: string;
+        status: string;
+        steps: {
+          type: string;
+          output?: { awaitingInput?: boolean; ticketId?: string };
+        }[];
+      }[];
+    };
+    const run = runsBody.items[0];
+    const ticketFormStep = run?.steps.find((step) => step.type === "send_ticket_form");
+    expect(run?.status).toBe("awaiting_input");
+    expect(ticketFormStep?.output?.awaitingInput).toBe(true);
+    expect(ticketFormStep?.output?.ticketId).toBeTruthy();
+
+    const submitRes = await app.request(
+      `/api/v1/widget/conversations/${conversation.id}/workflow-ticket-form`,
+      {
+        method: "POST",
+        headers: { ...widgetAuth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflowRunId: run?.id,
+          blockId: "ticket-form",
+          ticketId: ticketFormStep?.output?.ticketId,
+          values: { impact: "Checkout is blocked", severity: "high", affected_users: 42 },
+        }),
+      },
+    );
+    expect(submitRes.status).toBe(200);
+    const submitBody = (await submitRes.json()) as { ticketId: string; status: string };
+    expect(submitBody.status).toBe("completed");
+
+    const [ticketRow] = await db
+      .select({ customFields: tickets.customFields })
+      .from(tickets)
+      .where(eq(tickets.id, submitBody.ticketId))
+      .limit(1);
+    expect(ticketRow?.customFields).toMatchObject({
+      impact: "Checkout is blocked",
+      severity: "high",
+      affected_users: 42,
+    });
+
+    const events = await db
+      .select({ eventType: ticketEvents.eventType })
+      .from(ticketEvents)
+      .where(eq(ticketEvents.ticketId, submitBody.ticketId));
+    expect(events.some((event) => event.eventType === "workflow_ticket_form_submitted")).toBe(true);
+
+    const runsAfter = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const afterBody = (await runsAfter.json()) as {
+      items: {
+        status: string;
+        steps: {
+          type: string;
+          output?: { awaitingInput?: boolean; submittedTicketFields?: unknown };
+        }[];
+      }[];
+    };
+    expect(afterBody.items[0]?.status).toBe("completed");
+    const afterTicketStep = afterBody.items[0]?.steps.find(
+      (step) => step.type === "send_ticket_form",
+    );
+    expect(afterTicketStep?.output?.awaitingInput).toBe(false);
+    expect(afterTicketStep?.output?.submittedTicketFields).toMatchObject({ severity: "high" });
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const msgBody = (await messages.json()) as { items: { plainText: string }[] };
+    expect(msgBody.items.some((m) => m.plainText === "Ticket details saved.")).toBe(true);
 
     await store.close();
   });

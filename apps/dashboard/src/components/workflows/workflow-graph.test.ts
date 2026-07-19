@@ -131,6 +131,14 @@ describe("blockLabel", () => {
     );
     expect(
       blockLabel({
+        id: "ticket-form",
+        type: "send_ticket_form",
+        prompt: "Please share ticket details.",
+        fields: [{ key: "impact", label: "Impact", type: "text", required: true }],
+      }),
+    ).toBe("Ticket form (1 field(s))");
+    expect(
+      blockLabel({
         id: "mcp",
         type: "mcp_call",
         serverId: "stub",

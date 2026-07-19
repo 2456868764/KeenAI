@@ -56,6 +56,13 @@ export const widgetWorkflowInputSchema = z.object({
   freeText: z.string().max(5000).optional(),
 });
 
+export const widgetTicketFormInputSchema = z.object({
+  workflowRunId: z.string().min(1).max(64),
+  blockId: z.string().min(1).max(64),
+  ticketId: z.string().min(1).max(64).optional(),
+  values: z.record(z.string().min(1).max(64), z.unknown()),
+});
+
 export const widgetWorkflowButtonSchema = z.object({
   workflowRunId: z.string().min(1).max(64),
   blockId: z.string().min(1).max(64),

@@ -1,7 +1,14 @@
 import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
-import { conversations, members, teamMembers, type workflows } from "@keenai/storage/schema";
+import {
+  conversations,
+  members,
+  teamMembers,
+  ticketEvents,
+  tickets,
+  type workflows,
+} from "@keenai/storage/schema";
 import type {
   AssignInput,
   AssignResult,
@@ -12,6 +19,8 @@ import type {
   McpCallInput,
   McpCallResult,
   ReplyButtonsInput,
+  SendTicketFormInput,
+  SendTicketFormResult,
   ShowExpectedReplyTimeInput,
   SnoozeInput,
   TagConversationInput,
@@ -192,6 +201,22 @@ export function buildCsatMessageContent(input: CsatInput): Record<string, unknow
       blockId: input.blockId,
       allowComment: input.allowComment,
       waitForRating: input.waitForRating,
+    },
+  };
+}
+
+export function buildTicketFormMessageContent(
+  input: SendTicketFormInput & { ticketId: string },
+): Record<string, unknown> {
+  return {
+    type: "workflow_ticket_form",
+    text: input.prompt,
+    workflow: {
+      kind: "send_ticket_form",
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      ticketId: input.ticketId,
+      fields: input.fields,
     },
   };
 }
@@ -418,6 +443,42 @@ export function createWorkflowActionHandlers(
       });
       if (!linked) throw new Error("link_failed");
       return { parentTicketId: parentId, childTicketId };
+    },
+    sendTicketForm: async (input: SendTicketFormInput): Promise<SendTicketFormResult> => {
+      let ticketId = input.ticketId;
+      if (ticketId) {
+        const row = await getTicketForOrg(db, ticketId, workflow.orgId);
+        if (!row) throw new Error("ticket_not_found");
+      } else {
+        ticketId = (await getConversationTicketId(db, workflow.orgId, conversationId)) ?? undefined;
+      }
+
+      if (!ticketId) {
+        const ticket = await createTicketFromConversation(db, {
+          orgId: workflow.orgId,
+          conversationId,
+          title: input.title,
+        });
+        ticketId = ticket.id;
+      }
+
+      await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText: input.prompt,
+        content: buildTicketFormMessageContent({ ...input, ticketId }),
+        isInternal: false,
+        sentVia: "workflow",
+        isAgentReply: true,
+        metadata: {
+          source: "workflow_send_ticket_form",
+          workflowId: workflow.id,
+          workflowRunId,
+        },
+      });
+
+      return { ticketId };
     },
     sendTicketUpdate: async ({ ticketId }) => {
       const resolvedId =
@@ -678,6 +739,91 @@ export function createWorkflowRunContext(
   };
 }
 
+function validateTicketFormSubmissionValues(
+  fields: SendTicketFormInput["fields"],
+  values: Record<string, unknown>,
+): { ok: true } | { ok: false; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+
+  for (const field of fields) {
+    const value = values[field.key];
+    const missing = value === undefined || value === null || value === "";
+    if (field.required && missing) {
+      errors[field.key] = "required";
+      continue;
+    }
+    if (missing) continue;
+
+    if (field.type === "number") {
+      if (typeof value !== "number" || Number.isNaN(value)) errors[field.key] = "invalid_number";
+    } else if (field.type === "boolean") {
+      if (typeof value !== "boolean") errors[field.key] = "invalid_boolean";
+    } else if (field.type === "select") {
+      if (typeof value !== "string" || !(field.options ?? []).includes(value)) {
+        errors[field.key] = "invalid_select";
+      }
+    } else if (field.type === "date") {
+      if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+        errors[field.key] = "invalid_date";
+      }
+    } else if (typeof value !== "string") {
+      errors[field.key] = "invalid_text";
+    }
+  }
+
+  return Object.keys(errors).length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+export async function applyTicketFormSubmission(
+  db: Db,
+  input: {
+    orgId: string;
+    ticketId: string;
+    block: { fields: SendTicketFormInput["fields"] };
+    values: Record<string, unknown>;
+    workflowRunId: string;
+    blockId: string;
+  },
+): Promise<{ ticketId: string; values: Record<string, unknown> }> {
+  const [row] = await db
+    .select({ id: tickets.id, customFields: tickets.customFields })
+    .from(tickets)
+    .where(and(eq(tickets.id, input.ticketId), eq(tickets.orgId, input.orgId)))
+    .limit(1);
+  if (!row) throw new Error("ticket_not_found");
+
+  const validation = validateTicketFormSubmissionValues(input.block.fields, input.values);
+  if (!validation.ok) {
+    const err = new Error("invalid_ticket_form_values");
+    (err as Error & { details?: Record<string, string> }).details = validation.errors;
+    throw err;
+  }
+
+  const allowedKeys = new Set(input.block.fields.map((field) => field.key));
+  const submitted = Object.fromEntries(
+    Object.entries(input.values).filter(([key]) => allowedKeys.has(key)),
+  );
+  const customFields = { ...(row.customFields ?? {}), ...submitted };
+
+  await db
+    .update(tickets)
+    .set({ customFields, updatedAt: new Date() })
+    .where(eq(tickets.id, input.ticketId));
+
+  await db.insert(ticketEvents).values({
+    ticketId: input.ticketId,
+    eventType: "workflow_ticket_form_submitted",
+    actorId: null,
+    payload: {
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      values: submitted,
+    },
+  });
+
+  return { ticketId: input.ticketId, values: submitted };
+}
+
 export function patchCollectDataStep(
   steps: WorkflowStepResult[],
   blockId: string,
@@ -692,6 +838,25 @@ export function patchCollectDataStep(
         awaitingInput: false,
         submittedAttributes: submission.attributes,
         freeText: submission.freeText,
+      },
+    };
+  });
+}
+
+export function patchTicketFormStep(
+  steps: WorkflowStepResult[],
+  blockId: string,
+  submission: { ticketId: string; values: Record<string, unknown> },
+): WorkflowStepResult[] {
+  return steps.map((step) => {
+    if (step.blockId !== blockId || step.type !== "send_ticket_form") return step;
+    return {
+      ...step,
+      output: {
+        ...step.output,
+        awaitingInput: false,
+        ticketId: submission.ticketId,
+        submittedTicketFields: submission.values,
       },
     };
   });

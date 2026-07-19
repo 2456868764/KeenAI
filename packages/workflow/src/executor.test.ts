@@ -642,6 +642,75 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("sends ticket forms and suspends until customer submission", async () => {
+    const sendTicketForm = vi.fn(async () => ({ ticketId: "ticket-1" }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "ticket-form",
+            type: "send_ticket_form",
+            prompt: "Please add ticket details.",
+            fields: [
+              { key: "impact", label: "Impact", type: "text", required: true },
+              {
+                key: "severity",
+                label: "Severity",
+                type: "select",
+                required: false,
+                options: ["high"],
+              },
+            ],
+          },
+          { id: "after", type: "send_message", plainText: "Ticket updated." },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        sendTicketForm,
+      },
+      {
+        workflowId: "workflow-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conversation-1",
+      },
+    );
+
+    expect(sendTicketForm).toHaveBeenCalledWith({
+      blockId: "ticket-form",
+      prompt: "Please add ticket details.",
+      title: undefined,
+      ticketId: undefined,
+      fields: [
+        { key: "impact", label: "Impact", type: "text", required: true },
+        {
+          key: "severity",
+          label: "Severity",
+          type: "select",
+          required: false,
+          options: ["high"],
+        },
+      ],
+      workflowRunId: "run-1",
+      autoCloseMinutes: undefined,
+    });
+    expect(result.suspended).toEqual({ blockId: "ticket-form", type: "send_ticket_form" });
+    expect(result.steps).toEqual([
+      {
+        blockId: "ticket-form",
+        type: "send_ticket_form",
+        status: "ok",
+        output: { awaitingInput: true, ticketId: "ticket-1" },
+      },
+    ]);
+  });
+
   it("records agent output from let_keeni_answer block", async () => {
     const letKeeniAnswer = vi.fn(async () => ({
       replyText: "Issue is resolved.",

@@ -721,6 +721,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
       parentTicketId: input.parentTicketId ?? "dry-run-parent-ticket",
       childTicketId: input.childTicketId,
     }),
+    sendTicketForm: async (input) => ({ ticketId: input.ticketId ?? "dry-run-ticket" }),
     sendTicketUpdate: async () => ({ sent: true }),
     setTicketState: async (input) => ({
       ticketId: input.ticketId ?? "dry-run-ticket",

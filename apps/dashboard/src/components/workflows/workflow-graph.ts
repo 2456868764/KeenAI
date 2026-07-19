@@ -29,6 +29,7 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
     case "show_expected_reply_time":
     case "let_keeni_answer":
     case "collect_data":
+    case "send_ticket_form":
     case "collect_customer_reply":
     case "reply_buttons":
     case "csat":
@@ -252,6 +253,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.title?.trim() || "Convert conversation to ticket";
     case "link_ticket":
       return `Link → ${block.childTicketId.slice(0, 8)}… (${block.linkType})`;
+    case "send_ticket_form":
+      return block.title?.trim() || `Ticket form (${block.fields.length} field(s))`;
     case "send_ticket_update":
       return block.ticketId
         ? `Notify ticket ${block.ticketId.slice(0, 8)}…`

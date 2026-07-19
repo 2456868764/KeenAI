@@ -449,6 +449,21 @@ export type WorkflowBlock =
       parentTicketId?: string;
       linkType: "tracks" | "relates" | "blocks";
     }
+  | {
+      id: string;
+      type: "send_ticket_form";
+      prompt: string;
+      title?: string;
+      ticketId?: string;
+      fields: {
+        key: string;
+        label: string;
+        type?: "text" | "number" | "boolean" | "select" | "date";
+        required?: boolean;
+        options?: string[];
+      }[];
+      autoCloseMinutes?: number;
+    }
   | { id: string; type: "send_ticket_update"; ticketId?: string }
   | {
       id: string;

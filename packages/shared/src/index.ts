@@ -26,6 +26,7 @@ export {
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
+  widgetTicketFormInputSchema,
   widgetUserSchema,
   widgetWorkflowInputSchema,
   widgetWorkflowButtonSchema,

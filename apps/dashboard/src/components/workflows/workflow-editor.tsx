@@ -538,6 +538,13 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
           });
         } else if (type === "send_ticket_update") {
           onAdd({ id, type: "send_ticket_update" });
+        } else if (type === "send_ticket_form") {
+          onAdd({
+            id,
+            type: "send_ticket_form",
+            prompt: "Please share the details we need for this ticket.",
+            fields: [{ key: "impact", label: "Impact", type: "text", required: true }],
+          });
         } else if (type === "collect_data") {
           onAdd({
             id,
@@ -606,6 +613,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="apply_sla">Apply SLA</option>
       <option value="convert_to_ticket">Convert to ticket</option>
       <option value="link_ticket">Link tickets</option>
+      <option value="send_ticket_form">Send ticket form</option>
       <option value="send_ticket_update">Send ticket update email</option>
       <option value="set_ticket_state">Set ticket state</option>
       <option value="collect_data">Collect data (suspend)</option>

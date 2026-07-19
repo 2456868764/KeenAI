@@ -663,6 +663,146 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "send_ticket_form" ? (
+        <>
+          <textarea
+            value={block.prompt}
+            onChange={(e) => onChange({ ...block, prompt: e.target.value })}
+            rows={3}
+            placeholder="Prompt shown to the customer"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <Input
+            placeholder="Ticket title when no linked ticket exists (optional)"
+            value={block.title ?? ""}
+            onChange={(e) => onChange({ ...block, title: e.target.value.trim() || undefined })}
+          />
+          <Input
+            placeholder="Ticket ID (optional; defaults to linked conversation ticket)"
+            value={block.ticketId ?? ""}
+            onChange={(e) => onChange({ ...block, ticketId: e.target.value.trim() || undefined })}
+          />
+          <select
+            value={block.autoCloseMinutes ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                autoCloseMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="">No auto-close timer</option>
+            {[1, 3, 5, 7, 10, 15, 30, 60].map((minutes) => (
+              <option key={minutes} value={minutes}>
+                Auto-close after {minutes} min
+              </option>
+            ))}
+          </select>
+          <div className="space-y-2">
+            {block.fields.map((field, fieldIndex) => (
+              <div
+                key={`${block.id}-ticket-field-${fieldIndex}`}
+                className="grid gap-2 rounded border border-[hsl(var(--border))] p-2"
+              >
+                <Input
+                  placeholder="Field key"
+                  value={field.key}
+                  onChange={(e) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, key: e.target.value.trim() };
+                    onChange({ ...block, fields });
+                  }}
+                />
+                <Input
+                  placeholder="Label"
+                  value={field.label}
+                  onChange={(e) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, label: e.target.value };
+                    onChange({ ...block, fields });
+                  }}
+                />
+                <select
+                  value={field.type ?? "text"}
+                  onChange={(e) => {
+                    const type = e.target.value as
+                      | "text"
+                      | "number"
+                      | "boolean"
+                      | "select"
+                      | "date";
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = {
+                      ...field,
+                      type,
+                      options: type === "select" ? (field.options ?? ["Option"]) : undefined,
+                    };
+                    onChange({ ...block, fields });
+                  }}
+                  className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="boolean">Boolean</option>
+                  <option value="select">Select</option>
+                  <option value="date">Date</option>
+                </select>
+                {field.type === "select" ? (
+                  <Input
+                    placeholder="Options, comma separated"
+                    value={(field.options ?? []).join(", ")}
+                    onChange={(e) => {
+                      const fields = [...block.fields];
+                      fields[fieldIndex] = {
+                        ...field,
+                        options: e.target.value
+                          .split(",")
+                          .map((option) => option.trim())
+                          .filter(Boolean),
+                      };
+                      onChange({ ...block, fields });
+                    }}
+                  />
+                ) : null}
+                <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                  <input
+                    type="checkbox"
+                    checked={field.required ?? true}
+                    onChange={(e) => {
+                      const fields = [...block.fields];
+                      fields[fieldIndex] = { ...field, required: e.target.checked };
+                      onChange({ ...block, fields });
+                    }}
+                  />
+                  Required
+                </label>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="text-xs text-[hsl(var(--primary))]"
+              onClick={() =>
+                onChange({
+                  ...block,
+                  fields: [
+                    ...block.fields,
+                    {
+                      key: `field_${block.fields.length + 1}`,
+                      label: "New field",
+                      type: "text",
+                      required: true,
+                    },
+                  ],
+                })
+              }
+            >
+              + Add ticket field
+            </button>
+          </div>
+        </>
+      ) : null}
+
       {block.type === "send_ticket_update" ? (
         <>
           <Input

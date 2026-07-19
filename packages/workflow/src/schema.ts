@@ -30,6 +30,11 @@ import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-p
 import { type McpCallInput, type McpCallResult, mcpCallBlockSchema } from "./blocks/mcp-call.js";
 import { reopenBlockSchema } from "./blocks/reopen.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
+import {
+  type SendTicketFormInput,
+  type SendTicketFormResult,
+  sendTicketFormBlockSchema,
+} from "./blocks/send-ticket-form.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
 import {
   type SetTicketStateInput,
@@ -166,6 +171,15 @@ export {
   type WebhookEmitResult,
 } from "./blocks/webhook-emit.js";
 export {
+  sendTicketFormBlockSchema,
+  ticketFormFieldSchema,
+  type SendTicketFormBlock,
+  type SendTicketFormInput,
+  type SendTicketFormResult,
+  type SendTicketFormSubmission,
+  type TicketFormField,
+} from "./blocks/send-ticket-form.js";
+export {
   sendTicketUpdateBlockSchema,
   type SendTicketUpdateBlock,
 } from "./blocks/send-ticket-update.js";
@@ -232,6 +246,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "apply_sla",
   "convert_to_ticket",
   "link_ticket",
+  "send_ticket_form",
   "send_ticket_update",
   "set_ticket_state",
   "collect_data",
@@ -310,6 +325,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   applySlaBlockSchema,
   convertToTicketBlockSchema,
   linkTicketBlockSchema,
+  sendTicketFormBlockSchema,
   sendTicketUpdateBlockSchema,
   setTicketStateBlockObjectSchema,
   collectDataBlockSchema,
@@ -495,6 +511,7 @@ export type WorkflowActionHandlers = {
     childTicketId: string;
     linkType: "tracks" | "relates" | "blocks";
   }) => Promise<{ parentTicketId: string; childTicketId: string }>;
+  sendTicketForm?: (input: SendTicketFormInput) => Promise<SendTicketFormResult>;
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
   setTicketState?: (input: SetTicketStateInput) => Promise<SetTicketStateResult>;
   collectData?: (input: CollectDataInput) => Promise<void>;
@@ -530,6 +547,7 @@ export type WorkflowStepResult = {
     slaBreachCount?: number;
     slaSkipped?: string;
     ticketId?: string;
+    submittedTicketFields?: Record<string, unknown>;
     matchedBranches?: string[];
     branchLabel?: string;
     parentTicketId?: string;
@@ -563,6 +581,7 @@ export type WorkflowStepResult = {
 
 export type WorkflowSuspendedState =
   | { blockId: string; type: "collect_data" }
+  | { blockId: string; type: "send_ticket_form" }
   | { blockId: string; type: "collect_customer_reply" }
   | { blockId: string; type: "reply_buttons" }
   | { blockId: string; type: "csat" };
