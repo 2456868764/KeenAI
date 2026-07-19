@@ -123,6 +123,9 @@ describe("blockLabel", () => {
         bufferSeconds: 2,
       }),
     ).toBe("Wait for customer reply (2s buffer)");
+    expect(blockLabel({ id: "tag-user", type: "tag_end_user", tags: ["vip"] })).toBe(
+      "Tag end user: vip",
+    );
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );

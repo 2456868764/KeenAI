@@ -728,6 +728,11 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     disableCustomerReply: async (input) => ({ disabled: input.disabled, reason: input.reason }),
     snooze: async () => {},
     csat: async () => {},
+    tagEndUser: async (input) => ({
+      targetCustomerId: "dry-run-customer",
+      tags: input.tags,
+      taggedConversationCount: 1,
+    }),
     tagConversation: async () => {},
     markPriority: async () => {},
   };

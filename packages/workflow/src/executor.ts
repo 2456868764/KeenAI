@@ -421,6 +421,24 @@ async function executeBlock(
         nextId,
       };
     }
+    case "tag_end_user": {
+      if (!handlers.tagEndUser) throw new Error("tag_end_user_handler_missing");
+      const result = await handlers.tagEndUser({ tags: block.tags, mode: block.mode });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            tags: result.tags,
+            tagMode: block.mode,
+            targetCustomerId: result.targetCustomerId,
+            taggedConversationCount: result.taggedConversationCount,
+          },
+        },
+        nextId,
+      };
+    }
     case "let_keeni_answer": {
       if (!handlers.letKeeniAnswer) throw new Error("let_keeni_answer_handler_missing");
       if (!context) throw new Error("workflow_context_required");

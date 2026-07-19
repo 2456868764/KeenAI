@@ -902,6 +902,37 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output?.tags).toEqual(["vip", "billing"]);
   });
 
+  it("tags end user via tag_end_user block", async () => {
+    const tagEndUser = vi.fn(async () => ({
+      targetCustomerId: "visitor-1",
+      tags: ["vip"],
+      taggedConversationCount: 2,
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "tag-user",
+            type: "tag_end_user",
+            tags: ["vip"],
+            mode: "append",
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), assign: vi.fn(), close: vi.fn(), tagEndUser },
+    );
+
+    expect(tagEndUser).toHaveBeenCalledWith({ tags: ["vip"], mode: "append" });
+    expect(result.steps[0]?.output).toMatchObject({
+      tags: ["vip"],
+      tagMode: "append",
+      targetCustomerId: "visitor-1",
+      taggedConversationCount: 2,
+    });
+  });
+
   it("suspends csat workflow when waitForRating is enabled", async () => {
     const csat = vi.fn(async () => {});
 

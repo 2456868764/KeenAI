@@ -47,6 +47,11 @@ import {
   tagConversationBlockSchema,
 } from "./blocks/tag-conversation.js";
 import {
+  type TagEndUserInput,
+  type TagEndUserResult,
+  tagEndUserBlockSchema,
+} from "./blocks/tag-end-user.js";
+import {
   type WebhookEmitInput,
   type WebhookEmitResult,
   webhookEmitBlockSchema,
@@ -137,6 +142,12 @@ export {
   type SnoozeInput,
 } from "./blocks/snooze.js";
 export {
+  tagEndUserBlockSchema,
+  type TagEndUserBlock,
+  type TagEndUserInput,
+  type TagEndUserResult,
+} from "./blocks/tag-end-user.js";
+export {
   tagConversationBlockSchema,
   type TagConversationBlock,
   type TagConversationInput,
@@ -221,6 +232,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "disable_customer_reply",
   "snooze",
   "csat",
+  "tag_end_user",
   "tag_conversation",
   "add_note",
   "mark_priority",
@@ -297,6 +309,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   disableCustomerReplyBlockSchema,
   snoozeBlockSchema,
   csatBlockSchema,
+  tagEndUserBlockSchema,
   tagConversationBlockSchema,
   addNoteBlockSchema,
   markPriorityBlockSchema,
@@ -480,6 +493,7 @@ export type WorkflowActionHandlers = {
   disableCustomerReply?: (input: DisableCustomerReplyInput) => Promise<DisableCustomerReplyResult>;
   snooze?: (input: SnoozeInput) => Promise<void>;
   csat?: (input: CsatInput) => Promise<void>;
+  tagEndUser?: (input: TagEndUserInput) => Promise<TagEndUserResult>;
   tagConversation?: (input: TagConversationInput) => Promise<void>;
   markPriority?: (input: MarkPriorityInput) => Promise<void>;
 };
@@ -528,6 +542,8 @@ export type WorkflowStepResult = {
     ratingRequested?: boolean;
     tags?: string[];
     tagMode?: "append" | "replace";
+    targetCustomerId?: string;
+    taggedConversationCount?: number;
     priority?: MarkPriorityInput["priority"];
   };
 };

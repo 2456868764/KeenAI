@@ -475,6 +475,7 @@ export type WorkflowBlock =
     }
   | { id: string; type: "disable_customer_reply"; disabled?: boolean; reason?: string }
   | { id: string; type: "snooze"; minutes: number }
+  | { id: string; type: "tag_end_user"; tags: string[]; mode?: "append" | "replace" }
   | { id: string; type: "tag_conversation"; tags: string[]; mode?: "append" | "replace" }
   | {
       id: string;

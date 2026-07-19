@@ -271,6 +271,8 @@ export function blockLabel(block: WorkflowBlock): string {
       return block.disabled === false ? "Enable customer replies" : "Disable customer replies";
     case "snooze":
       return `Snooze ${block.minutes} min`;
+    case "tag_end_user":
+      return `Tag end user: ${block.tags.join(", ")}`;
     case "tag_conversation":
       return `Tag: ${block.tags.join(", ")}`;
     case "csat":

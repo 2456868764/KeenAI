@@ -13,6 +13,8 @@ import type {
   ShowExpectedReplyTimeInput,
   SnoozeInput,
   TagConversationInput,
+  TagEndUserInput,
+  TagEndUserResult,
   WorkflowActionHandlers,
   WorkflowDefinition,
   WorkflowRunContext,
@@ -192,6 +194,20 @@ export function buildCsatMessageContent(input: CsatInput): Record<string, unknow
 }
 
 export function mergeConversationTags(existing: string[], input: TagConversationInput): string[] {
+  if (input.mode === "replace") return [...new Set(input.tags)];
+  return [...new Set([...existing, ...input.tags])];
+}
+
+function readEndUserTags(attributes: Record<string, unknown> | null | undefined): string[] {
+  const value = attributes?.workflowEndUserTags;
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+export function mergeEndUserTags(
+  existing: string[],
+  input: TagEndUserInput,
+): TagEndUserResult["tags"] {
   if (input.mode === "replace") return [...new Set(input.tags)];
   return [...new Set([...existing, ...input.tags])];
 }
@@ -583,6 +599,41 @@ export function createWorkflowActionHandlers(
         .update(conversations)
         .set({ tags, updatedAt: new Date() })
         .where(eq(conversations.id, conversationId));
+    },
+    tagEndUser: async (input) => {
+      const targetCustomerId = conversation.userId;
+      if (!targetCustomerId) throw new Error("end_user_missing");
+
+      const rows = await db
+        .select({ id: conversations.id, attributes: conversations.attributes })
+        .from(conversations)
+        .where(
+          and(eq(conversations.orgId, workflow.orgId), eq(conversations.userId, targetCustomerId)),
+        );
+
+      let currentConversationTags: string[] = [];
+      for (const row of rows) {
+        const nextTags = mergeEndUserTags(readEndUserTags(row.attributes), input);
+        if (row.id === conversationId) {
+          currentConversationTags = nextTags;
+        }
+        await db
+          .update(conversations)
+          .set({
+            attributes: {
+              ...(row.attributes ?? {}),
+              workflowEndUserTags: nextTags,
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(conversations.id, row.id));
+      }
+
+      return {
+        targetCustomerId,
+        tags: currentConversationTags,
+        taggedConversationCount: rows.length,
+      };
     },
     markPriority: async ({ priority }: MarkPriorityInput) => {
       await db

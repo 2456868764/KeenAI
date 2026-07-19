@@ -14,7 +14,7 @@ import {
   teamMembers,
   teams,
 } from "@keenai/storage/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.js";
@@ -2238,7 +2238,7 @@ describe("workflow integration", () => {
     await store.close();
   });
 
-  it("tag_conversation, add_note, and mark_priority blocks update the conversation", async () => {
+  it("tag_end_user, tag_conversation, add_note, and mark_priority blocks update support records", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
     const migrationsFolder = path.join(
@@ -2307,6 +2307,12 @@ describe("workflow integration", () => {
               mode: "append",
             },
             {
+              id: "tag_user",
+              type: "tag_end_user",
+              tags: ["vip-user"],
+              mode: "append",
+            },
+            {
               id: "priority",
               type: "mark_priority",
               priority: "urgent",
@@ -2322,11 +2328,25 @@ describe("workflow integration", () => {
       headers: auth,
     });
 
+    const [previousConversation] = await db
+      .insert(conversations)
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        userId: "visitor-tag-1",
+        channelType: "messenger",
+        channelId: "tag-previous-1",
+        attributes: { workflowEndUserTags: ["trial"] },
+      })
+      .returning();
+    expect(previousConversation).toBeTruthy();
+
     const created = await app.request("/api/v1/conversations", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
         brandId: brand.id,
+        userId: "visitor-tag-1",
         channelType: "messenger",
         channelId: "tag-1",
         tags: ["existing"],
@@ -2347,6 +2367,17 @@ describe("workflow integration", () => {
     };
     expect(fetchedBody.conversation.tags).toEqual(["existing", "vip", "billing"]);
     expect(fetchedBody.conversation.priority).toBe("urgent");
+
+    const taggedConversations = await db
+      .select({ id: conversations.id, attributes: conversations.attributes })
+      .from(conversations)
+      .where(and(eq(conversations.orgId, org.id), eq(conversations.userId, "visitor-tag-1")));
+    expect(taggedConversations).toHaveLength(2);
+    for (const row of taggedConversations) {
+      expect(row.attributes?.workflowEndUserTags).toEqual(
+        row.id === previousConversation?.id ? ["trial", "vip-user"] : ["vip-user"],
+      );
+    }
 
     const noteRows = await db
       .select()
