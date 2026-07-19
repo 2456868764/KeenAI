@@ -4,6 +4,11 @@ import type { WorkflowBlock } from "@/lib/api";
 import { Input } from "@keenai/ui";
 import { Trash2 } from "lucide-react";
 
+function formatJsonObject(value: Record<string, unknown> | undefined): string {
+  if (!value || Object.keys(value).length === 0) return "";
+  return JSON.stringify(value, null, 2);
+}
+
 function NextBlockSelect({
   value,
   blocks,
@@ -355,6 +360,42 @@ export function WorkflowBlockEditor({
             onChange={(e) => onChange({ ...block, payload: e.target.value })}
             rows={4}
             placeholder='Payload JSON (optional), e.g. {"plan":"pro"}'
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+        </>
+      ) : null}
+
+      {block.type === "mcp_call" ? (
+        <>
+          <Input
+            placeholder="MCP server ID"
+            value={block.serverId}
+            onChange={(e) => onChange({ ...block, serverId: e.target.value.trim() })}
+          />
+          <Input
+            placeholder="Tool name"
+            value={block.toolName}
+            onChange={(e) => onChange({ ...block, toolName: e.target.value.trim() })}
+          />
+          <textarea
+            value={formatJsonObject(block.arguments)}
+            onChange={(e) => {
+              const text = e.target.value.trim();
+              if (!text) {
+                onChange({ ...block, arguments: {} });
+                return;
+              }
+              try {
+                const parsed = JSON.parse(text) as unknown;
+                if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                  onChange({ ...block, arguments: parsed as Record<string, unknown> });
+                }
+              } catch {
+                // Keep the last valid JSON object while the user is typing.
+              }
+            }}
+            rows={5}
+            placeholder='Arguments JSON, e.g. {"message":"hello"}'
             className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
           />
         </>

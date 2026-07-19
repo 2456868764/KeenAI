@@ -416,6 +416,13 @@ export type WorkflowBlock =
     }
   | {
       id: string;
+      type: "mcp_call";
+      serverId: string;
+      toolName: string;
+      arguments?: Record<string, unknown>;
+    }
+  | {
+      id: string;
       type: "branches";
       branches: {
         label?: string;

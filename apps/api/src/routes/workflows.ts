@@ -707,6 +707,11 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
       body: "",
       eventName: input.eventName?.trim() || "workflow.webhook_emit",
     }),
+    mcpCall: async (input) => ({
+      serverId: input.serverId,
+      toolName: input.toolName,
+      result: { ok: true, mode: "dry-run" },
+    }),
     applySla: async (input) => ({
       policyId: input.policyId ?? "dry-run-sla-policy",
       breachCount: 0,

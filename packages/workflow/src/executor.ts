@@ -22,6 +22,11 @@ function defaultNextId(definition: WorkflowDefinition, currentId: string): strin
   return definition.blocks[index + 1]?.id ?? null;
 }
 
+function previewUnknown(value: unknown): string {
+  const text = typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
+  return text.length > 240 ? `${text.slice(0, 240)}...` : text;
+}
+
 async function executeBlock(
   block: WorkflowBlock,
   definition: WorkflowDefinition,
@@ -166,6 +171,27 @@ async function executeBlock(
           type: block.type,
           status: "ok",
           output: { httpStatus: result.status, webhookEventName: result.eventName },
+        },
+        nextId,
+      };
+    }
+    case "mcp_call": {
+      if (!handlers.mcpCall) throw new Error("mcp_call_handler_missing");
+      const result = await handlers.mcpCall({
+        serverId: block.serverId,
+        toolName: block.toolName,
+        arguments: block.arguments,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: {
+            mcpServerId: result.serverId,
+            mcpToolName: result.toolName,
+            mcpResultPreview: previewUnknown(result.result),
+          },
         },
         nextId,
       };

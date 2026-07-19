@@ -27,6 +27,7 @@ import {
 } from "./blocks/let-keeni-answer.js";
 import { linkTicketBlockSchema } from "./blocks/link-ticket.js";
 import { type MarkPriorityInput, markPriorityBlockSchema } from "./blocks/mark-priority.js";
+import { type McpCallInput, type McpCallResult, mcpCallBlockSchema } from "./blocks/mcp-call.js";
 import { reopenBlockSchema } from "./blocks/reopen.js";
 import { type ReplyButtonsInput, replyButtonsBlockSchema } from "./blocks/reply-buttons.js";
 import { sendTicketUpdateBlockSchema } from "./blocks/send-ticket-update.js";
@@ -131,6 +132,12 @@ export {
   type WorkflowPriority,
 } from "./blocks/mark-priority.js";
 export {
+  mcpCallBlockSchema,
+  type McpCallBlock,
+  type McpCallInput,
+  type McpCallResult,
+} from "./blocks/mcp-call.js";
+export {
   csatBlockSchema,
   type CsatBlock,
   type CsatInput,
@@ -219,6 +226,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "wait",
   "http_request",
   "webhook_emit",
+  "mcp_call",
   "branches",
   "apply_rules",
   "apply_sla",
@@ -296,6 +304,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   waitBlockSchema,
   httpRequestBlockSchema,
   webhookEmitBlockSchema,
+  mcpCallBlockSchema,
   branchesBlockSchema,
   applyRulesBlockSchema,
   applySlaBlockSchema,
@@ -478,6 +487,7 @@ export type WorkflowActionHandlers = {
   wait?: (milliseconds: number) => Promise<void>;
   httpRequest?: (input: HttpRequestInput) => Promise<HttpRequestResult>;
   webhookEmit?: (input: WebhookEmitInput) => Promise<WebhookEmitResult>;
+  mcpCall?: (input: McpCallInput) => Promise<McpCallResult>;
   applySla?: (input: ApplySlaInput) => Promise<ApplySlaResult>;
   convertToTicket?: (input: { title?: string }) => Promise<{ ticketId: string }>;
   linkTicket?: (input: {
@@ -512,6 +522,9 @@ export type WorkflowStepResult = {
     policyName?: string;
     httpStatus?: number;
     webhookEventName?: string;
+    mcpServerId?: string;
+    mcpToolName?: string;
+    mcpResultPreview?: string;
     waitMs?: number;
     slaPolicyId?: string;
     slaBreachCount?: number;

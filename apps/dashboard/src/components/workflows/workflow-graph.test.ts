@@ -129,6 +129,15 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );
+    expect(
+      blockLabel({
+        id: "mcp",
+        type: "mcp_call",
+        serverId: "stub",
+        toolName: "echo",
+        arguments: { message: "hello" },
+      }),
+    ).toBe("MCP stub.echo");
   });
 });
 

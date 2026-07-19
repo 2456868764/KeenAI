@@ -601,6 +601,47 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("runs mcp_call blocks through the MCP handler", async () => {
+    const mcpCall = vi.fn(async () => ({
+      serverId: "stub",
+      toolName: "echo",
+      result: "hello-mcp",
+    }));
+
+    const result = await runWorkflow(
+      {
+        trigger: "event_match",
+        eventName: "app/subscription.churned",
+        blocks: [
+          {
+            id: "mcp",
+            type: "mcp_call",
+            serverId: "stub",
+            toolName: "echo",
+            arguments: { message: "hello-mcp" },
+          },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        mcpCall,
+      },
+    );
+
+    expect(mcpCall).toHaveBeenCalledWith({
+      serverId: "stub",
+      toolName: "echo",
+      arguments: { message: "hello-mcp" },
+    });
+    expect(result.steps[0]?.output).toMatchObject({
+      mcpServerId: "stub",
+      mcpToolName: "echo",
+      mcpResultPreview: "hello-mcp",
+    });
+  });
+
   it("records agent output from let_keeni_answer block", async () => {
     const letKeeniAnswer = vi.fn(async () => ({
       replyText: "Issue is resolved.",

@@ -492,6 +492,14 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
             eventName: "workflow.event",
             payload: "{}",
           });
+        } else if (type === "mcp_call") {
+          onAdd({
+            id,
+            type: "mcp_call",
+            serverId: "stub",
+            toolName: "echo",
+            arguments: { message: "hello" },
+          });
         } else if (type === "branches") {
           onAdd({
             id,
@@ -592,6 +600,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="wait">Wait</option>
       <option value="http_request">HTTP request</option>
       <option value="webhook_emit">Emit webhook</option>
+      <option value="mcp_call">MCP call</option>
       <option value="branches">Branches</option>
       <option value="apply_rules">Apply rules (all-match)</option>
       <option value="apply_sla">Apply SLA</option>

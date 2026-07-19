@@ -9,6 +9,8 @@ import type {
   CollectDataInput,
   CsatInput,
   MarkPriorityInput,
+  McpCallInput,
+  McpCallResult,
   ReplyButtonsInput,
   ShowExpectedReplyTimeInput,
   SnoozeInput,
@@ -25,6 +27,7 @@ import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
+import { getSharedMcpHost } from "./mcp-tools.js";
 import {
   evaluateConversationSla,
   getOfficeHoursForOrg,
@@ -494,6 +497,16 @@ export function createWorkflowActionHandlers(
       });
       const text = await res.text();
       return { status: res.status, body: text.slice(0, 4000), eventName: resolvedEventName };
+    },
+    mcpCall: async ({
+      serverId,
+      toolName,
+      arguments: args,
+    }: McpCallInput): Promise<McpCallResult> => {
+      const host = await getSharedMcpHost(env);
+      if (!host) throw new Error("mcp_host_disabled");
+      const result = await host.callTool(serverId, toolName, args);
+      return { serverId, toolName, result };
     },
     applySla: async ({ policyId }) => {
       const result = await evaluateConversationSla(db, {
