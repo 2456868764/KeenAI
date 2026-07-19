@@ -736,6 +736,51 @@ describe("runWorkflow", () => {
     expect(result.steps).toHaveLength(2);
   });
 
+  it("suspends on collect_customer_reply until the next customer message", async () => {
+    const collectCustomerReply = vi.fn(async () => {});
+    const sendMessage = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "wait-reply",
+            type: "collect_customer_reply",
+            prompt: "Please reply with the missing detail.",
+            bufferSeconds: 2,
+          },
+          { id: "thanks", type: "send_message", plainText: "Thanks!" },
+        ],
+      },
+      { sendMessage, assign: vi.fn(), close: vi.fn(), collectCustomerReply },
+      {
+        workflowId: "wf-1",
+        workflowRunId: "run-1",
+        orgId: "org-1",
+        brandId: "brand-1",
+        conversationId: "conv-1",
+      },
+    );
+
+    expect(collectCustomerReply).toHaveBeenCalledWith({
+      blockId: "wait-reply",
+      prompt: "Please reply with the missing detail.",
+      workflowRunId: "run-1",
+      bufferSeconds: 2,
+      autoCloseMinutes: undefined,
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(result.suspended).toEqual({
+      blockId: "wait-reply",
+      type: "collect_customer_reply",
+    });
+    expect(result.steps.at(-1)?.output).toMatchObject({
+      awaitingInput: true,
+      bufferSeconds: 2,
+    });
+  });
+
   it("suspends on reply_buttons until a button is clicked", async () => {
     const replyButtons = vi.fn(async () => {});
     const sendMessage = vi.fn(async () => {});

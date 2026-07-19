@@ -301,6 +301,27 @@ async function executeBlock(
         suspended: { blockId: block.id, type: "collect_data" },
       };
     }
+    case "collect_customer_reply": {
+      if (!handlers.collectCustomerReply) throw new Error("collect_customer_reply_handler_missing");
+      if (!context?.workflowRunId) throw new Error("workflow_run_id_required");
+      await handlers.collectCustomerReply({
+        blockId: block.id,
+        prompt: block.prompt,
+        workflowRunId: context.workflowRunId,
+        bufferSeconds: block.bufferSeconds ?? 2,
+        autoCloseMinutes: block.autoCloseMinutes,
+      });
+      return {
+        step: {
+          blockId: block.id,
+          type: block.type,
+          status: "ok",
+          output: { awaitingInput: true, bufferSeconds: block.bufferSeconds ?? 2 },
+        },
+        nextId: null,
+        suspended: { blockId: block.id, type: "collect_customer_reply" },
+      };
+    }
     case "reply_buttons": {
       if (!handlers.replyButtons) throw new Error("reply_buttons_handler_missing");
       if (!context?.workflowRunId) throw new Error("workflow_run_id_required");

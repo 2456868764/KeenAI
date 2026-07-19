@@ -460,6 +460,13 @@ export type WorkflowBlock =
     }
   | {
       id: string;
+      type: "collect_customer_reply";
+      prompt?: string;
+      bufferSeconds?: number;
+      autoCloseMinutes?: number;
+    }
+  | {
+      id: string;
       type: "reply_buttons";
       prompt: string;
       allowFreeText?: boolean;

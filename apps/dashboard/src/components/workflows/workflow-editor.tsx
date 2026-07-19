@@ -538,6 +538,13 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
             allowFreeText: false,
             fields: [{ key: "email", label: "Email", required: true }],
           });
+        } else if (type === "collect_customer_reply") {
+          onAdd({
+            id,
+            type: "collect_customer_reply",
+            prompt: "Reply here when you are ready.",
+            bufferSeconds: 2,
+          });
         } else if (type === "reply_buttons") {
           onAdd({
             id,
@@ -591,6 +598,7 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       <option value="send_ticket_update">Send ticket update email</option>
       <option value="set_ticket_state">Set ticket state</option>
       <option value="collect_data">Collect data (suspend)</option>
+      <option value="collect_customer_reply">Collect customer reply (suspend)</option>
       <option value="reply_buttons">Reply buttons (suspend)</option>
       <option value="disable_customer_reply">Disable customer reply</option>
       <option value="snooze">Snooze conversation</option>

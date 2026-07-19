@@ -8,6 +8,7 @@ export const WORKFLOW_INNGEST_EVENTS = {
   ATTRIBUTE_SUBMITTED: "widget/attribute.submitted",
   BUTTON_CLICKED: "widget/button.clicked",
   CSAT_RATED: "widget/csat.rated",
+  CUSTOMER_REPLY_RECEIVED: "conversation/message.received",
   CONVERSATION_CLOSED: "conversation/state.changed.closed",
 } as const;
 

@@ -141,7 +141,9 @@ export async function executeWorkflow(
           awaitEvent:
             result.suspended.type === "collect_data"
               ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-              : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
+              : result.suspended.type === "collect_customer_reply"
+                ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
+                : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
         });
       }
     }

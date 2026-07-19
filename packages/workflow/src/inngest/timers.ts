@@ -74,7 +74,8 @@ type TimerStep = {
 export type WorkflowAwaitedInputEvent =
   | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
   | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
-  | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED;
+  | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED
+  | typeof WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED;
 
 export function workflowTimerDuration(milliseconds: number): string {
   return `${Math.max(1, Math.floor(milliseconds / 1000))}s`;

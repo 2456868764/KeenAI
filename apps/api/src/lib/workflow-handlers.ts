@@ -5,6 +5,7 @@ import { conversations, members, teamMembers, type workflows } from "@keenai/sto
 import type {
   AssignInput,
   AssignResult,
+  CollectCustomerReplyInput,
   CollectDataInput,
   CsatInput,
   MarkPriorityInput,
@@ -143,6 +144,21 @@ export function buildCollectDataMessageContent(input: CollectDataInput): Record<
       blockId: input.blockId,
       fields: input.fields,
       allowFreeText: input.allowFreeText,
+    },
+  };
+}
+
+export function buildCollectCustomerReplyMessageContent(
+  input: CollectCustomerReplyInput,
+): Record<string, unknown> {
+  return {
+    type: "workflow_collect_customer_reply",
+    text: input.prompt ?? "",
+    workflow: {
+      kind: "collect_customer_reply",
+      workflowRunId: input.workflowRunId,
+      blockId: input.blockId,
+      bufferSeconds: input.bufferSeconds ?? 2,
     },
   };
 }
@@ -488,6 +504,20 @@ export function createWorkflowActionHandlers(
         isAgentReply: true,
       });
     },
+    collectCustomerReply: async (input) => {
+      const prompt = input.prompt?.trim();
+      if (!prompt) return;
+      await insertMessage(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        senderType: "agent",
+        plainText: prompt,
+        content: buildCollectCustomerReplyMessageContent({ ...input, prompt, workflowRunId }),
+        isInternal: false,
+        sentVia: "workflow",
+        isAgentReply: true,
+      });
+    },
     replyButtons: async (input) => {
       await insertMessage(db, {
         orgId: workflow.orgId,
@@ -598,6 +628,25 @@ export function patchCollectDataStep(
         awaitingInput: false,
         submittedAttributes: submission.attributes,
         freeText: submission.freeText,
+      },
+    };
+  });
+}
+
+export function patchCollectCustomerReplyStep(
+  steps: WorkflowStepResult[],
+  blockId: string,
+  submission: { messageId: string; plainText: string },
+): WorkflowStepResult[] {
+  return steps.map((step) => {
+    if (step.blockId !== blockId || step.type !== "collect_customer_reply") return step;
+    return {
+      ...step,
+      output: {
+        ...step.output,
+        awaitingInput: false,
+        customerReplyMessageId: submission.messageId,
+        customerReplyText: submission.plainText,
       },
     };
   });

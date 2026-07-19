@@ -336,6 +336,19 @@ export function widgetRoutes() {
         payload: { messageId: result.message.id },
       });
 
+      const { resumeCollectCustomerReplyForMessage } = await import("../lib/workflow-resume.js");
+      await resumeCollectCustomerReplyForMessage(
+        c.get("store").db,
+        {
+          orgId: auth.orgId,
+          conversationId: conversation.id,
+          messageId: result.message.id,
+          plainText: result.message.plainText,
+        },
+        c.get("env"),
+        c.get("authConfig"),
+      );
+
       return c.json({ message }, 201);
     },
   );

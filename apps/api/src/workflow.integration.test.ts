@@ -1754,6 +1754,159 @@ describe("workflow integration", () => {
     await store.close();
   });
 
+  it("collect_customer_reply resumes when the next widget customer message arrives", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme", name: "Acme" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const [accountRow] = await db
+      .insert(accounts)
+      .values({
+        email: "agent@acme.test",
+        name: "Agent",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    const account = requireRow(accountRow, "account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const token = await loginToken(app);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const createdWf = await app.request("/api/v1/workflows", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Wait for customer reply",
+        brandId: brand.id,
+        definition: {
+          trigger: "first_message",
+          blocks: [
+            {
+              id: "wait-reply",
+              type: "collect_customer_reply",
+              prompt: "Please send your order number.",
+              bufferSeconds: 0,
+            },
+            { id: "thanks", type: "send_message", plainText: "Got it, we will check." },
+          ],
+        },
+      }),
+    });
+    expect(createdWf.status).toBe(201);
+    const { workflow } = (await createdWf.json()) as { workflow: { id: string } };
+
+    await app.request(`/api/v1/workflows/${workflow.id}/publish`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    const secret = widgetHmacSecret(env);
+    const userId = "visitor-reply-1";
+    const userHash = createWidgetUserHash(secret, userId);
+    const sessionRes = await app.request("/api/v1/widget/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: "acme",
+        brandSlug: "default",
+        user: { id: userId, userHash, email: "reply@test.local" },
+      }),
+    });
+    expect(sessionRes.status).toBe(200);
+    const session = (await sessionRes.json()) as { accessToken: string };
+    const widgetAuth = { Authorization: `Bearer ${session.accessToken}` };
+
+    const convRes = await app.request("/api/v1/widget/conversations", {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ initialMessage: { plainText: "Hi" } }),
+    });
+    expect(convRes.status).toBe(201);
+    const { conversation } = (await convRes.json()) as { conversation: { id: string } };
+
+    const runsRes = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    expect(runsRes.status).toBe(200);
+    const runsBody = (await runsRes.json()) as {
+      items: {
+        id: string;
+        status: string;
+        steps: { type: string; output?: { awaitingInput?: boolean; bufferSeconds?: number } }[];
+      }[];
+    };
+    expect(runsBody.items[0]?.status).toBe("awaiting_input");
+    expect(runsBody.items[0]?.steps[0]?.output).toMatchObject({
+      awaitingInput: true,
+      bufferSeconds: 0,
+    });
+
+    const replyRes = await app.request(`/api/v1/widget/conversations/${conversation.id}/messages`, {
+      method: "POST",
+      headers: { ...widgetAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ plainText: "Order #123" }),
+    });
+    expect(replyRes.status).toBe(201);
+
+    const runsAfter = await app.request(`/api/v1/workflows/${workflow.id}/runs`, { headers: auth });
+    const afterBody = (await runsAfter.json()) as {
+      items: {
+        status: string;
+        steps: {
+          type: string;
+          output?: { customerReplyText?: string; customerReplyMessageId?: string };
+        }[];
+      }[];
+    };
+    expect(afterBody.items[0]?.status).toBe("completed");
+    const collectStep = afterBody.items[0]?.steps.find(
+      (step) => step.type === "collect_customer_reply",
+    );
+    expect(collectStep?.output?.customerReplyText).toBe("Order #123");
+    expect(collectStep?.output?.customerReplyMessageId).toBeTruthy();
+
+    const messages = await app.request(`/api/v1/conversations/${conversation.id}/messages`, {
+      headers: auth,
+    });
+    const msgBody = (await messages.json()) as { items: { plainText: string; sentVia?: string }[] };
+    expect(msgBody.items.some((m) => m.plainText === "Please send your order number.")).toBe(true);
+    expect(
+      msgBody.items.some(
+        (m) => m.sentVia === "workflow" && m.plainText === "Got it, we will check.",
+      ),
+    ).toBe(true);
+
+    await store.close();
+  });
+
   it("reply_buttons suspends until widget clicks a button", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

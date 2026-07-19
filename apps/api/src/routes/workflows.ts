@@ -723,6 +723,7 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
       statusName: input.statusName ?? null,
     }),
     collectData: async () => {},
+    collectCustomerReply: async () => {},
     replyButtons: async () => {},
     disableCustomerReply: async (input) => ({ disabled: input.disabled, reason: input.reason }),
     snooze: async () => {},

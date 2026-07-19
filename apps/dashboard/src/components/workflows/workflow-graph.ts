@@ -29,6 +29,7 @@ export function blockCategory(block: WorkflowBlock): WorkflowNodeCategory {
     case "show_expected_reply_time":
     case "let_keeni_answer":
     case "collect_data":
+    case "collect_customer_reply":
     case "reply_buttons":
     case "csat":
       return "message";
@@ -259,6 +260,11 @@ export function blockLabel(block: WorkflowBlock): string {
         : `Ticket state → ${block.statusId?.slice(0, 8) ?? "status"}`;
     case "collect_data":
       return block.prompt.length > 48 ? `${block.prompt.slice(0, 48)}…` : block.prompt;
+    case "collect_customer_reply": {
+      const prompt = block.prompt?.trim();
+      if (prompt) return prompt.length > 48 ? `${prompt.slice(0, 48)}…` : prompt;
+      return `Wait for customer reply (${block.bufferSeconds ?? 2}s buffer)`;
+    }
     case "reply_buttons":
       return `${block.buttons.length} button(s)`;
     case "disable_customer_reply":

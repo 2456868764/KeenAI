@@ -110,6 +110,18 @@ export async function ingestInboundEmail(
     isAgentReply: false,
   });
 
+  const { resumeCollectCustomerReplyForMessage } = await import("./workflow-resume.js");
+  await resumeCollectCustomerReplyForMessage(
+    db,
+    {
+      orgId: input.orgId,
+      conversationId: conversation.id,
+      messageId: message.id,
+      plainText: message.plainText,
+    },
+    input.env,
+  );
+
   const [full] = await db
     .select()
     .from(conversations)

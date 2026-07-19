@@ -426,6 +426,21 @@ export function conversationRoutes(ctx: AppContext) {
         payload: { messageId: result.message.id },
       });
 
+      if (senderType === "user" && !body.isInternal) {
+        const { resumeCollectCustomerReplyForMessage } = await import("../lib/workflow-resume.js");
+        await resumeCollectCustomerReplyForMessage(
+          c.get("store").db,
+          {
+            orgId: auth.orgId,
+            conversationId: conversation.id,
+            messageId: result.message.id,
+            plainText: result.message.plainText,
+          },
+          ctx.env,
+          ctx.authConfig,
+        );
+      }
+
       if (
         isAgentReply &&
         !body.isInternal &&

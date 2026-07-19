@@ -116,6 +116,13 @@ describe("blockLabel", () => {
     expect(blockLabel({ id: "disable", type: "disable_customer_reply", disabled: true })).toBe(
       "Disable customer replies",
     );
+    expect(
+      blockLabel({
+        id: "collect-reply",
+        type: "collect_customer_reply",
+        bufferSeconds: 2,
+      }),
+    ).toBe("Wait for customer reply (2s buffer)");
     expect(blockLabel({ id: "state", type: "set_ticket_state", statusName: "Done" })).toBe(
       "Ticket state → Done",
     );

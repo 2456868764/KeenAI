@@ -750,6 +750,51 @@ export function WorkflowBlockEditor({
         </>
       ) : null}
 
+      {block.type === "collect_customer_reply" ? (
+        <>
+          <textarea
+            value={block.prompt ?? ""}
+            onChange={(e) => onChange({ ...block, prompt: e.target.value || undefined })}
+            rows={3}
+            placeholder="Prompt shown before waiting for the next customer reply"
+            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
+          />
+          <Input
+            type="number"
+            min={0}
+            max={30}
+            placeholder="Buffer seconds"
+            value={block.bufferSeconds ?? 2}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                bufferSeconds: Math.max(0, Math.min(30, Number.parseInt(e.target.value, 10) || 0)),
+              })
+            }
+          />
+          <select
+            value={block.autoCloseMinutes ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...block,
+                autoCloseMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+              })
+            }
+            className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-sm"
+          >
+            <option value="">No auto-close timer</option>
+            {[1, 3, 5, 7, 10, 15, 30, 60].map((minutes) => (
+              <option key={minutes} value={minutes}>
+                Auto-close after {minutes} min
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Suspends until the next customer message, then resumes after the buffer.
+          </p>
+        </>
+      ) : null}
+
       {block.type === "reply_buttons" ? (
         <>
           <textarea

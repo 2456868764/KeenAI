@@ -11,10 +11,11 @@ import {
   runWorkflow,
   workflowAutoCloseMsFromMinutes,
 } from "@keenai/workflow";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
+  patchCollectCustomerReplyStep,
   patchCollectDataStep,
   patchCsatStep,
   patchReplyButtonsStep,
@@ -32,7 +33,8 @@ async function emitWorkflowAwaitingInput(payload: {
   blockId?: string;
   awaitEvent?:
     | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-    | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED;
+    | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
+    | typeof WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED;
 }): Promise<void> {
   if (payload.autoCloseMs <= 0) return;
   try {
@@ -49,7 +51,8 @@ async function emitWorkflowInputEvent(payload: {
   name:
     | typeof WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
     | typeof WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED
-    | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED;
+    | typeof WORKFLOW_INNGEST_EVENTS.CSAT_RATED
+    | typeof WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED;
   data: Record<string, unknown>;
 }): Promise<void> {
   try {
@@ -89,9 +92,27 @@ async function emitCsatRequest(payload: {
 
 function autoCloseMsForBlock(definition: WorkflowDefinition, blockId: string): number {
   const block = definition.blocks.find((item) => item.id === blockId);
-  if (!block || (block.type !== "collect_data" && block.type !== "reply_buttons")) return 0;
+  if (
+    !block ||
+    (block.type !== "collect_data" &&
+      block.type !== "collect_customer_reply" &&
+      block.type !== "reply_buttons")
+  ) {
+    return 0;
+  }
   if (!block.autoCloseMinutes) return 0;
   return workflowAutoCloseMsFromMinutes(block.autoCloseMinutes);
+}
+
+function collectCustomerReplyBufferMs(definition: WorkflowDefinition, blockId: string): number {
+  const block = definition.blocks.find((item) => item.id === blockId);
+  if (!block || block.type !== "collect_customer_reply") return 0;
+  return Math.max(0, Math.min(30, block.bufferSeconds ?? 2)) * 1000;
+}
+
+async function sleep(milliseconds: number): Promise<void> {
+  if (milliseconds <= 0) return;
+  await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 async function finalizeResumedRun(
@@ -103,7 +124,10 @@ async function finalizeResumedRun(
     orgId: string;
     brandId: string;
     steps: WorkflowStepResult[];
-    suspended?: { blockId: string; type: "collect_data" | "reply_buttons" | "csat" };
+    suspended?: {
+      blockId: string;
+      type: "collect_data" | "collect_customer_reply" | "reply_buttons" | "csat";
+    };
   },
 ): Promise<string> {
   const status = resolveRunStatus(input.steps, Boolean(input.suspended));
@@ -137,7 +161,9 @@ async function finalizeResumedRun(
           awaitEvent:
             input.suspended.type === "collect_data"
               ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-              : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
+              : input.suspended.type === "collect_customer_reply"
+                ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
+                : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
         });
       }
     }
@@ -152,7 +178,7 @@ async function resumeFromSuspendedBlock(
     orgId: string;
     workflowRunId: string;
     blockId: string;
-    expectedType: "collect_data" | "reply_buttons" | "csat";
+    expectedType: "collect_data" | "collect_customer_reply" | "reply_buttons" | "csat";
     resumeFrom: string | null;
     patchedSteps: WorkflowStepResult[];
   },
@@ -217,6 +243,80 @@ async function resumeFromSuspendedBlock(
   });
 
   return { resumed: true, status };
+}
+
+export async function resumeCollectCustomerReplyForMessage(
+  db: Db,
+  input: {
+    orgId: string;
+    conversationId: string;
+    messageId: string;
+    plainText: string;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string; workflowRunId?: string }> {
+  const runs = await db
+    .select()
+    .from(workflowRuns)
+    .where(
+      and(
+        eq(workflowRuns.orgId, input.orgId),
+        eq(workflowRuns.conversationId, input.conversationId),
+        eq(workflowRuns.status, "awaiting_input"),
+      ),
+    )
+    .orderBy(desc(workflowRuns.createdAt))
+    .limit(10);
+
+  for (const run of runs) {
+    const [workflow] = await db
+      .select()
+      .from(workflows)
+      .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+      .limit(1);
+    if (!workflow) continue;
+
+    const definition = resolveActiveWorkflowDefinition(workflow);
+    const steps = run.steps as WorkflowStepResult[];
+    const step = steps.find(
+      (item) => item.type === "collect_customer_reply" && item.output?.awaitingInput,
+    );
+    if (!step) continue;
+
+    await sleep(collectCustomerReplyBufferMs(definition, step.blockId));
+    const patchedSteps = patchCollectCustomerReplyStep(steps, step.blockId, {
+      messageId: input.messageId,
+      plainText: input.plainText,
+    });
+
+    const result = await resumeFromSuspendedBlock(
+      db,
+      {
+        orgId: input.orgId,
+        workflowRunId: run.id,
+        blockId: step.blockId,
+        expectedType: "collect_customer_reply",
+        resumeFrom: nextBlockAfter(definition, step.blockId),
+        patchedSteps,
+      },
+      env,
+      authConfig,
+    );
+
+    if (result.resumed) {
+      await emitCustomerReplyReceived({
+        orgId: input.orgId,
+        conversationId: input.conversationId,
+        workflowRunId: run.id,
+        blockId: step.blockId,
+        messageId: input.messageId,
+      });
+      return { ...result, workflowRunId: run.id };
+    }
+  }
+
+  return { resumed: false, reason: "collect_customer_reply_run_not_found" };
 }
 
 export async function resumeCollectDataWorkflow(
@@ -391,6 +491,19 @@ export async function emitReplyButtonClicked(payload: {
 }) {
   await emitWorkflowInputEvent({
     name: WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
+    data: payload,
+  });
+}
+
+export async function emitCustomerReplyReceived(payload: {
+  workflowRunId: string;
+  blockId: string;
+  orgId: string;
+  conversationId: string;
+  messageId: string;
+}) {
+  await emitWorkflowInputEvent({
+    name: WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED,
     data: payload,
   });
 }

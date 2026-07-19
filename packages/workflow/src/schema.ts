@@ -6,6 +6,10 @@ import {
   applySlaBlockSchema,
 } from "./blocks/apply-sla.js";
 import { branchesBlockSchema } from "./blocks/branches.js";
+import {
+  type CollectCustomerReplyInput,
+  collectCustomerReplyBlockSchema,
+} from "./blocks/collect-customer-reply.js";
 import { type CollectDataInput, collectDataBlockSchema } from "./blocks/collect-data.js";
 import { convertToTicketBlockSchema } from "./blocks/convert-to-ticket.js";
 import { type CsatInput, csatBlockSchema } from "./blocks/csat.js";
@@ -66,6 +70,12 @@ export {
   type BranchesBlock,
   type WorkflowFacts,
 } from "./blocks/branches.js";
+export {
+  collectCustomerReplyBlockSchema,
+  type CollectCustomerReplyBlock,
+  type CollectCustomerReplyInput,
+  type CollectCustomerReplySubmission,
+} from "./blocks/collect-customer-reply.js";
 export {
   collectDataBlockSchema,
   type CollectDataBlock,
@@ -206,6 +216,7 @@ export const WORKFLOW_BLOCK_TYPES = [
   "send_ticket_update",
   "set_ticket_state",
   "collect_data",
+  "collect_customer_reply",
   "reply_buttons",
   "disable_customer_reply",
   "snooze",
@@ -281,6 +292,7 @@ export const workflowBlockSchema = z.discriminatedUnion("type", [
   sendTicketUpdateBlockSchema,
   setTicketStateBlockObjectSchema,
   collectDataBlockSchema,
+  collectCustomerReplyBlockSchema,
   replyButtonsBlockSchema,
   disableCustomerReplyBlockSchema,
   snoozeBlockSchema,
@@ -463,6 +475,7 @@ export type WorkflowActionHandlers = {
   sendTicketUpdate?: (input: { ticketId?: string }) => Promise<{ sent: boolean }>;
   setTicketState?: (input: SetTicketStateInput) => Promise<SetTicketStateResult>;
   collectData?: (input: CollectDataInput) => Promise<void>;
+  collectCustomerReply?: (input: CollectCustomerReplyInput) => Promise<void>;
   replyButtons?: (input: ReplyButtonsInput) => Promise<void>;
   disableCustomerReply?: (input: DisableCustomerReplyInput) => Promise<DisableCustomerReplyResult>;
   snooze?: (input: SnoozeInput) => Promise<void>;
@@ -503,6 +516,9 @@ export type WorkflowStepResult = {
     awaitingInput?: boolean;
     submittedAttributes?: Record<string, string>;
     freeText?: string;
+    customerReplyMessageId?: string;
+    customerReplyText?: string;
+    bufferSeconds?: number;
     buttonId?: string;
     buttonLabel?: string;
     rating?: number;
@@ -518,6 +534,7 @@ export type WorkflowStepResult = {
 
 export type WorkflowSuspendedState =
   | { blockId: string; type: "collect_data" }
+  | { blockId: string; type: "collect_customer_reply" }
   | { blockId: string; type: "reply_buttons" }
   | { blockId: string; type: "csat" };
 
