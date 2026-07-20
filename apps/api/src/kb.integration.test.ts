@@ -97,11 +97,15 @@ describe("kb search API", () => {
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({
         brandId: brand.id,
-        title: "Refund Policy",
-        fileName: "refund-policy.md",
-        contentType: "text/markdown",
-        sizeBytes: 36,
-        rawContent: "# Refund Policy\n\nRefunds take 5 days.",
+        documents: [
+          {
+            title: "Refund Policy",
+            fileName: "refund-policy.md",
+            contentType: "text/markdown",
+            sizeBytes: 36,
+            rawContent: "# Refund Policy\n\nRefunds take 5 days.",
+          },
+        ],
       }),
     });
     expect(uploadRes.status).toBe(201);
@@ -129,7 +133,8 @@ describe("kb search API", () => {
         headers: { ...auth, "Content-Type": "application/json" },
         body: JSON.stringify({
           brandId: brand.id,
-          url: "https://docs.example.com/billing",
+          mode: "individual_links",
+          urls: ["https://docs.example.com/billing"],
           title: "Billing Page",
         }),
       });
@@ -152,6 +157,75 @@ describe("kb search API", () => {
     );
     expect(listBody.items.every((item) => item.documentCount >= 1)).toBe(true);
     expect(listBody.items.every((item) => item.chunkCount >= 1)).toBe(true);
+
+    await store.close();
+  });
+
+  it("manages Q&A, native sources, details, resync and deletion", async () => {
+    const { app, store, db, brand, auth } = await setupKbApiTest();
+
+    const qaRes = await app.request("/api/v1/kb/sources/qa", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        title: "Refund requests",
+        questions: ["How do I request a refund?", "Can I get my money back?"],
+        answer: "Open a support request within 30 days.",
+      }),
+    });
+    expect(qaRes.status).toBe(201);
+    const qaBody = (await qaRes.json()) as { source: { id: string; type: string } };
+    expect(qaBody.source.type).toBe("file_upload");
+
+    const nativeRes = await app.request("/api/v1/kb/sources/native", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: brand.id, type: "feedback", enabled: false }),
+    });
+    expect(nativeRes.status).toBe(200);
+    const nativeBody = (await nativeRes.json()) as { source: { id: string; status: string } };
+    expect(nativeBody.source.status).toBe("disabled");
+
+    const enableNativeRes = await app.request("/api/v1/kb/sources/native", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: brand.id, type: "feedback", enabled: true }),
+    });
+    expect(enableNativeRes.status).toBe(200);
+    const enabledNative = (await enableNativeRes.json()) as {
+      source: { id: string; status: string };
+    };
+    expect(enabledNative.source.status).toBe("active");
+
+    const detailRes = await app.request(`/api/v1/kb/sources/${qaBody.source.id}`, {
+      headers: auth,
+    });
+    expect(detailRes.status).toBe(200);
+    const detailBody = (await detailRes.json()) as { documents: Array<{ title: string }> };
+    expect(detailBody.documents[0]?.title).toBe("Refund requests");
+
+    const disableRes = await app.request(`/api/v1/kb/sources/${qaBody.source.id}`, {
+      method: "PATCH",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "disabled" }),
+    });
+    expect(disableRes.status).toBe(200);
+
+    const syncDisabledRes = await app.request(`/api/v1/kb/sources/${qaBody.source.id}/sync`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(syncDisabledRes.status).toBe(400);
+
+    const deleteRes = await app.request(`/api/v1/kb/sources/${qaBody.source.id}`, {
+      method: "DELETE",
+      headers: auth,
+    });
+    expect(deleteRes.status).toBe(200);
+
+    const [deleted] = await db.select().from(kbSources).where(eq(kbSources.id, qaBody.source.id));
+    expect(deleted).toBeUndefined();
 
     await store.close();
   });

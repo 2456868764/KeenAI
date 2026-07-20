@@ -22,8 +22,15 @@ import {
   kbSearchQuerySchema,
   kbTelemetryQuerySchema,
 } from "@keenai/shared";
-import { kbQueryLogs, kbSources } from "@keenai/storage/schema";
-import { and, desc, eq } from "drizzle-orm";
+import type { Store } from "@keenai/storage";
+import {
+  kbChunkVectors,
+  kbChunks,
+  kbDocuments,
+  kbQueryLogs,
+  kbSources,
+} from "@keenai/storage/schema";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { canAccessBrand } from "../lib/conversations.js";
@@ -40,23 +47,119 @@ const kbSourceListQuerySchema = z.object({
 
 const kbFileUploadSourceSchema = z.object({
   brandId: z.string().min(1),
-  title: z.string().trim().min(1).max(180),
-  fileName: z.string().trim().min(1).max(240),
-  contentType: z.string().trim().min(1).max(180),
-  sizeBytes: z.number().int().nonnegative().optional(),
-  rawContent: z.string().min(1),
+  documents: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1).max(180),
+        fileName: z.string().trim().min(1).max(240),
+        contentType: z.string().trim().min(1).max(180),
+        sizeBytes: z.number().int().nonnegative().optional(),
+        rawContent: z.string().min(1),
+      }),
+    )
+    .min(1)
+    .max(25),
 });
 
 const kbWebCrawlSourceSchema = z.object({
   brandId: z.string().min(1),
-  url: z.string().trim().url(),
+  mode: z.enum(["crawl_links", "individual_links"]).default("crawl_links"),
+  urls: z.array(z.string().trim().url()).min(1).max(100),
   title: z.string().trim().max(180).optional(),
+  includePaths: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
+  excludePaths: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
+});
+
+const kbQaSourceSchema = z.object({
+  brandId: z.string().min(1),
+  title: z.string().trim().min(1).max(180),
+  questions: z.array(z.string().trim().min(1).max(300)).min(1).max(20),
+  answer: z.string().trim().min(1).max(20_000),
+});
+
+const kbNativeSourceSchema = z.object({
+  brandId: z.string().min(1),
+  type: z.enum(["changelog", "feedback", "help_center"]),
+  enabled: z.boolean(),
+});
+
+const kbSourceStatusSchema = z.object({
+  status: z.enum(["active", "disabled"]),
 });
 
 function titleFromUrl(url: string): string {
   const parsed = new URL(url);
   const last = parsed.pathname.split("/").filter(Boolean).at(-1);
   return last ? decodeURIComponent(last).replace(/[-_]+/g, " ") : parsed.hostname;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function firstHost(urls: string[]): string {
+  try {
+    return new URL(urls[0] ?? "").hostname;
+  } catch {
+    return "Website";
+  }
+}
+
+function fileSourceName(documents: Array<{ title: string }>): string {
+  if (documents.length === 1) return documents[0]?.title ?? "Uploaded file";
+  return `${documents.length} uploaded files`;
+}
+
+function qaMarkdown(input: { title: string; questions: string[]; answer: string }): string {
+  return [
+    `# ${input.title}`,
+    "## Questions",
+    ...input.questions.map((question) => `- ${question}`),
+    "## Answer",
+    input.answer,
+  ].join("\n\n");
+}
+
+async function getOwnedSource(db: Store["db"], input: { orgId: string; sourceId: string }) {
+  const [source] = await db
+    .select()
+    .from(kbSources)
+    .where(and(eq(kbSources.id, input.sourceId), eq(kbSources.orgId, input.orgId)))
+    .limit(1);
+  return source ?? null;
+}
+
+async function enqueueSourceIngest(input: { orgId: string; brandId: string; sourceId: string }) {
+  await getKbDispatch().enqueueSourceIngest(input);
+}
+
+async function deleteKbSourceTree(db: Store["db"], input: { orgId: string; sourceId: string }) {
+  const documents = await db
+    .select({ id: kbDocuments.id })
+    .from(kbDocuments)
+    .where(and(eq(kbDocuments.orgId, input.orgId), eq(kbDocuments.sourceId, input.sourceId)));
+  const documentIds = documents.map((document) => document.id);
+
+  let chunkIds: string[] = [];
+  if (documentIds.length > 0) {
+    const chunks = await db
+      .select({ id: kbChunks.id })
+      .from(kbChunks)
+      .where(inArray(kbChunks.documentId, documentIds));
+    chunkIds = chunks.map((chunk) => chunk.id);
+  }
+
+  if (chunkIds.length > 0) {
+    await getKbChunkFtsStore()?.deleteByIds(chunkIds);
+    await db.delete(kbChunkVectors).where(inArray(kbChunkVectors.chunkId, chunkIds));
+    await db.delete(kbChunks).where(inArray(kbChunks.id, chunkIds));
+  }
+
+  if (documentIds.length > 0) {
+    await db.delete(kbDocuments).where(inArray(kbDocuments.id, documentIds));
+  }
+
+  await db.delete(kbSources).where(eq(kbSources.id, input.sourceId));
 }
 
 export function kbRoutes(_ctx: AppContext) {
@@ -126,6 +229,7 @@ export function kbRoutes(_ctx: AppContext) {
           name: kbSources.name,
           status: kbSources.status,
           syncStrategy: kbSources.syncStrategy,
+          config: kbSources.config,
           lastSyncedAt: kbSources.lastSyncedAt,
           error: kbSources.error,
           documentCount: kbSources.documentCount,
@@ -155,6 +259,22 @@ export function kbRoutes(_ctx: AppContext) {
       }
 
       const now = new Date();
+      const documents = body.documents.map((document, index) => ({
+        externalId: `${Date.now().toString(36)}-${index}-${document.fileName}`,
+        title: document.title,
+        url: `file://${document.fileName}`,
+        rawContent: document.rawContent,
+        contentType: document.contentType,
+        updatedAt: now.toISOString(),
+        attachments: [
+          {
+            filename: document.fileName,
+            mime: document.contentType,
+            url: `file://${document.fileName}`,
+            bytes: document.sizeBytes ?? Buffer.byteLength(document.rawContent, "utf8"),
+          },
+        ],
+      }));
       const [source] = await c
         .get("store")
         .db.insert(kbSources)
@@ -162,35 +282,20 @@ export function kbRoutes(_ctx: AppContext) {
           orgId: auth.orgId,
           brandId: body.brandId,
           type: "file_upload",
-          name: body.title,
+          name: fileSourceName(body.documents),
           status: "syncing",
           syncStrategy: "manual",
           createdBy: auth.sub,
           config: {
-            documents: [
-              {
-                title: body.title,
-                url: `file://${body.fileName}`,
-                rawContent: body.rawContent,
-                contentType: body.contentType,
-                updatedAt: now.toISOString(),
-                attachments: [
-                  {
-                    filename: body.fileName,
-                    mime: body.contentType,
-                    url: `file://${body.fileName}`,
-                    bytes: body.sizeBytes ?? Buffer.byteLength(body.rawContent, "utf8"),
-                  },
-                ],
-              },
-            ],
+            sourceKind: "file",
+            documents,
           },
         })
         .returning();
 
       if (!source) throw new Error("kb_source_create_failed");
 
-      await getKbDispatch().enqueueSourceIngest({
+      await enqueueSourceIngest({
         orgId: auth.orgId,
         brandId: body.brandId,
         sourceId: source.id,
@@ -213,7 +318,9 @@ export function kbRoutes(_ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
-      const title = body.title?.trim() || titleFromUrl(body.url);
+      const urls = uniqueStrings(body.urls);
+      const title =
+        body.title?.trim() || (urls.length === 1 ? titleFromUrl(urls[0] ?? "") : firstHost(urls));
       const now = new Date();
       const [source] = await c
         .get("store")
@@ -227,14 +334,22 @@ export function kbRoutes(_ctx: AppContext) {
           syncStrategy: "manual",
           createdBy: auth.sub,
           config: {
-            urls: [{ url: body.url, title, updatedAt: now.toISOString() }],
+            sourceKind: "website",
+            crawlMode: body.mode,
+            includePaths: uniqueStrings(body.includePaths ?? []),
+            excludePaths: uniqueStrings(body.excludePaths ?? []),
+            urls: urls.map((url) => ({
+              url,
+              title: urls.length === 1 ? title : titleFromUrl(url),
+              updatedAt: now.toISOString(),
+            })),
           },
         })
         .returning();
 
       if (!source) throw new Error("kb_source_create_failed");
 
-      await getKbDispatch().enqueueSourceIngest({
+      await enqueueSourceIngest({
         orgId: auth.orgId,
         brandId: body.brandId,
         sourceId: source.id,
@@ -243,6 +358,251 @@ export function kbRoutes(_ctx: AppContext) {
       return c.json({ source }, 201);
     },
   );
+
+  r.post(`${prefix}/sources/qa`, requireAuth(), zValidator("json", kbQaSourceSchema), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const body = c.req.valid("json");
+    if (!canAccessBrand(auth, body.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+
+    const now = new Date();
+    const [source] = await c
+      .get("store")
+      .db.insert(kbSources)
+      .values({
+        orgId: auth.orgId,
+        brandId: body.brandId,
+        type: "file_upload",
+        name: body.title,
+        status: "syncing",
+        syncStrategy: "manual",
+        createdBy: auth.sub,
+        config: {
+          sourceKind: "qa",
+          questions: body.questions,
+          answer: body.answer,
+          documents: [
+            {
+              externalId: `qa-${Date.now().toString(36)}`,
+              title: body.title,
+              rawContent: qaMarkdown(body),
+              contentType: "text/markdown",
+              updatedAt: now.toISOString(),
+            },
+          ],
+        },
+      })
+      .returning();
+
+    if (!source) throw new Error("kb_source_create_failed");
+
+    await enqueueSourceIngest({
+      orgId: auth.orgId,
+      brandId: body.brandId,
+      sourceId: source.id,
+    });
+
+    return c.json({ source }, 201);
+  });
+
+  r.post(
+    `${prefix}/sources/native`,
+    requireAuth(),
+    zValidator("json", kbNativeSourceSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      if (!canAccessBrand(auth, body.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const db = c.get("store").db;
+      const existing = await db
+        .select()
+        .from(kbSources)
+        .where(
+          and(
+            eq(kbSources.orgId, auth.orgId),
+            eq(kbSources.brandId, body.brandId),
+            eq(kbSources.type, body.type),
+          ),
+        )
+        .limit(1);
+      const now = new Date();
+      const status = body.enabled ? "active" : "disabled";
+      let source = existing[0] ?? null;
+
+      if (source) {
+        const [updated] = await db
+          .update(kbSources)
+          .set({
+            status,
+            error: null,
+            updatedAt: now,
+            config: {
+              ...(source.config ?? {}),
+              sourceKind: "native",
+            },
+          })
+          .where(eq(kbSources.id, source.id))
+          .returning();
+        source = updated ?? source;
+      } else {
+        const [created] = await db
+          .insert(kbSources)
+          .values({
+            orgId: auth.orgId,
+            brandId: body.brandId,
+            type: body.type,
+            name:
+              body.type === "help_center"
+                ? "Help center portal"
+                : body.type === "feedback"
+                  ? "Feedback portal"
+                  : "Updates portal",
+            status,
+            syncStrategy: "manual",
+            createdBy: auth.sub,
+            config: { sourceKind: "native" },
+          })
+          .returning();
+        source = created ?? null;
+      }
+
+      if (!source) throw new Error("kb_source_upsert_failed");
+      return c.json({ source });
+    },
+  );
+
+  r.get(`${prefix}/sources/:sourceId`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const source = await getOwnedSource(c.get("store").db, {
+      orgId: auth.orgId,
+      sourceId: c.req.param("sourceId"),
+    });
+    if (!source) return c.json({ error: "kb_source_not_found" }, 404);
+    if (!source.brandId || !canAccessBrand(auth, source.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+
+    const documents = await c
+      .get("store")
+      .db.select({
+        id: kbDocuments.id,
+        title: kbDocuments.title,
+        url: kbDocuments.url,
+        status: kbDocuments.status,
+        contentType: kbDocuments.contentType,
+        indexedAt: kbDocuments.indexedAt,
+        updatedAt: kbDocuments.updatedAt,
+      })
+      .from(kbDocuments)
+      .where(
+        and(
+          eq(kbDocuments.orgId, auth.orgId),
+          eq(kbDocuments.brandId, source.brandId),
+          eq(kbDocuments.sourceId, source.id),
+        ),
+      )
+      .orderBy(desc(kbDocuments.updatedAt));
+
+    return c.json({ source, documents });
+  });
+
+  r.patch(
+    `${prefix}/sources/:sourceId`,
+    requireAuth(),
+    zValidator("json", kbSourceStatusSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const source = await getOwnedSource(c.get("store").db, {
+        orgId: auth.orgId,
+        sourceId: c.req.param("sourceId"),
+      });
+      if (!source) return c.json({ error: "kb_source_not_found" }, 404);
+      if (!source.brandId || !canAccessBrand(auth, source.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const body = c.req.valid("json");
+      const [updated] = await c
+        .get("store")
+        .db.update(kbSources)
+        .set({ status: body.status, error: null, updatedAt: new Date() })
+        .where(eq(kbSources.id, source.id))
+        .returning();
+
+      if (body.status === "active") {
+        await enqueueSourceIngest({
+          orgId: auth.orgId,
+          brandId: source.brandId,
+          sourceId: source.id,
+        });
+      }
+
+      return c.json({ source: updated ?? source });
+    },
+  );
+
+  r.post(`${prefix}/sources/:sourceId/sync`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const source = await getOwnedSource(c.get("store").db, {
+      orgId: auth.orgId,
+      sourceId: c.req.param("sourceId"),
+    });
+    if (!source) return c.json({ error: "kb_source_not_found" }, 404);
+    if (!source.brandId || !canAccessBrand(auth, source.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    if (source.status === "disabled") {
+      return c.json({ error: "kb_source_disabled" }, 400);
+    }
+
+    await c
+      .get("store")
+      .db.update(kbSources)
+      .set({ status: "syncing", error: null, updatedAt: new Date() })
+      .where(eq(kbSources.id, source.id));
+    await enqueueSourceIngest({
+      orgId: auth.orgId,
+      brandId: source.brandId,
+      sourceId: source.id,
+    });
+
+    const updated = await getOwnedSource(c.get("store").db, {
+      orgId: auth.orgId,
+      sourceId: source.id,
+    });
+    return c.json({ source: updated ?? source });
+  });
+
+  r.delete(`${prefix}/sources/:sourceId`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const source = await getOwnedSource(c.get("store").db, {
+      orgId: auth.orgId,
+      sourceId: c.req.param("sourceId"),
+    });
+    if (!source) return c.json({ error: "kb_source_not_found" }, 404);
+    if (!source.brandId || !canAccessBrand(auth, source.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+
+    await deleteKbSourceTree(c.get("store").db, { orgId: auth.orgId, sourceId: source.id });
+    return c.json({ ok: true, sourceId: source.id });
+  });
 
   r.get(`${prefix}/search`, requireAuth(), zValidator("query", kbSearchQuerySchema), async (c) => {
     const auth = c.get("auth");

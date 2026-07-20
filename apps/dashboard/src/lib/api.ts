@@ -1380,11 +1380,36 @@ export type KbSource = {
   name: string | null;
   status: "active" | "syncing" | "error" | "disabled";
   syncStrategy: string | null;
+  config: {
+    sourceKind?: "native" | "file" | "website" | "qa";
+    crawlMode?: "crawl_links" | "individual_links";
+    urls?: Array<{ url?: string; title?: string; updatedAt?: string }>;
+    documents?: Array<{
+      title?: string;
+      url?: string;
+      contentType?: string;
+      attachments?: unknown;
+    }>;
+    questions?: string[];
+    answer?: string;
+    includePaths?: string[];
+    excludePaths?: string[];
+  } & Record<string, unknown>;
   lastSyncedAt: string | null;
   error: string | null;
   documentCount: number;
   chunkCount: number;
   createdAt: string;
+  updatedAt: string;
+};
+
+export type KbDocument = {
+  id: string;
+  title: string;
+  url: string | null;
+  status: string;
+  contentType: string | null;
+  indexedAt: string | null;
   updatedAt: string;
 };
 
@@ -1395,11 +1420,13 @@ export async function listKbSources(brandId: string): Promise<{ items: KbSource[
 
 export async function createKbFileUploadSource(input: {
   brandId: string;
-  title: string;
-  fileName: string;
-  contentType: string;
-  sizeBytes?: number;
-  rawContent: string;
+  documents: Array<{
+    title: string;
+    fileName: string;
+    contentType: string;
+    sizeBytes?: number;
+    rawContent: string;
+  }>;
 }): Promise<{ source: KbSource }> {
   return apiFetch("/api/v1/kb/sources/file-upload", {
     method: "POST",
@@ -1409,13 +1436,63 @@ export async function createKbFileUploadSource(input: {
 
 export async function createKbWebCrawlSource(input: {
   brandId: string;
-  url: string;
+  mode: "crawl_links" | "individual_links";
+  urls: string[];
   title?: string;
+  includePaths?: string[];
+  excludePaths?: string[];
 }): Promise<{ source: KbSource }> {
   return apiFetch("/api/v1/kb/sources/web-crawl", {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export async function createKbQaSource(input: {
+  brandId: string;
+  title: string;
+  questions: string[];
+  answer: string;
+}): Promise<{ source: KbSource }> {
+  return apiFetch("/api/v1/kb/sources/qa", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function upsertKbNativeSource(input: {
+  brandId: string;
+  type: "changelog" | "feedback" | "help_center";
+  enabled: boolean;
+}): Promise<{ source: KbSource }> {
+  return apiFetch("/api/v1/kb/sources/native", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getKbSource(
+  sourceId: string,
+): Promise<{ source: KbSource; documents: KbDocument[] }> {
+  return apiFetch(`/api/v1/kb/sources/${sourceId}`);
+}
+
+export async function updateKbSourceStatus(
+  sourceId: string,
+  status: "active" | "disabled",
+): Promise<{ source: KbSource }> {
+  return apiFetch(`/api/v1/kb/sources/${sourceId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function syncKbSource(sourceId: string): Promise<{ source: KbSource }> {
+  return apiFetch(`/api/v1/kb/sources/${sourceId}/sync`, { method: "POST" });
+}
+
+export async function deleteKbSource(sourceId: string): Promise<{ ok: boolean; sourceId: string }> {
+  return apiFetch(`/api/v1/kb/sources/${sourceId}`, { method: "DELETE" });
 }
 
 export type HelpCollection = {

@@ -14,6 +14,10 @@ type WebCrawlUrlConfig =
 
 export type WebCrawlConnectorConfig = {
   urls?: WebCrawlUrlConfig[];
+  crawlMode?: unknown;
+  includePaths?: unknown;
+  excludePaths?: unknown;
+  maxPages?: unknown;
   userAgent?: unknown;
 };
 
@@ -105,6 +109,61 @@ function titleFromUrl(url: string): string {
   return last ? decodeURIComponent(last).replace(/[-_]+/g, " ") : parsed.hostname;
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function patternMatchesPath(pattern: string, path: string): boolean {
+  const normalized = pattern.trim();
+  if (!normalized) return false;
+  const escaped = normalized.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("\\*", ".*");
+  return new RegExp(`^${escaped}`).test(path);
+}
+
+function shouldIncludeUrl(
+  url: string,
+  rootOrigin: string,
+  includePaths: string[],
+  excludePaths: string[],
+): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.origin !== rootOrigin) return false;
+  const path = parsed.pathname || "/";
+  if (excludePaths.some((pattern) => patternMatchesPath(pattern, path))) return false;
+  if (includePaths.length === 0) return true;
+  return includePaths.some((pattern) => patternMatchesPath(pattern, path));
+}
+
+function extractLinks(html: string, baseUrl: string): string[] {
+  const links = new Set<string>();
+  for (const match of html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)) {
+    const href = match[1];
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+      continue;
+    }
+    try {
+      const parsed = new URL(href, baseUrl);
+      parsed.hash = "";
+      links.add(parsed.toString());
+    } catch {
+      // Ignore malformed hrefs.
+    }
+  }
+  return [...links];
+}
+
+function maxPages(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(1, Math.min(Math.floor(value), 250))
+    : 125;
+}
+
 /** Config-backed web connector for shallow HTTP page ingestion. */
 export function createWebCrawlConnector(
   config: WebCrawlConnectorConfig = {},
@@ -117,6 +176,49 @@ export function createWebCrawlConnector(
   const byExternalId = new Map(pages.map((page) => [page.url, page]));
   const fetchFn = options.fetchFn ?? globalThis.fetch;
   const userAgent = asString(config.userAgent) ?? "KeenAI-KB-Crawler/0.2";
+  const crawlMode = asString(config.crawlMode) ?? "individual_links";
+  const includePaths = asStringArray(config.includePaths);
+  const excludePaths = asStringArray(config.excludePaths);
+  const pageLimit = maxPages(config.maxPages);
+
+  async function discoverPages(): Promise<NormalizedUrl[]> {
+    if (crawlMode !== "crawl_links") return pages;
+
+    const queue = [...pages];
+    const discovered = new Map(pages.map((page) => [page.url, page]));
+    for (let index = 0; index < queue.length && discovered.size < pageLimit; index += 1) {
+      const page = queue[index];
+      if (!page) continue;
+
+      let response: WebFetchResponse;
+      try {
+        response = await fetchFn(page.url, { headers: { "user-agent": userAgent } });
+      } catch {
+        continue;
+      }
+      if (!response.ok) continue;
+      const contentType = response.headers.get("content-type") ?? "";
+      const body = await response.text();
+      if (!contentType.includes("html") && !/<html[\s>]/i.test(body)) continue;
+
+      const rootOrigin = new URL(page.url).origin;
+      for (const url of extractLinks(body, response.url || page.url)) {
+        if (discovered.size >= pageLimit) break;
+        if (!shouldIncludeUrl(url, rootOrigin, includePaths, excludePaths)) continue;
+        if (discovered.has(url)) continue;
+        const next = {
+          url,
+          title: titleFromUrl(url),
+          updatedAt: now.toISOString(),
+        };
+        discovered.set(url, next);
+        byExternalId.set(url, next);
+        queue.push(next);
+      }
+    }
+
+    return [...discovered.values()];
+  }
 
   return {
     name: "web-crawl",
@@ -125,7 +227,8 @@ export function createWebCrawlConnector(
       return webCrawlConnectorConfigSchema;
     },
     async list(opts) {
-      const refs: KbResourceRef[] = pages.map((page) => ({
+      const availablePages = await discoverPages();
+      const refs: KbResourceRef[] = availablePages.map((page) => ({
         externalId: page.url,
         updatedAt: page.updatedAt,
         etag: createHash("sha256").update(page.url).digest("hex").slice(0, 16),
