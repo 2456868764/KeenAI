@@ -523,6 +523,20 @@ export function WorkflowBlockEditor({
                 }}
                 placeholder="(none)"
               />
+              <button
+                type="button"
+                disabled={block.branches.length <= 1}
+                className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() =>
+                  onChange({
+                    ...block,
+                    branches: block.branches.filter((_, index) => index !== branchIndex),
+                  })
+                }
+              >
+                <Trash2 className="size-3" />
+                Remove branch
+              </button>
             </div>
           ))}
           <div className="block space-y-1 text-xs">
@@ -614,6 +628,20 @@ export function WorkflowBlockEditor({
                 }}
                 placeholder="Target block"
               />
+              <button
+                type="button"
+                disabled={block.rules.length <= 1}
+                className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() =>
+                  onChange({
+                    ...block,
+                    rules: block.rules.filter((_, index) => index !== ruleIndex),
+                  })
+                }
+              >
+                <Trash2 className="size-3" />
+                Remove rule
+              </button>
             </div>
           ))}
           <button
@@ -809,6 +837,20 @@ export function WorkflowBlockEditor({
                   />
                   Required
                 </label>
+                <button
+                  type="button"
+                  disabled={block.fields.length <= 1}
+                  className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() =>
+                    onChange({
+                      ...block,
+                      fields: block.fields.filter((_, index) => index !== fieldIndex),
+                    })
+                  }
+                >
+                  <Trash2 className="size-3" />
+                  Remove field
+                </button>
               </div>
             ))}
             <button
@@ -939,6 +981,20 @@ export function WorkflowBlockEditor({
                     onChange({ ...block, fields });
                   }}
                 />
+                <button
+                  type="button"
+                  disabled={block.fields.length <= 1}
+                  className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() =>
+                    onChange({
+                      ...block,
+                      fields: block.fields.filter((_, index) => index !== fieldIndex),
+                    })
+                  }
+                >
+                  <Trash2 className="size-3" />
+                  Remove field
+                </button>
               </div>
             ))}
             <button
@@ -1077,6 +1133,20 @@ export function WorkflowBlockEditor({
                   }}
                   placeholder="Target block"
                 />
+                <button
+                  type="button"
+                  disabled={block.buttons.length <= 1}
+                  className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() =>
+                    onChange({
+                      ...block,
+                      buttons: block.buttons.filter((_, index) => index !== buttonIndex),
+                    })
+                  }
+                >
+                  <Trash2 className="size-3" />
+                  Remove button
+                </button>
               </div>
             ))}
             <button
