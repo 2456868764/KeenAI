@@ -193,6 +193,24 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
         renderAddMenu={data.renderAddMenu}
       />
 
+      <div className="mt-3 border-t border-[hsl(var(--border))] pt-3">
+        <button
+          type="button"
+          className={cn(
+            "nodrag nopan flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100",
+            addMenuOpen ? "border-violet-400/60 bg-violet-500/15 text-violet-100" : "",
+          )}
+          aria-label={`Add step after ${workflowBlockTitle(block)}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onOpenAddMenu(addMenuOpen ? null : addAnchor);
+          }}
+        >
+          <Plus className="size-3.5" />
+          Add step
+        </button>
+      </div>
+
       <button
         type="button"
         className={cn(
