@@ -5,10 +5,16 @@ import {
   type WorkflowBlock,
   type WorkflowDefinition,
   type WorkflowRun,
+  type WorkflowVersion,
+  archiveWorkflow,
+  duplicateWorkflow,
   getWorkflow,
   listWorkflowRuns,
+  listWorkflowVersions,
   publishWorkflow,
+  rollbackWorkflow,
   testWorkflow,
+  unpublishWorkflow,
   updateWorkflow,
 } from "@/lib/api";
 import { Button, Input, cn } from "@keenai/ui";
@@ -19,23 +25,28 @@ import {
   Braces,
   ChevronDown,
   Clock3,
+  Copy,
   FileInput,
   GitBranch,
   Globe2,
   Loader2,
   MessageSquareText,
+  MoreHorizontal,
   PencilLine,
   Plus,
+  RotateCcw,
   Send,
   Star,
   Tag,
   TestTube2,
   Ticket,
+  Trash2,
   UserCheck,
   Webhook,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { WorkflowBlockEditor } from "./workflow-block-editor";
 import { type WorkflowCanvasInsertAnchor, WorkflowFlowCanvas } from "./workflow-flow-canvas";
@@ -101,6 +112,7 @@ function workflowAddMenuDescription(anchor: WorkflowCanvasInsertAnchor): string 
 
 export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { data, isLoading, error } = useQuery({
     queryKey: ["workflow", workflowId],
     queryFn: () => getWorkflow(workflowId),
@@ -111,6 +123,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     queryFn: () => listWorkflowRuns(workflowId),
   });
 
+  const [manageOpen, setManageOpen] = useState(false);
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -118,6 +131,12 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
   const [dryRuns, setDryRuns] = useState<WorkflowRun[]>([]);
+
+  const { data: versionsData } = useQuery({
+    queryKey: ["workflow-versions", workflowId],
+    queryFn: () => listWorkflowVersions(workflowId),
+    enabled: manageOpen,
+  });
 
   useEffect(() => {
     if (data?.workflow) {
@@ -141,6 +160,50 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     mutationFn: () => publishWorkflow(workflowId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
+      void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      void queryClient.invalidateQueries({ queryKey: ["workflow-versions", workflowId] });
+    },
+  });
+
+  const unpublish = useMutation({
+    mutationFn: () => unpublishWorkflow(workflowId),
+    onSuccess: (result) => {
+      setManageOpen(false);
+      setDefinition(result.workflow.definition);
+      void queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
+      void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    },
+  });
+
+  const duplicate = useMutation({
+    mutationFn: () => duplicateWorkflow(workflowId),
+    onSuccess: (result) => {
+      setManageOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      router.push(`/workflows/${result.workflow.id}`);
+    },
+  });
+
+  const archive = useMutation({
+    mutationFn: () => archiveWorkflow(workflowId),
+    onSuccess: () => {
+      setManageOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      router.push("/workflows");
+    },
+  });
+
+  const rollback = useMutation({
+    mutationFn: (version: number) => rollbackWorkflow(workflowId, version),
+    onSuccess: (result) => {
+      setManageOpen(false);
+      setName(result.workflow.name);
+      setDefinition(result.workflow.definition);
+      setSelectedBlockId(null);
+      setTriggerPanelOpen(false);
+      setAddAnchor(null);
+      void queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
+      void queryClient.invalidateQueries({ queryKey: ["workflow-versions", workflowId] });
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
     },
   });
@@ -660,6 +723,13 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onSuccess: () => publish.mutate(),
                   });
                 }}
+                manageOpen={manageOpen}
+                onManageOpenChange={setManageOpen}
+                versions={versionsData?.items ?? []}
+                onUnpublish={() => unpublish.mutate()}
+                onDuplicate={() => duplicate.mutate()}
+                onArchive={() => archive.mutate()}
+                onRollback={(version) => rollback.mutate(version)}
                 onTest={() => {
                   save.mutate(undefined, {
                     onSuccess: () => testRun.mutate(),
@@ -668,6 +738,12 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 savePending={save.isPending}
                 publishPending={publish.isPending}
                 testPending={testRun.isPending}
+                managePending={
+                  unpublish.isPending ||
+                  duplicate.isPending ||
+                  archive.isPending ||
+                  rollback.isPending
+                }
                 canSave={Boolean(definition)}
               />
             }
@@ -723,9 +799,17 @@ function CanvasToolbar({
   onSave,
   onSaveAndPublish,
   onTest,
+  manageOpen,
+  onManageOpenChange,
+  versions,
+  onUnpublish,
+  onDuplicate,
+  onArchive,
+  onRollback,
   savePending,
   publishPending,
   testPending,
+  managePending,
   canSave,
 }: {
   workflow: Workflow | undefined;
@@ -736,9 +820,17 @@ function CanvasToolbar({
   onSave: () => void;
   onSaveAndPublish: () => void;
   onTest: () => void;
+  manageOpen: boolean;
+  onManageOpenChange: (open: boolean) => void;
+  versions: WorkflowVersion[];
+  onUnpublish: () => void;
+  onDuplicate: () => void;
+  onArchive: () => void;
+  onRollback: (version: number) => void;
   savePending: boolean;
   publishPending: boolean;
   testPending: boolean;
+  managePending: boolean;
   canSave: boolean;
 }) {
   const changed =
@@ -795,6 +887,17 @@ function CanvasToolbar({
             {publishPending ? <Loader2 className="size-4 animate-spin" /> : "Save & publish"}
           </Button>
         ) : null}
+        <WorkflowManageMenu
+          open={manageOpen}
+          onOpenChange={onManageOpenChange}
+          workflow={workflow}
+          versions={versions}
+          pending={managePending}
+          onUnpublish={onUnpublish}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+          onRollback={onRollback}
+        />
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
         <span className="font-medium text-[hsl(var(--foreground))]">Workflow editor</span>
@@ -809,6 +912,117 @@ function CanvasToolbar({
           <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function WorkflowManageMenu({
+  open,
+  onOpenChange,
+  workflow,
+  versions,
+  pending,
+  onUnpublish,
+  onDuplicate,
+  onArchive,
+  onRollback,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workflow: Workflow | undefined;
+  versions: WorkflowVersion[];
+  pending: boolean;
+  onUnpublish: () => void;
+  onDuplicate: () => void;
+  onArchive: () => void;
+  onRollback: (version: number) => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="flex size-9 items-center justify-center rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+        aria-label="Manage workflow"
+        onClick={() => onOpenChange(!open)}
+      >
+        {pending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <MoreHorizontal className="size-4" />
+        )}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-11 z-50 w-[320px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30">
+          <div className="border-b border-[hsl(var(--border))] px-3 py-2">
+            <p className="text-xs font-semibold text-[hsl(var(--foreground))]">Manage workflow</p>
+            <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+              Version and lifecycle controls stay inside the builder canvas.
+            </p>
+          </div>
+          <div className="space-y-1 p-2">
+            {workflow?.status === "published" ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={onUnpublish}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs hover:bg-[hsl(var(--surface-2))] disabled:opacity-50"
+              >
+                <RotateCcw className="size-3.5 text-[hsl(var(--muted-foreground))]" />
+                Unpublish to draft
+              </button>
+            ) : null}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onDuplicate}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs hover:bg-[hsl(var(--surface-2))] disabled:opacity-50"
+            >
+              <Copy className="size-3.5 text-[hsl(var(--muted-foreground))]" />
+              Duplicate workflow
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                if (window.confirm("Archive this workflow? It will be removed from the list.")) {
+                  onArchive();
+                }
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+            >
+              <Trash2 className="size-3.5" />
+              Archive workflow
+            </button>
+          </div>
+          <div className="border-t border-[hsl(var(--border))] p-2">
+            <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+              Published versions
+            </p>
+            {versions.length > 0 ? (
+              <div className="max-h-52 space-y-1 overflow-y-auto">
+                {versions.slice(0, 8).map((version) => (
+                  <button
+                    key={version.id}
+                    type="button"
+                    disabled={pending}
+                    onClick={() => onRollback(version.version)}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs hover:bg-[hsl(var(--surface-2))] disabled:opacity-50"
+                  >
+                    <span className="font-medium">Version {version.version}</span>
+                    <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                      {new Date(version.createdAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="px-2 pb-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+                Publish this workflow to create rollback versions.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

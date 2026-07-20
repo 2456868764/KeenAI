@@ -574,6 +574,14 @@ export type WorkflowTemplate = {
   definition: WorkflowDefinition;
 };
 
+export type WorkflowVersion = {
+  id: string;
+  workflowId: string;
+  version: number;
+  snapshot: WorkflowDefinition;
+  createdAt: string;
+};
+
 export async function listWorkflows(): Promise<{ items: Workflow[] }> {
   return apiFetch("/api/v1/workflows");
 }
@@ -609,6 +617,29 @@ export async function updateWorkflow(
 
 export async function publishWorkflow(id: string): Promise<{ workflow: Workflow }> {
   return apiFetch(`/api/v1/workflows/${id}/publish`, { method: "POST" });
+}
+
+export async function unpublishWorkflow(id: string): Promise<{ workflow: Workflow }> {
+  return apiFetch(`/api/v1/workflows/${id}/unpublish`, { method: "POST" });
+}
+
+export async function duplicateWorkflow(id: string): Promise<{ workflow: Workflow }> {
+  return apiFetch(`/api/v1/workflows/${id}/duplicate`, { method: "POST" });
+}
+
+export async function archiveWorkflow(id: string): Promise<void> {
+  await apiFetch(`/api/v1/workflows/${id}`, { method: "DELETE" });
+}
+
+export async function listWorkflowVersions(id: string): Promise<{ items: WorkflowVersion[] }> {
+  return apiFetch(`/api/v1/workflows/${id}/versions`);
+}
+
+export async function rollbackWorkflow(
+  id: string,
+  version: number,
+): Promise<{ workflow: Workflow; version: WorkflowVersion }> {
+  return apiFetch(`/api/v1/workflows/${id}/rollback/${version}`, { method: "POST" });
 }
 
 export type WorkflowRunStep = {
