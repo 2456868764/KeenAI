@@ -1,6 +1,5 @@
 "use client";
 
-import { AppHeader } from "@/components/layout/app-header";
 import {
   type Workflow,
   type WorkflowBlock,
@@ -13,6 +12,7 @@ import {
 import { Button, Input, cn } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Bot,
   Braces,
   ChevronDown,
@@ -360,38 +360,6 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
   return (
     <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
-      <AppHeader title="Workflow editor">
-        <Link
-          href="/workflows"
-          className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-        >
-          ← All workflows
-        </Link>
-        {workflow?.status === "draft" ? (
-          <Button
-            type="button"
-            size="sm"
-            disabled={publish.isPending || save.isPending}
-            onClick={() => {
-              save.mutate(undefined, {
-                onSuccess: () => publish.mutate(),
-              });
-            }}
-          >
-            {publish.isPending ? <Loader2 className="size-4 animate-spin" /> : "Save & publish"}
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={save.isPending || !definition}
-          onClick={() => save.mutate()}
-        >
-          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
-        </Button>
-      </AppHeader>
-
       <main className="w-full flex-1 overflow-hidden p-4">
         {isLoading || !definition ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
@@ -433,6 +401,15 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 onNameChange={setName}
                 definition={definition}
                 onAddBlock={(block) => insertBlock(block)}
+                onSave={() => save.mutate()}
+                onSaveAndPublish={() => {
+                  save.mutate(undefined, {
+                    onSuccess: () => publish.mutate(),
+                  });
+                }}
+                savePending={save.isPending}
+                publishPending={publish.isPending}
+                canSave={Boolean(definition)}
               />
             }
             configurationPanel={
@@ -484,29 +461,66 @@ function CanvasToolbar({
   onNameChange,
   definition,
   onAddBlock,
+  onSave,
+  onSaveAndPublish,
+  savePending,
+  publishPending,
+  canSave,
 }: {
   workflow: Workflow | undefined;
   name: string;
   onNameChange: (name: string) => void;
   definition: WorkflowDefinition;
   onAddBlock: (block: WorkflowBlock) => void;
+  onSave: () => void;
+  onSaveAndPublish: () => void;
+  savePending: boolean;
+  publishPending: boolean;
+  canSave: boolean;
 }) {
   const changed =
     workflow?.publishedDefinition &&
     JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition);
 
   return (
-    <div className="w-[360px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-3 shadow-lg">
+    <div className="w-[720px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-3 shadow-lg">
       <div className="flex items-center gap-2">
+        <Link
+          href="/workflows"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+          aria-label="Back to workflows"
+        >
+          <ArrowLeft className="size-4" />
+        </Link>
         <Input
           aria-label="Workflow name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          className="h-9 font-semibold"
+          className="h-9 min-w-0 flex-1 font-semibold"
         />
         <BlockAddMenu onAdd={onAddBlock} />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={savePending || !canSave}
+          onClick={onSave}
+        >
+          {savePending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
+        </Button>
+        {workflow?.status === "draft" ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={publishPending || savePending || !canSave}
+            onClick={onSaveAndPublish}
+          >
+            {publishPending ? <Loader2 className="size-4 animate-spin" /> : "Save & publish"}
+          </Button>
+        ) : null}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+        <span className="font-medium text-[hsl(var(--foreground))]">Workflow editor</span>
         <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
           {workflow?.status ?? "draft"}
         </span>
