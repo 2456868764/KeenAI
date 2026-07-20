@@ -4,9 +4,11 @@ import {
   type Workflow,
   type WorkflowBlock,
   type WorkflowDefinition,
+  type WorkflowRun,
   getWorkflow,
   listWorkflowRuns,
   publishWorkflow,
+  testWorkflow,
   updateWorkflow,
 } from "@/lib/api";
 import { Button, Input, cn } from "@keenai/ui";
@@ -27,6 +29,7 @@ import {
   Send,
   Star,
   Tag,
+  TestTube2,
   Ticket,
   UserCheck,
   Webhook,
@@ -114,6 +117,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [triggerPanelOpen, setTriggerPanelOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
+  const [dryRuns, setDryRuns] = useState<WorkflowRun[]>([]);
 
   useEffect(() => {
     if (data?.workflow) {
@@ -138,6 +142,30 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    },
+  });
+
+  const testRun = useMutation({
+    mutationFn: () => testWorkflow(workflowId),
+    onSuccess: (data) => {
+      const status = data.result.steps.some((step) => step.status === "failed" || step.error)
+        ? "failed"
+        : data.result.suspended
+          ? "suspended"
+          : "dry-run";
+      const run: WorkflowRun = {
+        id: `dry-run-${Date.now()}`,
+        workflowId,
+        conversationId: "dry-run-conversation",
+        status,
+        steps: data.result.steps,
+        createdAt: new Date().toISOString(),
+      };
+      setDryRuns((items) => [run, ...items].slice(0, 5));
+      setSelectedRunId(run.id);
+      setSelectedBlockId(null);
+      setTriggerPanelOpen(false);
+      setAddAnchor(null);
     },
   });
 
@@ -243,7 +271,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     setAddAnchor(null);
   };
 
-  const runs = runsData?.items ?? [];
+  const runs = useMemo(() => [...dryRuns, ...(runsData?.items ?? [])], [dryRuns, runsData?.items]);
   const runHighlight = useMemo(() => {
     const run = runs.find((item) => item.id === selectedRunId);
     return run
@@ -632,8 +660,14 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onSuccess: () => publish.mutate(),
                   });
                 }}
+                onTest={() => {
+                  save.mutate(undefined, {
+                    onSuccess: () => testRun.mutate(),
+                  });
+                }}
                 savePending={save.isPending}
                 publishPending={publish.isPending}
+                testPending={testRun.isPending}
                 canSave={Boolean(definition)}
               />
             }
@@ -688,8 +722,10 @@ function CanvasToolbar({
   onAddBlock,
   onSave,
   onSaveAndPublish,
+  onTest,
   savePending,
   publishPending,
+  testPending,
   canSave,
 }: {
   workflow: Workflow | undefined;
@@ -699,8 +735,10 @@ function CanvasToolbar({
   onAddBlock: (block: WorkflowBlock) => void;
   onSave: () => void;
   onSaveAndPublish: () => void;
+  onTest: () => void;
   savePending: boolean;
   publishPending: boolean;
+  testPending: boolean;
   canSave: boolean;
 }) {
   const changed =
@@ -724,6 +762,20 @@ function CanvasToolbar({
           className="h-9 min-w-0 flex-1 font-semibold"
         />
         <BlockAddMenu onAdd={onAddBlock} />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={savePending || testPending || !canSave}
+          onClick={onTest}
+        >
+          {testPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <TestTube2 className="size-4" />
+          )}
+          Test
+        </Button>
         <Button
           type="button"
           size="sm"
