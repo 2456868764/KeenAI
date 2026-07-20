@@ -141,6 +141,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
   const [dryRuns, setDryRuns] = useState<WorkflowRun[]>([]);
+  const [definitionHistory, setDefinitionHistory] = useState<{
+    past: WorkflowDefinition[];
+    future: WorkflowDefinition[];
+  }>({ past: [], future: [] });
 
   const { data: versionsData } = useQuery({
     queryKey: ["workflow-versions", workflowId],
@@ -152,8 +156,51 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     if (data?.workflow) {
       setName(data.workflow.name);
       setDefinition(data.workflow.definition);
+      setDefinitionHistory({ past: [], future: [] });
     }
   }, [data?.workflow]);
+
+  const commitDefinition = (next: WorkflowDefinition) => {
+    if (!definition) {
+      setDefinition(next);
+      return;
+    }
+    if (JSON.stringify(definition) === JSON.stringify(next)) return;
+    setDefinitionHistory((history) => ({
+      past: [...history.past.slice(-49), definition],
+      future: [],
+    }));
+    setDefinition(next);
+  };
+
+  const resetDefinition = (next: WorkflowDefinition) => {
+    setDefinition(next);
+    setDefinitionHistory({ past: [], future: [] });
+  };
+
+  const undoDefinition = () => {
+    if (!definition || definitionHistory.past.length === 0) return;
+    const previous = definitionHistory.past.at(-1);
+    if (!previous) return;
+    setDefinition(previous);
+    setDefinitionHistory((history) => ({
+      past: history.past.slice(0, -1),
+      future: [definition, ...history.future].slice(0, 50),
+    }));
+    clearFlowSelection();
+  };
+
+  const redoDefinition = () => {
+    if (!definition || definitionHistory.future.length === 0) return;
+    const next = definitionHistory.future[0];
+    if (!next) return;
+    setDefinition(next);
+    setDefinitionHistory((history) => ({
+      past: [...history.past.slice(-49), definition],
+      future: history.future.slice(1),
+    }));
+    clearFlowSelection();
+  };
 
   const save = useMutation({
     mutationFn: () => {
@@ -179,7 +226,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     mutationFn: () => unpublishWorkflow(workflowId),
     onSuccess: (result) => {
       setManageOpen(false);
-      setDefinition(result.workflow.definition);
+      resetDefinition(result.workflow.definition);
       void queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
     },
@@ -208,7 +255,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     onSuccess: (result) => {
       setManageOpen(false);
       setName(result.workflow.name);
-      setDefinition(result.workflow.definition);
+      resetDefinition(result.workflow.definition);
       setSelectedBlockId(null);
       setTriggerPanelOpen(false);
       setAddAnchor(null);
@@ -284,7 +331,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     if (!definition || selectedIndex < 0) return;
     const blocks = [...definition.blocks];
     blocks[selectedIndex] = next;
-    setDefinition({ ...definition, blocks });
+    commitDefinition({ ...definition, blocks });
   };
 
   const insertBlock = (block: WorkflowBlock, anchor?: WorkflowCanvasInsertAnchor | null) => {
@@ -366,7 +413,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     } else {
       blocks.push(block);
     }
-    setDefinition({ ...definition, blocks });
+    commitDefinition({ ...definition, blocks });
     setSelectedBlockId(block.id);
     setTriggerPanelOpen(false);
     setAddAnchor(null);
@@ -400,7 +447,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
           value={definition.trigger}
           onChange={(e) => {
             const trigger = e.target.value as WorkflowDefinition["trigger"];
-            setDefinition({
+            commitDefinition({
               ...definition,
               trigger,
               eventName: trigger === "event_match" ? (definition.eventName ?? "") : undefined,
@@ -431,7 +478,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               className="flex h-8 items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 text-xs hover:bg-[hsl(var(--surface-2))]"
               onClick={() => {
                 const rules = definition.pageRules ?? [];
-                setDefinition({
+                commitDefinition({
                   ...definition,
                   pageRules: [...rules, { urlOp: "contains", url: "/", timeOnPageSec: 0 }],
                 });
@@ -455,7 +502,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                       ...rule,
                       urlOp: e.target.value as PageRule["urlOp"],
                     };
-                    setDefinition({ ...definition, pageRules });
+                    commitDefinition({ ...definition, pageRules });
                   }}
                   className="h-8 w-[118px] rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 text-xs"
                 >
@@ -469,7 +516,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                   onChange={(e) => {
                     const pageRules = [...(definition.pageRules ?? [])];
                     pageRules[ruleIndex] = { ...rule, url: e.target.value };
-                    setDefinition({ ...definition, pageRules });
+                    commitDefinition({ ...definition, pageRules });
                   }}
                   className="h-8 text-xs"
                 />
@@ -481,7 +528,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     const pageRules = (definition.pageRules ?? []).filter(
                       (_, index) => index !== ruleIndex,
                     );
-                    setDefinition({
+                    commitDefinition({
                       ...definition,
                       pageRules: pageRules.length > 0 ? pageRules : undefined,
                     });
@@ -503,7 +550,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                       ...rule,
                       timeOnPageSec: Number.parseInt(e.target.value, 10) || 0,
                     };
-                    setDefinition({ ...definition, pageRules });
+                    commitDefinition({ ...definition, pageRules });
                   }}
                   className="h-8 text-xs"
                 />
@@ -528,7 +575,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             min={0}
             value={definition.inactivityMinutes ?? 30}
             onChange={(e) =>
-              setDefinition({
+              commitDefinition({
                 ...definition,
                 inactivityMinutes: Number.parseInt(e.target.value, 10) || 0,
               })
@@ -550,7 +597,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             value={definition.eventName ?? ""}
             placeholder="app/subscription.churned"
             onChange={(e) =>
-              setDefinition({
+              commitDefinition({
                 ...definition,
                 eventName: e.target.value,
               })
@@ -573,7 +620,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               value={definition.cron ?? ""}
               placeholder="0 9 * * 1"
               onChange={(e) =>
-                setDefinition({
+                commitDefinition({
                   ...definition,
                   cron: e.target.value,
                 })
@@ -593,7 +640,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 className="flex h-8 items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 text-xs hover:bg-[hsl(var(--surface-2))]"
                 onClick={() => {
                   const audience = definition.audience ?? { match: "all", rules: [] };
-                  setDefinition({
+                  commitDefinition({
                     ...definition,
                     audience: {
                       match: audience.match ?? "all",
@@ -612,7 +659,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             <select
               value={definition.audience?.match ?? "all"}
               onChange={(e) =>
-                setDefinition({
+                commitDefinition({
                   ...definition,
                   audience: {
                     match: e.target.value as "all" | "any",
@@ -638,7 +685,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onChange={(e) => {
                       const rules = [...(definition.audience?.rules ?? [])];
                       rules[ruleIndex] = { ...rule, field: e.target.value };
-                      setDefinition({
+                      commitDefinition({
                         ...definition,
                         audience: { match: definition.audience?.match ?? "all", rules },
                       });
@@ -650,7 +697,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onChange={(e) => {
                       const rules = [...(definition.audience?.rules ?? [])];
                       rules[ruleIndex] = { ...rule, op: e.target.value };
-                      setDefinition({
+                      commitDefinition({
                         ...definition,
                         audience: { match: definition.audience?.match ?? "all", rules },
                       });
@@ -672,7 +719,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onChange={(e) => {
                       const rules = [...(definition.audience?.rules ?? [])];
                       rules[ruleIndex] = { ...rule, value: e.target.value };
-                      setDefinition({
+                      commitDefinition({
                         ...definition,
                         audience: { match: definition.audience?.match ?? "all", rules },
                       });
@@ -687,7 +734,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                       const rules = (definition.audience?.rules ?? []).filter(
                         (_, index) => index !== ruleIndex,
                       );
-                      setDefinition({
+                      commitDefinition({
                         ...definition,
                         audience:
                           rules.length > 0
@@ -804,11 +851,12 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onChange={updateBlock}
                     onRemove={() => {
                       if (definition.blocks.length <= 1) return;
-                      setDefinition({
+                      commitDefinition({
                         ...definition,
                         blocks: definition.blocks.filter((b) => b.id !== selectedBlock.id),
                       });
                       setSelectedBlockId(null);
+                      setAddAnchor(null);
                     }}
                   />
                 </CanvasConfigPanel>
@@ -827,6 +875,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 />
               )
             }
+            canUndo={definitionHistory.past.length > 0}
+            canRedo={definitionHistory.future.length > 0}
+            onUndo={undoDefinition}
+            onRedo={redoDefinition}
           />
         )}
       </main>

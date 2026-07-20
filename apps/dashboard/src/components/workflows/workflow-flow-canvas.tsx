@@ -5,15 +5,16 @@ import { cn } from "@keenai/ui";
 import {
   Background,
   BaseEdge,
-  Controls,
   type Edge,
   type EdgeProps,
   Handle,
   type Node,
   type NodeProps,
+  Panel,
   Position,
   ReactFlow,
   getBezierPath,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -23,11 +24,15 @@ import {
   Clock3,
   FileInput,
   GitBranch,
+  Maximize2,
   MessageSquareText,
+  Minus,
   Plus,
+  Redo2,
   Send,
   Tag,
   Ticket,
+  Undo2,
   UserCheck,
   Zap,
 } from "lucide-react";
@@ -782,6 +787,10 @@ export function WorkflowFlowCanvas({
   toolbar,
   configurationPanel,
   runTracePanel,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: {
   definition: WorkflowDefinition;
   selectedBlockId: string | null;
@@ -795,6 +804,10 @@ export function WorkflowFlowCanvas({
   toolbar?: ReactNode;
   configurationPanel?: ReactNode;
   runTracePanel?: ReactNode;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }) {
   const { nodes, edges } = useMemo(
     () =>
@@ -844,7 +857,12 @@ export function WorkflowFlowCanvas({
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={16} size={1} color="hsl(var(--border))" />
-        <Controls showInteractive={false} position="bottom-left" />
+        <CanvasViewportControls
+          canUndo={canUndo ?? false}
+          canRedo={canRedo ?? false}
+          onUndo={onUndo}
+          onRedo={onRedo}
+        />
       </ReactFlow>
       <div className="pointer-events-none absolute inset-0 z-10">
         {toolbar ? (
@@ -862,5 +880,76 @@ export function WorkflowFlowCanvas({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function CanvasViewportControls({
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: {
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+}) {
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
+  const controlClass =
+    "flex size-9 items-center justify-center text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))] disabled:cursor-not-allowed disabled:opacity-35";
+
+  return (
+    <Panel position="bottom-left" className="m-0">
+      <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl shadow-black/10">
+        <button
+          type="button"
+          className={controlClass}
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo"
+          aria-label="Undo workflow change"
+        >
+          <Undo2 className="size-4" />
+        </button>
+        <button
+          type="button"
+          className={controlClass}
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo"
+          aria-label="Redo workflow change"
+        >
+          <Redo2 className="size-4" />
+        </button>
+        <div className="h-px bg-[hsl(var(--border))]" />
+        <button
+          type="button"
+          className={controlClass}
+          onClick={() => zoomIn({ duration: 180 })}
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          <Plus className="size-4" />
+        </button>
+        <button
+          type="button"
+          className={controlClass}
+          onClick={() => zoomOut({ duration: 180 })}
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          <Minus className="size-4" />
+        </button>
+        <button
+          type="button"
+          className={controlClass}
+          onClick={() => fitView({ padding: 0.24, duration: 220 })}
+          title="Fit view"
+          aria-label="Fit view"
+        >
+          <Maximize2 className="size-4" />
+        </button>
+      </div>
+    </Panel>
   );
 }
