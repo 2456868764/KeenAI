@@ -288,6 +288,102 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         </select>
       </section>
 
+      {definition.trigger === "page_view" ? (
+        <section className="space-y-3 rounded-lg border border-[hsl(var(--border))] p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-medium text-[hsl(var(--foreground))]">Page URL rules</p>
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                Empty rules match every page view.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="flex h-8 items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 text-xs hover:bg-[hsl(var(--surface-2))]"
+              onClick={() => {
+                const rules = definition.pageRules ?? [];
+                setDefinition({
+                  ...definition,
+                  pageRules: [...rules, { urlOp: "contains", url: "/", timeOnPageSec: 0 }],
+                });
+              }}
+            >
+              <Plus className="size-3.5" />
+              Rule
+            </button>
+          </div>
+          {(definition.pageRules ?? []).map((rule, ruleIndex) => (
+            <div
+              key={`${rule.urlOp}-${rule.url}-${rule.timeOnPageSec ?? 0}`}
+              className="space-y-2 rounded-md bg-[hsl(var(--surface-2))] p-2"
+            >
+              <div className="flex items-center gap-2">
+                <select
+                  value={rule.urlOp}
+                  onChange={(e) => {
+                    const pageRules = [...(definition.pageRules ?? [])];
+                    pageRules[ruleIndex] = {
+                      ...rule,
+                      urlOp: e.target.value as PageRule["urlOp"],
+                    };
+                    setDefinition({ ...definition, pageRules });
+                  }}
+                  className="h-8 w-[118px] rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 text-xs"
+                >
+                  <option value="contains">contains</option>
+                  <option value="eq">equals</option>
+                  <option value="matches">matches</option>
+                </select>
+                <Input
+                  value={rule.url}
+                  placeholder="/pricing"
+                  onChange={(e) => {
+                    const pageRules = [...(definition.pageRules ?? [])];
+                    pageRules[ruleIndex] = { ...rule, url: e.target.value };
+                    setDefinition({ ...definition, pageRules });
+                  }}
+                  className="h-8 text-xs"
+                />
+                <button
+                  type="button"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-1))] hover:text-red-400"
+                  aria-label="Remove page rule"
+                  onClick={() => {
+                    const pageRules = (definition.pageRules ?? []).filter(
+                      (_, index) => index !== ruleIndex,
+                    );
+                    setDefinition({
+                      ...definition,
+                      pageRules: pageRules.length > 0 ? pageRules : undefined,
+                    });
+                  }}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              <div className="block space-y-1 text-[11px] text-[hsl(var(--muted-foreground))]">
+                <span>Minimum time on page (seconds)</span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={86400}
+                  value={rule.timeOnPageSec ?? 0}
+                  onChange={(e) => {
+                    const pageRules = [...(definition.pageRules ?? [])];
+                    pageRules[ruleIndex] = {
+                      ...rule,
+                      timeOnPageSec: Number.parseInt(e.target.value, 10) || 0,
+                    };
+                    setDefinition({ ...definition, pageRules });
+                  }}
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
       {definition.trigger === "customer_unresponsive" ||
       definition.trigger === "teammate_unresponsive" ? (
         <section className="space-y-2">
@@ -335,25 +431,154 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
       ) : null}
 
       {definition.trigger === "schedule" ? (
-        <section className="space-y-2">
-          <label
-            htmlFor="workflow-cron"
-            className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
-          >
-            Cron
-          </label>
-          <Input
-            id="workflow-cron"
-            value={definition.cron ?? ""}
-            placeholder="0 9 * * 1"
-            onChange={(e) =>
-              setDefinition({
-                ...definition,
-                cron: e.target.value,
-              })
-            }
-          />
-        </section>
+        <>
+          <section className="space-y-2">
+            <label
+              htmlFor="workflow-cron"
+              className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+            >
+              Cron
+            </label>
+            <Input
+              id="workflow-cron"
+              value={definition.cron ?? ""}
+              placeholder="0 9 * * 1"
+              onChange={(e) =>
+                setDefinition({
+                  ...definition,
+                  cron: e.target.value,
+                })
+              }
+            />
+          </section>
+          <section className="space-y-3 rounded-lg border border-[hsl(var(--border))] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-[hsl(var(--foreground))]">Audience</p>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                  Empty rules match every open conversation.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 text-xs hover:bg-[hsl(var(--surface-2))]"
+                onClick={() => {
+                  const audience = definition.audience ?? { match: "all", rules: [] };
+                  setDefinition({
+                    ...definition,
+                    audience: {
+                      match: audience.match ?? "all",
+                      rules: [
+                        ...(audience.rules ?? []),
+                        { field: "channelType", op: "eq", value: "messenger" },
+                      ],
+                    },
+                  });
+                }}
+              >
+                <Plus className="size-3.5" />
+                Rule
+              </button>
+            </div>
+            <select
+              value={definition.audience?.match ?? "all"}
+              onChange={(e) =>
+                setDefinition({
+                  ...definition,
+                  audience: {
+                    match: e.target.value as "all" | "any",
+                    rules: definition.audience?.rules ?? [],
+                  },
+                })
+              }
+              className="h-8 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
+            >
+              <option value="all">Match all rules</option>
+              <option value="any">Match any rule</option>
+            </select>
+            {(definition.audience?.rules ?? []).map((rule, ruleIndex) => (
+              <div
+                key={`${rule.field}-${rule.op}-${String(rule.value ?? "")}`}
+                className="space-y-2 rounded-md bg-[hsl(var(--surface-2))] p-2"
+              >
+                <div className="grid grid-cols-[1fr_112px] gap-2">
+                  <input
+                    list="workflow-audience-fields"
+                    value={rule.field}
+                    placeholder="channelType"
+                    onChange={(e) => {
+                      const rules = [...(definition.audience?.rules ?? [])];
+                      rules[ruleIndex] = { ...rule, field: e.target.value };
+                      setDefinition({
+                        ...definition,
+                        audience: { match: definition.audience?.match ?? "all", rules },
+                      });
+                    }}
+                    className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 text-xs"
+                  />
+                  <select
+                    value={rule.op}
+                    onChange={(e) => {
+                      const rules = [...(definition.audience?.rules ?? [])];
+                      rules[ruleIndex] = { ...rule, op: e.target.value };
+                      setDefinition({
+                        ...definition,
+                        audience: { match: definition.audience?.match ?? "all", rules },
+                      });
+                    }}
+                    className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 text-xs"
+                  >
+                    {AUDIENCE_OP_OPTIONS.map((op) => (
+                      <option key={op} value={op}>
+                        {op}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={String(rule.value ?? "")}
+                    placeholder="messenger"
+                    disabled={rule.op === "exists"}
+                    onChange={(e) => {
+                      const rules = [...(definition.audience?.rules ?? [])];
+                      rules[ruleIndex] = { ...rule, value: e.target.value };
+                      setDefinition({
+                        ...definition,
+                        audience: { match: definition.audience?.match ?? "all", rules },
+                      });
+                    }}
+                    className="h-8 text-xs"
+                  />
+                  <button
+                    type="button"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-1))] hover:text-red-400"
+                    aria-label="Remove audience rule"
+                    onClick={() => {
+                      const rules = (definition.audience?.rules ?? []).filter(
+                        (_, index) => index !== ruleIndex,
+                      );
+                      setDefinition({
+                        ...definition,
+                        audience:
+                          rules.length > 0
+                            ? { match: definition.audience?.match ?? "all", rules }
+                            : undefined,
+                      });
+                    }}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <datalist id="workflow-audience-fields">
+              {AUDIENCE_FIELD_OPTIONS.map((field) => (
+                <option key={field} value={field} />
+              ))}
+            </datalist>
+          </section>
+        </>
       ) : null}
     </>
   ) : null;
@@ -576,6 +801,31 @@ type BlockAction = {
   description: string;
   icon: typeof Plus;
 };
+
+type PageRule = NonNullable<WorkflowDefinition["pageRules"]>[number];
+type AudienceRule = NonNullable<NonNullable<WorkflowDefinition["audience"]>["rules"]>[number];
+
+const AUDIENCE_FIELD_OPTIONS = [
+  "channelType",
+  "conversationStatus",
+  "priority",
+  "brandId",
+  "userId",
+  "tags",
+  "attributes.plan",
+] as const;
+
+const AUDIENCE_OP_OPTIONS = [
+  "eq",
+  "ne",
+  "contains",
+  "starts_with",
+  "ends_with",
+  "matches",
+  "exists",
+  "in",
+  "nin",
+] as const;
 
 const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
   {
