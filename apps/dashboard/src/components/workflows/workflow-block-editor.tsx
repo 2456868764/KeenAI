@@ -2,7 +2,8 @@
 
 import type { WorkflowBlock } from "@/lib/api";
 import { Input } from "@keenai/ui";
-import { Trash2 } from "lucide-react";
+import { Bold, Link2, List, Paperclip, Smile, Trash2 } from "lucide-react";
+import { useRef } from "react";
 
 function formatJsonObject(value: Record<string, unknown> | undefined): string {
   if (!value || Object.keys(value).length === 0) return "";
@@ -39,6 +40,122 @@ function NextBlockSelect({
   );
 }
 
+function insertComposerToken(value: string, token: string, cursor: number | null) {
+  if (cursor === null || cursor < 0) {
+    const separator = value.length > 0 && !value.endsWith(" ") && !value.endsWith("\n") ? " " : "";
+    return `${value}${separator}${token}`;
+  }
+  return `${value.slice(0, cursor)}${token}${value.slice(cursor)}`;
+}
+
+function MessageComposer({
+  value,
+  onChange,
+  placeholder,
+  rows = 5,
+  attachmentIds,
+  onAttachmentIdsChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  rows?: number;
+  attachmentIds?: string[];
+  onAttachmentIdsChange?: (ids: string[] | undefined) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const variables = ["{{customer.name}}", "{{conversation.subject}}", "{{brand.name}}"];
+
+  const insertToken = (token: string) => {
+    const cursor = textareaRef.current?.selectionStart ?? null;
+    const nextValue = insertComposerToken(value, token, cursor);
+    onChange(nextValue);
+    window.requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+      const nextCursor = (cursor ?? nextValue.length - token.length) + token.length;
+      textareaRef.current?.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="min-h-28 w-full resize-y bg-transparent px-3 py-3 text-sm outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+      />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[hsl(var(--border))] px-2 py-2">
+        <div className="flex items-center gap-1 text-[hsl(var(--muted-foreground))]">
+          <button
+            type="button"
+            title="Bold"
+            className="rounded p-1.5 hover:bg-[hsl(var(--surface-1))] hover:text-[hsl(var(--foreground))]"
+            onClick={() => insertToken("**text**")}
+          >
+            <Bold className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            title="List"
+            className="rounded p-1.5 hover:bg-[hsl(var(--surface-1))] hover:text-[hsl(var(--foreground))]"
+            onClick={() => insertToken("\n- item")}
+          >
+            <List className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Link"
+            className="rounded p-1.5 hover:bg-[hsl(var(--surface-1))] hover:text-[hsl(var(--foreground))]"
+            onClick={() => insertToken("[label](https://)")}
+          >
+            <Link2 className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Emoticon"
+            className="rounded p-1.5 hover:bg-[hsl(var(--surface-1))] hover:text-[hsl(var(--foreground))]"
+            onClick={() => insertToken(":)")}
+          >
+            <Smile className="size-3.5" />
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {variables.map((variable) => (
+            <button
+              key={variable}
+              type="button"
+              className="rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-2 py-1 font-mono text-[10px] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary)/0.45)] hover:text-[hsl(var(--foreground))]"
+              onClick={() => insertToken(variable)}
+            >
+              {variable}
+            </button>
+          ))}
+        </div>
+      </div>
+      {onAttachmentIdsChange ? (
+        <div className="flex items-center gap-2 border-t border-[hsl(var(--border))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+          <Paperclip className="size-3.5 shrink-0" />
+          <Input
+            placeholder="Attachment IDs"
+            value={(attachmentIds ?? []).join(", ")}
+            onChange={(e) => {
+              const ids = e.target.value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              onAttachmentIdsChange(ids.length > 0 ? ids : undefined);
+            }}
+            className="h-8"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function WorkflowBlockEditor({
   block,
   index,
@@ -69,26 +186,13 @@ export function WorkflowBlockEditor({
       </div>
 
       {block.type === "send_message" ? (
-        <>
-          <textarea
-            value={block.plainText ?? ""}
-            onChange={(e) => onChange({ ...block, plainText: e.target.value })}
-            rows={4}
-            placeholder="Message text (optional if attachments are set)"
-            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
-          />
-          <Input
-            placeholder="Attachment IDs (comma-separated)"
-            value={(block.attachmentIds ?? []).join(", ")}
-            onChange={(e) => {
-              const ids = e.target.value
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean);
-              onChange({ ...block, attachmentIds: ids.length > 0 ? ids : undefined });
-            }}
-          />
-        </>
+        <MessageComposer
+          value={block.plainText ?? ""}
+          onChange={(plainText) => onChange({ ...block, plainText })}
+          placeholder="Message text (optional if attachments are set)"
+          attachmentIds={block.attachmentIds}
+          onAttachmentIdsChange={(attachmentIds) => onChange({ ...block, attachmentIds })}
+        />
       ) : null}
 
       {block.type === "show_expected_reply_time" ? (
@@ -1066,12 +1170,11 @@ export function WorkflowBlockEditor({
 
       {block.type === "reply_buttons" ? (
         <>
-          <textarea
+          <MessageComposer
             value={block.prompt}
-            onChange={(e) => onChange({ ...block, prompt: e.target.value })}
+            onChange={(prompt) => onChange({ ...block, prompt })}
             rows={3}
             placeholder="Prompt shown above the buttons"
-            className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm"
           />
           <label className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
             <input
