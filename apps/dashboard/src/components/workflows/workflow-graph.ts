@@ -11,10 +11,10 @@ export type WorkflowGraphEdge = {
 
 export type WorkflowNodeCategory = "trigger" | "message" | "condition" | "action";
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 72;
-const TRIGGER_WIDTH = 168;
-const TRIGGER_HEIGHT = 56;
+const NODE_WIDTH = 320;
+const NODE_HEIGHT = 220;
+const TRIGGER_WIDTH = 320;
+const TRIGGER_HEIGHT = 170;
 
 export function triggerLabel(trigger: WorkflowDefinition["trigger"]): string {
   return trigger
@@ -181,7 +181,7 @@ export function layoutWorkflowNodes(
 ): PositionedNode[] {
   const graph = new dagre.graphlib.Graph();
   graph.setDefaultEdgeLabel(() => ({}));
-  graph.setGraph({ rankdir: "LR", nodesep: 56, ranksep: 96, marginx: 24, marginy: 24 });
+  graph.setGraph({ rankdir: "LR", nodesep: 96, ranksep: 128, marginx: 32, marginy: 32 });
 
   for (const node of nodes) {
     graph.setNode(node.id, { width: node.width, height: node.height });

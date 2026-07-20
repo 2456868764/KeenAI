@@ -1,6 +1,7 @@
 "use client";
 
 import type { WorkflowBlock, WorkflowDefinition } from "@/lib/api";
+import { cn } from "@keenai/ui";
 import {
   Background,
   BaseEdge,
@@ -15,7 +16,21 @@ import {
   getBezierPath,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Zap } from "lucide-react";
+import {
+  Bot,
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  FileInput,
+  GitBranch,
+  MessageSquareText,
+  Plus,
+  Send,
+  Tag,
+  Ticket,
+  UserCheck,
+  Zap,
+} from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import {
   blockCategory,
@@ -40,23 +55,31 @@ type TriggerNodeData = {
 
 const categoryStyles: Record<
   ReturnType<typeof blockCategory> | "trigger",
-  { border: string; badge: string }
+  { border: string; badge: string; wash: string; icon: string }
 > = {
   trigger: {
     border: "border-violet-500/60",
     badge: "text-violet-400",
+    wash: "bg-violet-500/10",
+    icon: "text-violet-400",
   },
   message: {
-    border: "border-sky-500/50",
-    badge: "text-sky-400",
+    border: "border-violet-500/55",
+    badge: "text-violet-300",
+    wash: "bg-violet-500/10",
+    icon: "text-violet-300",
   },
   condition: {
     border: "border-amber-500/50",
     badge: "text-amber-400",
+    wash: "bg-amber-500/10",
+    icon: "text-amber-400",
   },
   action: {
     border: "border-[hsl(var(--border))]",
     badge: "text-[hsl(var(--primary))]",
+    wash: "bg-[hsl(var(--surface-2))]",
+    icon: "text-[hsl(var(--primary))]",
   },
 };
 
@@ -67,8 +90,8 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
   return (
     <div
-      className={[
-        "min-w-[180px] max-w-[220px] rounded-lg border bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm transition-shadow",
+      className={cn(
+        "group relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10 transition-shadow",
         styles.border,
         data.failed
           ? "ring-2 ring-red-500 ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
@@ -77,17 +100,43 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
             : data.selected
               ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
               : "",
-      ].join(" ")}
+      )}
     >
       <Handle
         type="target"
         position={Position.Left}
         className="!bg-violet-500 !border-violet-300"
       />
-      <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
-        {block.type.replaceAll("_", " ")}
-      </p>
-      <p className="mt-1 line-clamp-2 text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "flex size-8 items-center justify-center rounded-full border border-white/10",
+            styles.wash,
+            styles.icon,
+          )}
+        >
+          <BlockIcon block={block} />
+        </span>
+        <div className="min-w-0">
+          <p className={cn("text-[10px] font-semibold uppercase tracking-wide", styles.badge)}>
+            {block.type.replaceAll("_", " ")}
+          </p>
+          <p className="truncate text-sm font-semibold text-[hsl(var(--foreground))]">
+            {workflowBlockTitle(block)}
+          </p>
+        </div>
+        {data.failed ? (
+          <CircleAlert className="ml-auto size-4 text-red-400" />
+        ) : data.executed ? (
+          <CheckCircle2 className="ml-auto size-4 text-emerald-400" />
+        ) : null}
+      </div>
+
+      <BlockPreview block={block} />
+
+      <div className="absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow group-hover:flex">
+        <Plus className="size-3.5" />
+      </div>
       <Handle
         type="source"
         position={Position.Right}
@@ -103,20 +152,39 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
 
   return (
     <div
-      className={[
-        "flex min-w-[150px] items-center gap-2 rounded-lg border bg-[hsl(var(--surface-1))] px-3 py-2 shadow-sm",
+      className={cn(
+        "relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10",
         styles.border,
         data.selected
           ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
           : "",
-      ].join(" ")}
+      )}
     >
-      <Zap className={`size-4 shrink-0 ${styles.badge}`} />
-      <div>
-        <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
-          Trigger
+      <div className="flex items-center gap-2">
+        <span className="flex size-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-300">
+          <Zap className="size-4" />
+        </span>
+        <div>
+          <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+            Trigger action
+          </p>
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
+            {triggerPreviewTitle(data.trigger)}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <p className="line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
+          {triggerPreviewDescription(data.trigger)}
         </p>
-        <p className="text-xs text-[hsl(var(--foreground))]">{label}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-violet-500/15 px-2 py-1 text-[10px] font-medium text-violet-200">
+            {label}
+          </span>
+          <span className="rounded-full bg-[hsl(var(--surface-1))] px-2 py-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+            Canvas editable
+          </span>
+        </div>
       </div>
       <Handle
         type="source"
@@ -125,6 +193,250 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
       />
     </div>
   );
+}
+
+function BlockIcon({ block }: { block: WorkflowBlock }) {
+  switch (block.type) {
+    case "send_message":
+    case "show_expected_reply_time":
+    case "reply_buttons":
+    case "collect_customer_reply":
+    case "disable_customer_reply":
+      return <MessageSquareText className="size-4" />;
+    case "let_keeni_answer":
+      return <Bot className="size-4" />;
+    case "collect_data":
+    case "send_ticket_form":
+      return <FileInput className="size-4" />;
+    case "branches":
+    case "apply_rules":
+    case "goto":
+      return <GitBranch className="size-4" />;
+    case "wait":
+    case "snooze":
+      return <Clock3 className="size-4" />;
+    case "assign":
+      return <UserCheck className="size-4" />;
+    case "convert_to_ticket":
+    case "link_ticket":
+    case "send_ticket_update":
+    case "set_ticket_state":
+      return <Ticket className="size-4" />;
+    case "tag_conversation":
+    case "tag_end_user":
+      return <Tag className="size-4" />;
+    default:
+      return <Send className="size-4" />;
+  }
+}
+
+function workflowBlockTitle(block: WorkflowBlock): string {
+  switch (block.type) {
+    case "let_keeni_answer":
+      return "Let Keeni answer";
+    case "send_message":
+      return "Message";
+    case "show_expected_reply_time":
+      return "Show expected reply time";
+    case "collect_data":
+      return "Collect data";
+    case "collect_customer_reply":
+      return "Collect customer reply";
+    case "reply_buttons":
+      return "Reply buttons";
+    case "csat":
+      return "Ask for conversation rating";
+    case "branches":
+      return "Branches";
+    case "apply_rules":
+      return "Apply rules";
+    default:
+      return block.type.replaceAll("_", " ");
+  }
+}
+
+function BlockPreview({ block }: { block: WorkflowBlock }) {
+  if (block.type === "send_message") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+          Content
+        </p>
+        <p className="line-clamp-4 min-h-[56px] whitespace-pre-wrap rounded-lg bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))]">
+          {block.plainText?.trim() || "Write a message for the customer..."}
+        </p>
+        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[hsl(var(--muted-foreground))]">
+          <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 font-semibold">
+            B
+          </span>
+          <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 italic">I</span>
+          <span className="ml-auto">{block.attachmentIds?.length ?? 0} attachments</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "let_keeni_answer") {
+    return (
+      <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3">
+        <div className="flex items-center gap-2 rounded-lg bg-[hsl(var(--surface-0))] px-3 py-2">
+          <Bot className="size-4 text-violet-300" />
+          <p className="text-xs font-medium text-[hsl(var(--foreground))]">
+            Auto answer with brand memory and knowledge base.
+          </p>
+        </div>
+        <p className="mt-2 line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
+          {block.instructions?.trim() || `Max ${block.maxSteps ?? 8} agent steps.`}
+        </p>
+      </div>
+    );
+  }
+
+  if (block.type === "reply_buttons") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">{block.prompt}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {block.buttons.slice(0, 3).map((button) => (
+            <span
+              key={button.id}
+              className="rounded-full border border-violet-400/40 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-200"
+            >
+              {button.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "branches" || block.type === "apply_rules") {
+    const labels =
+      block.type === "branches"
+        ? block.branches.map((branch, index) => branch.label || `Branch ${index + 1}`)
+        : block.rules.map((rule, index) => rule.label || `Rule ${index + 1}`);
+    return (
+      <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+        <p className="text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
+        <div className="mt-3 grid gap-1.5">
+          {labels.slice(0, 3).map((label) => (
+            <span
+              key={label}
+              className="rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] px-2 py-1 text-[11px] text-amber-100"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "collect_data" || block.type === "send_ticket_form") {
+    const fields = block.fields.map((field) => field.label);
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">
+          {block.type === "collect_data" ? block.prompt : block.title || block.prompt}
+        </p>
+        <div className="mt-3 grid gap-1.5">
+          {fields.slice(0, 3).map((field) => (
+            <span
+              key={field}
+              className="rounded-md bg-[hsl(var(--surface-0))] px-2 py-1 text-[11px] text-[hsl(var(--muted-foreground))]"
+            >
+              {field}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+      <p className="line-clamp-3 min-h-[44px] text-xs text-[hsl(var(--foreground))]">
+        {blockLabel(block)}
+      </p>
+      <p className="mt-3 text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+        Click card to edit settings
+      </p>
+    </div>
+  );
+}
+
+function triggerPreviewTitle(trigger: WorkflowDefinition["trigger"]): string {
+  switch (trigger) {
+    case "page_view":
+      return "Customer visits a page";
+    case "new_messenger_conversation":
+      return "New messenger conversation";
+    case "first_message":
+      return "Customer opens a new conversation";
+    case "any_message":
+      return "Any message is received";
+    case "teammate_message":
+      return "Teammate sends a message";
+    case "conversation_state_changed":
+      return "Conversation state changes";
+    case "assigned_to_team":
+      return "Conversation assigned to team";
+    case "assigned_to_member":
+      return "Conversation assigned to member";
+    case "customer_unresponsive":
+      return "Customer becomes unresponsive";
+    case "teammate_unresponsive":
+      return "Teammate becomes unresponsive";
+    case "teammate_added_note":
+      return "Teammate adds a note";
+    case "ticket_created":
+      return "Ticket is created";
+    case "ticket_state_changed":
+      return "Ticket state changes";
+    case "schedule":
+      return "Scheduled workflow";
+    case "webhook":
+      return "Incoming webhook";
+    case "event_match":
+      return "Custom event matches";
+  }
+}
+
+function triggerPreviewDescription(trigger: WorkflowDefinition["trigger"]): string {
+  switch (trigger) {
+    case "page_view":
+      return "Runs when a customer page-view event matches URL rules.";
+    case "new_messenger_conversation":
+      return "Runs when a customer starts a new messenger conversation.";
+    case "first_message":
+      return "Starts when the first customer message creates a conversation.";
+    case "any_message":
+      return "Runs whenever a customer or teammate message matches the trigger.";
+    case "teammate_message":
+      return "Runs when a teammate replies in the conversation.";
+    case "conversation_state_changed":
+      return "Runs when the conversation changes open, closed, or snoozed state.";
+    case "assigned_to_team":
+      return "Runs when the conversation is assigned to a team.";
+    case "assigned_to_member":
+      return "Runs when the conversation is assigned to a teammate.";
+    case "customer_unresponsive":
+      return "Starts after the configured inactivity window following an agent reply.";
+    case "teammate_unresponsive":
+      return "Runs after the configured inactivity window following a customer message.";
+    case "teammate_added_note":
+      return "Runs when a teammate adds an internal note.";
+    case "ticket_created":
+      return "Runs when a ticket is created from a conversation or form.";
+    case "ticket_state_changed":
+      return "Runs when a ticket moves between workflow states.";
+    case "schedule":
+      return "Runs on a cron schedule against the configured audience.";
+    case "webhook":
+      return "Runs when an external system posts to this workflow.";
+    case "event_match":
+      return "Runs when an incoming product event name matches this trigger.";
+  }
 }
 
 function PurpleWorkflowEdge({

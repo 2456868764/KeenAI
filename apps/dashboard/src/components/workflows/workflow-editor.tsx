@@ -10,9 +10,28 @@ import {
   publishWorkflow,
   updateWorkflow,
 } from "@/lib/api";
-import { Button, Input } from "@keenai/ui";
+import { Button, Input, cn } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, X } from "lucide-react";
+import {
+  Bot,
+  Braces,
+  ChevronDown,
+  Clock3,
+  FileInput,
+  GitBranch,
+  Globe2,
+  Loader2,
+  MessageSquareText,
+  PencilLine,
+  Plus,
+  Send,
+  Star,
+  Tag,
+  Ticket,
+  UserCheck,
+  Webhook,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { WorkflowBlockEditor } from "./workflow-block-editor";
@@ -23,6 +42,25 @@ import { WorkflowRunTrace } from "./workflow-run-trace";
 function newBlockId() {
   return `block-${Date.now().toString(36)}`;
 }
+
+const TRIGGER_OPTIONS: { value: WorkflowDefinition["trigger"]; label: string }[] = [
+  { value: "page_view", label: "Page view" },
+  { value: "new_messenger_conversation", label: "New messenger conversation" },
+  { value: "first_message", label: "First customer message" },
+  { value: "any_message", label: "Any message" },
+  { value: "teammate_message", label: "Teammate message" },
+  { value: "conversation_state_changed", label: "Conversation state changed" },
+  { value: "assigned_to_team", label: "Assigned to team" },
+  { value: "assigned_to_member", label: "Assigned to member" },
+  { value: "customer_unresponsive", label: "Customer unresponsive" },
+  { value: "teammate_unresponsive", label: "Teammate unresponsive" },
+  { value: "teammate_added_note", label: "Teammate added note" },
+  { value: "ticket_created", label: "Ticket created" },
+  { value: "ticket_state_changed", label: "Ticket state changed" },
+  { value: "schedule", label: "Schedule" },
+  { value: "webhook", label: "Webhook" },
+  { value: "event_match", label: "Custom event" },
+];
 
 export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const queryClient = useQueryClient();
@@ -121,15 +159,16 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
           }}
           className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 text-sm"
         >
-          <option value="first_message">First customer message</option>
-          <option value="customer_unresponsive">Customer unresponsive</option>
-          <option value="schedule">Schedule</option>
-          <option value="webhook">Webhook</option>
-          <option value="event_match">Custom event</option>
+          {TRIGGER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </section>
 
-      {definition.trigger === "customer_unresponsive" ? (
+      {definition.trigger === "customer_unresponsive" ||
+      definition.trigger === "teammate_unresponsive" ? (
         <section className="space-y-2">
           <label
             htmlFor="workflow-inactivity"
@@ -381,188 +420,432 @@ function CanvasConfigPanel({
   );
 }
 
+type WorkflowBlockType = WorkflowBlock["type"];
+
+type BlockAction = {
+  type: WorkflowBlockType;
+  label: string;
+  description: string;
+  icon: typeof Plus;
+};
+
+const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
+  {
+    title: "Send",
+    items: [
+      {
+        type: "let_keeni_answer",
+        label: "Let Keeni answer",
+        description: "Use the AI agent, memory, and KB to reply.",
+        icon: Bot,
+      },
+      {
+        type: "send_message",
+        label: "Message",
+        description: "Send a formatted customer message.",
+        icon: MessageSquareText,
+      },
+      {
+        type: "show_expected_reply_time",
+        label: "Expected reply time",
+        description: "Display the SLA reply-time estimate.",
+        icon: Clock3,
+      },
+      {
+        type: "disable_customer_reply",
+        label: "Disable customer reply",
+        description: "Toggle customer replies for this conversation.",
+        icon: MessageSquareText,
+      },
+      {
+        type: "send_ticket_update",
+        label: "Send ticket update",
+        description: "Notify the customer about ticket progress.",
+        icon: Ticket,
+      },
+      {
+        type: "send_ticket_form",
+        label: "Send ticket form",
+        description: "Collect ticket details through a form.",
+        icon: FileInput,
+      },
+    ],
+  },
+  {
+    title: "Collect",
+    items: [
+      {
+        type: "collect_data",
+        label: "Collect data",
+        description: "Ask for structured fields and wait.",
+        icon: FileInput,
+      },
+      {
+        type: "collect_customer_reply",
+        label: "Collect customer reply",
+        description: "Suspend until the customer responds.",
+        icon: MessageSquareText,
+      },
+      {
+        type: "reply_buttons",
+        label: "Reply buttons",
+        description: "Offer button choices with routing.",
+        icon: Send,
+      },
+      {
+        type: "csat",
+        label: "Ask for CSAT",
+        description: "Request a conversation rating.",
+        icon: Star,
+      },
+    ],
+  },
+  {
+    title: "Internal",
+    items: [
+      {
+        type: "assign",
+        label: "Assign",
+        description: "Assign directly, round-robin, or least-busy.",
+        icon: UserCheck,
+      },
+      {
+        type: "add_note",
+        label: "Add note",
+        description: "Leave an internal teammate note.",
+        icon: PencilLine,
+      },
+      {
+        type: "mark_priority",
+        label: "Mark as priority",
+        description: "Set low, normal, high, or urgent priority.",
+        icon: Star,
+      },
+      {
+        type: "tag_conversation",
+        label: "Tag conversation",
+        description: "Append or replace conversation tags.",
+        icon: Tag,
+      },
+      {
+        type: "tag_end_user",
+        label: "Tag end user",
+        description: "Append or replace customer tags.",
+        icon: Tag,
+      },
+      {
+        type: "set_ticket_state",
+        label: "Set ticket state",
+        description: "Move the linked ticket to a status.",
+        icon: Ticket,
+      },
+      {
+        type: "convert_to_ticket",
+        label: "Convert to ticket",
+        description: "Create a ticket from the conversation.",
+        icon: Ticket,
+      },
+      {
+        type: "link_ticket",
+        label: "Link tickets",
+        description: "Create parent, child, or tracking links.",
+        icon: Ticket,
+      },
+      {
+        type: "apply_sla",
+        label: "Apply SLA",
+        description: "Apply the active SLA policy.",
+        icon: Clock3,
+      },
+      {
+        type: "close",
+        label: "Close conversation",
+        description: "Close the conversation.",
+        icon: X,
+      },
+      {
+        type: "reopen",
+        label: "Reopen conversation",
+        description: "Reopen a closed or snoozed conversation.",
+        icon: Plus,
+      },
+    ],
+  },
+  {
+    title: "Delay",
+    items: [
+      {
+        type: "snooze",
+        label: "Snooze",
+        description: "Snooze the conversation for a duration.",
+        icon: Clock3,
+      },
+      {
+        type: "wait",
+        label: "Wait",
+        description: "Pause the workflow before continuing.",
+        icon: Clock3,
+      },
+    ],
+  },
+  {
+    title: "Branch",
+    items: [
+      {
+        type: "branches",
+        label: "Branches",
+        description: "Route to the first matching branch.",
+        icon: GitBranch,
+      },
+      {
+        type: "apply_rules",
+        label: "Apply rules",
+        description: "Run every matching rule branch.",
+        icon: GitBranch,
+      },
+      {
+        type: "goto",
+        label: "Go to block",
+        description: "Jump to another block.",
+        icon: GitBranch,
+      },
+      {
+        type: "end",
+        label: "End path",
+        description: "Stop this workflow path.",
+        icon: X,
+      },
+    ],
+  },
+  {
+    title: "Integrations",
+    items: [
+      {
+        type: "http_request",
+        label: "HTTP request",
+        description: "Call an external HTTP endpoint.",
+        icon: Globe2,
+      },
+      {
+        type: "webhook_emit",
+        label: "Emit webhook",
+        description: "Send a workflow event to a webhook.",
+        icon: Webhook,
+      },
+      {
+        type: "mcp_call",
+        label: "MCP call",
+        description: "Call a configured MCP tool.",
+        icon: Braces,
+      },
+      {
+        type: "script",
+        label: "Script",
+        description: "Run a constrained JavaScript block.",
+        icon: Braces,
+      },
+    ],
+  },
+];
+
 function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <select
-      defaultValue=""
-      onChange={(e) => {
-        const type = e.target.value;
-        if (!type) return;
-        e.target.value = "";
-        const id = newBlockId();
-        if (type === "send_message") {
-          onAdd({ id, type: "send_message", plainText: "Hello!" });
-        } else if (type === "show_expected_reply_time") {
-          onAdd({ id, type: "show_expected_reply_time", fallbackMinutes: 240 });
-        } else if (type === "add_note") {
-          onAdd({ id, type: "add_note", plainText: "Internal note" });
-        } else if (type === "mark_priority") {
-          onAdd({ id, type: "mark_priority", priority: "high" });
-        } else if (type === "assign") {
-          onAdd({ id, type: "assign", assigneeId: null, teamId: null, strategy: "direct" });
-        } else if (type === "close") {
-          onAdd({ id, type: "close" });
-        } else if (type === "reopen") {
-          onAdd({ id, type: "reopen" });
-        } else if (type === "end") {
-          onAdd({ id, type: "end" });
-        } else if (type === "goto") {
-          onAdd({ id, type: "goto", targetBlockId: "" });
-        } else if (type === "let_keeni_answer") {
-          onAdd({ id, type: "let_keeni_answer", maxSteps: 8, instructions: "" });
-        } else if (type === "wait") {
-          onAdd({ id, type: "wait", seconds: 60 });
-        } else if (type === "http_request") {
-          onAdd({ id, type: "http_request", method: "GET", url: "https://example.com/hook" });
-        } else if (type === "webhook_emit") {
-          onAdd({
-            id,
-            type: "webhook_emit",
-            url: "https://example.com/webhook",
-            eventName: "workflow.event",
-            payload: "{}",
-          });
-        } else if (type === "mcp_call") {
-          onAdd({
-            id,
-            type: "mcp_call",
-            serverId: "stub",
-            toolName: "echo",
-            arguments: { message: "hello" },
-          });
-        } else if (type === "script") {
-          onAdd({
-            id,
-            type: "script",
-            code: 'return { channel: facts.channelType, priority: facts.priority ?? "normal" };',
-            timeoutMs: 2000,
-            memoryMb: 32,
-          });
-        } else if (type === "branches") {
-          onAdd({
-            id,
-            type: "branches",
-            branches: [
-              {
-                label: "Email channel",
-                condition: { field: "channelType", op: "eq", value: "email" },
-                nextId: null,
-              },
-              { label: "Default", nextId: null },
-            ],
-          });
-        } else if (type === "apply_rules") {
-          onAdd({
-            id,
-            type: "apply_rules",
-            rules: [
-              {
-                label: "Messenger",
-                condition: { field: "channelType", op: "eq", value: "messenger" },
-                nextId: `next-${id}`,
-              },
-            ],
-          });
-        } else if (type === "apply_sla") {
-          onAdd({ id, type: "apply_sla" });
-        } else if (type === "convert_to_ticket") {
-          onAdd({ id, type: "convert_to_ticket", title: "" });
-        } else if (type === "link_ticket") {
-          onAdd({
-            id,
-            type: "link_ticket",
-            childTicketId: "",
-            linkType: "tracks",
-          });
-        } else if (type === "send_ticket_update") {
-          onAdd({ id, type: "send_ticket_update" });
-        } else if (type === "send_ticket_form") {
-          onAdd({
-            id,
-            type: "send_ticket_form",
-            prompt: "Please share the details we need for this ticket.",
-            fields: [{ key: "impact", label: "Impact", type: "text", required: true }],
-          });
-        } else if (type === "collect_data") {
-          onAdd({
-            id,
-            type: "collect_data",
-            prompt: "What is your email?",
-            allowFreeText: false,
-            fields: [{ key: "email", label: "Email", required: true }],
-          });
-        } else if (type === "collect_customer_reply") {
-          onAdd({
-            id,
-            type: "collect_customer_reply",
-            prompt: "Reply here when you are ready.",
-            bufferSeconds: 2,
-          });
-        } else if (type === "reply_buttons") {
-          onAdd({
-            id,
-            type: "reply_buttons",
-            prompt: "How can we help?",
-            allowFreeText: false,
-            buttons: [
-              { id: "sales", label: "Sales", nextId: null },
-              { id: "support", label: "Support", nextId: null },
-            ],
-          });
-        } else if (type === "disable_customer_reply") {
-          onAdd({ id, type: "disable_customer_reply", disabled: true });
-        } else if (type === "snooze") {
-          onAdd({ id, type: "snooze", minutes: 60 });
-        } else if (type === "tag_end_user") {
-          onAdd({ id, type: "tag_end_user", tags: ["vip"], mode: "append" });
-        } else if (type === "tag_conversation") {
-          onAdd({ id, type: "tag_conversation", tags: ["vip"], mode: "append" });
-        } else if (type === "set_ticket_state") {
-          onAdd({ id, type: "set_ticket_state", statusName: "Done" });
-        } else if (type === "csat") {
-          onAdd({
-            id,
-            type: "csat",
-            prompt: "How would you rate this conversation?",
-            allowComment: true,
-            waitForRating: false,
-          });
-        }
-      }}
-      className="h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-xs"
-    >
-      <option value="">+ Add block</option>
-      <option value="send_message">Send message</option>
-      <option value="show_expected_reply_time">Show expected reply time</option>
-      <option value="add_note">Add internal note</option>
-      <option value="mark_priority">Mark priority</option>
-      <option value="assign">Assign</option>
-      <option value="close">Close conversation</option>
-      <option value="reopen">Reopen conversation</option>
-      <option value="end">End path</option>
-      <option value="goto">Go to block</option>
-      <option value="let_keeni_answer">Let Keeni answer</option>
-      <option value="wait">Wait</option>
-      <option value="http_request">HTTP request</option>
-      <option value="webhook_emit">Emit webhook</option>
-      <option value="mcp_call">MCP call</option>
-      <option value="script">Script</option>
-      <option value="branches">Branches</option>
-      <option value="apply_rules">Apply rules (all-match)</option>
-      <option value="apply_sla">Apply SLA</option>
-      <option value="convert_to_ticket">Convert to ticket</option>
-      <option value="link_ticket">Link tickets</option>
-      <option value="send_ticket_form">Send ticket form</option>
-      <option value="send_ticket_update">Send ticket update email</option>
-      <option value="set_ticket_state">Set ticket state</option>
-      <option value="collect_data">Collect data (suspend)</option>
-      <option value="collect_customer_reply">Collect customer reply (suspend)</option>
-      <option value="reply_buttons">Reply buttons (suspend)</option>
-      <option value="disable_customer_reply">Disable customer reply</option>
-      <option value="snooze">Snooze conversation</option>
-      <option value="tag_end_user">Tag end user</option>
-      <option value="tag_conversation">Tag conversation</option>
-      <option value="csat">CSAT rating</option>
-    </select>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex h-9 items-center gap-1.5 rounded-md bg-[hsl(var(--primary))] px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[hsl(var(--primary)/0.9)]"
+      >
+        <Plus className="size-3.5" />
+        Add
+        <ChevronDown className={cn("size-3.5 transition-transform", open ? "rotate-180" : "")} />
+      </button>
+
+      {open ? (
+        <div className="absolute top-11 right-0 z-50 w-[560px] overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30">
+          <div className="border-b border-[hsl(var(--border))] px-4 py-3">
+            <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Add action</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Choose the next workflow component. Settings open on the canvas after selection.
+            </p>
+          </div>
+          <div className="max-h-[520px] overflow-y-auto p-3">
+            {ACTION_GROUPS.map((group) => (
+              <section key={group.title} className="mb-4 last:mb-0">
+                <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                  {group.title}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.type}
+                        type="button"
+                        onClick={() => {
+                          onAdd(createWorkflowBlock(item.type));
+                          setOpen(false);
+                        }}
+                        className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
+                      >
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
+                            {item.label}
+                          </span>
+                          <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
+                            {item.description}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
+}
+
+function createWorkflowBlock(type: WorkflowBlockType): WorkflowBlock {
+  const id = newBlockId();
+  switch (type) {
+    case "send_message":
+      return { id, type, plainText: "Hello!" };
+    case "show_expected_reply_time":
+      return { id, type, fallbackMinutes: 240 };
+    case "add_note":
+      return { id, type, plainText: "Internal note" };
+    case "mark_priority":
+      return { id, type, priority: "high" };
+    case "assign":
+      return { id, type, assigneeId: null, teamId: null, strategy: "direct" };
+    case "close":
+    case "reopen":
+    case "end":
+      return { id, type };
+    case "goto":
+      return { id, type, targetBlockId: "" };
+    case "let_keeni_answer":
+      return { id, type, maxSteps: 8, instructions: "" };
+    case "wait":
+      return { id, type, seconds: 60 };
+    case "http_request":
+      return { id, type, method: "GET", url: "https://example.com/hook" };
+    case "webhook_emit":
+      return {
+        id,
+        type,
+        url: "https://example.com/webhook",
+        eventName: "workflow.event",
+        payload: "{}",
+      };
+    case "mcp_call":
+      return {
+        id,
+        type,
+        serverId: "stub",
+        toolName: "echo",
+        arguments: { message: "hello" },
+      };
+    case "script":
+      return {
+        id,
+        type,
+        code: 'return { channel: facts.channelType, priority: facts.priority ?? "normal" };',
+        timeoutMs: 2000,
+        memoryMb: 32,
+      };
+    case "branches":
+      return {
+        id,
+        type,
+        branches: [
+          {
+            label: "Email channel",
+            condition: { field: "channelType", op: "eq", value: "email" },
+            nextId: null,
+          },
+          { label: "Default", nextId: null },
+        ],
+      };
+    case "apply_rules":
+      return {
+        id,
+        type,
+        rules: [
+          {
+            label: "Messenger",
+            condition: { field: "channelType", op: "eq", value: "messenger" },
+            nextId: `next-${id}`,
+          },
+        ],
+      };
+    case "apply_sla":
+      return { id, type };
+    case "convert_to_ticket":
+      return { id, type, title: "" };
+    case "link_ticket":
+      return { id, type, childTicketId: "", linkType: "tracks" };
+    case "send_ticket_update":
+      return { id, type };
+    case "send_ticket_form":
+      return {
+        id,
+        type,
+        prompt: "Please share the details we need for this ticket.",
+        fields: [{ key: "impact", label: "Impact", type: "text", required: true }],
+      };
+    case "collect_data":
+      return {
+        id,
+        type,
+        prompt: "What is your email?",
+        allowFreeText: false,
+        fields: [{ key: "email", label: "Email", required: true }],
+      };
+    case "collect_customer_reply":
+      return {
+        id,
+        type,
+        prompt: "Reply here when you are ready.",
+        bufferSeconds: 2,
+      };
+    case "reply_buttons":
+      return {
+        id,
+        type,
+        prompt: "How can we help?",
+        allowFreeText: false,
+        buttons: [
+          { id: "sales", label: "Sales", nextId: null },
+          { id: "support", label: "Support", nextId: null },
+        ],
+      };
+    case "disable_customer_reply":
+      return { id, type, disabled: true };
+    case "snooze":
+      return { id, type, minutes: 60 };
+    case "tag_end_user":
+      return { id, type, tags: ["vip"], mode: "append" };
+    case "tag_conversation":
+      return { id, type, tags: ["vip"], mode: "append" };
+    case "set_ticket_state":
+      return { id, type, statusName: "Done" };
+    case "csat":
+      return {
+        id,
+        type,
+        prompt: "How would you rate this conversation?",
+        allowComment: true,
+        waitForRating: false,
+      };
+  }
 }
