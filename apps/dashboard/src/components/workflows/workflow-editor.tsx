@@ -35,7 +35,7 @@ import {
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { WorkflowBlockEditor } from "./workflow-block-editor";
-import { WorkflowFlowCanvas } from "./workflow-flow-canvas";
+import { type WorkflowCanvasInsertAnchor, WorkflowFlowCanvas } from "./workflow-flow-canvas";
 import { highlightBlocksFromRunSteps } from "./workflow-graph";
 import { WorkflowRunTrace } from "./workflow-run-trace";
 
@@ -79,6 +79,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [triggerPanelOpen, setTriggerPanelOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
 
   useEffect(() => {
     if (data?.workflow) {
@@ -123,6 +124,23 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     setDefinition({ ...definition, blocks });
   };
 
+  const insertBlock = (block: WorkflowBlock, anchor?: WorkflowCanvasInsertAnchor | null) => {
+    if (!definition) return;
+    const blocks = [...definition.blocks];
+    if (anchor?.kind === "trigger") {
+      blocks.splice(0, 0, block);
+    } else if (anchor?.kind === "block") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block);
+    } else {
+      blocks.push(block);
+    }
+    setDefinition({ ...definition, blocks });
+    setSelectedBlockId(block.id);
+    setTriggerPanelOpen(false);
+    setAddAnchor(null);
+  };
+
   const runs = runsData?.items ?? [];
   const runHighlight = useMemo(() => {
     const run = runs.find((item) => item.id === selectedRunId);
@@ -134,6 +152,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const clearFlowSelection = () => {
     setSelectedBlockId(null);
     setTriggerPanelOpen(false);
+    setAddAnchor(null);
   };
 
   const triggerFields = definition ? (
@@ -285,20 +304,37 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             onSelectBlock={(blockId) => {
               setSelectedBlockId(blockId);
               setTriggerPanelOpen(false);
+              setAddAnchor(null);
             }}
             onSelectTrigger={() => {
               setTriggerPanelOpen(true);
               setSelectedBlockId(null);
+              setAddAnchor(null);
             }}
+            activeAddAnchor={addAnchor}
+            onOpenAddMenu={(anchor) => {
+              setAddAnchor(anchor);
+              setSelectedBlockId(null);
+              setTriggerPanelOpen(false);
+            }}
+            renderAddMenu={(anchor) => (
+              <WorkflowActionMenu
+                title={anchor.kind === "trigger" ? "Add first action" : "Insert action"}
+                description={
+                  anchor.kind === "trigger"
+                    ? "Choose the first workflow component after the trigger."
+                    : "Choose a workflow component to insert after this step."
+                }
+                onAdd={(block) => insertBlock(block, anchor)}
+              />
+            )}
             toolbar={
               <CanvasToolbar
                 workflow={workflow}
                 name={name}
                 onNameChange={setName}
                 definition={definition}
-                onAddBlock={(block) =>
-                  setDefinition({ ...definition, blocks: [...definition.blocks, block] })
-                }
+                onAddBlock={(block) => insertBlock(block)}
               />
             }
             configurationPanel={
@@ -664,52 +700,74 @@ function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
       </button>
 
       {open ? (
-        <div className="absolute top-11 right-0 z-50 w-[560px] overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30">
-          <div className="border-b border-[hsl(var(--border))] px-4 py-3">
-            <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Add action</p>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Choose the next workflow component. Settings open on the canvas after selection.
-            </p>
-          </div>
-          <div className="max-h-[520px] overflow-y-auto p-3">
-            {ACTION_GROUPS.map((group) => (
-              <section key={group.title} className="mb-4 last:mb-0">
-                <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-                  {group.title}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.type}
-                        type="button"
-                        onClick={() => {
-                          onAdd(createWorkflowBlock(item.type));
-                          setOpen(false);
-                        }}
-                        className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
-                      >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
-                          <Icon className="size-4" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
-                            {item.label}
-                          </span>
-                          <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
-                            {item.description}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
+        <WorkflowActionMenu
+          className="absolute top-11 right-0 z-50"
+          onAdd={(block) => {
+            onAdd(block);
+            setOpen(false);
+          }}
+        />
       ) : null}
+    </div>
+  );
+}
+
+function WorkflowActionMenu({
+  onAdd,
+  title = "Add action",
+  description = "Choose the next workflow component. Settings open on the canvas after selection.",
+  className,
+}: {
+  onAdd: (block: WorkflowBlock) => void;
+  title?: string;
+  description?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "w-[560px] overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30",
+        className,
+      )}
+    >
+      <div className="border-b border-[hsl(var(--border))] px-4 py-3">
+        <p className="text-sm font-semibold text-[hsl(var(--foreground))]">{title}</p>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">{description}</p>
+      </div>
+      <div className="max-h-[520px] overflow-y-auto p-3">
+        {ACTION_GROUPS.map((group) => (
+          <section key={group.title} className="mb-4 last:mb-0">
+            <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+              {group.title}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => onAdd(createWorkflowBlock(item.type))}
+                    className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
+                        {item.label}
+                      </span>
+                      <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
+                        {item.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

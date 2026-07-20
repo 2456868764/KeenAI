@@ -46,12 +46,31 @@ type BlockNodeData = {
   selected: boolean;
   executed: boolean;
   failed: boolean;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
 
 type TriggerNodeData = {
   trigger: WorkflowDefinition["trigger"];
   selected: boolean;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
+
+export type WorkflowCanvasInsertAnchor = { kind: "trigger" } | { kind: "block"; blockId: string };
+
+function sameInsertAnchor(
+  left: WorkflowCanvasInsertAnchor | null,
+  right: WorkflowCanvasInsertAnchor,
+) {
+  if (!left) return false;
+  if (left.kind !== right.kind) return false;
+  if (left.kind === "trigger") return true;
+  if (right.kind !== "block") return false;
+  return left.blockId === right.blockId;
+}
 
 const categoryStyles: Record<
   ReturnType<typeof blockCategory> | "trigger",
@@ -87,6 +106,8 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const block = data.block;
   const category = blockCategory(block);
   const styles = categoryStyles[category];
+  const addAnchor: WorkflowCanvasInsertAnchor = { kind: "block", blockId: block.id };
+  const addMenuOpen = sameInsertAnchor(data.activeAddAnchor, addAnchor);
 
   return (
     <div
@@ -134,9 +155,30 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
       <BlockPreview block={block} />
 
-      <div className="absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow group-hover:flex">
+      <button
+        type="button"
+        className={cn(
+          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow transition-colors group-hover:flex hover:bg-violet-500/15",
+          addMenuOpen ? "flex" : "",
+        )}
+        aria-label={`Add action after ${workflowBlockTitle(block)}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          data.onOpenAddMenu(addMenuOpen ? null : addAnchor);
+        }}
+      >
         <Plus className="size-3.5" />
-      </div>
+      </button>
+      {addMenuOpen && data.renderAddMenu ? (
+        <div
+          className="nodrag nopan absolute left-[calc(100%+1rem)] top-8 z-50"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {data.renderAddMenu(addAnchor)}
+        </div>
+      ) : null}
       <Handle
         type="source"
         position={Position.Right}
@@ -149,11 +191,13 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
   const styles = categoryStyles.trigger;
   const label = triggerLabel(data.trigger);
+  const addAnchor: WorkflowCanvasInsertAnchor = { kind: "trigger" };
+  const addMenuOpen = sameInsertAnchor(data.activeAddAnchor, addAnchor);
 
   return (
     <div
       className={cn(
-        "relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10",
+        "group relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10",
         styles.border,
         data.selected
           ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
@@ -186,6 +230,30 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
           </span>
         </div>
       </div>
+      <button
+        type="button"
+        className={cn(
+          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow transition-colors hover:bg-violet-500/15",
+          addMenuOpen ? "flex" : "group-hover:flex",
+        )}
+        aria-label="Add first workflow action"
+        onClick={(event) => {
+          event.stopPropagation();
+          data.onOpenAddMenu(addMenuOpen ? null : addAnchor);
+        }}
+      >
+        <Plus className="size-3.5" />
+      </button>
+      {addMenuOpen && data.renderAddMenu ? (
+        <div
+          className="nodrag nopan absolute left-[calc(100%+1rem)] top-8 z-50"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {data.renderAddMenu(addAnchor)}
+        </div>
+      ) : null}
       <Handle
         type="source"
         position={Position.Right}
@@ -498,6 +566,9 @@ function definitionToFlow(
   selectedBlockId: string | null,
   triggerSelected: boolean,
   runHighlight: { executed: Set<string>; failed: Set<string> },
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null,
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
+  renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
 ): { nodes: Node[]; edges: Edge[] } {
   const graphEdges = collectWorkflowEdges(definition);
   const layoutInput = [
@@ -523,7 +594,13 @@ function definitionToFlow(
         x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
         y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
       },
-      data: { trigger: definition.trigger, selected: triggerSelected },
+      data: {
+        trigger: definition.trigger,
+        selected: triggerSelected,
+        activeAddAnchor,
+        onOpenAddMenu,
+        renderAddMenu,
+      },
       draggable: false,
       selectable: true,
     },
@@ -539,6 +616,9 @@ function definitionToFlow(
         selected: selectedBlockId === block.id,
         executed: runHighlight.executed.has(block.id),
         failed: runHighlight.failed.has(block.id),
+        activeAddAnchor,
+        onOpenAddMenu,
+        renderAddMenu,
       },
       draggable: false,
     })),
@@ -564,6 +644,9 @@ export function WorkflowFlowCanvas({
   runHighlight,
   onSelectBlock,
   onSelectTrigger,
+  activeAddAnchor,
+  onOpenAddMenu,
+  renderAddMenu,
   toolbar,
   configurationPanel,
   runTracePanel,
@@ -574,13 +657,33 @@ export function WorkflowFlowCanvas({
   runHighlight: { executed: Set<string>; failed: Set<string> };
   onSelectBlock: (blockId: string | null) => void;
   onSelectTrigger: () => void;
+  activeAddAnchor?: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu?: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
   toolbar?: ReactNode;
   configurationPanel?: ReactNode;
   runTracePanel?: ReactNode;
 }) {
   const { nodes, edges } = useMemo(
-    () => definitionToFlow(definition, selectedBlockId, triggerSelected, runHighlight),
-    [definition, selectedBlockId, triggerSelected, runHighlight],
+    () =>
+      definitionToFlow(
+        definition,
+        selectedBlockId,
+        triggerSelected,
+        runHighlight,
+        activeAddAnchor ?? null,
+        onOpenAddMenu ?? (() => undefined),
+        renderAddMenu,
+      ),
+    [
+      definition,
+      selectedBlockId,
+      triggerSelected,
+      runHighlight,
+      activeAddAnchor,
+      onOpenAddMenu,
+      renderAddMenu,
+    ],
   );
 
   return (
@@ -604,6 +707,7 @@ export function WorkflowFlowCanvas({
         }}
         onPaneClick={() => {
           onSelectBlock(null);
+          onOpenAddMenu?.(null);
         }}
         proOptions={{ hideAttribution: true }}
       >
