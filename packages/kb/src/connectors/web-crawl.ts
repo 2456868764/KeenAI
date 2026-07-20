@@ -109,9 +109,44 @@ function titleFromUrl(url: string): string {
   return last ? decodeURIComponent(last).replace(/[-_]+/g, " ") : parsed.hostname;
 }
 
+const NON_DOCUMENT_EXTENSIONS = new Set([
+  ".css",
+  ".js",
+  ".mjs",
+  ".map",
+  ".json",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".avif",
+  ".svg",
+  ".ico",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".otf",
+  ".eot",
+  ".mp3",
+  ".mp4",
+  ".webm",
+  ".mov",
+  ".avi",
+  ".zip",
+  ".gz",
+  ".tar",
+]);
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function extensionFromPath(path: string): string {
+  const filename = path.split("/").filter(Boolean).at(-1) ?? "";
+  const dotIndex = filename.lastIndexOf(".");
+  return dotIndex > 0 ? filename.slice(dotIndex).toLowerCase() : "";
 }
 
 function patternMatchesPath(pattern: string, path: string): boolean {
@@ -135,6 +170,7 @@ function shouldIncludeUrl(
   }
   if (parsed.origin !== rootOrigin) return false;
   const path = parsed.pathname || "/";
+  if (NON_DOCUMENT_EXTENSIONS.has(extensionFromPath(path))) return false;
   if (excludePaths.some((pattern) => patternMatchesPath(pattern, path))) return false;
   if (includePaths.length === 0) return true;
   return includePaths.some((pattern) => patternMatchesPath(pattern, path));
@@ -142,7 +178,7 @@ function shouldIncludeUrl(
 
 function extractLinks(html: string, baseUrl: string): string[] {
   const links = new Set<string>();
-  for (const match of html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)) {
+  for (const match of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
     const href = match[1];
     if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
       continue;

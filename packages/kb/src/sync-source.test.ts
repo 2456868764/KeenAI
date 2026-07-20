@@ -338,6 +338,116 @@ describe("KB source connectors", () => {
     await store.close();
   });
 
+  it("ignores stylesheet assets during web crawl discovery", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "web-assets", name: "Web Assets" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "web_crawl", name: "Docs" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+    const requestedUrls: string[] = [];
+
+    await db.insert(kbDocuments).values({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      externalId: "https://docs.example.com/mintlify-assets/_next/static/chunks/app.css",
+      title: "app.css",
+      url: "https://docs.example.com/mintlify-assets/_next/static/chunks/app.css",
+      rawContent: "body{}",
+      contentType: "text/css",
+      contentHash: "old-css",
+      sourceUpdatedAt: new Date("2026-06-30T00:00:00.000Z"),
+      indexedAt: new Date("2026-06-30T00:00:00.000Z"),
+    });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createWebCrawlConnector(
+        {
+          crawlMode: "crawl_links",
+          urls: ["https://docs.example.com/getting-started/introduction"],
+        },
+        {
+          fetchFn: async (url) => {
+            requestedUrls.push(url);
+            return {
+              ok: true,
+              status: 200,
+              url,
+              headers: { get: (name) => (name === "content-type" ? "text/html" : null) },
+              async text() {
+                if (url.endsWith("/installation")) {
+                  return "<html><title>Installation</title><h1>Installation</h1></html>";
+                }
+                return `
+                  <html>
+                    <head>
+                      <link rel="stylesheet" href="/mintlify-assets/_next/static/chunks/app.css">
+                      <link rel="preload" href="/mintlify-assets/_next/static/chunks/theme.css">
+                    </head>
+                    <body>
+                      <a href="/getting-started/installation">Installation</a>
+                    </body>
+                  </html>
+                `;
+              },
+            };
+          },
+          now: () => new Date("2026-07-01T00:00:00.000Z"),
+          type: "web_crawl",
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(2);
+    expect(result.skipped).toBe(1);
+    expect(requestedUrls).not.toContain(
+      "https://docs.example.com/mintlify-assets/_next/static/chunks/app.css",
+    );
+
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents.map((document) => document.url)).toEqual(
+      expect.arrayContaining([
+        "https://docs.example.com/getting-started/introduction",
+        "https://docs.example.com/getting-started/installation",
+      ]),
+    );
+    expect(documents.some((document) => document.url?.endsWith(".css"))).toBe(false);
+    const [cssDocument] = await db
+      .select({ status: kbDocuments.status })
+      .from(kbDocuments)
+      .where(
+        eq(
+          kbDocuments.externalId,
+          "https://docs.example.com/mintlify-assets/_next/static/chunks/app.css",
+        ),
+      );
+    expect(cssDocument?.status).toBe("archived");
+
+    await store.close();
+  });
+
   it("syncs config-backed GitHub raw documents", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
