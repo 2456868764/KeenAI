@@ -9,10 +9,12 @@ import {
   type EdgeProps,
   Handle,
   type Node,
+  type NodeChange,
   type NodeProps,
   Panel,
   Position,
   ReactFlow,
+  applyNodeChanges,
   getBezierPath,
   useReactFlow,
 } from "@xyflow/react";
@@ -24,6 +26,7 @@ import {
   Clock3,
   FileInput,
   GitBranch,
+  LayoutGrid,
   Maximize2,
   MessageSquareText,
   Minus,
@@ -36,7 +39,7 @@ import {
   UserCheck,
   Zap,
 } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
   blockCategory,
   blockLabel,
@@ -63,6 +66,8 @@ type TriggerNodeData = {
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
+
+type ManualPositionMap = Record<string, { x: number; y: number }>;
 
 export type WorkflowCanvasInsertAnchor =
   | { kind: "trigger" }
@@ -706,6 +711,7 @@ function definitionToFlow(
   activeAddAnchor: WorkflowCanvasInsertAnchor | null,
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
   renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
+  manualPositions: ManualPositionMap,
 ): { nodes: Node[]; edges: Edge[] } {
   const graphEdges = collectWorkflowEdges(definition);
   const layoutInput = [
@@ -727,7 +733,7 @@ function definitionToFlow(
     {
       id: "__trigger__",
       type: "workflowTrigger",
-      position: {
+      position: manualPositions.__trigger__ ?? {
         x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
         y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
       },
@@ -738,13 +744,13 @@ function definitionToFlow(
         onOpenAddMenu,
         renderAddMenu,
       },
-      draggable: false,
+      draggable: true,
       selectable: true,
     },
     ...definition.blocks.map((block) => ({
       id: block.id,
       type: "workflowBlock",
-      position: {
+      position: manualPositions[block.id] ?? {
         x: positioned.find((n) => n.id === block.id)?.x ?? 0,
         y: positioned.find((n) => n.id === block.id)?.y ?? 0,
       },
@@ -757,7 +763,7 @@ function definitionToFlow(
         onOpenAddMenu,
         renderAddMenu,
       },
-      draggable: false,
+      draggable: true,
     })),
   ];
 
@@ -787,6 +793,7 @@ export function WorkflowFlowCanvas({
   toolbar,
   configurationPanel,
   runTracePanel,
+  layoutStorageKey,
   canUndo,
   canRedo,
   onUndo,
@@ -804,11 +811,64 @@ export function WorkflowFlowCanvas({
   toolbar?: ReactNode;
   configurationPanel?: ReactNode;
   runTracePanel?: ReactNode;
+  layoutStorageKey?: string;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
 }) {
+  const nodeIds = useMemo(
+    () => new Set(["__trigger__", ...definition.blocks.map((block) => block.id)]),
+    [definition.blocks],
+  );
+  const [manualPositions, setManualPositions] = useState<ManualPositionMap>({});
+  const [layoutLoaded, setLayoutLoaded] = useState(false);
+
+  useEffect(() => {
+    setLayoutLoaded(false);
+    if (!layoutStorageKey) {
+      setManualPositions({});
+      setLayoutLoaded(true);
+      return;
+    }
+    try {
+      const stored = window.localStorage.getItem(layoutStorageKey);
+      setManualPositions(stored ? (JSON.parse(stored) as ManualPositionMap) : {});
+    } catch {
+      setManualPositions({});
+    }
+    setLayoutLoaded(true);
+  }, [layoutStorageKey]);
+
+  useEffect(() => {
+    setManualPositions((positions) => {
+      const next = Object.fromEntries(
+        Object.entries(positions).filter(([nodeId]) => nodeIds.has(nodeId)),
+      ) as ManualPositionMap;
+      return Object.keys(next).length === Object.keys(positions).length ? positions : next;
+    });
+  }, [nodeIds]);
+
+  useEffect(() => {
+    if (!layoutStorageKey || !layoutLoaded) return;
+    try {
+      window.localStorage.setItem(layoutStorageKey, JSON.stringify(manualPositions));
+    } catch {
+      // Ignore storage failures; the canvas remains usable for the current session.
+    }
+  }, [layoutLoaded, layoutStorageKey, manualPositions]);
+
+  const resetLayout = useCallback(() => {
+    setManualPositions({});
+    if (layoutStorageKey) {
+      try {
+        window.localStorage.removeItem(layoutStorageKey);
+      } catch {
+        // Ignore storage failures; clearing in-memory positions is enough.
+      }
+    }
+  }, [layoutStorageKey]);
+
   const { nodes, edges } = useMemo(
     () =>
       definitionToFlow(
@@ -819,6 +879,7 @@ export function WorkflowFlowCanvas({
         activeAddAnchor ?? null,
         onOpenAddMenu ?? (() => undefined),
         renderAddMenu,
+        manualPositions,
       ),
     [
       definition,
@@ -828,21 +889,44 @@ export function WorkflowFlowCanvas({
       activeAddAnchor,
       onOpenAddMenu,
       renderAddMenu,
+      manualPositions,
     ],
   );
+  const [flowNodes, setFlowNodes] = useState<Node[]>(nodes);
+
+  useEffect(() => {
+    setFlowNodes(nodes);
+  }, [nodes]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setFlowNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
+    const positionChanges = changes.filter(
+      (change): change is Extract<NodeChange, { type: "position" }> =>
+        change.type === "position" && Boolean(change.position),
+    );
+    if (positionChanges.length === 0) return;
+    setManualPositions((positions) => {
+      const next = { ...positions };
+      for (const change of positionChanges) {
+        if (change.position) next[change.id] = change.position;
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <div className="relative h-[calc(100vh-220px)] min-h-[640px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] shadow-sm">
       <ReactFlow
-        nodes={nodes}
+        nodes={flowNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        nodesDraggable={false}
+        nodesDraggable
         nodesConnectable={false}
         elementsSelectable
+        onNodesChange={onNodesChange}
         onNodeClick={(_, node) => {
           if (node.id === "__trigger__") {
             onSelectTrigger();
@@ -862,6 +946,8 @@ export function WorkflowFlowCanvas({
           canRedo={canRedo ?? false}
           onUndo={onUndo}
           onRedo={onRedo}
+          hasCustomLayout={Object.keys(manualPositions).length > 0}
+          onResetLayout={resetLayout}
         />
       </ReactFlow>
       <div className="pointer-events-none absolute inset-0 z-10">
@@ -888,11 +974,15 @@ function CanvasViewportControls({
   canRedo,
   onUndo,
   onRedo,
+  hasCustomLayout,
+  onResetLayout,
 }: {
   canUndo: boolean;
   canRedo: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  hasCustomLayout: boolean;
+  onResetLayout: () => void;
 }) {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
   const controlClass =
@@ -922,6 +1012,16 @@ function CanvasViewportControls({
           <Redo2 className="size-4" />
         </button>
         <div className="h-px bg-[hsl(var(--border))]" />
+        <button
+          type="button"
+          className={controlClass}
+          onClick={onResetLayout}
+          disabled={!hasCustomLayout}
+          title="Auto layout"
+          aria-label="Reset to automatic layout"
+        >
+          <LayoutGrid className="size-4" />
+        </button>
         <button
           type="button"
           className={controlClass}
