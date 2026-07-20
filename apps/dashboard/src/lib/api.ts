@@ -557,8 +557,29 @@ export type Workflow = {
   updatedAt: string;
 };
 
+export type WorkflowTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  category:
+    | "routing"
+    | "ai"
+    | "self_serve"
+    | "csat"
+    | "handoff"
+    | "lead_capture"
+    | "automation"
+    | "survey"
+    | "crm";
+  definition: WorkflowDefinition;
+};
+
 export async function listWorkflows(): Promise<{ items: Workflow[] }> {
   return apiFetch("/api/v1/workflows");
+}
+
+export async function listWorkflowTemplates(): Promise<{ items: WorkflowTemplate[] }> {
+  return apiFetch("/api/v1/workflows/templates");
 }
 
 export async function getWorkflow(id: string): Promise<{ workflow: Workflow }> {
