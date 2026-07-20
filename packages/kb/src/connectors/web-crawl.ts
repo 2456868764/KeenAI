@@ -158,6 +158,24 @@ function extractLinks(html: string, baseUrl: string): string[] {
   return [...links];
 }
 
+function extractSitemapLinks(xml: string): string[] {
+  const links = new Set<string>();
+  for (const match of xml.matchAll(/<loc[^>]*>([\s\S]*?)<\/loc>/gi)) {
+    const raw = decodeEntities((match[1] ?? "").trim());
+    if (!raw) continue;
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        parsed.hash = "";
+        links.add(parsed.toString());
+      }
+    } catch {
+      // Ignore malformed sitemap locations.
+    }
+  }
+  return [...links];
+}
+
 function maxPages(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.max(1, Math.min(Math.floor(value), 250))
@@ -199,10 +217,18 @@ export function createWebCrawlConnector(
       if (!response.ok) continue;
       const contentType = response.headers.get("content-type") ?? "";
       const body = await response.text();
-      if (!contentType.includes("html") && !/<html[\s>]/i.test(body)) continue;
+      const isSitemap =
+        contentType.includes("xml") ||
+        /<(urlset|sitemapindex)\b/i.test(body) ||
+        page.url.endsWith(".xml");
+      const isHtml = contentType.includes("html") || /<html[\s>]/i.test(body);
+      if (!isSitemap && !isHtml) continue;
 
       const rootOrigin = new URL(page.url).origin;
-      for (const url of extractLinks(body, response.url || page.url)) {
+      const links = isSitemap
+        ? extractSitemapLinks(body)
+        : extractLinks(body, response.url || page.url);
+      for (const url of links) {
         if (discovered.size >= pageLimit) break;
         if (!shouldIncludeUrl(url, rootOrigin, includePaths, excludePaths)) continue;
         if (discovered.has(url)) continue;

@@ -260,6 +260,84 @@ describe("KB source connectors", () => {
     await store.close();
   });
 
+  it("discovers web crawl pages from sitemap loc entries", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "sitemap", name: "Sitemap" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "web_crawl", name: "Docs" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createWebCrawlConnector(
+        {
+          crawlMode: "crawl_links",
+          urls: ["https://docs.example.com/sitemap.xml"],
+        },
+        {
+          fetchFn: async (url) => ({
+            ok: true,
+            status: 200,
+            url,
+            headers: {
+              get: (name) =>
+                name === "content-type"
+                  ? url.endsWith(".xml")
+                    ? "application/xml"
+                    : "text/html"
+                  : null,
+            },
+            async text() {
+              if (url.endsWith(".xml")) {
+                return `
+                  <urlset>
+                    <url><loc>https://docs.example.com/refunds</loc></url>
+                    <url><loc>https://docs.example.com/billing</loc></url>
+                  </urlset>
+                `;
+              }
+              return `<html><title>${url}</title><h1>${url}</h1><p>Indexed from sitemap.</p></html>`;
+            },
+          }),
+          now: () => new Date("2026-07-01T00:00:00.000Z"),
+          type: "web_crawl",
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(3);
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents.map((document) => document.url)).toEqual(
+      expect.arrayContaining([
+        "https://docs.example.com/refunds",
+        "https://docs.example.com/billing",
+      ]),
+    );
+
+    await store.close();
+  });
+
   it("syncs config-backed GitHub raw documents", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

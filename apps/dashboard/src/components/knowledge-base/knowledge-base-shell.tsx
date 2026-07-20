@@ -233,6 +233,10 @@ export function KnowledgeBaseShell() {
     }),
     [sources, visibleSources],
   );
+  const selectedSources = useMemo(
+    () => sources.filter((source) => selectedIds.has(source.id)),
+    [sources, selectedIds],
+  );
 
   const invalidateSources = () => {
     void queryClient.invalidateQueries({ queryKey: ["kb-sources"] });
@@ -262,6 +266,30 @@ export function KnowledgeBaseShell() {
     onSuccess: () => {
       setSelectedIds(new Set());
       setDetailSourceId(null);
+      invalidateSources();
+    },
+  });
+
+  const bulkMutation = useMutation({
+    mutationFn: async (action: "sync" | "enable" | "disable" | "delete") => {
+      const targets = selectedSources.filter((source) => sourceKind(source) !== "native");
+      for (const source of targets) {
+        if (action === "sync" && source.status !== "disabled") {
+          await syncKbSource(source.id);
+        }
+        if (action === "enable") {
+          await updateKbSourceStatus(source.id, "active");
+        }
+        if (action === "disable") {
+          await updateKbSourceStatus(source.id, "disabled");
+        }
+        if (action === "delete") {
+          await deleteKbSource(source.id);
+        }
+      }
+    },
+    onSuccess: () => {
+      setSelectedIds(new Set());
       invalidateSources();
     },
   });
@@ -346,6 +374,18 @@ export function KnowledgeBaseShell() {
                 pendingType={nativeMutation.variables?.type ?? null}
                 pending={nativeMutation.isPending}
               />
+
+              {selectedSources.length > 0 ? (
+                <BulkActionBar
+                  selectedCount={selectedSources.length}
+                  pending={bulkMutation.isPending}
+                  onClear={() => setSelectedIds(new Set())}
+                  onSync={() => bulkMutation.mutate("sync")}
+                  onEnable={() => bulkMutation.mutate("enable")}
+                  onDisable={() => bulkMutation.mutate("disable")}
+                  onDelete={() => bulkMutation.mutate("delete")}
+                />
+              ) : null}
 
               <SourceSection
                 title="Training files"
@@ -547,6 +587,59 @@ function NativeSources({
         })}
       </div>
     </section>
+  );
+}
+
+function BulkActionBar({
+  selectedCount,
+  pending,
+  onClear,
+  onSync,
+  onEnable,
+  onDisable,
+  onDelete,
+}: {
+  selectedCount: number;
+  pending: boolean;
+  onClear: () => void;
+  onSync: () => void;
+  onEnable: () => void;
+  onDisable: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4 py-3 shadow-lg">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        {pending ? <Loader2 className="size-4 animate-spin text-[hsl(var(--primary))]" /> : null}
+        <span>{selectedCount} selected</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onSync}>
+          <RefreshCw className="mr-2 size-4" />
+          Sync
+        </Button>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onEnable}>
+          Enable
+        </Button>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onDisable}>
+          Disable
+        </Button>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onDelete}>
+          <Trash2 className="mr-2 size-4" />
+          Delete
+        </Button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onClear}
+          className="flex size-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+          aria-label="Clear selection"
+          title="Clear selection"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
