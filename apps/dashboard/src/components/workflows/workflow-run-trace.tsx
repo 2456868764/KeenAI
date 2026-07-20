@@ -64,7 +64,10 @@ export function WorkflowRunTrace({
                     {new Date(run.createdAt).toLocaleString()}
                   </span>
                 </div>
-                <p className="mt-1 text-[hsl(var(--muted-foreground))]">
+                <p className="mt-1 truncate text-[hsl(var(--muted-foreground))]">
+                  {run.conversationId}
+                </p>
+                <p className="text-[hsl(var(--muted-foreground))]">
                   {run.steps.length} step{run.steps.length === 1 ? "" : "s"}
                 </p>
               </button>
@@ -74,36 +77,42 @@ export function WorkflowRunTrace({
       </ul>
       {selectedRun ? (
         <ol className="mt-4 space-y-2 border-t border-[hsl(var(--border))] pt-4 text-xs">
-          {selectedRun.steps.map((step, index) => (
-            <li
-              key={`${step.blockId}-${index}`}
-              className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">
-                  {index + 1}. {step.type.replaceAll("_", " ")}
-                </span>
-                <span
-                  className={
-                    step.status === "failed" || step.error
-                      ? "text-red-400"
-                      : "text-[hsl(var(--muted-foreground))]"
-                  }
-                >
-                  {step.status}
-                </span>
-              </div>
-              <p className="mt-1 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
-                block: {step.blockId}
-              </p>
-              {step.error ? <p className="mt-1 text-red-400">{step.error}</p> : null}
-              {step.output && Object.keys(step.output).length > 0 ? (
-                <pre className="mt-2 max-h-24 overflow-auto rounded bg-[hsl(var(--surface-1))] p-2 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
-                  {JSON.stringify(step.output, null, 2)}
-                </pre>
-              ) : null}
+          {selectedRun.steps.length > 0 ? (
+            selectedRun.steps.map((step, index) => (
+              <li
+                key={`${step.blockId}-${index}`}
+                className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">
+                    {index + 1}. {step.type.replaceAll("_", " ")}
+                  </span>
+                  <span
+                    className={
+                      step.status === "failed" || step.error
+                        ? "text-red-400"
+                        : "text-[hsl(var(--muted-foreground))]"
+                    }
+                  >
+                    {step.status}
+                  </span>
+                </div>
+                <p className="mt-1 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
+                  block: {step.blockId}
+                </p>
+                {step.error ? <p className="mt-1 text-red-400">{step.error}</p> : null}
+                {step.output && Object.keys(step.output).length > 0 ? (
+                  <pre className="mt-2 max-h-24 overflow-auto rounded bg-[hsl(var(--surface-1))] p-2 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
+                    {JSON.stringify(step.output, null, 2)}
+                  </pre>
+                ) : null}
+              </li>
+            ))
+          ) : (
+            <li className="rounded border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-[hsl(var(--muted-foreground))]">
+              No eligible closed conversations were found for sample mode.
             </li>
-          ))}
+          )}
         </ol>
       ) : (
         <p className="mt-3 text-[11px] text-[hsl(var(--muted-foreground))]">

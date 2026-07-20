@@ -669,6 +669,26 @@ export async function testWorkflow(id: string): Promise<{
   return apiFetch(`/api/v1/workflows/${id}/test`, { method: "POST" });
 }
 
+export async function runWorkflowShadow(
+  id: string,
+  body: { limit?: number; conversationIds?: string[] } = {},
+): Promise<{
+  mode: "shadow";
+  sampled: number;
+  items: Array<{
+    conversationId: string;
+    result: {
+      steps: WorkflowRunStep[];
+      suspended?: unknown;
+    };
+  }>;
+}> {
+  return apiFetch(`/api/v1/workflows/${id}/shadow`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function listWorkflowRuns(workflowId: string): Promise<{ items: WorkflowRun[] }> {
   return apiFetch(`/api/v1/workflows/${workflowId}/runs`);
 }

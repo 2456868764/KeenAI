@@ -13,6 +13,7 @@ import {
   listWorkflowVersions,
   publishWorkflow,
   rollbackWorkflow,
+  runWorkflowShadow,
   testWorkflow,
   unpublishWorkflow,
   updateWorkflow,
@@ -108,6 +109,15 @@ function workflowAddMenuDescription(anchor: WorkflowCanvasInsertAnchor): string 
     case "outcome":
       return "Choose the action that should run for this AI outcome.";
   }
+}
+
+function workflowResultStatus(
+  result: { steps: WorkflowRun["steps"]; suspended?: unknown },
+  fallback: string,
+) {
+  if (result.steps.some((step) => step.status === "failed" || step.error)) return "failed";
+  if (result.suspended) return "suspended";
+  return fallback;
 }
 
 export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
@@ -211,21 +221,49 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const testRun = useMutation({
     mutationFn: () => testWorkflow(workflowId),
     onSuccess: (data) => {
-      const status = data.result.steps.some((step) => step.status === "failed" || step.error)
-        ? "failed"
-        : data.result.suspended
-          ? "suspended"
-          : "dry-run";
       const run: WorkflowRun = {
         id: `dry-run-${Date.now()}`,
         workflowId,
         conversationId: "dry-run-conversation",
-        status,
+        status: workflowResultStatus(data.result, "dry-run"),
         steps: data.result.steps,
         createdAt: new Date().toISOString(),
       };
       setDryRuns((items) => [run, ...items].slice(0, 5));
       setSelectedRunId(run.id);
+      setSelectedBlockId(null);
+      setTriggerPanelOpen(false);
+      setAddAnchor(null);
+    },
+  });
+
+  const shadowRun = useMutation({
+    mutationFn: () => runWorkflowShadow(workflowId, { limit: 5 }),
+    onSuccess: (data) => {
+      const createdAt = new Date().toISOString();
+      const runId = Date.now();
+      const runs: WorkflowRun[] =
+        data.items.length > 0
+          ? data.items.map((item, index) => ({
+              id: `shadow-${runId}-${index}`,
+              workflowId,
+              conversationId: item.conversationId,
+              status: workflowResultStatus(item.result, "shadow"),
+              steps: item.result.steps,
+              createdAt,
+            }))
+          : [
+              {
+                id: `shadow-${runId}-empty`,
+                workflowId,
+                conversationId: "no-closed-conversations",
+                status: "no samples",
+                steps: [],
+                createdAt,
+              },
+            ];
+      setDryRuns((items) => [...runs, ...items].slice(0, 12));
+      setSelectedRunId(runs[0]?.id ?? null);
       setSelectedBlockId(null);
       setTriggerPanelOpen(false);
       setAddAnchor(null);
@@ -735,9 +773,15 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                     onSuccess: () => testRun.mutate(),
                   });
                 }}
+                onSample={() => {
+                  save.mutate(undefined, {
+                    onSuccess: () => shadowRun.mutate(),
+                  });
+                }}
                 savePending={save.isPending}
                 publishPending={publish.isPending}
                 testPending={testRun.isPending}
+                samplePending={shadowRun.isPending}
                 managePending={
                   unpublish.isPending ||
                   duplicate.isPending ||
@@ -799,6 +843,7 @@ function CanvasToolbar({
   onSave,
   onSaveAndPublish,
   onTest,
+  onSample,
   manageOpen,
   onManageOpenChange,
   versions,
@@ -809,6 +854,7 @@ function CanvasToolbar({
   savePending,
   publishPending,
   testPending,
+  samplePending,
   managePending,
   canSave,
 }: {
@@ -820,6 +866,7 @@ function CanvasToolbar({
   onSave: () => void;
   onSaveAndPublish: () => void;
   onTest: () => void;
+  onSample: () => void;
   manageOpen: boolean;
   onManageOpenChange: (open: boolean) => void;
   versions: WorkflowVersion[];
@@ -830,6 +877,7 @@ function CanvasToolbar({
   savePending: boolean;
   publishPending: boolean;
   testPending: boolean;
+  samplePending: boolean;
   managePending: boolean;
   canSave: boolean;
 }) {
@@ -858,7 +906,7 @@ function CanvasToolbar({
           type="button"
           size="sm"
           variant="outline"
-          disabled={savePending || testPending || !canSave}
+          disabled={savePending || testPending || samplePending || !canSave}
           onClick={onTest}
         >
           {testPending ? (
@@ -867,6 +915,16 @@ function CanvasToolbar({
             <TestTube2 className="size-4" />
           )}
           Test
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={savePending || testPending || samplePending || !canSave}
+          onClick={onSample}
+        >
+          {samplePending ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
+          Sample
         </Button>
         <Button
           type="button"
