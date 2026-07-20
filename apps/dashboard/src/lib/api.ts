@@ -1374,6 +1374,50 @@ export async function searchKb(input: {
   return apiFetch(`/api/v1/kb/search?${qs}`);
 }
 
+export type KbSource = {
+  id: string;
+  type: string;
+  name: string | null;
+  status: "active" | "syncing" | "error" | "disabled";
+  syncStrategy: string | null;
+  lastSyncedAt: string | null;
+  error: string | null;
+  documentCount: number;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listKbSources(brandId: string): Promise<{ items: KbSource[] }> {
+  const qs = new URLSearchParams({ brandId });
+  return apiFetch(`/api/v1/kb/sources?${qs}`);
+}
+
+export async function createKbFileUploadSource(input: {
+  brandId: string;
+  title: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes?: number;
+  rawContent: string;
+}): Promise<{ source: KbSource }> {
+  return apiFetch("/api/v1/kb/sources/file-upload", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createKbWebCrawlSource(input: {
+  brandId: string;
+  url: string;
+  title?: string;
+}): Promise<{ source: KbSource }> {
+  return apiFetch("/api/v1/kb/sources/web-crawl", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export type HelpCollection = {
   id: string;
   slug: string;

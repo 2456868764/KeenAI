@@ -239,13 +239,15 @@ const modules: ProductModule[] = [
       hasRoutePrefix(pathname, "/workflows") ||
       hasRoutePrefix(pathname, "/custom-actions") ||
       hasRoutePrefix(pathname, "/memory") ||
+      hasRoutePrefix(pathname, "/knowledge-base") ||
       pathname === "/settings/personality",
     sections: [
       {
         title: "Keeni settings",
         items: [
           { label: "Personality & Branding", href: "/settings/personality", icon: Palette },
-          { label: "Training Data", href: "/memory", icon: BookOpen },
+          { label: "Memory", href: "/memory", icon: Bot },
+          { label: "Knowledge Base", href: "/knowledge-base", icon: BookOpen },
           { label: "Actions", href: "/custom-actions", icon: Sparkles },
           { label: "Other", href: "/settings/brands", icon: Settings },
           { label: "Deploy", href: "/settings/channels", icon: Rocket },

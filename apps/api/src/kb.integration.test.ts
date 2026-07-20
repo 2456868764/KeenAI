@@ -89,6 +89,73 @@ async function setupKbApiTest() {
 }
 
 describe("kb search API", () => {
+  it("creates file upload and URL crawl sources for knowledge base ingest", async () => {
+    const { app, store, db, brand, auth } = await setupKbApiTest();
+
+    const uploadRes = await app.request("/api/v1/kb/sources/file-upload", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        title: "Refund Policy",
+        fileName: "refund-policy.md",
+        contentType: "text/markdown",
+        sizeBytes: 36,
+        rawContent: "# Refund Policy\n\nRefunds take 5 days.",
+      }),
+    });
+    expect(uploadRes.status).toBe(201);
+    const uploadBody = (await uploadRes.json()) as { source: { id: string; type: string } };
+    expect(uploadBody.source.type).toBe("file_upload");
+
+    const [uploadedSource] = await db
+      .select()
+      .from(kbSources)
+      .where(eq(kbSources.id, uploadBody.source.id));
+    expect(uploadedSource?.status).toBe("active");
+    expect(uploadedSource?.documentCount).toBe(1);
+    expect(uploadedSource?.chunkCount).toBeGreaterThan(0);
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("<html><title>Billing</title><h1>Billing</h1><p>Invoices renew monthly.</p>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      })) as unknown as typeof fetch;
+
+    try {
+      const crawlRes = await app.request("/api/v1/kb/sources/web-crawl", {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandId: brand.id,
+          url: "https://docs.example.com/billing",
+          title: "Billing Page",
+        }),
+      });
+      expect(crawlRes.status).toBe(201);
+      const crawlBody = (await crawlRes.json()) as { source: { id: string; type: string } };
+      expect(crawlBody.source.type).toBe("web_crawl");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const listRes = await app.request(`/api/v1/kb/sources?brandId=${brand.id}`, {
+      headers: auth,
+    });
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as {
+      items: Array<{ type: string; documentCount: number; chunkCount: number }>;
+    };
+    expect(listBody.items.map((item) => item.type)).toEqual(
+      expect.arrayContaining(["file_upload", "web_crawl"]),
+    );
+    expect(listBody.items.every((item) => item.documentCount >= 1)).toBe(true);
+    expect(listBody.items.every((item) => item.chunkCount >= 1)).toBe(true);
+
+    await store.close();
+  });
+
   it("returns hybrid search hits for indexed help center docs", async () => {
     const { app, store, db, org, brand, auth } = await setupKbApiTest();
 

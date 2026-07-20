@@ -23,8 +23,9 @@ import {
   kbTelemetryQuerySchema,
 } from "@keenai/shared";
 import { kbQueryLogs, kbSources } from "@keenai/storage/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import { canAccessBrand } from "../lib/conversations.js";
 import { getKbChunkFtsStore } from "../lib/kb-chunk-fts-init.js";
 import { getKbChunkVectorStore } from "../lib/kb-chunk-vector-init.js";
@@ -32,6 +33,31 @@ import { getKbDispatch } from "../lib/kb-dispatch-init.js";
 import { getKbReranker } from "../lib/kb-search-config.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
+
+const kbSourceListQuerySchema = z.object({
+  brandId: z.string().min(1),
+});
+
+const kbFileUploadSourceSchema = z.object({
+  brandId: z.string().min(1),
+  title: z.string().trim().min(1).max(180),
+  fileName: z.string().trim().min(1).max(240),
+  contentType: z.string().trim().min(1).max(180),
+  sizeBytes: z.number().int().nonnegative().optional(),
+  rawContent: z.string().min(1),
+});
+
+const kbWebCrawlSourceSchema = z.object({
+  brandId: z.string().min(1),
+  url: z.string().trim().url(),
+  title: z.string().trim().max(180).optional(),
+});
+
+function titleFromUrl(url: string): string {
+  const parsed = new URL(url);
+  const last = parsed.pathname.split("/").filter(Boolean).at(-1);
+  return last ? decodeURIComponent(last).replace(/[-_]+/g, " ") : parsed.hostname;
+}
 
 export function kbRoutes(_ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -78,6 +104,145 @@ export function kbRoutes(_ctx: AppContext) {
 
     return c.json({ accepted: true, sourceId, event }, 202);
   });
+
+  r.get(
+    `${prefix}/sources`,
+    requireAuth(),
+    zValidator("query", kbSourceListQuerySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const query = c.req.valid("query");
+      if (!canAccessBrand(auth, query.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const rows = await c
+        .get("store")
+        .db.select({
+          id: kbSources.id,
+          type: kbSources.type,
+          name: kbSources.name,
+          status: kbSources.status,
+          syncStrategy: kbSources.syncStrategy,
+          lastSyncedAt: kbSources.lastSyncedAt,
+          error: kbSources.error,
+          documentCount: kbSources.documentCount,
+          chunkCount: kbSources.chunkCount,
+          createdAt: kbSources.createdAt,
+          updatedAt: kbSources.updatedAt,
+        })
+        .from(kbSources)
+        .where(and(eq(kbSources.orgId, auth.orgId), eq(kbSources.brandId, query.brandId)))
+        .orderBy(desc(kbSources.updatedAt));
+
+      return c.json({ items: rows });
+    },
+  );
+
+  r.post(
+    `${prefix}/sources/file-upload`,
+    requireAuth(),
+    zValidator("json", kbFileUploadSourceSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      if (!canAccessBrand(auth, body.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const now = new Date();
+      const [source] = await c
+        .get("store")
+        .db.insert(kbSources)
+        .values({
+          orgId: auth.orgId,
+          brandId: body.brandId,
+          type: "file_upload",
+          name: body.title,
+          status: "syncing",
+          syncStrategy: "manual",
+          createdBy: auth.sub,
+          config: {
+            documents: [
+              {
+                title: body.title,
+                url: `file://${body.fileName}`,
+                rawContent: body.rawContent,
+                contentType: body.contentType,
+                updatedAt: now.toISOString(),
+                attachments: [
+                  {
+                    filename: body.fileName,
+                    mime: body.contentType,
+                    url: `file://${body.fileName}`,
+                    bytes: body.sizeBytes ?? Buffer.byteLength(body.rawContent, "utf8"),
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        .returning();
+
+      if (!source) throw new Error("kb_source_create_failed");
+
+      await getKbDispatch().enqueueSourceIngest({
+        orgId: auth.orgId,
+        brandId: body.brandId,
+        sourceId: source.id,
+      });
+
+      return c.json({ source }, 201);
+    },
+  );
+
+  r.post(
+    `${prefix}/sources/web-crawl`,
+    requireAuth(),
+    zValidator("json", kbWebCrawlSourceSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      if (!canAccessBrand(auth, body.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+
+      const title = body.title?.trim() || titleFromUrl(body.url);
+      const now = new Date();
+      const [source] = await c
+        .get("store")
+        .db.insert(kbSources)
+        .values({
+          orgId: auth.orgId,
+          brandId: body.brandId,
+          type: "web_crawl",
+          name: title,
+          status: "syncing",
+          syncStrategy: "manual",
+          createdBy: auth.sub,
+          config: {
+            urls: [{ url: body.url, title, updatedAt: now.toISOString() }],
+          },
+        })
+        .returning();
+
+      if (!source) throw new Error("kb_source_create_failed");
+
+      await getKbDispatch().enqueueSourceIngest({
+        orgId: auth.orgId,
+        brandId: body.brandId,
+        sourceId: source.id,
+      });
+
+      return c.json({ source }, 201);
+    },
+  );
 
   r.get(`${prefix}/search`, requireAuth(), zValidator("query", kbSearchQuerySchema), async (c) => {
     const auth = c.get("auth");
