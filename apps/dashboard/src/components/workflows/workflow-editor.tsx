@@ -2,6 +2,7 @@
 
 import { AppHeader } from "@/components/layout/app-header";
 import {
+  type Workflow,
   type WorkflowBlock,
   type WorkflowDefinition,
   getWorkflow,
@@ -9,11 +10,11 @@ import {
   publishWorkflow,
   updateWorkflow,
 } from "@/lib/api";
-import { Button, Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@keenai/ui";
+import { Button, Input } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { WorkflowBlockEditor } from "./workflow-block-editor";
 import { WorkflowFlowCanvas } from "./workflow-flow-canvas";
 import { highlightBlocksFromRunSteps } from "./workflow-graph";
@@ -37,9 +38,8 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
-  const [view, setView] = useState<"list" | "flow">("flow");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [triggerSheetOpen, setTriggerSheetOpen] = useState(false);
+  const [triggerPanelOpen, setTriggerPanelOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
   const clearFlowSelection = () => {
     setSelectedBlockId(null);
-    setTriggerSheetOpen(false);
+    setTriggerPanelOpen(false);
   };
 
   const triggerFields = definition ? (
@@ -232,222 +232,152 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
         </Button>
       </AppHeader>
 
-      <main
-        className={[
-          "mx-auto w-full flex-1 overflow-y-auto p-6",
-          view === "flow" ? "max-w-7xl" : "max-w-5xl",
-        ].join(" ")}
-      >
+      <main className="w-full flex-1 overflow-hidden p-4">
         {isLoading || !definition ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
         ) : error ? (
           <p className="text-sm text-red-400">{error.message}</p>
         ) : (
-          <div className="space-y-6">
-            <section className="space-y-2">
-              <label
-                htmlFor="workflow-name"
-                className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
-              >
-                Name
-              </label>
-              <Input id="workflow-name" value={name} onChange={(e) => setName(e.target.value)} />
-            </section>
-
-            {view === "list" ? triggerFields : null}
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-medium">Blocks</h2>
-                  <div className="flex rounded-md border border-[hsl(var(--border))] p-0.5 text-xs">
-                    <button
-                      type="button"
-                      className={
-                        view === "flow"
-                          ? "rounded px-2 py-0.5 bg-[hsl(var(--surface-2))] font-medium"
-                          : "rounded px-2 py-0.5 text-[hsl(var(--muted-foreground))]"
-                      }
-                      onClick={() => setView("flow")}
-                    >
-                      Flow
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        view === "list"
-                          ? "rounded px-2 py-0.5 bg-[hsl(var(--surface-2))] font-medium"
-                          : "rounded px-2 py-0.5 text-[hsl(var(--muted-foreground))]"
-                      }
-                      onClick={() => {
-                        setView("list");
-                        clearFlowSelection();
-                        setSelectedRunId(null);
-                      }}
-                    >
-                      List
-                    </button>
-                  </div>
-                </div>
-                <BlockAddMenu
-                  onAdd={(block) =>
-                    setDefinition({ ...definition, blocks: [...definition.blocks, block] })
-                  }
-                />
-              </div>
-              {view === "flow" ? (
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <WorkflowFlowCanvas
-                    definition={definition}
-                    selectedBlockId={selectedBlockId}
-                    triggerSelected={triggerSheetOpen}
-                    runHighlight={runHighlight}
-                    onSelectBlock={(blockId) => {
-                      setSelectedBlockId(blockId);
-                      setTriggerSheetOpen(false);
-                    }}
-                    onSelectTrigger={() => {
-                      setTriggerSheetOpen(true);
+          <WorkflowFlowCanvas
+            definition={definition}
+            selectedBlockId={selectedBlockId}
+            triggerSelected={triggerPanelOpen}
+            runHighlight={runHighlight}
+            onSelectBlock={(blockId) => {
+              setSelectedBlockId(blockId);
+              setTriggerPanelOpen(false);
+            }}
+            onSelectTrigger={() => {
+              setTriggerPanelOpen(true);
+              setSelectedBlockId(null);
+            }}
+            toolbar={
+              <CanvasToolbar
+                workflow={workflow}
+                name={name}
+                onNameChange={setName}
+                definition={definition}
+                onAddBlock={(block) =>
+                  setDefinition({ ...definition, blocks: [...definition.blocks, block] })
+                }
+              />
+            }
+            configurationPanel={
+              selectedBlock && selectedIndex >= 0 ? (
+                <CanvasConfigPanel
+                  title={selectedBlock.type.replaceAll("_", " ")}
+                  onClose={clearFlowSelection}
+                >
+                  <WorkflowBlockEditor
+                    block={selectedBlock}
+                    index={selectedIndex}
+                    allBlocks={definition.blocks}
+                    onChange={updateBlock}
+                    onRemove={() => {
+                      if (definition.blocks.length <= 1) return;
+                      setDefinition({
+                        ...definition,
+                        blocks: definition.blocks.filter((b) => b.id !== selectedBlock.id),
+                      });
                       setSelectedBlockId(null);
                     }}
                   />
-                  <WorkflowRunTrace
-                    runs={runs}
-                    selectedRunId={selectedRunId}
-                    onSelectRun={setSelectedRunId}
-                  />
-                </div>
-              ) : (
-                <ol className="space-y-3">
-                  {definition.blocks.map((block, index) => (
-                    <li
-                      key={block.id}
-                      className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4"
-                    >
-                      <WorkflowBlockEditor
-                        block={block}
-                        index={index}
-                        allBlocks={definition.blocks}
-                        onChange={(next) => {
-                          const blocks = [...definition.blocks];
-                          blocks[index] = next;
-                          setDefinition({ ...definition, blocks });
-                        }}
-                        onRemove={() => {
-                          if (definition.blocks.length <= 1) return;
-                          setDefinition({
-                            ...definition,
-                            blocks: definition.blocks.filter((_, i) => i !== index),
-                          });
-                        }}
-                      />
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-
-            {workflow ? (
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Status: <span className="font-medium">{workflow.status}</span>
-                {workflow.publishedDefinition ? (
-                  <>
-                    {" "}
-                    · Published snapshot differs from draft:{" "}
-                    <span className="font-medium">
-                      {workflow.publishedDefinition.blocks.length !== definition.blocks.length ||
-                      JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition)
-                        ? "yes"
-                        : "no"}
-                    </span>
-                  </>
-                ) : null}{" "}
-                · Updated {new Date(workflow.updatedAt).toLocaleString()}
-              </p>
-            ) : null}
-
-            {view === "list" ? (
-              <section className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
-                <h2 className="mb-3 text-sm font-medium">Recent runs</h2>
-                {runs.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    No runs recorded yet.
-                  </p>
-                ) : (
-                  <ul className="space-y-2 text-xs">
-                    {runs.slice(0, 8).map((run) => (
-                      <li
-                        key={run.id}
-                        className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium">{run.status}</span>
-                          <span className="text-[hsl(var(--muted-foreground))]">
-                            {new Date(run.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-[hsl(var(--muted-foreground))]">
-                          {run.steps.map((s) => `${s.type}:${s.status}`).join(" → ")}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ) : null}
-          </div>
+                </CanvasConfigPanel>
+              ) : triggerPanelOpen ? (
+                <CanvasConfigPanel title="Trigger action" onClose={clearFlowSelection}>
+                  <div className="space-y-4">{triggerFields}</div>
+                </CanvasConfigPanel>
+              ) : null
+            }
+            runTracePanel={
+              selectedBlock || triggerPanelOpen ? undefined : (
+                <WorkflowRunTrace
+                  runs={runs}
+                  selectedRunId={selectedRunId}
+                  onSelectRun={setSelectedRunId}
+                />
+              )
+            }
+          />
         )}
       </main>
-
-      <Sheet
-        open={view === "flow" && selectedBlock !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedBlockId(null);
-        }}
-      >
-        <SheetContent side="right" className="overflow-y-auto">
-          {selectedBlock && selectedIndex >= 0 ? (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selectedBlock.type.replaceAll("_", " ")}</SheetTitle>
-              </SheetHeader>
-              <WorkflowBlockEditor
-                block={selectedBlock}
-                index={selectedIndex}
-                allBlocks={definition?.blocks ?? []}
-                onChange={updateBlock}
-                onRemove={() => {
-                  if (!definition || definition.blocks.length <= 1) return;
-                  setDefinition({
-                    ...definition,
-                    blocks: definition.blocks.filter((b) => b.id !== selectedBlock.id),
-                  });
-                  setSelectedBlockId(null);
-                }}
-              />
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet
-        open={view === "flow" && triggerSheetOpen && definition !== null}
-        onOpenChange={(open) => {
-          if (!open) setTriggerSheetOpen(false);
-        }}
-      >
-        <SheetContent side="right" className="overflow-y-auto">
-          {definition ? (
-            <>
-              <SheetHeader>
-                <SheetTitle>Trigger</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-4">{triggerFields}</div>
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
     </div>
+  );
+}
+
+function CanvasToolbar({
+  workflow,
+  name,
+  onNameChange,
+  definition,
+  onAddBlock,
+}: {
+  workflow: Workflow | undefined;
+  name: string;
+  onNameChange: (name: string) => void;
+  definition: WorkflowDefinition;
+  onAddBlock: (block: WorkflowBlock) => void;
+}) {
+  const changed =
+    workflow?.publishedDefinition &&
+    JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition);
+
+  return (
+    <div className="w-[360px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-3 shadow-lg">
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label="Workflow name"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          className="h-9 font-semibold"
+        />
+        <BlockAddMenu onAdd={onAddBlock} />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+        <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
+          {workflow?.status ?? "draft"}
+        </span>
+        <span>
+          {definition.blocks.length} step{definition.blocks.length === 1 ? "" : "s"}
+        </span>
+        {changed ? <span>Published snapshot differs from draft</span> : null}
+        {workflow?.updatedAt ? (
+          <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function CanvasConfigPanel({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex max-h-[calc(100vh-252px)] flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-4 py-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--primary))]">
+            Canvas settings
+          </p>
+          <h2 className="text-sm font-semibold capitalize">{title}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+          aria-label="Close settings"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="overflow-y-auto p-4">{children}</div>
+    </section>
   );
 }
 

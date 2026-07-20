@@ -16,7 +16,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Zap } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import {
   blockCategory,
   blockLabel,
@@ -252,6 +252,9 @@ export function WorkflowFlowCanvas({
   runHighlight,
   onSelectBlock,
   onSelectTrigger,
+  toolbar,
+  configurationPanel,
+  runTracePanel,
 }: {
   definition: WorkflowDefinition;
   selectedBlockId: string | null;
@@ -259,6 +262,9 @@ export function WorkflowFlowCanvas({
   runHighlight: { executed: Set<string>; failed: Set<string> };
   onSelectBlock: (blockId: string | null) => void;
   onSelectTrigger: () => void;
+  toolbar?: ReactNode;
+  configurationPanel?: ReactNode;
+  runTracePanel?: ReactNode;
 }) {
   const { nodes, edges } = useMemo(
     () => definitionToFlow(definition, selectedBlockId, triggerSelected, runHighlight),
@@ -266,7 +272,7 @@ export function WorkflowFlowCanvas({
   );
 
   return (
-    <div className="h-[560px] overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+    <div className="relative h-[calc(100vh-220px)] min-h-[640px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] shadow-sm">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -292,10 +298,21 @@ export function WorkflowFlowCanvas({
         <Background gap={16} size={1} color="hsl(var(--border))" />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
-      <p className="border-t border-[hsl(var(--border))] px-3 py-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-        Click the trigger or a block to configure it. Select a run in the trace panel to highlight
-        executed steps.
-      </p>
+      <div className="pointer-events-none absolute inset-0 z-10">
+        {toolbar ? (
+          <div className="pointer-events-auto absolute left-4 top-4">{toolbar}</div>
+        ) : null}
+        {configurationPanel ? (
+          <div className="pointer-events-auto absolute right-4 top-4 max-h-[calc(100%-2rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+            {configurationPanel}
+          </div>
+        ) : null}
+        {runTracePanel ? (
+          <div className="pointer-events-auto absolute bottom-4 right-4 max-h-[360px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+            {runTracePanel}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
