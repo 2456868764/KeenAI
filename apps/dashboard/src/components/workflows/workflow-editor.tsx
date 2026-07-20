@@ -62,6 +62,40 @@ const TRIGGER_OPTIONS: { value: WorkflowDefinition["trigger"]; label: string }[]
   { value: "event_match", label: "Custom event" },
 ];
 
+function workflowAddMenuTitle(anchor: WorkflowCanvasInsertAnchor): string {
+  switch (anchor.kind) {
+    case "trigger":
+      return "Add first action";
+    case "block":
+      return "Insert action";
+    case "branch":
+    case "branch_else":
+    case "rule":
+    case "button":
+    case "outcome":
+      return "Connect output";
+  }
+}
+
+function workflowAddMenuDescription(anchor: WorkflowCanvasInsertAnchor): string {
+  switch (anchor.kind) {
+    case "trigger":
+      return "Choose the first workflow component after the trigger.";
+    case "block":
+      return "Choose a workflow component to insert after this step.";
+    case "branch":
+      return "Choose the action that should run when this branch matches.";
+    case "branch_else":
+      return "Choose the fallback action for conversations that do not match earlier branches.";
+    case "rule":
+      return "Choose the action that should run when this rule matches.";
+    case "button":
+      return "Choose the action that should run after this reply button is selected.";
+    case "outcome":
+      return "Choose the action that should run for this AI outcome.";
+  }
+}
+
 export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
@@ -132,6 +166,74 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     } else if (anchor?.kind === "block") {
       const index = blocks.findIndex((item) => item.id === anchor.blockId);
       blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block);
+    } else if (anchor?.kind === "branch") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      const parent = blocks[index];
+      if (parent?.type === "branches") {
+        blocks[index] = {
+          ...parent,
+          branches: parent.branches.map((branch, branchIndex) =>
+            branchIndex === anchor.branchIndex ? { ...branch, nextId: block.id } : branch,
+          ),
+        };
+        blocks.splice(index + 1, 0, block);
+      } else {
+        blocks.push(block);
+      }
+    } else if (anchor?.kind === "branch_else") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      const parent = blocks[index];
+      if (parent?.type === "branches") {
+        blocks[index] = { ...parent, elseNextId: block.id };
+        blocks.splice(index + 1, 0, block);
+      } else {
+        blocks.push(block);
+      }
+    } else if (anchor?.kind === "rule") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      const parent = blocks[index];
+      if (parent?.type === "apply_rules") {
+        blocks[index] = {
+          ...parent,
+          rules: parent.rules.map((rule, ruleIndex) =>
+            ruleIndex === anchor.ruleIndex ? { ...rule, nextId: block.id } : rule,
+          ),
+        };
+        blocks.splice(index + 1, 0, block);
+      } else {
+        blocks.push(block);
+      }
+    } else if (anchor?.kind === "button") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      const parent = blocks[index];
+      if (parent?.type === "reply_buttons") {
+        blocks[index] = {
+          ...parent,
+          buttons: parent.buttons.map((button) =>
+            button.id === anchor.buttonId ? { ...button, nextId: block.id } : button,
+          ),
+        };
+        blocks.splice(index + 1, 0, block);
+      } else {
+        blocks.push(block);
+      }
+    } else if (anchor?.kind === "outcome") {
+      const index = blocks.findIndex((item) => item.id === anchor.blockId);
+      const parent = blocks[index];
+      if (parent?.type === "let_keeni_answer") {
+        const outcomeRouting = {
+          resolvedNext: parent.outcomeRouting?.resolvedNext ?? null,
+          unresolvedNext: parent.outcomeRouting?.unresolvedNext ?? null,
+          escalatedNext: parent.outcomeRouting?.escalatedNext ?? null,
+        };
+        if (anchor.outcome === "resolved") outcomeRouting.resolvedNext = block.id;
+        if (anchor.outcome === "unresolved") outcomeRouting.unresolvedNext = block.id;
+        if (anchor.outcome === "escalated") outcomeRouting.escalatedNext = block.id;
+        blocks[index] = { ...parent, outcomeRouting };
+        blocks.splice(index + 1, 0, block);
+      } else {
+        blocks.push(block);
+      }
     } else {
       blocks.push(block);
     }
@@ -319,12 +421,8 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             }}
             renderAddMenu={(anchor) => (
               <WorkflowActionMenu
-                title={anchor.kind === "trigger" ? "Add first action" : "Insert action"}
-                description={
-                  anchor.kind === "trigger"
-                    ? "Choose the first workflow component after the trigger."
-                    : "Choose a workflow component to insert after this step."
-                }
+                title={workflowAddMenuTitle(anchor)}
+                description={workflowAddMenuDescription(anchor)}
                 onAdd={(block) => insertBlock(block, anchor)}
               />
             )}

@@ -59,17 +59,40 @@ type TriggerNodeData = {
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
 
-export type WorkflowCanvasInsertAnchor = { kind: "trigger" } | { kind: "block"; blockId: string };
+export type WorkflowCanvasInsertAnchor =
+  | { kind: "trigger" }
+  | { kind: "block"; blockId: string }
+  | { kind: "branch"; blockId: string; branchIndex: number }
+  | { kind: "branch_else"; blockId: string }
+  | { kind: "rule"; blockId: string; ruleIndex: number }
+  | { kind: "button"; blockId: string; buttonId: string }
+  | { kind: "outcome"; blockId: string; outcome: "resolved" | "unresolved" | "escalated" };
+
+function insertAnchorKey(anchor: WorkflowCanvasInsertAnchor): string {
+  switch (anchor.kind) {
+    case "trigger":
+      return "trigger";
+    case "block":
+      return `block:${anchor.blockId}`;
+    case "branch":
+      return `branch:${anchor.blockId}:${anchor.branchIndex}`;
+    case "branch_else":
+      return `branch_else:${anchor.blockId}`;
+    case "rule":
+      return `rule:${anchor.blockId}:${anchor.ruleIndex}`;
+    case "button":
+      return `button:${anchor.blockId}:${anchor.buttonId}`;
+    case "outcome":
+      return `outcome:${anchor.blockId}:${anchor.outcome}`;
+  }
+}
 
 function sameInsertAnchor(
   left: WorkflowCanvasInsertAnchor | null,
   right: WorkflowCanvasInsertAnchor,
 ) {
   if (!left) return false;
-  if (left.kind !== right.kind) return false;
-  if (left.kind === "trigger") return true;
-  if (right.kind !== "block") return false;
-  return left.blockId === right.blockId;
+  return insertAnchorKey(left) === insertAnchorKey(right);
 }
 
 const categoryStyles: Record<
@@ -153,7 +176,12 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
         ) : null}
       </div>
 
-      <BlockPreview block={block} />
+      <BlockPreview
+        block={block}
+        activeAddAnchor={data.activeAddAnchor}
+        onOpenAddMenu={data.onOpenAddMenu}
+        renderAddMenu={data.renderAddMenu}
+      />
 
       <button
         type="button"
@@ -323,7 +351,17 @@ function workflowBlockTitle(block: WorkflowBlock): string {
   }
 }
 
-function BlockPreview({ block }: { block: WorkflowBlock }) {
+function BlockPreview({
+  block,
+  activeAddAnchor,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  block: WorkflowBlock;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
   if (block.type === "send_message") {
     return (
       <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
@@ -345,6 +383,7 @@ function BlockPreview({ block }: { block: WorkflowBlock }) {
   }
 
   if (block.type === "let_keeni_answer") {
+    const outcomeRouting = block.outcomeRouting;
     return (
       <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3">
         <div className="flex items-center gap-2 rounded-lg bg-[hsl(var(--surface-0))] px-3 py-2">
@@ -356,6 +395,28 @@ function BlockPreview({ block }: { block: WorkflowBlock }) {
         <p className="mt-2 line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
           {block.instructions?.trim() || `Max ${block.maxSteps ?? 8} agent steps.`}
         </p>
+        <RouteOutputs
+          routes={[
+            {
+              label: "Resolved",
+              anchor: { kind: "outcome", blockId: block.id, outcome: "resolved" },
+              connected: Boolean(outcomeRouting?.resolvedNext),
+            },
+            {
+              label: "Unresolved",
+              anchor: { kind: "outcome", blockId: block.id, outcome: "unresolved" },
+              connected: Boolean(outcomeRouting?.unresolvedNext),
+            },
+            {
+              label: "Escalated",
+              anchor: { kind: "outcome", blockId: block.id, outcome: "escalated" },
+              connected: Boolean(outcomeRouting?.escalatedNext),
+            },
+          ]}
+          activeAddAnchor={activeAddAnchor}
+          onOpenAddMenu={onOpenAddMenu}
+          renderAddMenu={renderAddMenu}
+        />
       </div>
     );
   }
@@ -364,38 +425,49 @@ function BlockPreview({ block }: { block: WorkflowBlock }) {
     return (
       <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
         <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">{block.prompt}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {block.buttons.slice(0, 3).map((button) => (
-            <span
-              key={button.id}
-              className="rounded-full border border-violet-400/40 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-200"
-            >
-              {button.label}
-            </span>
-          ))}
-        </div>
+        <RouteOutputs
+          routes={block.buttons.slice(0, 4).map((button) => ({
+            label: button.label,
+            anchor: { kind: "button", blockId: block.id, buttonId: button.id },
+            connected: Boolean(button.nextId),
+          }))}
+          activeAddAnchor={activeAddAnchor}
+          onOpenAddMenu={onOpenAddMenu}
+          renderAddMenu={renderAddMenu}
+        />
       </div>
     );
   }
 
   if (block.type === "branches" || block.type === "apply_rules") {
-    const labels =
+    const routes =
       block.type === "branches"
-        ? block.branches.map((branch, index) => branch.label || `Branch ${index + 1}`)
-        : block.rules.map((rule, index) => rule.label || `Rule ${index + 1}`);
+        ? [
+            ...block.branches.map((branch, index) => ({
+              label: branch.label || `Branch ${index + 1}`,
+              anchor: { kind: "branch" as const, blockId: block.id, branchIndex: index },
+              connected: Boolean(branch.nextId),
+            })),
+            {
+              label: "Else",
+              anchor: { kind: "branch_else" as const, blockId: block.id },
+              connected: Boolean(block.elseNextId),
+            },
+          ]
+        : block.rules.map((rule, index) => ({
+            label: rule.label || `Rule ${index + 1}`,
+            anchor: { kind: "rule" as const, blockId: block.id, ruleIndex: index },
+            connected: Boolean(rule.nextId),
+          }));
     return (
       <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
         <p className="text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
-        <div className="mt-3 grid gap-1.5">
-          {labels.slice(0, 3).map((label) => (
-            <span
-              key={label}
-              className="rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] px-2 py-1 text-[11px] text-amber-100"
-            >
-              {label}
-            </span>
-          ))}
-        </div>
+        <RouteOutputs
+          routes={routes.slice(0, 4)}
+          activeAddAnchor={activeAddAnchor}
+          onOpenAddMenu={onOpenAddMenu}
+          renderAddMenu={renderAddMenu}
+        />
       </div>
     );
   }
@@ -429,6 +501,66 @@ function BlockPreview({ block }: { block: WorkflowBlock }) {
       <p className="mt-3 text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
         Click card to edit settings
       </p>
+    </div>
+  );
+}
+
+function RouteOutputs({
+  routes,
+  activeAddAnchor,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  routes: {
+    label: string;
+    anchor: WorkflowCanvasInsertAnchor;
+    connected: boolean;
+  }[];
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
+  return (
+    <div className="mt-3 grid gap-1.5">
+      {routes.map((route) => {
+        const open = sameInsertAnchor(activeAddAnchor, route.anchor);
+        return (
+          <div key={insertAnchorKey(route.anchor)} className="relative">
+            <button
+              type="button"
+              className={cn(
+                "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
+                route.connected
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                  : "border-violet-400/30 bg-[hsl(var(--surface-0))] text-violet-100 hover:bg-violet-500/15",
+                open ? "border-violet-300 bg-violet-500/20" : "",
+              )}
+              aria-label={`Add action for ${route.label}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenAddMenu(open ? null : route.anchor);
+              }}
+            >
+              <span className="min-w-0 flex-1 truncate">{route.label}</span>
+              {route.connected ? (
+                <CheckCircle2 className="size-3.5 shrink-0" />
+              ) : (
+                <Plus className="size-3.5 shrink-0" />
+              )}
+            </button>
+            {open && renderAddMenu ? (
+              <div
+                className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                {renderAddMenu(route.anchor)}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
