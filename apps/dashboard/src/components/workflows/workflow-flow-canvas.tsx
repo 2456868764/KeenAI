@@ -802,6 +802,15 @@ function BlockPreview({
     return <DataCollectionPreview block={block} onChangeBlock={onChangeBlock} />;
   }
 
+  if (
+    block.type === "http_request" ||
+    block.type === "webhook_emit" ||
+    block.type === "mcp_call" ||
+    block.type === "script"
+  ) {
+    return <ExternalActionPreview block={block} onChangeBlock={onChangeBlock} />;
+  }
+
   return (
     <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
       <p className="line-clamp-3 min-h-[44px] text-xs text-[hsl(var(--foreground))]">
@@ -1052,6 +1061,200 @@ function DataCollectionPreview({
         <Plus className="size-3.5" />
         Add field
       </button>
+    </div>
+  );
+}
+
+function ExternalActionPreview({
+  block,
+  onChangeBlock,
+}: {
+  block: Extract<WorkflowBlock, { type: "http_request" | "webhook_emit" | "mcp_call" | "script" }>;
+  onChangeBlock: (block: WorkflowBlock) => void;
+}) {
+  if (block.type === "http_request") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <div className="grid grid-cols-[84px_minmax(0,1fr)] gap-1.5">
+          <select
+            value={block.method}
+            aria-label="HTTP method"
+            className="nodrag nopan h-8 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({ ...block, method: event.target.value as "GET" | "POST" })
+            }
+          >
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+          </select>
+          <input
+            value={block.url}
+            aria-label="HTTP URL"
+            placeholder="https://api.example.com"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onChangeBlock({ ...block, url: event.target.value })}
+          />
+        </div>
+        {block.method === "POST" ? (
+          <textarea
+            value={block.body ?? ""}
+            rows={4}
+            aria-label="HTTP body"
+            placeholder="JSON body, optional"
+            className="nodrag nopan min-h-[88px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 font-mono text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onChangeBlock({ ...block, body: event.target.value })}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  if (block.type === "webhook_emit") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.url}
+          aria-label="Webhook URL"
+          placeholder="Webhook URL"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, url: event.target.value })}
+        />
+        <input
+          value={block.eventName ?? ""}
+          aria-label="Webhook event name"
+          placeholder="Event name, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, eventName: event.target.value.trim() || undefined })
+          }
+        />
+        <textarea
+          value={block.payload ?? ""}
+          rows={4}
+          aria-label="Webhook payload"
+          placeholder='Payload JSON, optional, e.g. {"plan":"pro"}'
+          className="nodrag nopan min-h-[88px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 font-mono text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, payload: event.target.value })}
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "mcp_call") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <div className="grid grid-cols-2 gap-1.5">
+          <input
+            value={block.serverId}
+            aria-label="MCP server ID"
+            placeholder="Server ID"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onChangeBlock({ ...block, serverId: event.target.value.trim() })}
+          />
+          <input
+            value={block.toolName}
+            aria-label="MCP tool name"
+            placeholder="Tool name"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onChangeBlock({ ...block, toolName: event.target.value.trim() })}
+          />
+        </div>
+        <textarea
+          value={JSON.stringify(block.arguments ?? {}, null, 2)}
+          rows={5}
+          aria-label="MCP arguments JSON"
+          placeholder='{"message":"hello"}'
+          className="nodrag nopan min-h-[108px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 font-mono text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => {
+            const text = event.target.value.trim();
+            if (!text) {
+              onChangeBlock({ ...block, arguments: {} });
+              return;
+            }
+            try {
+              const parsed = JSON.parse(text) as unknown;
+              if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                onChangeBlock({ ...block, arguments: parsed as Record<string, unknown> });
+              }
+            } catch {
+              // Keep the last valid JSON object while the user is typing.
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+      <textarea
+        value={block.code}
+        rows={6}
+        aria-label="Script code"
+        placeholder="JavaScript body. Return a JSON-serializable value."
+        className="nodrag nopan min-h-[132px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 font-mono text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) => onChangeBlock({ ...block, code: event.target.value })}
+      />
+      <div className="grid grid-cols-2 gap-1.5">
+        <input
+          type="number"
+          min={1}
+          max={5000}
+          value={block.timeoutMs ?? 2000}
+          aria-label="Script timeout milliseconds"
+          className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, timeoutMs: Number.parseInt(event.target.value, 10) || 2000 })
+          }
+        />
+        <input
+          type="number"
+          min={1}
+          max={128}
+          value={block.memoryMb ?? 32}
+          aria-label="Script memory megabytes"
+          className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, memoryMb: Number.parseInt(event.target.value, 10) || 32 })
+          }
+        />
+      </div>
     </div>
   );
 }
@@ -1544,6 +1747,11 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "branches":
     case "apply_rules":
       return 340;
+    case "http_request":
+    case "webhook_emit":
+    case "mcp_call":
+    case "script":
+      return 420;
     case "add_note":
     case "tag_conversation":
     case "tag_end_user":
