@@ -995,10 +995,10 @@ export function WorkflowFlowCanvas({
       </ReactFlow>
       <div className="pointer-events-none absolute inset-0 z-10">
         {toolbar ? (
-          <div className="pointer-events-auto absolute left-4 top-4">{toolbar}</div>
+          <div className="pointer-events-auto absolute left-4 right-4 top-4">{toolbar}</div>
         ) : null}
         {configurationPanel ? (
-          <div className="pointer-events-auto absolute right-4 top-4 max-h-[calc(100%-2rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+          <div className="pointer-events-auto absolute right-4 top-[96px] max-h-[calc(100%-7rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
             {configurationPanel}
           </div>
         ) : null}

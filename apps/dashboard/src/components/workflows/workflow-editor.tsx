@@ -987,118 +987,132 @@ function CanvasToolbar({
     JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition);
 
   return (
-    <div className="w-[720px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-3 shadow-lg">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/workflows"
-          className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
-          aria-label="Back to workflows"
-        >
-          <ArrowLeft className="size-4" />
-        </Link>
-        <Input
-          aria-label="Workflow name"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          className="h-9 min-w-0 flex-1 font-semibold"
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onDescriptionOpen}
-          className={descriptionOpen ? "border-[hsl(var(--primary))]" : ""}
-        >
-          <PencilLine className="size-4" />
-          Description
-        </Button>
-        <BlockAddMenu onAdd={onAddBlock} />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={savePending || testPending || samplePending || !canSave}
-          onClick={onTest}
-        >
-          {testPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <TestTube2 className="size-4" />
-          )}
-          Test
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={savePending || testPending || samplePending || !canSave}
-          onClick={onSample}
-        >
-          {samplePending ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
-          Sample
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={archivePending || managePending}
-          onClick={() => {
-            if (window.confirm("Archive this workflow? It will be removed from the list.")) {
-              onArchive();
-            }
-          }}
-        >
-          {archivePending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Trash2 className="size-4" />
-          )}
-          Delete
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={savePending || !canSave}
-          onClick={onSave}
-        >
-          {savePending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
-        </Button>
-        {workflow?.status === "draft" ? (
+    <div className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1)/0.96)] px-4 py-3 shadow-lg backdrop-blur">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/workflows"
+              className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+              aria-label="Back to workflows"
+            >
+              <ArrowLeft className="size-4" />
+            </Link>
+            <Input
+              aria-label="Workflow name"
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+              className="h-9 max-w-[420px] min-w-[220px] flex-1 font-semibold"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onDescriptionOpen}
+              className={descriptionOpen ? "border-[hsl(var(--primary))]" : ""}
+            >
+              <PencilLine className="size-4" />
+              Description
+            </Button>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+            <span className="font-medium text-[hsl(var(--foreground))]">Workflows</span>
+            <span className="text-[hsl(var(--muted-foreground))]">/</span>
+            <span className="max-w-[260px] truncate font-medium text-[hsl(var(--foreground))]">
+              {name || "Untitled workflow"}
+            </span>
+            <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
+              {workflow?.status ?? "draft"}
+            </span>
+            <span>
+              {definition.blocks.length} step{definition.blocks.length === 1 ? "" : "s"}
+            </span>
+            {definition.description?.trim() ? <span>Description added</span> : null}
+            {changed ? <span>Published snapshot differs from draft</span> : null}
+            {workflow?.updatedAt ? (
+              <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <BlockAddMenu onAdd={onAddBlock} />
           <Button
             type="button"
             size="sm"
-            disabled={publishPending || savePending || !canSave}
-            onClick={onSaveAndPublish}
+            variant="outline"
+            disabled={savePending || testPending || samplePending || !canSave}
+            onClick={onTest}
           >
-            {publishPending ? <Loader2 className="size-4 animate-spin" /> : "Save & publish"}
+            {testPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <TestTube2 className="size-4" />
+            )}
+            Test
           </Button>
-        ) : null}
-        <WorkflowManageMenu
-          open={manageOpen}
-          onOpenChange={onManageOpenChange}
-          workflow={workflow}
-          versions={versions}
-          pending={managePending}
-          onUnpublish={onUnpublish}
-          onDuplicate={onDuplicate}
-          onArchive={onArchive}
-          onRollback={onRollback}
-        />
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-        <span className="font-medium text-[hsl(var(--foreground))]">Workflow editor</span>
-        <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
-          {workflow?.status ?? "draft"}
-        </span>
-        <span>
-          {definition.blocks.length} step{definition.blocks.length === 1 ? "" : "s"}
-        </span>
-        {definition.description?.trim() ? <span>Description added</span> : null}
-        {changed ? <span>Published snapshot differs from draft</span> : null}
-        {workflow?.updatedAt ? (
-          <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
-        ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={savePending || testPending || samplePending || !canSave}
+            onClick={onSample}
+          >
+            {samplePending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Bot className="size-4" />
+            )}
+            Sample
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={archivePending || managePending}
+            onClick={() => {
+              if (window.confirm("Archive this workflow? It will be removed from the list.")) {
+                onArchive();
+              }
+            }}
+          >
+            {archivePending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+            Delete
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={savePending || !canSave}
+            onClick={onSave}
+          >
+            {savePending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
+          </Button>
+          {workflow?.status === "draft" ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={publishPending || savePending || !canSave}
+              onClick={onSaveAndPublish}
+            >
+              {publishPending ? <Loader2 className="size-4 animate-spin" /> : "Save & publish"}
+            </Button>
+          ) : null}
+          <WorkflowManageMenu
+            open={manageOpen}
+            onOpenChange={onManageOpenChange}
+            workflow={workflow}
+            versions={versions}
+            pending={managePending}
+            onUnpublish={onUnpublish}
+            onDuplicate={onDuplicate}
+            onArchive={onArchive}
+            onRollback={onRollback}
+          />
+        </div>
       </div>
     </div>
   );
