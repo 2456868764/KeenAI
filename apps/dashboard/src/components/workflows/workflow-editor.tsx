@@ -336,6 +336,15 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     commitDefinition({ ...definition, blocks });
   };
 
+  const updateBlockById = (next: WorkflowBlock) => {
+    if (!definition) return;
+    const index = definition.blocks.findIndex((block) => block.id === next.id);
+    if (index < 0) return;
+    const blocks = [...definition.blocks];
+    blocks[index] = next;
+    commitDefinition({ ...definition, blocks });
+  };
+
   const insertBlock = (block: WorkflowBlock, anchor?: WorkflowCanvasInsertAnchor | null) => {
     if (!definition) return;
     const blocks = [...definition.blocks];
@@ -788,6 +797,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               setAddAnchor(null);
             }}
             activeAddAnchor={addAnchor}
+            onChangeBlock={updateBlockById}
             onOpenAddMenu={(anchor) => {
               setAddAnchor(anchor);
               setSelectedBlockId(null);

@@ -56,6 +56,7 @@ type BlockNodeData = {
   executed: boolean;
   failed: boolean;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onChangeBlock: (block: WorkflowBlock) => void;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
@@ -191,6 +192,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       <BlockPreview
         block={block}
         activeAddAnchor={data.activeAddAnchor}
+        onChangeBlock={data.onChangeBlock}
         onOpenAddMenu={data.onOpenAddMenu}
         renderAddMenu={data.renderAddMenu}
       />
@@ -477,11 +479,13 @@ function workflowBlockTitle(block: WorkflowBlock): string {
 function BlockPreview({
   block,
   activeAddAnchor,
+  onChangeBlock,
   onOpenAddMenu,
   renderAddMenu,
 }: {
   block: WorkflowBlock;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onChangeBlock: (block: WorkflowBlock) => void;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 }) {
@@ -558,6 +562,29 @@ function BlockPreview({
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
         />
+        <button
+          type="button"
+          disabled={block.buttons.length >= 8}
+          className="nodrag nopan mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={(event) => {
+            event.stopPropagation();
+            const nextIndex = block.buttons.length + 1;
+            onChangeBlock({
+              ...block,
+              buttons: [
+                ...block.buttons,
+                {
+                  id: `option_${Date.now().toString(36)}`,
+                  label: `Option ${nextIndex}`,
+                  nextId: null,
+                },
+              ],
+            });
+          }}
+        >
+          <Plus className="size-3.5" />
+          Add button
+        </button>
       </div>
     );
   }
@@ -822,6 +849,7 @@ function definitionToFlow(
   triggerSelected: boolean,
   runHighlight: { executed: Set<string>; failed: Set<string> },
   activeAddAnchor: WorkflowCanvasInsertAnchor | null,
+  onChangeBlock: (block: WorkflowBlock) => void,
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
   renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
   manualPositions: ManualPositionMap,
@@ -874,6 +902,7 @@ function definitionToFlow(
         executed: runHighlight.executed.has(block.id),
         failed: runHighlight.failed.has(block.id),
         activeAddAnchor,
+        onChangeBlock,
         onOpenAddMenu,
         renderAddMenu,
       },
@@ -902,6 +931,7 @@ export function WorkflowFlowCanvas({
   onSelectBlock,
   onSelectTrigger,
   activeAddAnchor,
+  onChangeBlock,
   onOpenAddMenu,
   renderAddMenu,
   toolbar,
@@ -920,6 +950,7 @@ export function WorkflowFlowCanvas({
   onSelectBlock: (blockId: string | null) => void;
   onSelectTrigger: () => void;
   activeAddAnchor?: WorkflowCanvasInsertAnchor | null;
+  onChangeBlock: (block: WorkflowBlock) => void;
   onOpenAddMenu?: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
   toolbar?: ReactNode;
@@ -991,6 +1022,7 @@ export function WorkflowFlowCanvas({
         triggerSelected,
         runHighlight,
         activeAddAnchor ?? null,
+        onChangeBlock,
         onOpenAddMenu ?? (() => undefined),
         renderAddMenu,
         manualPositions,
@@ -1001,6 +1033,7 @@ export function WorkflowFlowCanvas({
       triggerSelected,
       runHighlight,
       activeAddAnchor,
+      onChangeBlock,
       onOpenAddMenu,
       renderAddMenu,
       manualPositions,
