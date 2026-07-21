@@ -53,6 +53,7 @@ import {
 
 type BlockNodeData = {
   block: WorkflowBlock;
+  allBlocks: WorkflowBlock[];
   selected: boolean;
   executed: boolean;
   failed: boolean;
@@ -192,6 +193,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
       <BlockPreview
         block={block}
+        allBlocks={data.allBlocks}
         activeAddAnchor={data.activeAddAnchor}
         onChangeBlock={data.onChangeBlock}
         onOpenAddMenu={data.onOpenAddMenu}
@@ -479,12 +481,14 @@ function workflowBlockTitle(block: WorkflowBlock): string {
 
 function BlockPreview({
   block,
+  allBlocks,
   activeAddAnchor,
   onChangeBlock,
   onOpenAddMenu,
   renderAddMenu,
 }: {
   block: WorkflowBlock;
+  allBlocks: WorkflowBlock[];
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
   onChangeBlock: (block: WorkflowBlock) => void;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
@@ -633,6 +637,20 @@ function BlockPreview({
           onChangeBlock={onChangeBlock}
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "goto") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <CanvasBlockSelect
+          value={block.targetBlockId}
+          currentId={block.id}
+          blocks={allBlocks}
+          placeholder="Target block"
+          onChange={(targetBlockId) => onChangeBlock({ ...block, targetBlockId })}
         />
       </div>
     );
@@ -843,6 +861,43 @@ function BlockPreview({
 }
 
 const autoCloseMinuteOptions = [1, 3, 5, 7, 10, 15, 30, 60];
+const conditionFieldOptions = ["channelType", "priority", "conversationStatus"] as const;
+const conditionOperatorOptions = ["eq", "neq"] as const;
+
+function CanvasBlockSelect({
+  value,
+  blocks,
+  currentId,
+  placeholder,
+  onChange,
+}: {
+  value: string | null | undefined;
+  blocks: WorkflowBlock[];
+  currentId: string;
+  placeholder: string;
+  onChange: (blockId: string) => void;
+}) {
+  return (
+    <select
+      value={value ?? ""}
+      aria-label={placeholder}
+      className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      <option value="">{placeholder}</option>
+      {blocks
+        .filter((block) => block.id !== currentId)
+        .map((block) => (
+          <option key={block.id} value={block.id}>
+            {workflowBlockTitle(block)} · {block.id}
+          </option>
+        ))}
+    </select>
+  );
+}
 
 function DataCollectionPreview({
   block,
@@ -1798,6 +1853,8 @@ function ConditionRouteOutputs({
             label={branch.label ?? ""}
             fallbackLabel={`Branch ${branchIndex + 1}`}
             connected={Boolean(branch.nextId)}
+            condition={branch.condition}
+            conditionOptional
             anchor={{ kind: "branch", blockId: block.id, branchIndex }}
             activeAddAnchor={activeAddAnchor}
             onChangeLabel={(label) => {
@@ -1805,6 +1862,20 @@ function ConditionRouteOutputs({
               branches[branchIndex] = { ...branch, label };
               onChangeBlock({ ...block, branches });
             }}
+            onChangeCondition={(condition) => {
+              const branches = [...block.branches];
+              branches[branchIndex] = { ...branch, condition };
+              onChangeBlock({ ...block, branches });
+            }}
+            onRemove={
+              block.branches.length > 1
+                ? () =>
+                    onChangeBlock({
+                      ...block,
+                      branches: block.branches.filter((_, index) => index !== branchIndex),
+                    })
+                : undefined
+            }
             onOpenAddMenu={onOpenAddMenu}
             renderAddMenu={renderAddMenu}
           />
@@ -1817,6 +1888,29 @@ function ConditionRouteOutputs({
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
         />
+        <button
+          type="button"
+          className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-100 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={block.branches.length >= 8}
+          onClick={(event) => {
+            event.stopPropagation();
+            const nextIndex = block.branches.length + 1;
+            onChangeBlock({
+              ...block,
+              branches: [
+                ...block.branches,
+                {
+                  label: `Branch ${nextIndex}`,
+                  condition: { field: "channelType", op: "eq", value: "" },
+                  nextId: null,
+                },
+              ],
+            });
+          }}
+        >
+          <Plus className="size-3.5" />
+          Add branch
+        </button>
       </div>
     );
   }
@@ -1829,6 +1923,7 @@ function ConditionRouteOutputs({
           label={rule.label ?? ""}
           fallbackLabel={`Rule ${ruleIndex + 1}`}
           connected={Boolean(rule.nextId)}
+          condition={rule.condition}
           anchor={{ kind: "rule", blockId: block.id, ruleIndex }}
           activeAddAnchor={activeAddAnchor}
           onChangeLabel={(label) => {
@@ -1836,10 +1931,48 @@ function ConditionRouteOutputs({
             rules[ruleIndex] = { ...rule, label };
             onChangeBlock({ ...block, rules });
           }}
+          onChangeCondition={(condition) => {
+            if (!condition) return;
+            const rules = [...block.rules];
+            rules[ruleIndex] = { ...rule, condition };
+            onChangeBlock({ ...block, rules });
+          }}
+          onRemove={
+            block.rules.length > 1
+              ? () =>
+                  onChangeBlock({
+                    ...block,
+                    rules: block.rules.filter((_, index) => index !== ruleIndex),
+                  })
+              : undefined
+          }
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
         />
       ))}
+      <button
+        type="button"
+        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-100 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={block.rules.length >= 8}
+        onClick={(event) => {
+          event.stopPropagation();
+          const nextIndex = block.rules.length + 1;
+          onChangeBlock({
+            ...block,
+            rules: [
+              ...block.rules,
+              {
+                label: `Rule ${nextIndex}`,
+                condition: { field: "channelType", op: "eq", value: "" },
+                nextId: block.rules[0]?.nextId ?? block.id,
+              },
+            ],
+          });
+        }}
+      >
+        <Plus className="size-3.5" />
+        Add rule
+      </button>
     </div>
   );
 }
@@ -1848,18 +1981,26 @@ function EditableRouteRow({
   label,
   fallbackLabel,
   connected,
+  condition,
+  conditionOptional = false,
   anchor,
   activeAddAnchor,
   onChangeLabel,
+  onChangeCondition,
+  onRemove,
   onOpenAddMenu,
   renderAddMenu,
 }: {
   label: string;
   fallbackLabel: string;
   connected: boolean;
+  condition?: { field: string; op: string; value: string };
+  conditionOptional?: boolean;
   anchor: WorkflowCanvasInsertAnchor;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
   onChangeLabel: (label: string) => void;
+  onChangeCondition?: (condition: { field: string; op: string; value: string } | undefined) => void;
+  onRemove?: () => void;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 }) {
@@ -1883,6 +2024,19 @@ function EditableRouteRow({
           className="min-w-0 flex-1 bg-transparent text-[11px] font-medium text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
           onChange={(event) => onChangeLabel(event.target.value)}
         />
+        {onRemove ? (
+          <button
+            type="button"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-300"
+            aria-label={`Remove ${label || fallbackLabel}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        ) : null}
         <button
           type="button"
           className={cn(
@@ -1898,6 +2052,74 @@ function EditableRouteRow({
           {connected ? <CheckCircle2 className="size-3.5" /> : <Plus className="size-3.5" />}
         </button>
       </div>
+      {onChangeCondition ? (
+        <div
+          className="nodrag nopan mt-1.5 grid grid-cols-[minmax(0,1fr)_72px] gap-1.5 rounded-lg border border-amber-400/20 bg-[hsl(var(--surface-0))] p-1.5"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <select
+            value={condition?.field ?? ""}
+            aria-label={`${fallbackLabel} condition field`}
+            className="h-7 min-w-0 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onChange={(event) => {
+              const field = event.target.value;
+              if (!field && conditionOptional) {
+                onChangeCondition(undefined);
+                return;
+              }
+              onChangeCondition({
+                field: field || conditionFieldOptions[0],
+                op: condition?.op ?? "eq",
+                value: condition?.value ?? "",
+              });
+            }}
+          >
+            {conditionOptional ? <option value="">No condition</option> : null}
+            {conditionFieldOptions.map((field) => (
+              <option key={field} value={field}>
+                {field}
+              </option>
+            ))}
+          </select>
+          <select
+            value={condition?.op ?? "eq"}
+            aria-label={`${fallbackLabel} condition operator`}
+            disabled={!condition && conditionOptional}
+            className="h-7 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70 disabled:cursor-not-allowed disabled:opacity-40"
+            onChange={(event) => {
+              if (!condition && conditionOptional) return;
+              onChangeCondition({
+                field: condition?.field ?? conditionFieldOptions[0],
+                op: event.target.value,
+                value: condition?.value ?? "",
+              });
+            }}
+          >
+            {conditionOperatorOptions.map((operator) => (
+              <option key={operator} value={operator}>
+                {operator === "eq" ? "is" : "is not"}
+              </option>
+            ))}
+          </select>
+          <input
+            value={condition?.value ?? ""}
+            aria-label={`${fallbackLabel} condition value`}
+            placeholder="Value"
+            disabled={!condition && conditionOptional}
+            className="col-span-2 h-7 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70 disabled:cursor-not-allowed disabled:opacity-40"
+            onChange={(event) => {
+              if (!condition && conditionOptional) return;
+              onChangeCondition({
+                field: condition?.field ?? conditionFieldOptions[0],
+                op: condition?.op ?? "eq",
+                value: event.target.value,
+              });
+            }}
+          />
+        </div>
+      ) : null}
       {open && renderAddMenu ? (
         <div
           className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
@@ -2163,9 +2385,13 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "send_message":
     case "assign":
     case "reply_buttons":
-    case "branches":
-    case "apply_rules":
       return 340;
+    case "branches":
+      return 360 + Math.min(block.branches.length, 4) * 100;
+    case "apply_rules":
+      return 320 + Math.min(block.rules.length, 4) * 100;
+    case "goto":
+      return 280;
     case "http_request":
     case "webhook_emit":
     case "mcp_call":
@@ -2247,6 +2473,7 @@ function definitionToFlow(
       },
       data: {
         block,
+        allBlocks: definition.blocks,
         selected: selectedBlockId === block.id,
         executed: runHighlight.executed.has(block.id),
         failed: runHighlight.failed.has(block.id),
