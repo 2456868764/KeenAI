@@ -811,6 +811,25 @@ function BlockPreview({
     return <ExternalActionPreview block={block} onChangeBlock={onChangeBlock} />;
   }
 
+  if (
+    block.type === "convert_to_ticket" ||
+    block.type === "apply_sla" ||
+    block.type === "link_ticket" ||
+    block.type === "send_ticket_update" ||
+    block.type === "set_ticket_state"
+  ) {
+    return <TicketActionPreview block={block} onChangeBlock={onChangeBlock} />;
+  }
+
+  if (
+    block.type === "show_expected_reply_time" ||
+    block.type === "collect_customer_reply" ||
+    block.type === "disable_customer_reply" ||
+    block.type === "csat"
+  ) {
+    return <CustomerInteractionPreview block={block} onChangeBlock={onChangeBlock} />;
+  }
+
   return (
     <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
       <p className="line-clamp-3 min-h-[44px] text-xs text-[hsl(var(--foreground))]">
@@ -1255,6 +1274,406 @@ function ExternalActionPreview({
           }
         />
       </div>
+    </div>
+  );
+}
+
+function TicketActionPreview({
+  block,
+  onChangeBlock,
+}: {
+  block: Extract<
+    WorkflowBlock,
+    {
+      type:
+        | "convert_to_ticket"
+        | "apply_sla"
+        | "link_ticket"
+        | "send_ticket_update"
+        | "set_ticket_state";
+    }
+  >;
+  onChangeBlock: (block: WorkflowBlock) => void;
+}) {
+  if (block.type === "convert_to_ticket") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.title ?? ""}
+          aria-label="Ticket title"
+          placeholder="Ticket title, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, title: event.target.value })}
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "apply_sla") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.policyId ?? ""}
+          aria-label="SLA policy ID"
+          placeholder="SLA policy ID, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, policyId: event.target.value.trim() || undefined })
+          }
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "link_ticket") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.parentTicketId ?? ""}
+          aria-label="Parent ticket ID"
+          placeholder="Parent ticket ID, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, parentTicketId: event.target.value.trim() || undefined })
+          }
+        />
+        <input
+          value={block.childTicketId}
+          aria-label="Child ticket ID"
+          placeholder="Child ticket ID"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, childTicketId: event.target.value.trim() })
+          }
+        />
+        <select
+          value={block.linkType}
+          aria-label="Ticket link type"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              linkType: event.target.value as "tracks" | "relates" | "blocks",
+            })
+          }
+        >
+          <option value="tracks">tracks</option>
+          <option value="relates">relates</option>
+          <option value="blocks">blocks</option>
+        </select>
+      </div>
+    );
+  }
+
+  if (block.type === "send_ticket_update") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.ticketId ?? ""}
+          aria-label="Ticket ID"
+          placeholder="Ticket ID, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, ticketId: event.target.value.trim() || undefined })
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+      <input
+        value={block.ticketId ?? ""}
+        aria-label="Ticket ID"
+        placeholder="Ticket ID, optional"
+        className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) =>
+          onChangeBlock({ ...block, ticketId: event.target.value.trim() || undefined })
+        }
+      />
+      <input
+        value={block.statusId ?? ""}
+        aria-label="Status ID"
+        placeholder="Status ID, optional"
+        className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) =>
+          onChangeBlock({ ...block, statusId: event.target.value.trim() || undefined })
+        }
+      />
+      <input
+        value={block.statusName ?? ""}
+        aria-label="Status name"
+        placeholder="Status name"
+        className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) =>
+          onChangeBlock({ ...block, statusName: event.target.value.trim() || undefined })
+        }
+      />
+    </div>
+  );
+}
+
+function CustomerInteractionPreview({
+  block,
+  onChangeBlock,
+}: {
+  block: Extract<
+    WorkflowBlock,
+    {
+      type:
+        | "show_expected_reply_time"
+        | "collect_customer_reply"
+        | "disable_customer_reply"
+        | "csat";
+    }
+  >;
+  onChangeBlock: (block: WorkflowBlock) => void;
+}) {
+  if (block.type === "show_expected_reply_time") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.policyId ?? ""}
+          aria-label="SLA policy ID"
+          placeholder="SLA policy ID, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, policyId: event.target.value.trim() || undefined })
+          }
+        />
+        <input
+          type="number"
+          min={1}
+          max={20160}
+          value={block.fallbackMinutes ?? 240}
+          aria-label="Fallback reply time minutes"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              fallbackMinutes: Number.parseInt(event.target.value, 10) || 240,
+            })
+          }
+        />
+        <textarea
+          value={block.insideOfficeHoursText ?? ""}
+          rows={2}
+          aria-label="Inside office hours text"
+          placeholder="Inside office hours text"
+          className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, insideOfficeHoursText: event.target.value || undefined })
+          }
+        />
+        <textarea
+          value={block.outsideOfficeHoursText ?? ""}
+          rows={2}
+          aria-label="Outside office hours text"
+          placeholder="Outside office hours text"
+          className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, outsideOfficeHoursText: event.target.value || undefined })
+          }
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "collect_customer_reply") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <textarea
+          value={block.prompt ?? ""}
+          rows={2}
+          aria-label="Customer reply prompt"
+          placeholder="Prompt shown before waiting for reply"
+          className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, prompt: event.target.value || undefined })}
+        />
+        <div className="grid grid-cols-2 gap-1.5">
+          <input
+            type="number"
+            min={0}
+            max={30}
+            value={block.bufferSeconds ?? 2}
+            aria-label="Buffer seconds"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({
+                ...block,
+                bufferSeconds: Math.max(
+                  0,
+                  Math.min(30, Number.parseInt(event.target.value, 10) || 0),
+                ),
+              })
+            }
+          />
+          <select
+            value={block.autoCloseMinutes ?? ""}
+            aria-label="Auto close timer"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({
+                ...block,
+                autoCloseMinutes: event.target.value
+                  ? Number.parseInt(event.target.value, 10)
+                  : undefined,
+              })
+            }
+          >
+            <option value="">No timer</option>
+            {autoCloseMinuteOptions.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {minutes} min
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "disable_customer_reply") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <label
+          className="nodrag nopan flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={block.disabled ?? true}
+            onChange={(event) => onChangeBlock({ ...block, disabled: event.target.checked })}
+          />
+          Disable customer composer
+        </label>
+        <input
+          value={block.reason ?? ""}
+          aria-label="Disable reason"
+          placeholder="Reason, optional"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, reason: event.target.value.trim() || undefined })
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+      <textarea
+        value={block.prompt}
+        rows={2}
+        aria-label="CSAT prompt"
+        placeholder="CSAT prompt"
+        className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) => onChangeBlock({ ...block, prompt: event.target.value })}
+      />
+      <label
+        className="nodrag nopan flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={block.allowComment ?? true}
+          onChange={(event) => onChangeBlock({ ...block, allowComment: event.target.checked })}
+        />
+        Allow rating comment
+      </label>
+      <label
+        className="nodrag nopan flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={block.waitForRating ?? false}
+          onChange={(event) => onChangeBlock({ ...block, waitForRating: event.target.checked })}
+        />
+        Wait for rating
+      </label>
+      {block.waitForRating ? (
+        <input
+          type="number"
+          min={1}
+          value={block.waitForRatingMinutes ?? ""}
+          aria-label="Rating timeout minutes"
+          placeholder="Rating timeout minutes"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              waitForRatingMinutes: event.target.value
+                ? Number.parseInt(event.target.value, 10)
+                : undefined,
+            })
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -1752,6 +2171,18 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "mcp_call":
     case "script":
       return 420;
+    case "show_expected_reply_time":
+      return 460;
+    case "collect_customer_reply":
+    case "csat":
+    case "link_ticket":
+    case "set_ticket_state":
+      return 360;
+    case "disable_customer_reply":
+    case "convert_to_ticket":
+    case "apply_sla":
+    case "send_ticket_update":
+      return 280;
     case "add_note":
     case "tag_conversation":
     case "tag_end_user":
