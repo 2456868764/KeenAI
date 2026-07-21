@@ -8,6 +8,7 @@ import {
   type Edge,
   type EdgeProps,
   Handle,
+  MiniMap,
   type Node,
   type NodeChange,
   type NodeProps,
@@ -317,6 +318,22 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
       />
     </div>
   );
+}
+
+function miniMapNodeColor(node: Node) {
+  if (node.type === "workflowTrigger") return "hsl(270 88% 68%)";
+  const data = node.data as Partial<BlockNodeData>;
+  if (data.failed) return "hsl(0 84% 60%)";
+  if (data.executed) return "hsl(160 84% 39%)";
+  if (!data.block) return "hsl(252 80% 70%)";
+  switch (blockCategory(data.block)) {
+    case "condition":
+      return "hsl(38 92% 50%)";
+    case "message":
+      return "hsl(260 84% 70%)";
+    default:
+      return "hsl(210 78% 58%)";
+  }
 }
 
 function BlockIcon({ block }: { block: WorkflowBlock }) {
@@ -967,6 +984,14 @@ export function WorkflowFlowCanvas({
           hasCustomLayout={Object.keys(manualPositions).length > 0}
           onResetLayout={resetLayout}
         />
+        <MiniMap
+          position="bottom-right"
+          pannable
+          zoomable
+          nodeColor={miniMapNodeColor}
+          maskColor="hsl(var(--surface-0) / 0.55)"
+          className="!m-4 !h-[128px] !w-[184px] !rounded-lg !border !border-[hsl(var(--border))] !bg-[hsl(var(--surface-1))] !shadow-xl"
+        />
       </ReactFlow>
       <div className="pointer-events-none absolute inset-0 z-10">
         {toolbar ? (
@@ -978,7 +1003,7 @@ export function WorkflowFlowCanvas({
           </div>
         ) : null}
         {runTracePanel ? (
-          <div className="pointer-events-auto absolute bottom-4 right-4 max-h-[360px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+          <div className="pointer-events-auto absolute bottom-[164px] right-4 max-h-[300px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
             {runTracePanel}
           </div>
         ) : null}
