@@ -516,6 +516,7 @@ export type WorkflowBlock =
     };
 
 export type WorkflowDefinition = {
+  description?: string;
   trigger:
     | "page_view"
     | "new_messenger_conversation"

@@ -4,6 +4,7 @@
  * storage → workflow → agent → memory-tree → kb → storage.
  */
 export type WorkflowDefinitionJson = {
+  description?: string;
   trigger: "first_message" | "customer_unresponsive" | (string & {});
   inactivityMinutes?: number;
   pageRules?: Array<{ urlOp: "contains" | "eq" | "matches"; url: string; timeOnPageSec?: number }>;

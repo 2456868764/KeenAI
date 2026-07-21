@@ -378,6 +378,8 @@ export const workflowAudienceSchema = z.object({
 
 export const workflowDefinitionSchema = z
   .object({
+    /** Internal builder notes shown in the workflow canvas header. */
+    description: z.string().max(2_000).optional(),
     trigger: z.enum(WORKFLOW_TRIGGERS),
     /** Minutes of customer silence after agent reply (customer_unresponsive only). */
     inactivityMinutes: z.number().int().min(0).max(20_160).optional(),

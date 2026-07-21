@@ -138,6 +138,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [definition, setDefinition] = useState<WorkflowDefinition | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [triggerPanelOpen, setTriggerPanelOpen] = useState(false);
+  const [descriptionPanelOpen, setDescriptionPanelOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
   const [dryRuns, setDryRuns] = useState<WorkflowRun[]>([]);
@@ -430,6 +431,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const clearFlowSelection = () => {
     setSelectedBlockId(null);
     setTriggerPanelOpen(false);
+    setDescriptionPanelOpen(false);
     setAddAnchor(null);
   };
 
@@ -775,11 +777,13 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             onSelectBlock={(blockId) => {
               setSelectedBlockId(blockId);
               setTriggerPanelOpen(false);
+              setDescriptionPanelOpen(false);
               setAddAnchor(null);
             }}
             onSelectTrigger={() => {
               setTriggerPanelOpen(true);
               setSelectedBlockId(null);
+              setDescriptionPanelOpen(false);
               setAddAnchor(null);
             }}
             activeAddAnchor={addAnchor}
@@ -787,6 +791,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               setAddAnchor(anchor);
               setSelectedBlockId(null);
               setTriggerPanelOpen(false);
+              setDescriptionPanelOpen(false);
             }}
             renderAddMenu={(anchor) => (
               <WorkflowActionMenu
@@ -801,6 +806,13 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 name={name}
                 onNameChange={setName}
                 definition={definition}
+                descriptionOpen={descriptionPanelOpen}
+                onDescriptionOpen={() => {
+                  setDescriptionPanelOpen(true);
+                  setSelectedBlockId(null);
+                  setTriggerPanelOpen(false);
+                  setAddAnchor(null);
+                }}
                 onAddBlock={(block) => insertBlock(block)}
                 onSave={() => save.mutate()}
                 onSaveAndPublish={() => {
@@ -865,10 +877,38 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 <CanvasConfigPanel title="Trigger action" onClose={clearFlowSelection}>
                   <div className="space-y-4">{triggerFields}</div>
                 </CanvasConfigPanel>
+              ) : descriptionPanelOpen ? (
+                <CanvasConfigPanel title="Description" onClose={clearFlowSelection}>
+                  <section className="space-y-2">
+                    <label
+                      htmlFor="workflow-description"
+                      className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+                    >
+                      Workflow description
+                    </label>
+                    <textarea
+                      id="workflow-description"
+                      value={definition.description ?? ""}
+                      onChange={(event) =>
+                        commitDefinition({
+                          ...definition,
+                          description: event.target.value.trim() ? event.target.value : undefined,
+                        })
+                      }
+                      rows={6}
+                      maxLength={2000}
+                      placeholder="Add internal notes about what this workflow does and when it should be used."
+                      className="w-full resize-y rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm outline-none"
+                    />
+                    <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                      Saved with the workflow draft and included in published versions.
+                    </p>
+                  </section>
+                </CanvasConfigPanel>
               ) : null
             }
             runTracePanel={
-              selectedBlock || triggerPanelOpen ? undefined : (
+              selectedBlock || triggerPanelOpen || descriptionPanelOpen ? undefined : (
                 <WorkflowRunTrace
                   runs={runs}
                   selectedRunId={selectedRunId}
@@ -893,6 +933,8 @@ function CanvasToolbar({
   name,
   onNameChange,
   definition,
+  descriptionOpen,
+  onDescriptionOpen,
   onAddBlock,
   onSave,
   onSaveAndPublish,
@@ -917,6 +959,8 @@ function CanvasToolbar({
   name: string;
   onNameChange: (name: string) => void;
   definition: WorkflowDefinition;
+  descriptionOpen: boolean;
+  onDescriptionOpen: () => void;
   onAddBlock: (block: WorkflowBlock) => void;
   onSave: () => void;
   onSaveAndPublish: () => void;
@@ -957,6 +1001,16 @@ function CanvasToolbar({
           onChange={(e) => onNameChange(e.target.value)}
           className="h-9 min-w-0 flex-1 font-semibold"
         />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onDescriptionOpen}
+          className={descriptionOpen ? "border-[hsl(var(--primary))]" : ""}
+        >
+          <PencilLine className="size-4" />
+          Description
+        </Button>
         <BlockAddMenu onAdd={onAddBlock} />
         <Button
           type="button"
@@ -1039,6 +1093,7 @@ function CanvasToolbar({
         <span>
           {definition.blocks.length} step{definition.blocks.length === 1 ? "" : "s"}
         </span>
+        {definition.description?.trim() ? <span>Description added</span> : null}
         {changed ? <span>Published snapshot differs from draft</span> : null}
         {workflow?.updatedAt ? (
           <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
