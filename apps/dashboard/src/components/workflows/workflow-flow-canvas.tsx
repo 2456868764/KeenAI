@@ -612,6 +612,166 @@ function BlockPreview({
     );
   }
 
+  if (block.type === "add_note") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <textarea
+          value={block.plainText}
+          rows={3}
+          aria-label="Internal note"
+          placeholder="Internal note"
+          className="nodrag nopan min-h-[76px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "assign") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <select
+          value={block.strategy ?? "direct"}
+          aria-label="Assignment strategy"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              strategy: event.target.value as "direct" | "round_robin" | "least_busy",
+            })
+          }
+        >
+          <option value="direct">Direct</option>
+          <option value="round_robin">Round robin</option>
+          <option value="least_busy">Least busy</option>
+        </select>
+        <input
+          value={block.assigneeId ?? ""}
+          aria-label="Assignee member ID"
+          placeholder="Assignee member ID"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, assigneeId: event.target.value.trim() || null })
+          }
+        />
+        <input
+          value={block.teamId ?? ""}
+          aria-label="Team ID"
+          placeholder="Team ID"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, teamId: event.target.value.trim() || null })
+          }
+        />
+      </div>
+    );
+  }
+
+  if (block.type === "wait" || block.type === "snooze") {
+    const value = block.type === "wait" ? block.seconds : block.minutes;
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <label className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+          {block.type === "wait" ? "Wait seconds" : "Snooze minutes"}
+          <input
+            type="number"
+            min={1}
+            max={block.type === "wait" ? 86400 : 43200}
+            value={value}
+            aria-label={block.type === "wait" ? "Wait seconds" : "Snooze minutes"}
+            className="nodrag nopan h-9 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs font-medium text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              const next = Math.max(1, Number.parseInt(event.target.value, 10) || 1);
+              onChangeBlock(
+                block.type === "wait" ? { ...block, seconds: next } : { ...block, minutes: next },
+              );
+            }}
+          />
+        </label>
+      </div>
+    );
+  }
+
+  if (block.type === "mark_priority") {
+    return (
+      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <select
+          value={block.priority}
+          aria-label="Priority"
+          className="nodrag nopan h-9 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs font-medium text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              priority: event.target.value as "low" | "normal" | "high" | "urgent",
+            })
+          }
+        >
+          <option value="low">Low</option>
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+    );
+  }
+
+  if (block.type === "tag_conversation" || block.type === "tag_end_user") {
+    return (
+      <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <input
+          value={block.tags.join(", ")}
+          aria-label={block.type === "tag_conversation" ? "Conversation tags" : "End-user tags"}
+          placeholder="Tags, comma separated"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              tags: event.target.value
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean),
+            })
+          }
+        />
+        <select
+          value={block.mode ?? "append"}
+          aria-label="Tag mode"
+          className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, mode: event.target.value as "append" | "replace" })
+          }
+        >
+          <option value="append">Append</option>
+          <option value="replace">Replace</option>
+        </select>
+      </div>
+    );
+  }
+
   if (block.type === "collect_data" || block.type === "send_ticket_form") {
     const fields = block.fields.map((field) => field.label);
     return (
