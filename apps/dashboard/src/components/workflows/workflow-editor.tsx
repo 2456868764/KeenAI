@@ -1256,6 +1256,15 @@ type BlockAction = {
   icon: typeof Plus;
 };
 
+const ACTION_GROUP_STYLES: Record<string, string> = {
+  Send: "bg-sky-500/10 text-sky-300",
+  Collect: "bg-violet-500/10 text-violet-300",
+  Internal: "bg-emerald-500/10 text-emerald-300",
+  Delay: "bg-amber-500/10 text-amber-300",
+  Branch: "bg-orange-500/10 text-orange-300",
+  Integrations: "bg-cyan-500/10 text-cyan-300",
+};
+
 type PageRule = NonNullable<WorkflowDefinition["pageRules"]>[number];
 type AudienceRule = NonNullable<NonNullable<WorkflowDefinition["audience"]>["rules"]>[number];
 
@@ -1557,7 +1566,7 @@ function WorkflowActionMenu({
   return (
     <div
       className={cn(
-        "w-[560px] overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30",
+        "w-[380px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30",
         className,
       )}
     >
@@ -1575,14 +1584,17 @@ function WorkflowActionMenu({
           className="min-w-0 flex-1 bg-transparent text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
         />
       </label>
-      <div className="max-h-[520px] overflow-y-auto p-3">
+      <div className="max-h-[520px] overflow-y-auto">
         {groups.length > 0 ? (
           groups.map((group) => (
-            <section key={group.title} className="mb-4 last:mb-0">
-              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+            <section
+              key={group.title}
+              className="border-b border-[hsl(var(--border))] last:border-b-0"
+            >
+              <p className="bg-[hsl(var(--surface-2))] px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
                 {group.title}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="p-2">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -1590,16 +1602,21 @@ function WorkflowActionMenu({
                       key={item.type}
                       type="button"
                       onClick={() => onAdd(createWorkflowBlock(item.type))}
-                      className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--surface-2))]"
                     >
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                      <span
+                        className={cn(
+                          "flex size-8 shrink-0 items-center justify-center rounded-md",
+                          ACTION_GROUP_STYLES[group.title] ?? "bg-violet-500/10 text-violet-300",
+                        )}
+                      >
                         <Icon className="size-4" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
+                        <span className="block truncate text-sm font-semibold text-[hsl(var(--foreground))]">
                           {item.label}
                         </span>
-                        <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
+                        <span className="mt-0.5 line-clamp-1 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
                           {item.description}
                         </span>
                       </span>
