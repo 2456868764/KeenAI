@@ -36,6 +36,7 @@ import {
   PencilLine,
   Plus,
   RotateCcw,
+  Search,
   Send,
   Star,
   Tag,
@@ -1538,6 +1539,21 @@ function WorkflowActionMenu({
   description?: string;
   className?: string;
 }) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const groups = useMemo(() => {
+    if (!normalizedQuery) return ACTION_GROUPS;
+    return ACTION_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        [group.title, item.label, item.description, item.type]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery),
+      ),
+    })).filter((group) => group.items.length > 0);
+  }, [normalizedQuery]);
+
   return (
     <div
       className={cn(
@@ -1549,39 +1565,58 @@ function WorkflowActionMenu({
         <p className="text-sm font-semibold text-[hsl(var(--foreground))]">{title}</p>
         <p className="text-xs text-[hsl(var(--muted-foreground))]">{description}</p>
       </div>
+      <label className="flex h-12 items-center gap-2 border-b border-[hsl(var(--border))] px-4 text-sm text-[hsl(var(--muted-foreground))]">
+        <Search className="size-4 shrink-0" />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search actions..."
+          className="min-w-0 flex-1 bg-transparent text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+        />
+      </label>
       <div className="max-h-[520px] overflow-y-auto p-3">
-        {ACTION_GROUPS.map((group) => (
-          <section key={group.title} className="mb-4 last:mb-0">
-            <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-              {group.title}
+        {groups.length > 0 ? (
+          groups.map((group) => (
+            <section key={group.title} className="mb-4 last:mb-0">
+              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                {group.title}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.type}
+                      type="button"
+                      onClick={() => onAdd(createWorkflowBlock(item.type))}
+                      className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                        <Icon className="size-4" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
+                          {item.label}
+                        </span>
+                        <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
+                          {item.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="rounded-xl border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-4 py-8 text-center">
+            <p className="text-sm font-semibold text-[hsl(var(--foreground))]">No actions found</p>
+            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+              Try searching for send, collect, branch, internal, or integration.
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.type}
-                    type="button"
-                    onClick={() => onAdd(createWorkflowBlock(item.type))}
-                    className="flex min-h-[76px] items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3 text-left transition-colors hover:border-violet-400/60 hover:bg-violet-500/10"
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
-                      <Icon className="size-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-xs font-semibold text-[hsl(var(--foreground))]">
-                        {item.label}
-                      </span>
-                      <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
-                        {item.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+          </div>
+        )}
       </div>
     </div>
   );
