@@ -829,6 +829,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 publishPending={publish.isPending}
                 testPending={testRun.isPending}
                 samplePending={shadowRun.isPending}
+                archivePending={archive.isPending}
                 managePending={
                   unpublish.isPending ||
                   duplicate.isPending ||
@@ -908,6 +909,7 @@ function CanvasToolbar({
   publishPending,
   testPending,
   samplePending,
+  archivePending,
   managePending,
   canSave,
 }: {
@@ -931,6 +933,7 @@ function CanvasToolbar({
   publishPending: boolean;
   testPending: boolean;
   samplePending: boolean;
+  archivePending: boolean;
   managePending: boolean;
   canSave: boolean;
 }) {
@@ -978,6 +981,24 @@ function CanvasToolbar({
         >
           {samplePending ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
           Sample
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={archivePending || managePending}
+          onClick={() => {
+            if (window.confirm("Archive this workflow? It will be removed from the list.")) {
+              onArchive();
+            }
+          }}
+        >
+          {archivePending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Trash2 className="size-4" />
+          )}
+          Delete
         </Button>
         <Button
           type="button"
