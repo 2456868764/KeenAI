@@ -598,31 +598,13 @@ function BlockPreview({
   }
 
   if (block.type === "branches" || block.type === "apply_rules") {
-    const routes =
-      block.type === "branches"
-        ? [
-            ...block.branches.map((branch, index) => ({
-              label: branch.label || `Branch ${index + 1}`,
-              anchor: { kind: "branch" as const, blockId: block.id, branchIndex: index },
-              connected: Boolean(branch.nextId),
-            })),
-            {
-              label: "Else",
-              anchor: { kind: "branch_else" as const, blockId: block.id },
-              connected: Boolean(block.elseNextId),
-            },
-          ]
-        : block.rules.map((rule, index) => ({
-            label: rule.label || `Rule ${index + 1}`,
-            anchor: { kind: "rule" as const, blockId: block.id, ruleIndex: index },
-            connected: Boolean(rule.nextId),
-          }));
     return (
       <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
         <p className="text-xs text-[hsl(var(--foreground))]">{blockLabel(block)}</p>
-        <RouteOutputs
-          routes={routes.slice(0, 4)}
+        <ConditionRouteOutputs
+          block={block}
           activeAddAnchor={activeAddAnchor}
+          onChangeBlock={onChangeBlock}
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
         />
@@ -757,6 +739,196 @@ function ReplyButtonOutputs({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ConditionRouteOutputs({
+  block,
+  activeAddAnchor,
+  onChangeBlock,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  block: Extract<WorkflowBlock, { type: "branches" | "apply_rules" }>;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onChangeBlock: (block: WorkflowBlock) => void;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
+  if (block.type === "branches") {
+    return (
+      <div className="mt-3 grid gap-1.5">
+        {block.branches.slice(0, 4).map((branch, branchIndex) => (
+          <EditableRouteRow
+            key={`${block.id}-branch-${branchIndex}`}
+            label={branch.label ?? ""}
+            fallbackLabel={`Branch ${branchIndex + 1}`}
+            connected={Boolean(branch.nextId)}
+            anchor={{ kind: "branch", blockId: block.id, branchIndex }}
+            activeAddAnchor={activeAddAnchor}
+            onChangeLabel={(label) => {
+              const branches = [...block.branches];
+              branches[branchIndex] = { ...branch, label };
+              onChangeBlock({ ...block, branches });
+            }}
+            onOpenAddMenu={onOpenAddMenu}
+            renderAddMenu={renderAddMenu}
+          />
+        ))}
+        <StaticRouteRow
+          label="Else"
+          connected={Boolean(block.elseNextId)}
+          anchor={{ kind: "branch_else", blockId: block.id }}
+          activeAddAnchor={activeAddAnchor}
+          onOpenAddMenu={onOpenAddMenu}
+          renderAddMenu={renderAddMenu}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-1.5">
+      {block.rules.slice(0, 4).map((rule, ruleIndex) => (
+        <EditableRouteRow
+          key={`${block.id}-rule-${ruleIndex}`}
+          label={rule.label ?? ""}
+          fallbackLabel={`Rule ${ruleIndex + 1}`}
+          connected={Boolean(rule.nextId)}
+          anchor={{ kind: "rule", blockId: block.id, ruleIndex }}
+          activeAddAnchor={activeAddAnchor}
+          onChangeLabel={(label) => {
+            const rules = [...block.rules];
+            rules[ruleIndex] = { ...rule, label };
+            onChangeBlock({ ...block, rules });
+          }}
+          onOpenAddMenu={onOpenAddMenu}
+          renderAddMenu={renderAddMenu}
+        />
+      ))}
+    </div>
+  );
+}
+
+function EditableRouteRow({
+  label,
+  fallbackLabel,
+  connected,
+  anchor,
+  activeAddAnchor,
+  onChangeLabel,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  label: string;
+  fallbackLabel: string;
+  connected: boolean;
+  anchor: WorkflowCanvasInsertAnchor;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onChangeLabel: (label: string) => void;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
+  const open = sameInsertAnchor(activeAddAnchor, anchor);
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "nodrag nopan flex items-center gap-1.5 rounded-lg border bg-[hsl(var(--surface-0))] px-2 py-1.5 transition-colors",
+          connected ? "border-emerald-400/30" : "border-amber-400/30 hover:border-amber-400/60",
+          open ? "border-violet-300 bg-violet-500/20" : "",
+        )}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <input
+          value={label}
+          aria-label={`${fallbackLabel} label`}
+          placeholder={fallbackLabel}
+          className="min-w-0 flex-1 bg-transparent text-[11px] font-medium text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+          onChange={(event) => onChangeLabel(event.target.value)}
+        />
+        <button
+          type="button"
+          className={cn(
+            "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-100",
+            open ? "bg-violet-500/15 text-violet-100" : "",
+          )}
+          aria-label={`Add action for ${label || fallbackLabel}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenAddMenu(open ? null : anchor);
+          }}
+        >
+          {connected ? <CheckCircle2 className="size-3.5" /> : <Plus className="size-3.5" />}
+        </button>
+      </div>
+      {open && renderAddMenu ? (
+        <div
+          className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {renderAddMenu(anchor)}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function StaticRouteRow({
+  label,
+  connected,
+  anchor,
+  activeAddAnchor,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  label: string;
+  connected: boolean;
+  anchor: WorkflowCanvasInsertAnchor;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
+  const open = sameInsertAnchor(activeAddAnchor, anchor);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className={cn(
+          "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
+          connected
+            ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+            : "border-amber-400/30 bg-[hsl(var(--surface-0))] text-amber-100 hover:bg-amber-500/15",
+          open ? "border-violet-300 bg-violet-500/20" : "",
+        )}
+        aria-label={`Add action for ${label}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenAddMenu(open ? null : anchor);
+        }}
+      >
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {connected ? (
+          <CheckCircle2 className="size-3.5 shrink-0" />
+        ) : (
+          <Plus className="size-3.5 shrink-0" />
+        )}
+      </button>
+      {open && renderAddMenu ? (
+        <div
+          className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {renderAddMenu(anchor)}
+        </div>
+      ) : null}
     </div>
   );
 }
