@@ -552,7 +552,17 @@ function BlockPreview({
   if (block.type === "reply_buttons") {
     return (
       <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
-        <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">{block.prompt}</p>
+        <textarea
+          value={block.prompt}
+          rows={2}
+          aria-label="Reply button prompt"
+          placeholder="Prompt shown above the buttons"
+          className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, prompt: event.target.value })}
+        />
         <ReplyButtonOutputs
           block={block}
           activeAddAnchor={activeAddAnchor}
