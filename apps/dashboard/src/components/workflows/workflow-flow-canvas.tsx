@@ -799,24 +799,7 @@ function BlockPreview({
   }
 
   if (block.type === "collect_data" || block.type === "send_ticket_form") {
-    const fields = block.fields.map((field) => field.label);
-    return (
-      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
-        <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">
-          {block.type === "collect_data" ? block.prompt : block.title || block.prompt}
-        </p>
-        <div className="mt-3 grid gap-1.5">
-          {fields.slice(0, 3).map((field) => (
-            <span
-              key={field}
-              className="rounded-md bg-[hsl(var(--surface-0))] px-2 py-1 text-[11px] text-[hsl(var(--muted-foreground))]"
-            >
-              {field}
-            </span>
-          ))}
-        </div>
-      </div>
-    );
+    return <DataCollectionPreview block={block} onChangeBlock={onChangeBlock} />;
   }
 
   return (
@@ -827,6 +810,248 @@ function BlockPreview({
       <p className="mt-3 text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
         Click card to edit settings
       </p>
+    </div>
+  );
+}
+
+const autoCloseMinuteOptions = [1, 3, 5, 7, 10, 15, 30, 60];
+
+function DataCollectionPreview({
+  block,
+  onChangeBlock,
+}: {
+  block: Extract<WorkflowBlock, { type: "collect_data" | "send_ticket_form" }>;
+  onChangeBlock: (block: WorkflowBlock) => void;
+}) {
+  const fieldLimit = block.type === "send_ticket_form" ? 8 : 6;
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+      <textarea
+        value={block.prompt}
+        rows={2}
+        aria-label="Customer prompt"
+        placeholder="Prompt shown to the customer"
+        className="nodrag nopan min-h-[56px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) => onChangeBlock({ ...block, prompt: event.target.value })}
+      />
+
+      {block.type === "send_ticket_form" ? (
+        <div className="grid gap-1.5">
+          <input
+            value={block.title ?? ""}
+            aria-label="Ticket title"
+            placeholder="Ticket title when no linked ticket exists"
+            className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({ ...block, title: event.target.value.trim() || undefined })
+            }
+          />
+          <input
+            value={block.ticketId ?? ""}
+            aria-label="Ticket ID"
+            placeholder="Ticket ID, optional"
+            className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({ ...block, ticketId: event.target.value.trim() || undefined })
+            }
+          />
+        </div>
+      ) : (
+        <label
+          className="nodrag nopan flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={block.allowFreeText ?? false}
+            onChange={(event) => onChangeBlock({ ...block, allowFreeText: event.target.checked })}
+          />
+          Allow free-text reply
+        </label>
+      )}
+
+      <select
+        value={block.autoCloseMinutes ?? ""}
+        aria-label="Auto close timer"
+        className="nodrag nopan h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onChange={(event) =>
+          onChangeBlock({
+            ...block,
+            autoCloseMinutes: event.target.value
+              ? Number.parseInt(event.target.value, 10)
+              : undefined,
+          })
+        }
+      >
+        <option value="">No auto-close timer</option>
+        {autoCloseMinuteOptions.map((minutes) => (
+          <option key={minutes} value={minutes}>
+            Auto-close after {minutes} min
+          </option>
+        ))}
+      </select>
+
+      <div className="grid gap-1.5">
+        {block.fields.slice(0, fieldLimit).map((field, fieldIndex) => {
+          const ticketField = field as Extract<
+            WorkflowBlock,
+            { type: "send_ticket_form" }
+          >["fields"][number];
+          return (
+            <div
+              key={`${field.key}-${fieldIndex}`}
+              className="nodrag nopan grid gap-1.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] p-2"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={field.key}
+                  aria-label={`Field ${fieldIndex + 1} key`}
+                  placeholder="key"
+                  className="h-7 min-w-0 flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+                  onChange={(event) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, key: event.target.value.trim() };
+                    onChangeBlock({ ...block, fields });
+                  }}
+                />
+                <input
+                  value={field.label}
+                  aria-label={`Field ${fieldIndex + 1} label`}
+                  placeholder="Label"
+                  className="h-7 min-w-0 flex-[1.3] rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+                  onChange={(event) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = { ...field, label: event.target.value };
+                    onChangeBlock({ ...block, fields });
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={block.fields.length <= 1}
+                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label={`Remove ${field.label || `field ${fieldIndex + 1}`}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onChangeBlock({
+                      ...block,
+                      fields: block.fields.filter((_, index) => index !== fieldIndex),
+                    });
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {block.type === "send_ticket_form" ? (
+                  <select
+                    value={ticketField.type ?? "text"}
+                    aria-label={`Field ${fieldIndex + 1} type`}
+                    className="h-7 min-w-0 flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+                    onChange={(event) => {
+                      const type = event.target.value as
+                        | "text"
+                        | "number"
+                        | "boolean"
+                        | "select"
+                        | "date";
+                      const fields = [...block.fields];
+                      fields[fieldIndex] = {
+                        ...ticketField,
+                        type,
+                        options:
+                          type === "select" ? (ticketField.options ?? ["Option"]) : undefined,
+                      };
+                      onChangeBlock({ ...block, fields });
+                    }}
+                  >
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="boolean">Boolean</option>
+                    <option value="select">Select</option>
+                    <option value="date">Date</option>
+                  </select>
+                ) : null}
+                <label className="flex shrink-0 items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
+                  <input
+                    type="checkbox"
+                    checked={field.required ?? true}
+                    onChange={(event) => {
+                      const fields = [...block.fields];
+                      fields[fieldIndex] = { ...field, required: event.target.checked };
+                      onChangeBlock({ ...block, fields });
+                    }}
+                  />
+                  Required
+                </label>
+              </div>
+
+              {block.type === "send_ticket_form" && ticketField.type === "select" ? (
+                <input
+                  value={(ticketField.options ?? []).join(", ")}
+                  aria-label={`Field ${fieldIndex + 1} options`}
+                  placeholder="Options, comma separated"
+                  className="h-7 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+                  onChange={(event) => {
+                    const fields = [...block.fields];
+                    fields[fieldIndex] = {
+                      ...ticketField,
+                      options: event.target.value
+                        .split(",")
+                        .map((option) => option.trim())
+                        .filter(Boolean),
+                    };
+                    onChangeBlock({ ...block, fields });
+                  }}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        disabled={block.fields.length >= fieldLimit}
+        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={(event) => {
+          event.stopPropagation();
+          const nextIndex = block.fields.length + 1;
+          onChangeBlock({
+            ...block,
+            fields: [
+              ...block.fields,
+              {
+                key: `field_${nextIndex}`,
+                label: "New field",
+                required: true,
+                ...(block.type === "send_ticket_form" ? { type: "text" as const } : {}),
+              },
+            ],
+          });
+        }}
+      >
+        <Plus className="size-3.5" />
+        Add field
+      </button>
     </div>
   );
 }
@@ -1307,6 +1532,27 @@ const edgeTypes = {
   purple: PurpleWorkflowEdge,
 };
 
+function workflowBlockLayoutHeight(block: WorkflowBlock): number {
+  switch (block.type) {
+    case "collect_data":
+      return 360 + Math.min(block.fields.length, 6) * 96;
+    case "send_ticket_form":
+      return 430 + Math.min(block.fields.length, 8) * 128;
+    case "send_message":
+    case "assign":
+    case "reply_buttons":
+    case "branches":
+    case "apply_rules":
+      return 340;
+    case "add_note":
+    case "tag_conversation":
+    case "tag_end_user":
+      return 280;
+    default:
+      return workflowNodeSize.block.height;
+  }
+}
+
 function definitionToFlow(
   definition: WorkflowDefinition,
   selectedBlockId: string | null,
@@ -1328,7 +1574,7 @@ function definitionToFlow(
     ...definition.blocks.map((block) => ({
       id: block.id,
       width: workflowNodeSize.block.width,
-      height: workflowNodeSize.block.height,
+      height: workflowBlockLayoutHeight(block),
     })),
   ];
 
