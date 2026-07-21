@@ -36,6 +36,7 @@ import {
   Send,
   Tag,
   Ticket,
+  Trash2,
   Undo2,
   UserCheck,
   Zap,
@@ -552,13 +553,10 @@ function BlockPreview({
     return (
       <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
         <p className="line-clamp-2 text-xs text-[hsl(var(--foreground))]">{block.prompt}</p>
-        <RouteOutputs
-          routes={block.buttons.slice(0, 4).map((button) => ({
-            label: button.label,
-            anchor: { kind: "button", blockId: block.id, buttonId: button.id },
-            connected: Boolean(button.nextId),
-          }))}
+        <ReplyButtonOutputs
+          block={block}
           activeAddAnchor={activeAddAnchor}
+          onChangeBlock={onChangeBlock}
           onOpenAddMenu={onOpenAddMenu}
           renderAddMenu={renderAddMenu}
         />
@@ -651,6 +649,104 @@ function BlockPreview({
       <p className="mt-3 text-[10px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
         Click card to edit settings
       </p>
+    </div>
+  );
+}
+
+function ReplyButtonOutputs({
+  block,
+  activeAddAnchor,
+  onChangeBlock,
+  onOpenAddMenu,
+  renderAddMenu,
+}: {
+  block: Extract<WorkflowBlock, { type: "reply_buttons" }>;
+  activeAddAnchor: WorkflowCanvasInsertAnchor | null;
+  onChangeBlock: (block: WorkflowBlock) => void;
+  onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
+  renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+}) {
+  return (
+    <div className="mt-3 grid gap-1.5">
+      {block.buttons.slice(0, 8).map((button, buttonIndex) => {
+        const anchor: WorkflowCanvasInsertAnchor = {
+          kind: "button",
+          blockId: block.id,
+          buttonId: button.id,
+        };
+        const open = sameInsertAnchor(activeAddAnchor, anchor);
+        return (
+          <div key={button.id} className="relative">
+            <div
+              className={cn(
+                "nodrag nopan flex items-center gap-1.5 rounded-lg border bg-[hsl(var(--surface-0))] px-2 py-1.5 transition-colors",
+                button.nextId
+                  ? "border-emerald-400/30"
+                  : "border-violet-400/30 hover:border-violet-400/60",
+                open ? "border-violet-300 bg-violet-500/20" : "",
+              )}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <input
+                value={button.label}
+                aria-label={`Reply button ${buttonIndex + 1} label`}
+                className="min-w-0 flex-1 bg-transparent text-[11px] font-medium text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+                placeholder={`Option ${buttonIndex + 1}`}
+                onChange={(event) => {
+                  const buttons = [...block.buttons];
+                  buttons[buttonIndex] = { ...button, label: event.target.value };
+                  onChangeBlock({ ...block, buttons });
+                }}
+              />
+              <button
+                type="button"
+                className={cn(
+                  "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-100",
+                  open ? "bg-violet-500/15 text-violet-100" : "",
+                )}
+                aria-label={`Add action for ${button.label || `button ${buttonIndex + 1}`}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenAddMenu(open ? null : anchor);
+                }}
+              >
+                {button.nextId ? (
+                  <CheckCircle2 className="size-3.5" />
+                ) : (
+                  <Plus className="size-3.5" />
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={block.buttons.length <= 1}
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`Remove ${button.label || `button ${buttonIndex + 1}`}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onChangeBlock({
+                    ...block,
+                    buttons: block.buttons.filter((_, index) => index !== buttonIndex),
+                  });
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+            {open && renderAddMenu ? (
+              <div
+                className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                {renderAddMenu(anchor)}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
