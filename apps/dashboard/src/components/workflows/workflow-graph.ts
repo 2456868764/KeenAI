@@ -14,7 +14,7 @@ export type WorkflowNodeCategory = "trigger" | "message" | "condition" | "action
 const NODE_WIDTH = 320;
 const NODE_HEIGHT = 220;
 const TRIGGER_WIDTH = 320;
-const TRIGGER_HEIGHT = 170;
+const TRIGGER_HEIGHT = 220;
 
 export function triggerLabel(trigger: WorkflowDefinition["trigger"]): string {
   return trigger

@@ -62,6 +62,7 @@ type BlockNodeData = {
 
 type TriggerNodeData = {
   trigger: WorkflowDefinition["trigger"];
+  definition: WorkflowDefinition;
   selected: boolean;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
@@ -250,6 +251,7 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
   const label = triggerLabel(data.trigger);
   const addAnchor: WorkflowCanvasInsertAnchor = { kind: "trigger" };
   const addMenuOpen = sameInsertAnchor(data.activeAddAnchor, addAnchor);
+  const detailGroups = triggerDetailGroups(data.definition);
 
   return (
     <div
@@ -278,13 +280,11 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
         <p className="line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
           {triggerPreviewDescription(data.trigger)}
         </p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-violet-500/15 px-2 py-1 text-[10px] font-medium text-violet-200">
-            {label}
-          </span>
-          <span className="rounded-full bg-[hsl(var(--surface-1))] px-2 py-1 text-[10px] text-[hsl(var(--muted-foreground))]">
-            Canvas editable
-          </span>
+        <div className="mt-3 space-y-2">
+          <TriggerChipGroup label="Trigger" values={[label]} accent />
+          {detailGroups.map((group) => (
+            <TriggerChipGroup key={group.label} label={group.label} values={group.values} />
+          ))}
         </div>
       </div>
       <button
@@ -318,6 +318,84 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
       />
     </div>
   );
+}
+
+function TriggerChipGroup({
+  label,
+  values,
+  accent = false,
+}: {
+  label: string;
+  values: string[];
+  accent?: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {values.map((value) => (
+          <span
+            key={value}
+            className={cn(
+              "max-w-full truncate rounded-full px-2 py-1 text-[10px] font-medium",
+              accent
+                ? "bg-violet-500/15 text-violet-200"
+                : "bg-[hsl(var(--surface-1))] text-[hsl(var(--muted-foreground))]",
+            )}
+          >
+            {value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function triggerDetailGroups(
+  definition: WorkflowDefinition,
+): { label: string; values: string[] }[] {
+  switch (definition.trigger) {
+    case "page_view":
+      return [
+        { label: "Channels", values: ["Web"] },
+        {
+          label: "Page rules",
+          values:
+            definition.pageRules && definition.pageRules.length > 0
+              ? definition.pageRules
+                  .slice(0, 2)
+                  .map(
+                    (rule) =>
+                      `${rule.urlOp === "eq" ? "equals" : rule.urlOp} ${rule.url}${
+                        rule.timeOnPageSec ? ` · ${rule.timeOnPageSec}s` : ""
+                      }`,
+                  )
+              : ["Any page"],
+        },
+        { label: "Audience", values: ["Users", "Leads & Visitors"] },
+      ];
+    case "schedule":
+      return [
+        { label: "Schedule", values: [definition.cron ?? "No cron set"] },
+        {
+          label: "Audience",
+          values: [
+            definition.audience?.rules?.length
+              ? `${definition.audience.match ?? "all"} · ${definition.audience.rules.length} rule(s)`
+              : "All open conversations",
+          ],
+        },
+      ];
+    case "webhook":
+      return [{ label: "Source", values: ["Webhook"] }];
+    case "event_match":
+      return [{ label: "Event", values: [definition.eventName ?? "Event name required"] }];
+    case "ticket_created":
+    case "ticket_state_changed":
+      return [{ label: "Channels", values: ["Tickets"] }];
+    default:
+      return [{ label: "Channels", values: ["Messenger", "Inbox"] }];
+  }
 }
 
 function miniMapNodeColor(node: Node) {
@@ -774,6 +852,7 @@ function definitionToFlow(
       },
       data: {
         trigger: definition.trigger,
+        definition,
         selected: triggerSelected,
         activeAddAnchor,
         onOpenAddMenu,
