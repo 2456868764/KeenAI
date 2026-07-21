@@ -2616,6 +2616,13 @@ export function WorkflowFlowCanvas({
     ],
   );
   const [flowNodes, setFlowNodes] = useState<Node[]>(nodes);
+  const initialFitNodes = useMemo(
+    () => [
+      { id: "__trigger__" },
+      ...definition.blocks.slice(0, 2).map((block) => ({ id: block.id })),
+    ],
+    [definition.blocks],
+  );
 
   useEffect(() => {
     setFlowNodes(nodes);
@@ -2645,7 +2652,9 @@ export function WorkflowFlowCanvas({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.18, minZoom: 0.85, maxZoom: 1, nodes: initialFitNodes }}
+        minZoom={0.75}
+        maxZoom={1.4}
         nodesDraggable
         nodesConnectable={false}
         elementsSelectable

@@ -919,7 +919,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               ) : null
             }
             runTracePanel={
-              selectedBlock || triggerPanelOpen || descriptionPanelOpen ? undefined : (
+              selectedBlock ||
+              triggerPanelOpen ||
+              descriptionPanelOpen ||
+              runs.length === 0 ? undefined : (
                 <WorkflowRunTrace
                   runs={runs}
                   selectedRunId={selectedRunId}
