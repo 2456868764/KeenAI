@@ -496,9 +496,17 @@ function BlockPreview({
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
           Content
         </p>
-        <p className="line-clamp-4 min-h-[56px] whitespace-pre-wrap rounded-lg bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))]">
-          {block.plainText?.trim() || "Write a message for the customer..."}
-        </p>
+        <textarea
+          value={block.plainText ?? ""}
+          rows={4}
+          aria-label="Message text"
+          placeholder="Write a message for the customer..."
+          className="nodrag nopan min-h-[86px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
+        />
         <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[hsl(var(--muted-foreground))]">
           <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 font-semibold">
             B
@@ -506,6 +514,24 @@ function BlockPreview({
           <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 italic">I</span>
           <span className="ml-auto">{block.attachmentIds?.length ?? 0} attachments</span>
         </div>
+        <input
+          value={block.attachmentIds?.join(", ") ?? ""}
+          aria-label="Attachment IDs"
+          placeholder="Attachment IDs, comma separated"
+          className="nodrag nopan mt-2 h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              attachmentIds: event.target.value
+                .split(",")
+                .map((id) => id.trim())
+                .filter(Boolean),
+            })
+          }
+        />
       </div>
     );
   }
