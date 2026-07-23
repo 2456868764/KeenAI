@@ -24,7 +24,6 @@ import {
   ArrowLeft,
   Bot,
   Braces,
-  ChevronDown,
   Clock3,
   Copy,
   FileInput,
@@ -878,7 +877,6 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                   setTriggerPanelOpen(false);
                   setAddAnchor(null);
                 }}
-                onAddBlock={(block) => insertBlock(block)}
                 onSave={() => save.mutate()}
                 onSaveAndPublish={() => {
                   save.mutate(undefined, {
@@ -975,7 +973,6 @@ function CanvasToolbar({
   definition,
   descriptionOpen,
   onDescriptionOpen,
-  onAddBlock,
   onSave,
   onSaveAndPublish,
   onTest,
@@ -1001,7 +998,6 @@ function CanvasToolbar({
   definition: WorkflowDefinition;
   descriptionOpen: boolean;
   onDescriptionOpen: () => void;
-  onAddBlock: (block: WorkflowBlock) => void;
   onSave: () => void;
   onSaveAndPublish: () => void;
   onTest: () => void;
@@ -1026,22 +1022,24 @@ function CanvasToolbar({
     JSON.stringify(workflow.publishedDefinition) !== JSON.stringify(definition);
 
   return (
-    <div className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1)/0.96)] px-4 py-3 shadow-lg backdrop-blur">
-      <div className="flex items-start justify-between gap-4">
+    <div className="w-full border-b border-[hsl(var(--border))] bg-white/95 px-4 py-2 shadow-sm backdrop-blur">
+      <div className="flex min-h-12 items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Link
               href="/workflows"
-              className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-slate-100 hover:text-[hsl(var(--foreground))]"
               aria-label="Back to workflows"
             >
               <ArrowLeft className="size-4" />
             </Link>
+            <span className="hidden text-sm font-semibold text-slate-700 md:inline">Workflows</span>
+            <span className="hidden text-sm text-[hsl(var(--muted-foreground))] md:inline">/</span>
             <Input
               aria-label="Workflow name"
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
-              className="h-9 max-w-[420px] min-w-[220px] flex-1 font-semibold"
+              className="h-8 max-w-[380px] min-w-[180px] flex-1 border-transparent bg-transparent px-1 font-semibold shadow-none hover:border-[hsl(var(--border))] focus:border-[hsl(var(--primary))]"
             />
             <Button
               type="button"
@@ -1053,56 +1051,25 @@ function CanvasToolbar({
               <PencilLine className="size-4" />
               Description
             </Button>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-            <span className="font-medium text-[hsl(var(--foreground))]">Workflows</span>
-            <span className="text-[hsl(var(--muted-foreground))]">/</span>
-            <span className="max-w-[260px] truncate font-medium text-[hsl(var(--foreground))]">
-              {name || "Untitled workflow"}
-            </span>
             <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
               {workflow?.status ?? "draft"}
             </span>
-            <span>
+            <span className="hidden text-[11px] text-[hsl(var(--muted-foreground))] lg:inline">
               {definition.blocks.length} step{definition.blocks.length === 1 ? "" : "s"}
             </span>
-            {definition.description?.trim() ? <span>Description added</span> : null}
-            {changed ? <span>Published snapshot differs from draft</span> : null}
+            {changed ? (
+              <span className="hidden text-[11px] text-[hsl(var(--muted-foreground))] xl:inline">
+                Draft differs from published
+              </span>
+            ) : null}
             {workflow?.updatedAt ? (
-              <span>Updated {new Date(workflow.updatedAt).toLocaleString()}</span>
+              <span className="hidden text-[11px] text-[hsl(var(--muted-foreground))] xl:inline">
+                Updated {new Date(workflow.updatedAt).toLocaleString()}
+              </span>
             ) : null}
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <BlockAddMenu onAdd={onAddBlock} />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={savePending || testPending || samplePending || !canSave}
-            onClick={onTest}
-          >
-            {testPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <TestTube2 className="size-4" />
-            )}
-            Test
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={savePending || testPending || samplePending || !canSave}
-            onClick={onSample}
-          >
-            {samplePending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Bot className="size-4" />
-            )}
-            Sample
-          </Button>
+        <div className="flex shrink-0 items-center justify-end gap-2">
           <Button
             type="button"
             size="sm"
@@ -1146,6 +1113,11 @@ function CanvasToolbar({
             workflow={workflow}
             versions={versions}
             pending={managePending}
+            testPending={testPending}
+            samplePending={samplePending}
+            canRun={Boolean(canSave && !savePending && !testPending && !samplePending)}
+            onTest={onTest}
+            onSample={onSample}
             onUnpublish={onUnpublish}
             onDuplicate={onDuplicate}
             onArchive={onArchive}
@@ -1163,6 +1135,11 @@ function WorkflowManageMenu({
   workflow,
   versions,
   pending,
+  testPending,
+  samplePending,
+  canRun,
+  onTest,
+  onSample,
   onUnpublish,
   onDuplicate,
   onArchive,
@@ -1173,6 +1150,11 @@ function WorkflowManageMenu({
   workflow: Workflow | undefined;
   versions: WorkflowVersion[];
   pending: boolean;
+  testPending: boolean;
+  samplePending: boolean;
+  canRun: boolean;
+  onTest: () => void;
+  onSample: () => void;
   onUnpublish: () => void;
   onDuplicate: () => void;
   onArchive: () => void;
@@ -1201,6 +1183,33 @@ function WorkflowManageMenu({
             </p>
           </div>
           <div className="space-y-1 p-2">
+            <button
+              type="button"
+              disabled={pending || !canRun}
+              onClick={onTest}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs hover:bg-[hsl(var(--surface-2))] disabled:opacity-50"
+            >
+              {testPending ? (
+                <Loader2 className="size-3.5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              ) : (
+                <TestTube2 className="size-3.5 text-[hsl(var(--muted-foreground))]" />
+              )}
+              Test workflow
+            </button>
+            <button
+              type="button"
+              disabled={pending || !canRun}
+              onClick={onSample}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs hover:bg-[hsl(var(--surface-2))] disabled:opacity-50"
+            >
+              {samplePending ? (
+                <Loader2 className="size-3.5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              ) : (
+                <Bot className="size-3.5 text-[hsl(var(--muted-foreground))]" />
+              )}
+              Sample closed conversations
+            </button>
+            <div className="my-1 h-px bg-[hsl(var(--border))]" />
             {workflow?.status === "published" ? (
               <button
                 type="button"
@@ -1561,34 +1570,6 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
     ],
   },
 ];
-
-function BlockAddMenu({ onAdd }: { onAdd: (block: WorkflowBlock) => void }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex h-9 items-center gap-1.5 rounded-md bg-[hsl(var(--primary))] px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[hsl(var(--primary)/0.9)]"
-      >
-        <Plus className="size-3.5" />
-        Add
-        <ChevronDown className={cn("size-3.5 transition-transform", open ? "rotate-180" : "")} />
-      </button>
-
-      {open ? (
-        <WorkflowActionMenu
-          className="absolute top-11 right-0 z-50"
-          onAdd={(block) => {
-            onAdd(block);
-            setOpen(false);
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
 
 function WorkflowActionMenu({
   onAdd,
