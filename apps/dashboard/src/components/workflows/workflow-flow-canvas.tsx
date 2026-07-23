@@ -2717,67 +2717,67 @@ export function WorkflowFlowCanvas({
 
   return (
     <div
-      className="relative h-[calc(100vh-220px)] min-h-[640px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] shadow-sm"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[hsl(var(--surface-0))]"
       style={workflowCanvasTheme}
     >
-      <ReactFlow
-        nodes={flowNodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.18, minZoom: 0.85, maxZoom: 1, nodes: initialFitNodes }}
-        minZoom={0.75}
-        maxZoom={1.4}
-        nodesDraggable
-        nodesConnectable={false}
-        elementsSelectable
-        onNodesChange={onNodesChange}
-        onNodeClick={(_, node) => {
-          if (node.id === "__trigger__") {
-            onSelectTrigger();
-            return;
-          }
-          onSelectBlock(node.id);
-        }}
-        onPaneClick={() => {
-          onSelectBlock(null);
-          onOpenAddMenu?.(null);
-        }}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background gap={16} size={1} color="hsl(var(--border))" />
-        <CanvasViewportControls
-          canUndo={canUndo ?? false}
-          canRedo={canRedo ?? false}
-          onUndo={onUndo}
-          onRedo={onRedo}
-          hasCustomLayout={Object.keys(manualPositions).length > 0}
-          onResetLayout={resetLayout}
-        />
-        <MiniMap
-          position="bottom-right"
-          pannable
-          zoomable
-          nodeColor={miniMapNodeColor}
-          maskColor="hsl(var(--surface-0) / 0.55)"
-          className="!m-4 !h-[128px] !w-[184px] !rounded-lg !border !border-[hsl(var(--border))] !bg-[hsl(var(--surface-1))] !shadow-xl"
-        />
-      </ReactFlow>
-      <div className="pointer-events-none absolute inset-0 z-10">
-        {toolbar ? (
-          <div className="pointer-events-auto absolute left-4 right-4 top-4">{toolbar}</div>
-        ) : null}
-        {configurationPanel ? (
-          <div className="pointer-events-auto absolute right-4 top-[96px] max-h-[calc(100%-7rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
-            {configurationPanel}
-          </div>
-        ) : null}
-        {runTracePanel ? (
-          <div className="pointer-events-auto absolute bottom-[164px] right-4 max-h-[300px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
-            {runTracePanel}
-          </div>
-        ) : null}
+      {toolbar ? <div className="relative z-20 shrink-0">{toolbar}</div> : null}
+      <div className="relative min-h-0 flex-1">
+        <ReactFlow
+          nodes={flowNodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.18, minZoom: 0.85, maxZoom: 1, nodes: initialFitNodes }}
+          minZoom={0.75}
+          maxZoom={1.4}
+          nodesDraggable
+          nodesConnectable={false}
+          elementsSelectable
+          onNodesChange={onNodesChange}
+          onNodeClick={(_, node) => {
+            if (node.id === "__trigger__") {
+              onSelectTrigger();
+              return;
+            }
+            onSelectBlock(node.id);
+          }}
+          onPaneClick={() => {
+            onSelectBlock(null);
+            onOpenAddMenu?.(null);
+          }}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background gap={16} size={1} color="hsl(var(--border))" />
+          <CanvasViewportControls
+            canUndo={canUndo ?? false}
+            canRedo={canRedo ?? false}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            hasCustomLayout={Object.keys(manualPositions).length > 0}
+            onResetLayout={resetLayout}
+          />
+          <MiniMap
+            position="bottom-right"
+            pannable
+            zoomable
+            nodeColor={miniMapNodeColor}
+            maskColor="hsl(var(--surface-0) / 0.55)"
+            className="!m-4 !h-[128px] !w-[184px] !rounded-lg !border !border-[hsl(var(--border))] !bg-[hsl(var(--surface-1))] !shadow-xl"
+          />
+        </ReactFlow>
+        <div className="pointer-events-none absolute inset-0 z-10">
+          {configurationPanel ? (
+            <div className="pointer-events-auto absolute right-4 top-4 max-h-[calc(100%-2rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+              {configurationPanel}
+            </div>
+          ) : null}
+          {runTracePanel ? (
+            <div className="pointer-events-auto absolute bottom-[164px] right-4 max-h-[300px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+              {runTracePanel}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

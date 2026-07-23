@@ -824,7 +824,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
 
   return (
     <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
-      <main className="w-full flex-1 overflow-hidden p-4">
+      <main className="w-full flex-1 overflow-hidden">
         {isLoading || !definition ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
         ) : error ? (
