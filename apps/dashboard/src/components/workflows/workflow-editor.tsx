@@ -1313,12 +1313,12 @@ type BlockAction = {
 };
 
 const ACTION_GROUP_STYLES: Record<string, string> = {
-  Send: "bg-sky-500/10 text-sky-300",
-  Collect: "bg-violet-500/10 text-violet-300",
-  Internal: "bg-emerald-500/10 text-emerald-300",
-  Delay: "bg-amber-500/10 text-amber-300",
-  Branch: "bg-orange-500/10 text-orange-300",
-  Integrations: "bg-cyan-500/10 text-cyan-300",
+  Send: "text-blue-500",
+  Collect: "text-violet-500",
+  Internal: "text-emerald-500",
+  Delay: "text-amber-500",
+  Branch: "text-orange-500",
+  Integrations: "text-cyan-600",
 };
 
 type PageRule = NonNullable<WorkflowDefinition["pageRules"]>[number];
@@ -1622,35 +1622,38 @@ function WorkflowActionMenu({
   return (
     <div
       className={cn(
-        "w-[380px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-2xl shadow-black/30",
+        "w-[392px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] shadow-[0_18px_48px_rgba(62,52,92,0.18)]",
         className,
       )}
     >
-      <div className="border-b border-[hsl(var(--border))] px-4 py-3">
+      <div className="sr-only">
         <p className="text-sm font-semibold text-[hsl(var(--foreground))]">{title}</p>
         <p className="text-xs text-[hsl(var(--muted-foreground))]">{description}</p>
       </div>
-      <label className="flex h-12 items-center gap-2 border-b border-[hsl(var(--border))] px-4 text-sm text-[hsl(var(--muted-foreground))]">
-        <Search className="size-4 shrink-0" />
+      <label
+        className="flex h-14 items-center gap-2 border-b border-[hsl(var(--border))] px-4 text-lg font-medium text-[hsl(var(--muted-foreground))]"
+        aria-label={title}
+      >
+        <Search className="size-4 shrink-0" aria-hidden />
         <input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search actions..."
-          className="min-w-0 flex-1 bg-transparent text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+          className="min-w-0 flex-1 bg-transparent text-base text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
         />
       </label>
-      <div className="max-h-[520px] overflow-y-auto">
+      <div className="max-h-[560px] overflow-y-auto">
         {groups.length > 0 ? (
           groups.map((group) => (
             <section
               key={group.title}
               className="border-b border-[hsl(var(--border))] last:border-b-0"
             >
-              <p className="bg-[hsl(var(--surface-2))] px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+              <p className="bg-[hsl(var(--surface-1))] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 {group.title}
               </p>
-              <div className="p-2">
+              <div className="p-1.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -1658,22 +1661,19 @@ function WorkflowActionMenu({
                       key={item.type}
                       type="button"
                       onClick={() => onAdd(createWorkflowBlock(item.type))}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--surface-2))]"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-100"
                     >
                       <span
                         className={cn(
                           "flex size-8 shrink-0 items-center justify-center rounded-md",
-                          ACTION_GROUP_STYLES[group.title] ?? "bg-violet-500/10 text-violet-300",
+                          ACTION_GROUP_STYLES[group.title] ?? "text-violet-500",
                         )}
                       >
                         <Icon className="size-4" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-[hsl(var(--foreground))]">
+                        <span className="block truncate text-base font-semibold text-slate-600">
                           {item.label}
-                        </span>
-                        <span className="mt-0.5 line-clamp-1 block text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">
-                          {item.description}
                         </span>
                       </span>
                     </button>
