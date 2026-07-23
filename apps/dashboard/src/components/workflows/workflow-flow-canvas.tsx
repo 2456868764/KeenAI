@@ -76,6 +76,7 @@ type TriggerNodeData = {
   trigger: WorkflowDefinition["trigger"];
   definition: WorkflowDefinition;
   selected: boolean;
+  settings?: ReactNode;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
@@ -325,6 +326,26 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
           ))}
         </div>
       </div>
+      {data.selected && data.settings ? (
+        <div
+          className="nodrag nopan mt-3 max-h-[360px] overflow-y-auto rounded-xl border border-violet-200/80 bg-white p-3"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+                Trigger settings
+              </p>
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                Configure when this workflow starts.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">{data.settings}</div>
+        </div>
+      ) : null}
       <button
         type="button"
         className={cn(
@@ -2451,6 +2472,10 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
   }
 }
 
+function workflowTriggerLayoutHeight(selected: boolean): number {
+  return selected ? 660 : workflowNodeSize.trigger.height;
+}
+
 function definitionToFlow(
   definition: WorkflowDefinition,
   selectedBlockId: string | null,
@@ -2461,6 +2486,7 @@ function definitionToFlow(
   onDeleteBlock: (blockId: string) => void,
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
   renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
+  triggerSettings: ReactNode | undefined,
   manualPositions: ManualPositionMap,
 ): { nodes: Node[]; edges: Edge[] } {
   const graphEdges = collectWorkflowEdges(definition);
@@ -2468,7 +2494,7 @@ function definitionToFlow(
     {
       id: "__trigger__",
       width: workflowNodeSize.trigger.width,
-      height: workflowNodeSize.trigger.height,
+      height: workflowTriggerLayoutHeight(triggerSelected),
     },
     ...definition.blocks.map((block) => ({
       id: block.id,
@@ -2491,6 +2517,7 @@ function definitionToFlow(
         trigger: definition.trigger,
         definition,
         selected: triggerSelected,
+        settings: triggerSettings,
         activeAddAnchor,
         onOpenAddMenu,
         renderAddMenu,
@@ -2547,6 +2574,7 @@ export function WorkflowFlowCanvas({
   onDeleteBlock,
   onOpenAddMenu,
   renderAddMenu,
+  triggerSettings,
   toolbar,
   configurationPanel,
   runTracePanel,
@@ -2567,6 +2595,7 @@ export function WorkflowFlowCanvas({
   onDeleteBlock: (blockId: string) => void;
   onOpenAddMenu?: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
+  triggerSettings?: ReactNode;
   toolbar?: ReactNode;
   configurationPanel?: ReactNode;
   runTracePanel?: ReactNode;
@@ -2640,6 +2669,7 @@ export function WorkflowFlowCanvas({
         onDeleteBlock,
         onOpenAddMenu ?? (() => undefined),
         renderAddMenu,
+        triggerSettings,
         manualPositions,
       ),
     [
@@ -2652,6 +2682,7 @@ export function WorkflowFlowCanvas({
       onDeleteBlock,
       onOpenAddMenu,
       renderAddMenu,
+      triggerSettings,
       manualPositions,
     ],
   );

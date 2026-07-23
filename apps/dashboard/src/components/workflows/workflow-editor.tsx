@@ -864,6 +864,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 onAdd={(block) => insertBlock(block, anchor)}
               />
             )}
+            triggerSettings={triggerFields}
             toolbar={
               <CanvasToolbar
                 workflow={workflow}
@@ -916,11 +917,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               />
             }
             configurationPanel={
-              triggerPanelOpen ? (
-                <CanvasConfigPanel title="Trigger action" onClose={clearFlowSelection}>
-                  <div className="space-y-4">{triggerFields}</div>
-                </CanvasConfigPanel>
-              ) : descriptionPanelOpen ? (
+              descriptionPanelOpen ? (
                 <CanvasConfigPanel title="Description" onClose={clearFlowSelection}>
                   <section className="space-y-2">
                     <label
