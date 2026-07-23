@@ -11,7 +11,6 @@ import {
 import { Button } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Bot,
   CheckCircle2,
   ChevronDown,
   Clock3,
@@ -23,7 +22,6 @@ import {
   MoreHorizontal,
   Plus,
   Rocket,
-  Settings,
   Sparkles,
   Star,
   X,
@@ -69,14 +67,6 @@ const templateCategories = [
   { id: "self_serve", label: "End User Experience" },
   { id: "lead_capture", label: "Message Proactively" },
 ] as const;
-
-const settingsNav = [
-  { label: "Personality & Branding", icon: Bot },
-  { label: "Training Data", icon: MessageCircle },
-  { label: "Actions", icon: Zap },
-  { label: "Other", icon: Settings },
-  { label: "Deploy", icon: Rocket },
-];
 
 function workflowKind(workflow: Workflow): TypeFilter {
   if (workflow.definition.blocks.some((block) => block.type === "let_keeni_answer")) return "ai";
@@ -229,39 +219,6 @@ export function WorkflowListShell() {
 
   return (
     <div className="flex h-full bg-[hsl(var(--surface-0))]">
-      <aside className="hidden w-[280px] shrink-0 border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-5 lg:block">
-        <h1 className="text-xl font-semibold">Fibi AI Agent</h1>
-        <div className="mt-10">
-          <p className="mb-3 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-            Fibi settings
-          </p>
-          <nav className="space-y-1">
-            {settingsNav.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))]"
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <div className="mt-7">
-          <p className="mb-3 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-            Automations
-          </p>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg bg-[hsl(var(--surface-2))] px-3 py-2 text-left text-sm font-semibold"
-          >
-            <Sparkles className="size-4 text-[hsl(var(--primary))]" />
-            Workflows
-          </button>
-        </div>
-      </aside>
-
       <main className="min-w-0 flex-1 overflow-y-auto p-6">
         <div className="flex items-start justify-between gap-4">
           <div>

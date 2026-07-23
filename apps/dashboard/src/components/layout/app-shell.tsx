@@ -92,6 +92,10 @@ function hasRoutePrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+function isWorkflowEditorRoute(pathname: string): boolean {
+  return /^\/workflows\/[^/]+$/.test(pathname);
+}
+
 const modules: ProductModule[] = [
   {
     id: "inbox",
@@ -409,6 +413,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     () => modules.find((item) => item.match(pathname)) ?? fallbackModule,
     [pathname, fallbackModule],
   );
+  const hideModuleSidebar = isWorkflowEditorRoute(pathname);
 
   if (pathname === "/login") {
     return <>{children}</>;
@@ -423,7 +428,9 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
           router.replace("/login");
         }}
       />
-      <ModuleSidebar module={activeModule} pathname={pathname} searchParams={searchParams} />
+      {hideModuleSidebar ? null : (
+        <ModuleSidebar module={activeModule} pathname={pathname} searchParams={searchParams} />
+      )}
       <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
     </div>
   );

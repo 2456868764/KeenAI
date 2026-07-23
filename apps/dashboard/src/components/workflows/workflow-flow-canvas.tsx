@@ -64,8 +64,10 @@ type BlockNodeData = {
   selected: boolean;
   executed: boolean;
   failed: boolean;
+  canDelete: boolean;
   activeAddAnchor: WorkflowCanvasInsertAnchor | null;
   onChangeBlock: (block: WorkflowBlock) => void;
+  onDeleteBlock: (blockId: string) => void;
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
@@ -201,11 +203,25 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
             {workflowBlockTitle(block)}
           </p>
         </div>
-        {data.failed ? (
-          <CircleAlert className="ml-auto size-4 text-red-400" />
-        ) : data.executed ? (
-          <CheckCircle2 className="ml-auto size-4 text-emerald-400" />
-        ) : null}
+        <div className="ml-auto flex items-center gap-1">
+          {data.failed ? (
+            <CircleAlert className="size-4 text-red-400" />
+          ) : data.executed ? (
+            <CheckCircle2 className="size-4 text-emerald-400" />
+          ) : null}
+          <button
+            type="button"
+            disabled={!data.canDelete}
+            className="nodrag nopan flex size-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-35"
+            aria-label={`Delete ${workflowBlockTitle(block)}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              data.onDeleteBlock(block.id);
+            }}
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
       </div>
 
       <BlockPreview
@@ -2442,6 +2458,7 @@ function definitionToFlow(
   runHighlight: { executed: Set<string>; failed: Set<string> },
   activeAddAnchor: WorkflowCanvasInsertAnchor | null,
   onChangeBlock: (block: WorkflowBlock) => void,
+  onDeleteBlock: (blockId: string) => void,
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
   renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
   manualPositions: ManualPositionMap,
@@ -2494,8 +2511,10 @@ function definitionToFlow(
         selected: selectedBlockId === block.id,
         executed: runHighlight.executed.has(block.id),
         failed: runHighlight.failed.has(block.id),
+        canDelete: definition.blocks.length > 1,
         activeAddAnchor,
         onChangeBlock,
+        onDeleteBlock,
         onOpenAddMenu,
         renderAddMenu,
       },
@@ -2525,6 +2544,7 @@ export function WorkflowFlowCanvas({
   onSelectTrigger,
   activeAddAnchor,
   onChangeBlock,
+  onDeleteBlock,
   onOpenAddMenu,
   renderAddMenu,
   toolbar,
@@ -2544,6 +2564,7 @@ export function WorkflowFlowCanvas({
   onSelectTrigger: () => void;
   activeAddAnchor?: WorkflowCanvasInsertAnchor | null;
   onChangeBlock: (block: WorkflowBlock) => void;
+  onDeleteBlock: (blockId: string) => void;
   onOpenAddMenu?: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
   toolbar?: ReactNode;
@@ -2616,6 +2637,7 @@ export function WorkflowFlowCanvas({
         runHighlight,
         activeAddAnchor ?? null,
         onChangeBlock,
+        onDeleteBlock,
         onOpenAddMenu ?? (() => undefined),
         renderAddMenu,
         manualPositions,
@@ -2627,6 +2649,7 @@ export function WorkflowFlowCanvas({
       runHighlight,
       activeAddAnchor,
       onChangeBlock,
+      onDeleteBlock,
       onOpenAddMenu,
       renderAddMenu,
       manualPositions,

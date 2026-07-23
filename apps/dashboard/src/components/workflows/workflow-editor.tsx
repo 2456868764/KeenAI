@@ -50,7 +50,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { WorkflowBlockEditor } from "./workflow-block-editor";
 import { type WorkflowCanvasInsertAnchor, WorkflowFlowCanvas } from "./workflow-flow-canvas";
 import { highlightBlocksFromRunSteps } from "./workflow-graph";
 import { WorkflowRunTrace } from "./workflow-run-trace";
@@ -119,6 +118,60 @@ function workflowResultStatus(
   if (result.steps.some((step) => step.status === "failed" || step.error)) return "failed";
   if (result.suspended) return "suspended";
   return fallback;
+}
+
+function unlinkDeletedBlockReference(
+  block: WorkflowBlock,
+  deletedBlockId: string,
+  fallbackBlockId: string,
+): WorkflowBlock {
+  switch (block.type) {
+    case "goto":
+      return block.targetBlockId === deletedBlockId ? { ...block, targetBlockId: "" } : block;
+    case "branches":
+      return {
+        ...block,
+        branches: block.branches.map((branch) =>
+          branch.nextId === deletedBlockId ? { ...branch, nextId: null } : branch,
+        ),
+        elseNextId: block.elseNextId === deletedBlockId ? null : block.elseNextId,
+      };
+    case "apply_rules":
+      return {
+        ...block,
+        rules: block.rules.map((rule) =>
+          rule.nextId === deletedBlockId ? { ...rule, nextId: fallbackBlockId } : rule,
+        ),
+      };
+    case "reply_buttons":
+      return {
+        ...block,
+        buttons: block.buttons.map((button) =>
+          button.nextId === deletedBlockId ? { ...button, nextId: null } : button,
+        ),
+      };
+    case "let_keeni_answer":
+      if (!block.outcomeRouting) return block;
+      return {
+        ...block,
+        outcomeRouting: {
+          resolvedNext:
+            block.outcomeRouting.resolvedNext === deletedBlockId
+              ? null
+              : block.outcomeRouting.resolvedNext,
+          unresolvedNext:
+            block.outcomeRouting.unresolvedNext === deletedBlockId
+              ? null
+              : block.outcomeRouting.unresolvedNext,
+          escalatedNext:
+            block.outcomeRouting.escalatedNext === deletedBlockId
+              ? null
+              : block.outcomeRouting.escalatedNext,
+        },
+      };
+    default:
+      return block;
+  }
 }
 
 export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
@@ -320,21 +373,6 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   });
 
   const workflow = data?.workflow;
-  const selectedBlock =
-    definition && selectedBlockId
-      ? (definition.blocks.find((b) => b.id === selectedBlockId) ?? null)
-      : null;
-  const selectedIndex =
-    definition && selectedBlock
-      ? definition.blocks.findIndex((b) => b.id === selectedBlock.id)
-      : -1;
-
-  const updateBlock = (next: WorkflowBlock) => {
-    if (!definition || selectedIndex < 0) return;
-    const blocks = [...definition.blocks];
-    blocks[selectedIndex] = next;
-    commitDefinition({ ...definition, blocks });
-  };
 
   const updateBlockById = (next: WorkflowBlock) => {
     if (!definition) return;
@@ -343,6 +381,20 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     const blocks = [...definition.blocks];
     blocks[index] = next;
     commitDefinition({ ...definition, blocks });
+  };
+
+  const deleteBlockById = (blockId: string) => {
+    if (!definition || definition.blocks.length <= 1) return;
+    const remainingBlocks = definition.blocks.filter((block) => block.id !== blockId);
+    const fallbackBlockId = remainingBlocks[0]?.id ?? "";
+    commitDefinition({
+      ...definition,
+      blocks: remainingBlocks.map((block) =>
+        unlinkDeletedBlockReference(block, blockId, fallbackBlockId),
+      ),
+    });
+    if (selectedBlockId === blockId) setSelectedBlockId(null);
+    setAddAnchor(null);
   };
 
   const insertBlock = (block: WorkflowBlock, anchor?: WorkflowCanvasInsertAnchor | null) => {
@@ -798,6 +850,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             }}
             activeAddAnchor={addAnchor}
             onChangeBlock={updateBlockById}
+            onDeleteBlock={deleteBlockById}
             onOpenAddMenu={(anchor) => {
               setAddAnchor(anchor);
               setSelectedBlockId(null);
@@ -863,28 +916,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               />
             }
             configurationPanel={
-              selectedBlock && selectedIndex >= 0 ? (
-                <CanvasConfigPanel
-                  title={selectedBlock.type.replaceAll("_", " ")}
-                  onClose={clearFlowSelection}
-                >
-                  <WorkflowBlockEditor
-                    block={selectedBlock}
-                    index={selectedIndex}
-                    allBlocks={definition.blocks}
-                    onChange={updateBlock}
-                    onRemove={() => {
-                      if (definition.blocks.length <= 1) return;
-                      commitDefinition({
-                        ...definition,
-                        blocks: definition.blocks.filter((b) => b.id !== selectedBlock.id),
-                      });
-                      setSelectedBlockId(null);
-                      setAddAnchor(null);
-                    }}
-                  />
-                </CanvasConfigPanel>
-              ) : triggerPanelOpen ? (
+              triggerPanelOpen ? (
                 <CanvasConfigPanel title="Trigger action" onClose={clearFlowSelection}>
                   <div className="space-y-4">{triggerFields}</div>
                 </CanvasConfigPanel>
@@ -919,10 +951,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               ) : null
             }
             runTracePanel={
-              selectedBlock ||
-              triggerPanelOpen ||
-              descriptionPanelOpen ||
-              runs.length === 0 ? undefined : (
+              triggerPanelOpen || descriptionPanelOpen || runs.length === 0 ? undefined : (
                 <WorkflowRunTrace
                   runs={runs}
                   selectedRunId={selectedRunId}
