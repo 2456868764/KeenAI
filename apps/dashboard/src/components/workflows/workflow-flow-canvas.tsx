@@ -41,7 +41,14 @@ import {
   UserCheck,
   Zap,
 } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   blockCategory,
   blockLabel,
@@ -116,21 +123,21 @@ const categoryStyles: Record<
 > = {
   trigger: {
     border: "border-violet-500/60",
-    badge: "text-violet-400",
+    badge: "text-violet-700",
     wash: "bg-violet-500/10",
-    icon: "text-violet-400",
+    icon: "text-violet-600",
   },
   message: {
     border: "border-violet-500/55",
-    badge: "text-violet-300",
+    badge: "text-violet-700",
     wash: "bg-violet-500/10",
-    icon: "text-violet-300",
+    icon: "text-violet-600",
   },
   condition: {
     border: "border-amber-500/50",
-    badge: "text-amber-400",
+    badge: "text-amber-700",
     wash: "bg-amber-500/10",
-    icon: "text-amber-400",
+    icon: "text-amber-600",
   },
   action: {
     border: "border-[hsl(var(--border))]",
@@ -139,6 +146,16 @@ const categoryStyles: Record<
     icon: "text-[hsl(var(--primary))]",
   },
 };
+
+const workflowCanvasTheme = {
+  "--surface-0": "250 100% 99%",
+  "--surface-1": "255 86% 97%",
+  "--surface-2": "0 0% 100%",
+  "--foreground": "230 30% 22%",
+  "--muted-foreground": "226 20% 48%",
+  "--border": "246 40% 88%",
+  "--primary": "262 83% 58%",
+} as CSSProperties;
 
 function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const block = data.block;
@@ -150,7 +167,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   return (
     <div
       className={cn(
-        "group relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10 transition-shadow",
+        "group relative w-[320px] rounded-xl border bg-[hsl(var(--surface-1))] p-3 shadow-[0_14px_32px_rgba(124,58,237,0.12)] transition-shadow",
         styles.border,
         data.failed
           ? "ring-2 ring-red-500 ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
@@ -169,7 +186,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "flex size-8 items-center justify-center rounded-full border border-white/10",
+            "flex size-8 items-center justify-center rounded-full border border-violet-200/80",
             styles.wash,
             styles.icon,
           )}
@@ -204,8 +221,8 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
         <button
           type="button"
           className={cn(
-            "nodrag nopan flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100",
-            addMenuOpen ? "border-violet-400/60 bg-violet-500/15 text-violet-100" : "",
+            "nodrag nopan flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-700",
+            addMenuOpen ? "border-violet-400/60 bg-violet-500/15 text-violet-700" : "",
           )}
           aria-label={`Add step after ${workflowBlockTitle(block)}`}
           onClick={(event) => {
@@ -221,7 +238,7 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       <button
         type="button"
         className={cn(
-          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow transition-colors group-hover:flex hover:bg-violet-500/15",
+          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-600 shadow transition-colors group-hover:flex hover:bg-violet-500/15",
           addMenuOpen ? "flex" : "",
         )}
         aria-label={`Add action after ${workflowBlockTitle(block)}`}
@@ -261,7 +278,7 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
   return (
     <div
       className={cn(
-        "group relative w-[320px] rounded-2xl border bg-[hsl(var(--surface-1))] p-3 shadow-lg shadow-black/10",
+        "group relative w-[320px] rounded-xl border bg-[hsl(var(--surface-1))] p-3 shadow-[0_14px_32px_rgba(124,58,237,0.12)]",
         styles.border,
         data.selected
           ? "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-2))]"
@@ -269,7 +286,7 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-300">
+        <span className="flex size-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-600">
           <Zap className="size-4" />
         </span>
         <div>
@@ -295,7 +312,7 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
       <button
         type="button"
         className={cn(
-          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-300 shadow transition-colors hover:bg-violet-500/15",
+          "nodrag nopan absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-[hsl(var(--surface-0))] text-violet-600 shadow transition-colors hover:bg-violet-500/15",
           addMenuOpen ? "flex" : "group-hover:flex",
         )}
         aria-label="Add first workflow action"
@@ -545,7 +562,7 @@ function BlockPreview({
     return (
       <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3">
         <div className="flex items-center gap-2 rounded-lg bg-[hsl(var(--surface-0))] px-3 py-2">
-          <Bot className="size-4 text-violet-300" />
+          <Bot className="size-4 text-violet-600" />
           <p className="text-xs font-medium text-[hsl(var(--foreground))]">
             Auto answer with brand memory and knowledge base.
           </p>
@@ -603,7 +620,7 @@ function BlockPreview({
         <button
           type="button"
           disabled={block.buttons.length >= 8}
-          className="nodrag nopan mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="nodrag nopan mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={(event) => {
             event.stopPropagation();
             const nextIndex = block.buttons.length + 1;
@@ -1114,7 +1131,7 @@ function DataCollectionPreview({
       <button
         type="button"
         disabled={block.fields.length >= fieldLimit}
-        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={(event) => {
           event.stopPropagation();
           const nextIndex = block.fields.length + 1;
@@ -1783,8 +1800,8 @@ function ReplyButtonOutputs({
               <button
                 type="button"
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-100",
-                  open ? "bg-violet-500/15 text-violet-100" : "",
+                  "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-700",
+                  open ? "bg-violet-500/15 text-violet-700" : "",
                 )}
                 aria-label={`Add action for ${button.label || `button ${buttonIndex + 1}`}`}
                 onClick={(event) => {
@@ -1890,7 +1907,7 @@ function ConditionRouteOutputs({
         />
         <button
           type="button"
-          className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-100 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+          className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={block.branches.length >= 8}
           onClick={(event) => {
             event.stopPropagation();
@@ -1952,7 +1969,7 @@ function ConditionRouteOutputs({
       ))}
       <button
         type="button"
-        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-100 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+        className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
         disabled={block.rules.length >= 8}
         onClick={(event) => {
           event.stopPropagation();
@@ -2040,8 +2057,8 @@ function EditableRouteRow({
         <button
           type="button"
           className={cn(
-            "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-100",
-            open ? "bg-violet-500/15 text-violet-100" : "",
+            "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-700",
+            open ? "bg-violet-500/15 text-violet-700" : "",
           )}
           aria-label={`Add action for ${label || fallbackLabel}`}
           onClick={(event) => {
@@ -2157,8 +2174,8 @@ function StaticRouteRow({
         className={cn(
           "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
           connected
-            ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-            : "border-amber-400/30 bg-[hsl(var(--surface-0))] text-amber-100 hover:bg-amber-500/15",
+            ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700"
+            : "border-amber-400/30 bg-[hsl(var(--surface-0))] text-amber-700 hover:bg-amber-500/15",
           open ? "border-violet-300 bg-violet-500/20" : "",
         )}
         aria-label={`Add action for ${label}`}
@@ -2214,8 +2231,8 @@ function RouteOutputs({
               className={cn(
                 "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
                 route.connected
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-                  : "border-violet-400/30 bg-[hsl(var(--surface-0))] text-violet-100 hover:bg-violet-500/15",
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700"
+                  : "border-violet-400/30 bg-[hsl(var(--surface-0))] text-violet-700 hover:bg-violet-500/15",
                 open ? "border-violet-300 bg-violet-500/20" : "",
               )}
               aria-label={`Add action for ${route.label}`}
@@ -2645,7 +2662,10 @@ export function WorkflowFlowCanvas({
   }, []);
 
   return (
-    <div className="relative h-[calc(100vh-220px)] min-h-[640px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] shadow-sm">
+    <div
+      className="relative h-[calc(100vh-220px)] min-h-[640px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] shadow-sm"
+      style={workflowCanvasTheme}
+    >
       <ReactFlow
         nodes={flowNodes}
         edges={edges}
@@ -2730,7 +2750,7 @@ function CanvasViewportControls({
 
   return (
     <Panel position="bottom-left" className="m-0">
-      <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl shadow-black/10">
+      <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-[0_14px_32px_rgba(124,58,237,0.12)]">
         <button
           type="button"
           className={controlClass}
