@@ -1051,7 +1051,7 @@ function CanvasToolbar({
               <PencilLine className="size-4" />
               Description
             </Button>
-            <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 capitalize">
+            <span className="rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-0.5 text-[11px] font-medium capitalize text-[hsl(var(--muted-foreground))]">
               {workflow?.status ?? "draft"}
             </span>
             <span className="hidden text-[11px] text-[hsl(var(--muted-foreground))] lg:inline">

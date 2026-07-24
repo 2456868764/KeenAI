@@ -120,6 +120,11 @@ function sameInsertAnchor(
   return insertAnchorKey(left) === insertAnchorKey(right);
 }
 
+function insertAnchorNodeId(anchor: WorkflowCanvasInsertAnchor | null): string | null {
+  if (!anchor) return null;
+  return anchor.kind === "trigger" ? "__trigger__" : anchor.blockId;
+}
+
 const categoryStyles: Record<
   ReturnType<typeof blockCategory> | "trigger",
   { border: string; badge: string; wash: string; icon: string }
@@ -2509,6 +2514,7 @@ function definitionToFlow(
     {
       id: "__trigger__",
       type: "workflowTrigger",
+      zIndex: triggerSelected || insertAnchorNodeId(activeAddAnchor) === "__trigger__" ? 100 : 1,
       position: manualPositions.__trigger__ ?? {
         x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
         y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
@@ -2528,6 +2534,8 @@ function definitionToFlow(
     ...definition.blocks.map((block) => ({
       id: block.id,
       type: "workflowBlock",
+      zIndex:
+        selectedBlockId === block.id || insertAnchorNodeId(activeAddAnchor) === block.id ? 100 : 1,
       position: manualPositions[block.id] ?? {
         x: positioned.find((n) => n.id === block.id)?.x ?? 0,
         y: positioned.find((n) => n.id === block.id)?.y ?? 0,
@@ -2690,7 +2698,7 @@ export function WorkflowFlowCanvas({
   const initialFitNodes = useMemo(
     () => [
       { id: "__trigger__" },
-      ...definition.blocks.slice(0, 2).map((block) => ({ id: block.id })),
+      ...definition.blocks.slice(0, 3).map((block) => ({ id: block.id })),
     ],
     [definition.blocks],
   );
@@ -2728,8 +2736,8 @@ export function WorkflowFlowCanvas({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={{ padding: 0.18, minZoom: 0.85, maxZoom: 1, nodes: initialFitNodes }}
-          minZoom={0.75}
+          fitViewOptions={{ padding: 0.28, minZoom: 0.72, maxZoom: 0.96, nodes: initialFitNodes }}
+          minZoom={0.6}
           maxZoom={1.4}
           nodesDraggable
           nodesConnectable={false}
@@ -2763,7 +2771,7 @@ export function WorkflowFlowCanvas({
             zoomable
             nodeColor={miniMapNodeColor}
             maskColor="hsl(var(--surface-0) / 0.55)"
-            className="!m-4 !h-[128px] !w-[184px] !rounded-lg !border !border-[hsl(var(--border))] !bg-[hsl(var(--surface-1))] !shadow-xl"
+            className="!m-3 !h-[104px] !w-[152px] !rounded-lg !border !border-[hsl(var(--border))] !bg-[hsl(var(--surface-1))] !shadow-xl"
           />
         </ReactFlow>
         <div className="pointer-events-none absolute inset-0 z-10">
