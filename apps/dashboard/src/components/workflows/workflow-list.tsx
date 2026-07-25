@@ -684,19 +684,65 @@ function TemplatePreview({
         </div>
       </header>
       <div className="relative flex-1 overflow-hidden bg-[radial-gradient(circle_at_1px_1px,hsl(var(--border))_1px,transparent_0)] [background-size:16px_16px]">
-        <div className="absolute left-[12%] top-[22%] flex items-start gap-12">
-          <MiniNode
-            title="Trigger action"
-            body={triggerLabel(template.definition.trigger)}
-            icon={Zap}
-          />
-          <MiniNode
-            title="Workflow Action"
-            body={template.definition.blocks[0]?.type.replaceAll("_", " ") ?? "Message"}
-            icon={MessageCircle}
-          />
-          <MiniStack blocks={template.definition.blocks.slice(1, 5)} />
-        </div>
+        <TemplatePreviewCanvas definition={template.definition} />
+      </div>
+    </div>
+  );
+}
+
+function TemplatePreviewCanvas({ definition }: { definition: WorkflowDefinition }) {
+  const firstBlock = definition.blocks[0];
+  const followUpBlocks = definition.blocks.slice(1, 5);
+
+  return (
+    <div className="absolute left-[10%] top-[18%] h-[440px] w-[820px]">
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-visible text-violet-500"
+        viewBox="0 0 820 440"
+      >
+        <title>Template workflow preview connections</title>
+        <path
+          d="M 254 166 C 302 166 300 106 348 106"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="4"
+        />
+        <circle cx="348" cy="106" r="5" fill="currentColor" />
+        <path
+          d="M 602 126 C 646 126 644 126 688 126"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="4"
+        />
+        <circle cx="688" cy="126" r="5" fill="currentColor" />
+        {followUpBlocks.length > 1 ? (
+          <>
+            <path
+              d="M 602 170 C 646 174 644 234 688 238"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="3"
+            />
+            <circle cx="688" cy="238" r="4" fill="currentColor" />
+          </>
+        ) : null}
+      </svg>
+      <div className="absolute left-0 top-[76px]">
+        <MiniNode title="Trigger action" body={triggerLabel(definition.trigger)} icon={Zap} />
+      </div>
+      <div className="absolute left-[348px] top-0">
+        <MiniNode
+          title="Website visitor flow"
+          body={firstBlock?.type.replaceAll("_", " ") ?? "Message"}
+          icon={MessageCircle}
+        />
+      </div>
+      <div className="absolute left-[688px] top-[86px]">
+        <MiniStack blocks={followUpBlocks} />
       </div>
     </div>
   );
