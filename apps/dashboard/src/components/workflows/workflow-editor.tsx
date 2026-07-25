@@ -1323,7 +1323,7 @@ const ACTION_GROUP_STYLES: Record<string, string> = {
   Collect: "text-violet-500",
   Internal: "text-emerald-500",
   Delay: "text-amber-500",
-  Branch: "text-orange-500",
+  Branch: "text-violet-500",
   Integrations: "text-cyan-600",
 };
 
@@ -1370,7 +1370,7 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
       },
       {
         type: "show_expected_reply_time",
-        label: "Expected reply time",
+        label: "Show expected reply time",
         description: "Display the SLA reply-time estimate.",
         icon: Clock3,
       },
@@ -1388,7 +1388,7 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
       },
       {
         type: "send_ticket_form",
-        label: "Send ticket form",
+        label: "Send ticket",
         description: "Collect ticket details through a form.",
         icon: FileInput,
       },
@@ -1404,12 +1404,6 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         icon: FileInput,
       },
       {
-        type: "collect_customer_reply",
-        label: "Collect customer reply",
-        description: "Suspend until the customer responds.",
-        icon: MessageSquareText,
-      },
-      {
         type: "reply_buttons",
         label: "Reply buttons",
         description: "Offer button choices with routing.",
@@ -1417,9 +1411,15 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
       },
       {
         type: "csat",
-        label: "Ask for CSAT",
+        label: "Ask for conversation rating (CSAT)",
         description: "Request a conversation rating.",
         icon: Star,
+      },
+      {
+        type: "collect_customer_reply",
+        label: "Collect customer reply",
+        description: "Suspend until the customer responds.",
+        icon: MessageSquareText,
       },
     ],
   },
@@ -1433,16 +1433,22 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         icon: UserCheck,
       },
       {
-        type: "add_note",
-        label: "Add note",
-        description: "Leave an internal teammate note.",
-        icon: PencilLine,
+        type: "close",
+        label: "Close",
+        description: "Close the conversation.",
+        icon: X,
       },
       {
         type: "mark_priority",
         label: "Mark as priority",
         description: "Set low, normal, high, or urgent priority.",
         icon: Star,
+      },
+      {
+        type: "add_note",
+        label: "Add note",
+        description: "Leave an internal teammate note.",
+        icon: PencilLine,
       },
       {
         type: "tag_conversation",
@@ -1455,6 +1461,18 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         label: "Tag end user",
         description: "Append or replace customer tags.",
         icon: Tag,
+      },
+      {
+        type: "apply_rules",
+        label: "Apply rules",
+        description: "Run every matching rule branch.",
+        icon: GitBranch,
+      },
+      {
+        type: "apply_sla",
+        label: "Apply SLA",
+        description: "Apply the active SLA policy.",
+        icon: Clock3,
       },
       {
         type: "set_ticket_state",
@@ -1473,18 +1491,6 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         label: "Link tickets",
         description: "Create parent, child, or tracking links.",
         icon: Ticket,
-      },
-      {
-        type: "apply_sla",
-        label: "Apply SLA",
-        description: "Apply the active SLA policy.",
-        icon: Clock3,
-      },
-      {
-        type: "close",
-        label: "Close conversation",
-        description: "Close the conversation.",
-        icon: X,
       },
       {
         type: "reopen",
@@ -1518,12 +1524,6 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         type: "branches",
         label: "Branches",
         description: "Route to the first matching branch.",
-        icon: GitBranch,
-      },
-      {
-        type: "apply_rules",
-        label: "Apply rules",
-        description: "Run every matching rule branch.",
         icon: GitBranch,
       },
       {
