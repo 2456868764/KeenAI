@@ -1,0 +1,410 @@
+{"kind":"deck","id":"pr/jhhpyy","name":"Deck"}
+{"kind":"layout","layoutId":"a72eb97e-6354-4937-a1c2-57f52b90b4b9","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"fa921665-ef22-4781-9de4-3b92fc081bfc","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/e0buhh","slide":1,"title":"KeenAI","textShapes":6}
+{"kind":"textbox","id":"sh/u94fexsn","slide":1,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[58,48,220,38]}
+{"kind":"textbox","id":"sh/hwvy9cbe","slide":1,"text":"AI-native support operating system","textPreview":"AI-native support operating system","textChars":34,"textLines":1,"bbox":[820,54,360,26]}
+{"kind":"textbox","id":"sh/gbmhg7at","slide":1,"text":"开源、AI 原生、可私有化部署的客户支持与产品反馈平台","textPreview":"开源、AI 原生、可私有化部署的客户支持与产品反馈平台","textChars":27,"textLines":1,"bbox":[58,214,1030,162]}
+{"kind":"textbox","id":"sh/3yxgbmtk","slide":1,"text":"统一多端入口、知识库、Keeni AI Agent、Memory、Workflow、工单和反馈闭环。","textPreview":"统一多端入口、知识库、Keeni AI Agent、Memory、Workflow、工单和反馈闭环。","textChars":50,"textLines":1,"bbox":[62,414,920,62]}
+{"kind":"shape","id":"sh/2x4zihsz","slide":1,"bbox":[62,560,278,48]}
+{"kind":"textbox","id":"sh/p0fydwbq","slide":1,"text":"Business Plan","textPreview":"Business Plan","textChars":13,"textLines":1,"bbox":[85,573,180,22]}
+{"kind":"textbox","id":"sh/4z6hkra5","slide":1,"text":"Linear style via getdesign.md","textPreview":"Linear style via getdesign.md","textChars":29,"textLines":1,"bbox":[900,660,280,22]}
+{"kind":"notes","id":"nt/e0buhh","slide":1,"text":"[Sources] README.md §1 Vision; docs/01-PRD.md §1 Product overview; artifacts/presentations/linear.DESIGN.md"}
+{"kind":"slide","id":"sl/4m6vug","slide":2,"title":"KeenAI","textShapes":14}
+{"kind":"textbox","id":"sh/fidwnet8","slide":2,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/gj6dgjut","slide":2,"text":"Problem","textPreview":"Problem","textChars":7,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/hkfep4by","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/2lofi9cj","slide":2,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/3mxwret4","slide":2,"text":"真实痛点不是缺聊天窗口，而是客服、知识和反馈无法闭环","textPreview":"真实痛点不是缺聊天窗口，而是客服、知识和反馈无法闭环","textChars":26,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/4n6xkjup","slide":2,"text":"企业在客户支持上同时承受成本、数据控制、流程一致性和 AI 落地压力。","textPreview":"企业在客户支持上同时承受成本、数据控制、流程一致性和 AI 落地压力。","textChars":35,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/pofetoba","slide":2,"bbox":[64,330,260,170]}
+{"kind":"shape","id":"sh/ypkv6pcf","slide":2,"bbox":[64,330,3,170]}
+{"kind":"textbox","id":"sh/jqtwfud0","slide":2,"text":"成本持续上升","textPreview":"成本持续上升","textChars":6,"textLines":1,"bbox":[86,350,216,34]}
+{"kind":"textbox","id":"sh/vexs7md4","slide":2,"text":"Intercom / Zendesk / AI resolution / seat 叠加收费，中小团队在规模化前就承担企业级成本。","textPreview":"Intercom / Zendesk / AI resolution / seat 叠加收费，中小团队在规模化前就承担企业级成本。","textChars":65,"textLines":1,"bbox":[86,396,216,88]}
+{"kind":"shape","id":"sh/udobe1cz","slide":2,"bbox":[348,330,260,170]}
+{"kind":"textbox","id":"sh/hgfa9wva","slide":2,"text":"数据与 AI 不可控","textPreview":"数据与 AI 不可控","textChars":10,"textLines":1,"bbox":[370,350,216,34]}
+{"kind":"textbox","id":"sh/gf6tgrup","slide":2,"text":"客户对话、工单、知识和反馈沉在第三方平台；模型黑盒，私有化与合规困难。","textPreview":"客户对话、工单、知识和反馈沉在第三方平台；模型黑盒，私有化与合规困难。","textChars":35,"textLines":1,"bbox":[370,396,216,88]}
+{"kind":"shape","id":"sh/7ads3md8","slide":2,"bbox":[632,330,260,170]}
+{"kind":"textbox","id":"sh/m94bahwn","slide":2,"text":"多端入口割裂","textPreview":"多端入口割裂","textChars":6,"textLines":1,"bbox":[654,350,216,34]}
+{"kind":"textbox","id":"sh/tcfa5wve","slide":2,"text":"Email、Widget、Discord、Slack、API 进入不同系统，人工搬运上下文。","textPreview":"Email、Widget、Discord、Slack、API 进入不同系统，人工搬运上下文。","textChars":46,"textLines":1,"bbox":[654,396,216,88]}
+{"kind":"shape","id":"sh/8b6tcret","slide":2,"bbox":[916,330,260,170]}
+{"kind":"textbox","id":"sh/zmdsz2dw","slide":2,"text":"流程依赖经验","textPreview":"流程依赖经验","textChars":6,"textLines":1,"bbox":[938,350,216,34]}
+{"kind":"textbox","id":"sh/yl4r6hwr","slide":2,"text":"高价值客户优先级、SLA、Bug 分流、需求归并和客服交接难以标准化。","textPreview":"高价值客户优先级、SLA、Bug 分流、需求归并和客服交接难以标准化。","textChars":35,"textLines":1,"bbox":[938,396,216,88]}
+{"kind":"textbox","id":"sh/2hkbixgj","slide":2,"text":"KeenAI 的切入点：把入口、知识、AI 判断和自动化动作放进企业自己可控的系统。","textPreview":"KeenAI 的切入点：把入口、知识、AI 判断和自动化动作放进企业自己可控的系统。","textChars":42,"textLines":1,"bbox":[64,582,1040,38]}
+{"kind":"notes","id":"nt/4m6vug","slide":2,"text":"[Sources] docs/01-PRD.md §1.3; docs/01-PRD.md §8; README.md §1"}
+{"kind":"slide","id":"sl/9gldvh","slide":3,"title":"KeenAI","textShapes":11}
+{"kind":"textbox","id":"sh/4rm9gr65","slide":3,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/36d8nm50","slide":3,"text":"Customers","textPreview":"Customers","textChars":9,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/254rehof","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/h4vqlcnu","slide":3,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/g3m9c769","slide":3,"text":"目标客户是需要低成本、可控 AI 和私有化的团队","textPreview":"目标客户是需要低成本、可控 AI 和私有化的团队","textChars":24,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/f2t8j25o","slide":3,"text":"三类客户共享同一个需求：把支持和反馈数据沉淀在自己的系统里。","textPreview":"三类客户共享同一个需求：把支持和反馈数据沉淀在自己的系统里。","textChars":30,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/u1kraxo3","slide":3,"bbox":[64,310,340,272]}
+{"kind":"shape","id":"sh/10faxwny","slide":3,"bbox":[64,310,3,272]}
+{"kind":"textbox","id":"sh/0z69ob6d","slide":3,"text":"SaaS 创业团队","textPreview":"SaaS 创业团队","textChars":9,"textLines":1,"bbox":[86,330,296,34]}
+{"kind":"textbox","id":"sh/alwjupcj","slide":3,"text":"5-50 人，月活 1k-100k。\n\n痛点：Intercom 成本高，Zendesk 太重，反馈闭环弱。\n\n购买动机：AI 首响、低成本客服、反馈和路线图一体化。","textPreview":"5-50 人，月活 1k-100k。 |  | 痛点：Intercom 成本高，Zendesk 太重，反馈闭环弱。 |  | 购买动机：AI 首响、低成本客服、反馈和路线图一体化。","textChars":82,"textLines":5,"bbox":[86,376,296,190]}
+{"kind":"shape","id":"sh/vm5k3ut4","slide":3,"bbox":[470,310,340,272]}
+{"kind":"textbox","id":"sh/wny1wzup","slide":3,"text":"独立开发者","textPreview":"独立开发者","textChars":5,"textLines":1,"bbox":[492,330,296,34]}
+{"kind":"textbox","id":"sh/xo7254ba","slide":3,"text":"1-5 人维护多个产品。\n\n痛点：没有专职客服，重复问题消耗开发时间。\n\n购买动机：一键部署、AI 7x24 回复、用户反馈沉淀。","textPreview":"1-5 人维护多个产品。 |  | 痛点：没有专职客服，重复问题消耗开发时间。 |  | 购买动机：一键部署、AI 7x24 回复、用户反馈沉淀。","textChars":65,"textLines":5,"bbox":[492,376,296,190]}
+{"kind":"shape","id":"sh/mhwjqpcn","slide":3,"bbox":[876,310,340,272]}
+{"kind":"textbox","id":"sh/ni5kzut8","slide":3,"text":"企业内部 IT / DevTool","textPreview":"企业内部 IT / DevTool","textChars":17,"textLines":1,"bbox":[898,330,296,34]}
+{"kind":"textbox","id":"sh/8je1szud","slide":3,"text":"100-10000 员工。\n\n痛点：数据不能出内网，内部服务台响应慢。\n\n购买动机：私有化、SSO、审计、本地模型、流程自动化。","textPreview":"100-10000 员工。 |  | 痛点：数据不能出内网，内部服务台响应慢。 |  | 购买动机：私有化、SSO、审计、本地模型、流程自动化。","textChars":64,"textLines":5,"bbox":[898,376,296,190]}
+{"kind":"notes","id":"nt/9gldvh","slide":3,"text":"[Sources] docs/01-PRD.md §2 Target users; docs/01-PRD.md §4 Commercial goals"}
+{"kind":"slide","id":"sl/35p51n","slide":4,"title":"KeenAI","textShapes":18}
+{"kind":"textbox","id":"sh/ils7m10f","slide":4,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/5ojqhgz6","slide":4,"text":"Platform","textPreview":"Platform","textChars":8,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/knapobil","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/7al8jqhc","slide":4,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/6pc7qlgr","slide":4,"text":"KeenAI 是客户支持与产品反馈的 AI 操作系统","textPreview":"KeenAI 是客户支持与产品反馈的 AI 操作系统","textChars":26,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/tc3qlgz2","slide":4,"text":"从客户入口到知识检索、Agent 执行、Workflow 编排和产品反馈沉淀，形成同一条链路。","textPreview":"从客户入口到知识检索、Agent 执行、Workflow 编排和产品反馈沉淀，形成同一条链路。","textChars":47,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/sbupsbyh","slide":4,"bbox":[64,328,236,150]}
+{"kind":"textbox","id":"sh/fel8nqh8","slide":4,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[82,344,42,30]}
+{"kind":"textbox","id":"sh/udc7ulgn","slide":4,"text":"Multi-channel intake","textPreview":"Multi-channel intake","textChars":20,"textLines":1,"bbox":[128,343,152,32]}
+{"kind":"textbox","id":"sh/8futszal","slide":4,"text":"Widget、Email、Discord、Slack、Telegram、API / Webhook 统一进入 Inbox。","textPreview":"Widget、Email、Discord、Slack、Telegram、API / Webhook 统一进入 Inbox。","textChars":61,"textLines":1,"bbox":[128,384,152,80]}
+{"kind":"shape","id":"sh/9g3ul4rq","slide":4,"bbox":[314,386,80,34]}
+{"kind":"shape","id":"sh/mdcbqpsf","slide":4,"bbox":[412,328,236,150]}
+{"kind":"textbox","id":"sh/7elcju90","slide":4,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[430,344,42,30]}
+{"kind":"textbox","id":"sh/wjetwzah","slide":4,"text":"Context layer","textPreview":"Context layer","textChars":13,"textLines":1,"bbox":[476,343,152,32]}
+{"kind":"textbox","id":"sh/hknup4r2","slide":4,"text":"客户、组织、会话、工单、历史反馈、权限和 SLA 组合成实时上下文。","textPreview":"客户、组织、会话、工单、历史反馈、权限和 SLA 组合成实时上下文。","textChars":34,"textLines":1,"bbox":[476,384,152,80]}
+{"kind":"shape","id":"sh/uhwbu9sb","slide":4,"bbox":[662,386,80,34]}
+{"kind":"shape","id":"sh/vi5cnu9w","slide":4,"bbox":[760,328,236,150]}
+{"kind":"textbox","id":"sh/47ed0jad","slide":4,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[778,344,42,30]}
+{"kind":"textbox","id":"sh/587utory","slide":4,"text":"AI Kernel","textPreview":"AI Kernel","textChars":9,"textLines":1,"bbox":[824,343,152,32]}
+{"kind":"textbox","id":"sh/d43ud4j2","slide":4,"text":"Keeni AI Agent + RAG + Memory 判断问题、检索事实、生成或执行动作。","textPreview":"Keeni AI Agent + RAG + Memory 判断问题、检索事实、生成或执行动作。","textChars":48,"textLines":1,"bbox":[824,384,152,80]}
+{"kind":"shape","id":"sh/s3utkj2x","slide":4,"bbox":[1010,386,60,34]}
+{"kind":"shape","id":"sh/r21cbe1c","slide":4,"bbox":[1080,328,150,150]}
+{"kind":"textbox","id":"sh/q1sbi9kr","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1098,344,42,30]}
+{"kind":"textbox","id":"sh/1s3uhoje","slide":4,"text":"Business loop","textPreview":"Business loop","textChars":13,"textLines":1,"bbox":[1144,343,66,32]}
+{"kind":"textbox","id":"sh/07utoj2t","slide":4,"text":"Ticket、Feedback、Roadmap、Changelog、Help Center 形成产品与服务闭环。","textPreview":"Ticket、Feedback、Roadmap、Changelog、Help Center 形成产品与服务闭环。","textChars":56,"textLines":1,"bbox":[1144,384,66,80]}
+{"kind":"textbox","id":"sh/f6lcfe18","slide":4,"text":"不是单点客服机器人，而是把支持运营流程产品化。","textPreview":"不是单点客服机器人，而是把支持运营流程产品化。","textChars":23,"textLines":1,"bbox":[64,570,860,34]}
+{"kind":"notes","id":"nt/35p51n","slide":4,"text":"[Sources] README.md §2 Product Matrix; docs/04-MODULES.md Module overview; docs/03-ARCHITECTURE.md §1"}
+{"kind":"slide","id":"sl/3yjn3k","slide":5,"title":"KeenAI","textShapes":15}
+{"kind":"textbox","id":"sh/kryporm1","slide":5,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/zqpovmlg","slide":5,"text":"Channels","textPreview":"Channels","textChars":8,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/ypg7m14b","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/twr61g3y","slide":5,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/8vipsbmd","slide":5,"text":"多端接入让客户在哪里提问，企业就在哪里响应","textPreview":"多端接入让客户在哪里提问，企业就在哪里响应","textChars":21,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/7u9oz6ls","slide":5,"text":"所有入口统一进入同一套客户上下文、AI 判断、知识库检索、Workflow 分派和数据分析。","textPreview":"所有入口统一进入同一套客户上下文、AI 判断、知识库检索、Workflow 分派和数据分析。","textChars":46,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/mt07q147","slide":5,"bbox":[64,326,206,220]}
+{"kind":"shape","id":"sh/hkrq5g3u","slide":5,"bbox":[64,326,3,220]}
+{"kind":"textbox","id":"sh/gjipwbm9","slide":5,"text":"Messenger Widget","textPreview":"Messenger Widget","textChars":16,"textLines":1,"bbox":[86,346,162,34]}
+{"kind":"textbox","id":"sh/y1wnyt8j","slide":5,"text":"嵌入官网和产品内，承接访客、登录用户和自助服务入口。","textPreview":"嵌入官网和产品内，承接访客、登录用户和自助服务入口。","textChars":26,"textLines":1,"bbox":[86,392,162,138]}
+{"kind":"shape","id":"sh/z25o7ypo","slide":5,"bbox":[300,326,206,220]}
+{"kind":"textbox","id":"sh/k3e503q9","slide":5,"text":"Email","textPreview":"Email","textChars":5,"textLines":1,"bbox":[322,346,162,34]}
+{"kind":"textbox","id":"sh/l4n6987u","slide":5,"text":"support@ 邮件自动归并线程，转 Conversation 或 Ticket。","textPreview":"support@ 邮件自动归并线程，转 Conversation 或 Ticket。","textChars":42,"textLines":1,"bbox":[322,392,162,138]}
+{"kind":"shape","id":"sh/65wn2t8f","slide":5,"bbox":[536,326,206,220]}
+{"kind":"textbox","id":"sh/76pobyp0","slide":5,"text":"Discord / Slack","textPreview":"Discord / Slack","textChars":15,"textLines":1,"bbox":[558,346,162,34]}
+{"kind":"textbox","id":"sh/87yp43ql","slide":5,"text":"面向社区、开发者客户和内部协作场景的即时支持。","textPreview":"面向社区、开发者客户和内部协作场景的即时支持。","textChars":23,"textLines":1,"bbox":[558,392,162,138]}
+{"kind":"shape","id":"sh/t876d876","slide":5,"bbox":[772,326,206,220]}
+{"kind":"textbox","id":"sh/29cnq98b","slide":5,"text":"Telegram / WhatsApp","textPreview":"Telegram / WhatsApp","textChars":19,"textLines":1,"bbox":[794,346,162,34]}
+{"kind":"textbox","id":"sh/naloze9w","slide":5,"text":"覆盖移动优先和国际化支持场景，后续扩展微信、LINE。","textPreview":"覆盖移动优先和国际化支持场景，后续扩展微信、LINE。","textChars":27,"textLines":1,"bbox":[794,392,162,138]}
+{"kind":"shape","id":"sh/rehkrap8","slide":5,"bbox":[1008,326,206,220]}
+{"kind":"textbox","id":"sh/qd83y5o3","slide":5,"text":"API / Webhook","textPreview":"API / Webhook","textChars":13,"textLines":1,"bbox":[1030,346,162,34]}
+{"kind":"textbox","id":"sh/dgj2tk7e","slide":5,"text":"业务系统、CRM、工单系统和自定义工具可直接接入。","textPreview":"业务系统、CRM、工单系统和自定义工具可直接接入。","textChars":25,"textLines":1,"bbox":[1030,392,162,138]}
+{"kind":"notes","id":"nt/3yjn3k","slide":5,"text":"[Sources] docs/02-FEATURES.md §1.2 Channels; docs/14-MULTIMODAL.md; README.md §2"}
+{"kind":"slide","id":"sl/jml0oc","slide":6,"title":"KeenAI","textShapes":14}
+{"kind":"textbox","id":"sh/juxs7yho","slide":6,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/kv6t03i9","slide":6,"text":"Keeni AI Agent","textPreview":"Keeni AI Agent","textChars":14,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/5wfa98zu","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/6hob2d0f","slide":6,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/7ixsbih0","slide":6,"text":"Keeni AI Agent 负责理解、回答、执行和升级","textPreview":"Keeni AI Agent 负责理解、回答、执行和升级","textChars":28,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/sj6t4ni5","slide":6,"text":"Agent 不只生成话术，而是在企业客服流程里使用知识、工具和规则完成可控动作。","textPreview":"Agent 不只生成话术，而是在企业客服流程里使用知识、工具和规则完成可控动作。","textChars":40,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/tkfadszq","slide":6,"bbox":[64,310,260,170]}
+{"kind":"shape","id":"sh/mlkrq90v","slide":6,"bbox":[64,310,3,170]}
+{"kind":"textbox","id":"sh/nmtszehg","slide":6,"text":"理解客户意图","textPreview":"理解客户意图","textChars":6,"textLines":1,"bbox":[86,330,216,34]}
+{"kind":"textbox","id":"sh/ri5w3epw","slide":6,"text":"识别咨询、Bug、账单、退款、功能请求、账号问题、情绪风险和升级条件。","textPreview":"识别咨询、Bug、账单、退款、功能请求、账号问题、情绪风险和升级条件。","textChars":35,"textLines":1,"bbox":[86,376,216,88]}
+{"kind":"shape","id":"sh/qhwvat8b","slide":6,"bbox":[348,310,260,170]}
+{"kind":"textbox","id":"sh/dk7e5o7m","slide":6,"text":"检索可信答案","textPreview":"检索可信答案","textChars":6,"textLines":1,"bbox":[370,330,216,34]}
+{"kind":"textbox","id":"sh/sjedcjq1","slide":6,"text":"优先调用 Help Center、产品文档、历史工单和内部知识，通过 RAG 生成带来源回复。","textPreview":"优先调用 Help Center、产品文档、历史工单和内部知识，通过 RAG 生成带来源回复。","textChars":47,"textLines":1,"bbox":[370,376,216,88]}
+{"kind":"shape","id":"sh/3u5wzepk","slide":6,"bbox":[632,310,260,170]}
+{"kind":"textbox","id":"sh/itwv698z","slide":6,"text":"执行客服动作","textPreview":"执行客服动作","textChars":6,"textLines":1,"bbox":[654,330,216,34]}
+{"kind":"textbox","id":"sh/5wne1o7q","slide":6,"text":"创建 Ticket、打标签、分配团队、推荐文档、订阅反馈、调用业务系统。","textPreview":"创建 Ticket、打标签、分配团队、推荐文档、订阅反馈、调用业务系统。","textChars":36,"textLines":1,"bbox":[654,376,216,88]}
+{"kind":"shape","id":"sh/4ved8jq5","slide":6,"bbox":[916,310,260,170]}
+{"kind":"textbox","id":"sh/vqlwvupo","slide":6,"text":"人工兜底","textPreview":"人工兜底","textChars":4,"textLines":1,"bbox":[938,330,216,34]}
+{"kind":"textbox","id":"sh/upcv2983","slide":6,"text":"低置信度、负面情绪、合规/退款等场景转人工，并交付摘要和建议。","textPreview":"低置信度、负面情绪、合规/退款等场景转人工，并交付摘要和建议。","textChars":31,"textLines":1,"bbox":[938,376,216,88]}
+{"kind":"textbox","id":"sh/ylsfepsv","slide":6,"text":"企业价值：把重复首响和资料查询交给 AI，把复杂判断和关系维护留给人工。","textPreview":"企业价值：把重复首响和资料查询交给 AI，把复杂判断和关系维护留给人工。","textChars":36,"textLines":1,"bbox":[64,570,980,34]}
+{"kind":"notes","id":"nt/jml0oc","slide":6,"text":"[Sources] docs/09-AGENT-ENGINE.md; docs/04-MODULES.md §1.6 LLM; README.md §4.2"}
+{"kind":"slide","id":"sl/f3ll5x","slide":7,"title":"KeenAI","textShapes":21}
+{"kind":"textbox","id":"sh/43yls7qp","slide":7,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/32pkz2p4","slide":7,"text":"Agent Runtime","textPreview":"Agent Runtime","textChars":13,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/i1g3qh8j","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/d8rm5w76","slide":7,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/s7ilwrql","slide":7,"text":"Agent 的工作循环让每次回复都可解释、可干预、可升级","textPreview":"Agent 的工作循环让每次回复都可解释、可干预、可升级","textChars":28,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/r6p43mp0","slide":7,"text":"Plan -> Retrieve -> Act -> Observe -> Escalate，把 AI 放进企业可审计流程里。","textPreview":"Plan -> Retrieve -> Act -> Observe -> Escalate，把 AI 放进企业可审计流程里。","textChars":63,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/q5g3uh8f","slide":7,"bbox":[64,330,190,150]}
+{"kind":"textbox","id":"sh/1crm9w72","slide":7,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[82,346,42,30]}
+{"kind":"textbox","id":"sh/0bil0rqh","slide":7,"text":"Plan","textPreview":"Plan","textChars":4,"textLines":1,"bbox":[128,345,106,32]}
+{"kind":"textbox","id":"sh/i1cfilcz","slide":7,"text":"识别意图、风险、所需上下文和是否需要工具。","textPreview":"识别意图、风险、所需上下文和是否需要工具。","textChars":21,"textLines":1,"bbox":[128,386,106,80]}
+{"kind":"shape","id":"sh/j2lwrqd4","slide":7,"bbox":[262,388,40,34]}
+{"kind":"shape","id":"sh/43uxkvup","slide":7,"bbox":[294,330,190,150]}
+{"kind":"textbox","id":"sh/543et0va","slide":7,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[312,346,42,30]}
+{"kind":"textbox","id":"sh/65wfm5cv","slide":7,"text":"Retrieve","textPreview":"Retrieve","textChars":8,"textLines":1,"bbox":[358,345,106,32]}
+{"kind":"textbox","id":"sh/r65wvqdg","slide":7,"text":"从知识库、Memory、客户资料和工单历史取证。","textPreview":"从知识库、Memory、客户资料和工单历史取证。","textChars":24,"textLines":1,"bbox":[358,386,106,80]}
+{"kind":"shape","id":"sh/s7exovu1","slide":7,"bbox":[492,388,40,34]}
+{"kind":"shape","id":"sh/t8nyx0vm","slide":7,"bbox":[524,330,190,150]}
+{"kind":"textbox","id":"sh/m9sfa1cr","slide":7,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[542,346,42,30]}
+{"kind":"textbox","id":"sh/7a1wj6dc","slide":7,"text":"Act","textPreview":"Act","textChars":3,"textLines":1,"bbox":[588,345,106,32]}
+{"kind":"textbox","id":"sh/behcr2t4","slide":7,"text":"生成回复、调用工具、创建工单或触发 Workflow。","textPreview":"生成回复、调用工具、创建工单或触发 Workflow。","textChars":27,"textLines":1,"bbox":[588,386,106,80]}
+{"kind":"shape","id":"sh/adobixsj","slide":7,"bbox":[722,388,40,34]}
+{"kind":"shape","id":"sh/xgzutcbu","slide":7,"bbox":[754,330,190,150]}
+{"kind":"textbox","id":"sh/cfqtk7a9","slide":7,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[772,346,42,30]}
+{"kind":"textbox","id":"sh/naxcnits","slide":7,"text":"Observe","textPreview":"Observe","textChars":7,"textLines":1,"bbox":[818,345,106,32]}
+{"kind":"textbox","id":"sh/29obexs7","slide":7,"text":"记录结果、用户反馈、采纳率、CSAT 和后续追问。","textPreview":"记录结果、用户反馈、采纳率、CSAT 和后续追问。","textChars":25,"textLines":1,"bbox":[818,386,106,80]}
+{"kind":"shape","id":"sh/pcfupsby","slide":7,"bbox":[952,388,40,34]}
+{"kind":"shape","id":"sh/ob6tgnad","slide":7,"bbox":[984,330,190,150]}
+{"kind":"textbox","id":"sh/761czmtw","slide":7,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1002,346,42,30]}
+{"kind":"textbox","id":"sh/m58vqhsr","slide":7,"text":"Escalate","textPreview":"Escalate","textChars":8,"textLines":1,"bbox":[1048,345,106,32]}
+{"kind":"textbox","id":"sh/4r29kjqt","slide":7,"text":"低置信度、敏感动作或失败路径转人工处理。","textPreview":"低置信度、敏感动作或失败路径转人工处理。","textChars":20,"textLines":1,"bbox":[1048,386,106,80]}
+{"kind":"textbox","id":"sh/5sbqtore","slide":7,"text":"支持多模型：OpenAI / Anthropic / Gemini / DeepSeek / Kimi / Ollama，本地模型可用于私有化和离线部署。","textPreview":"支持多模型：OpenAI / Anthropic / Gemini / DeepSeek / Kimi / Ollama，本地模型可用于私有化和离线部署。","textChars":77,"textLines":1,"bbox":[64,574,1020,34]}
+{"kind":"notes","id":"nt/f3ll5x","slide":7,"text":"[Sources] docs/09-AGENT-ENGINE.md; docs/10-AGENT-MEMORY.md; docs/11-RAG-KNOWLEDGE.md"}
+{"kind":"slide","id":"sl/qeaxt0","slide":8,"title":"KeenAI","textShapes":15}
+{"kind":"textbox","id":"sh/zqxsbu5s","slide":8,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/0r6t4zmd","slide":8,"text":"Knowledge Base / RAG","textPreview":"Knowledge Base / RAG","textChars":20,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/lszad4ny","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/md8b694j","slide":8,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/nehsfe54","slide":8,"text":"RAG 是 AI 可控回答的事实层","textPreview":"RAG 是 AI 可控回答的事实层","textChars":17,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/8fqt8zm9","slide":8,"text":"KeenAI 将企业知识转成可检索、可评测、可追溯的回答依据。","textPreview":"KeenAI 将企业知识转成可检索、可评测、可追溯的回答依据。","textChars":31,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/9gzuh4nu","slide":8,"bbox":[80,306,260,150]}
+{"kind":"textbox","id":"sh/ah8ba94f","slide":8,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[98,322,42,30]}
+{"kind":"textbox","id":"sh/vihcje50","slide":8,"text":"Source ingestion","textPreview":"Source ingestion","textChars":16,"textLines":1,"bbox":[144,321,176,32]}
+{"kind":"textbox","id":"sh/bid0fq9k","slide":8,"text":"Help Center、Markdown、网页、GitHub、Intercom / Zendesk 导入、Roadmap 数据和历史工单。","textPreview":"Help Center、Markdown、网页、GitHub、Intercom / Zendesk 导入、Roadmap 数据和历史工单。","textChars":69,"textLines":1,"bbox":[144,362,176,80]}
+{"kind":"shape","id":"sh/ah4zm5sz","slide":8,"bbox":[360,364,76,34]}
+{"kind":"shape","id":"sh/xkvih0rq","slide":8,"bbox":[456,306,260,150]}
+{"kind":"textbox","id":"sh/wjmhova5","slide":8,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[474,322,42,30]}
+{"kind":"textbox","id":"sh/net0bq98","slide":8,"text":"Chunk + enrich","textPreview":"Chunk + enrich","textChars":14,"textLines":1,"bbox":[520,321,176,32]}
+{"kind":"textbox","id":"sh/2dkzils3","slide":8,"text":"文档切块、元数据、版本、语言、权限、实体和关系抽取。","textPreview":"文档切块、元数据、版本、语言、权限、实体和关系抽取。","textChars":26,"textLines":1,"bbox":[520,362,176,80]}
+{"kind":"shape","id":"sh/9gvid0re","slide":8,"bbox":[736,364,76,34]}
+{"kind":"shape","id":"sh/of2hkvat","slide":8,"bbox":[832,306,260,150]}
+{"kind":"textbox","id":"sh/7ax0na9s","slide":8,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[850,322,42,30]}
+{"kind":"textbox","id":"sh/69ojups7","slide":8,"text":"Hybrid retrieval","textPreview":"Hybrid retrieval","textChars":16,"textLines":1,"bbox":[896,321,176,32]}
+{"kind":"textbox","id":"sh/2hsb2dgr","slide":8,"text":"全文搜索 + 向量召回 + rerank，兼顾关键词精确匹配和语义理解。","textPreview":"全文搜索 + 向量召回 + rerank，兼顾关键词精确匹配和语义理解。","textChars":36,"textLines":1,"bbox":[896,362,176,80]}
+{"kind":"textbox","id":"sh/3i1cbixc","slide":8,"text":"输出要求：答案附来源链接，知识可过期，命中质量可评测，查询日志可回流优化。","textPreview":"输出要求：答案附来源链接，知识可过期，命中质量可评测，查询日志可回流优化。","textChars":37,"textLines":1,"bbox":[80,548,1000,38]}
+{"kind":"notes","id":"nt/qeaxt0","slide":8,"text":"[Sources] docs/11-RAG-KNOWLEDGE.md; docs/KB-DOCUMENT-PARSERS.md; packages/kb/config/kb-freshness.yaml"}
+{"kind":"slide","id":"sl/4t1v9f","slide":9,"title":"KeenAI","textShapes":14}
+{"kind":"textbox","id":"sh/y1cjm5wf","slide":9,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/lon2xkvq","slide":9,"text":"RAG Quality","textPreview":"RAG Quality","textChars":11,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/k3e1oful","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/byl0rado","slide":9,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/qxcji5w3","slide":9,"text":"知识库不只回答问题，还持续提升客服质量","textPreview":"知识库不只回答问题，还持续提升客服质量","textChars":19,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/x032t0vu","slide":9,"text":"企业级 RAG 的关键是权限、时效、评测和反馈回路，而不是简单向量搜索。","textPreview":"企业级 RAG 的关键是权限、时效、评测和反馈回路，而不是简单向量搜索。","textChars":36,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/czu1kfe9","slide":9,"bbox":[80,320,240,160]}
+{"kind":"textbox","id":"sh/vu5k3ud8","slide":9,"text":"Freshness","textPreview":"Freshness","textChars":9,"textLines":1,"bbox":[102,338,196,48]}
+{"kind":"textbox","id":"sh/utwjupcn","slide":9,"text":"知识源更新、过期检测和版本记录，避免 AI 使用旧答案。","textPreview":"知识源更新、过期检测和版本记录，避免 AI 使用旧答案。","textChars":28,"textLines":1,"bbox":[102,396,196,76]}
+{"kind":"shape","id":"sh/03q507y5","slide":9,"bbox":[376,320,240,160]}
+{"kind":"textbox","id":"sh/14j69czq","slide":9,"text":"Permission","textPreview":"Permission","textChars":10,"textLines":1,"bbox":[398,338,196,48]}
+{"kind":"textbox","id":"sh/e18nyx0z","slide":9,"text":"按 org、brand、角色和客户上下文过滤知识，避免越权引用。","textPreview":"按 org、brand、角色和客户上下文过滤知识，避免越权引用。","textChars":32,"textLines":1,"bbox":[398,396,196,76]}
+{"kind":"shape","id":"sh/f2ho72hk","slide":9,"bbox":[672,320,240,160]}
+{"kind":"textbox","id":"sh/sfq5wnit","slide":9,"text":"Evaluation","textPreview":"Evaluation","textChars":10,"textLines":1,"bbox":[694,338,196,48]}
+{"kind":"textbox","id":"sh/dgz65sze","slide":9,"text":"Golden queries、命中率、引用覆盖和人工反馈用于持续评测。","textPreview":"Golden queries、命中率、引用覆盖和人工反馈用于持续评测。","textChars":35,"textLines":1,"bbox":[694,396,196,76]}
+{"kind":"shape","id":"sh/qd8nux03","slide":9,"bbox":[968,320,240,160]}
+{"kind":"textbox","id":"sh/reh432ho","slide":9,"text":"Traceability","textPreview":"Traceability","textChars":12,"textLines":1,"bbox":[990,338,196,48]}
+{"kind":"textbox","id":"sh/4b65snix","slide":9,"text":"每条 AI 回复带来源、检索证据和生成路径，便于审计。","textPreview":"每条 AI 回复带来源、检索证据和生成路径，便于审计。","textChars":27,"textLines":1,"bbox":[990,396,196,76]}
+{"kind":"textbox","id":"sh/5cfm1szi","slide":9,"text":"结果：降低幻觉，提升首响质量，并让客服知识沉淀变成可运营资产。","textPreview":"结果：降低幻觉，提升首响质量，并让客服知识沉淀变成可运营资产。","textChars":31,"textLines":1,"bbox":[80,560,980,34]}
+{"kind":"notes","id":"nt/4t1v9f","slide":9,"text":"[Sources] docs/11-RAG-KNOWLEDGE.md; docs/11-RAG-OPTIMIZATION.md; docs/12-STORAGE-ABSTRACTION.md"}
+{"kind":"slide","id":"sl/fmkh2m","slide":10,"title":"KeenAI","textShapes":14}
+{"kind":"textbox","id":"sh/j6t432dc","slide":10,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/k725cnux","slide":10,"text":"Memory","textPreview":"Memory","textChars":6,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/l8bm5svi","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/ah0n6dcv","slide":10,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/bi94zidg","slide":10,"text":"Memory 让 Agent 记住客户、团队和长期上下文","textPreview":"Memory 让 Agent 记住客户、团队和长期上下文","textChars":28,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/wji58nu1","slide":10,"text":"KeenAI 的 Memory 不是聊天记录缓存，而是服务于客户支持的长期知识层。","textPreview":"KeenAI 的 Memory 不是聊天记录缓存，而是服务于客户支持的长期知识层。","textChars":41,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/x4bm1svm","slide":10,"bbox":[64,320,260,176]}
+{"kind":"shape","id":"sh/md032dcz","slide":10,"bbox":[64,320,3,176]}
+{"kind":"textbox","id":"sh/ne94vid4","slide":10,"text":"Customer memory","textPreview":"Customer memory","textChars":15,"textLines":1,"bbox":[86,340,216,34]}
+{"kind":"textbox","id":"sh/b2povqps","slide":10,"text":"客户偏好、历史问题、产品版本、购买计划、常见故障和满意度趋势。","textPreview":"客户偏好、历史问题、产品版本、购买计划、常见故障和满意度趋势。","textChars":31,"textLines":1,"bbox":[86,386,216,94]}
+{"kind":"shape","id":"sh/q1wn2lo7","slide":10,"bbox":[348,320,260,176]}
+{"kind":"textbox","id":"sh/d476x07y","slide":10,"text":"Conversation memory","textPreview":"Conversation memory","textChars":19,"textLines":1,"bbox":[370,340,216,34]}
+{"kind":"textbox","id":"sh/c3y54v6d","slide":10,"text":"当前对话的事实、已尝试方案、未解决问题和人工交接摘要。","textPreview":"当前对话的事实、已尝试方案、未解决问题和人工交接摘要。","textChars":27,"textLines":1,"bbox":[370,386,216,94]}
+{"kind":"shape","id":"sh/z6poza54","slide":10,"bbox":[632,320,260,176]}
+{"kind":"textbox","id":"sh/y5gn65oj","slide":10,"text":"Team memory","textPreview":"Team memory","textChars":11,"textLines":1,"bbox":[654,340,216,34]}
+{"kind":"textbox","id":"sh/l87610nu","slide":10,"text":"团队处理偏好、宏模板、升级规则、成功案例和内部 SOP。","textPreview":"团队处理偏好、宏模板、升级规则、成功案例和内部 SOP。","textChars":28,"textLines":1,"bbox":[654,386,216,94]}
+{"kind":"shape","id":"sh/07y58v69","slide":10,"bbox":[916,320,260,176]}
+{"kind":"textbox","id":"sh/falon6pk","slide":10,"text":"Product memory","textPreview":"Product memory","textChars":14,"textLines":1,"bbox":[938,340,216,34]}
+{"kind":"textbox","id":"sh/e9cnu1oz","slide":10,"text":"功能缺口、重复需求、Bug 模式和 Roadmap / Changelog 关联。","textPreview":"功能缺口、重复需求、Bug 模式和 Roadmap / Changelog 关联。","textChars":41,"textLines":1,"bbox":[938,386,216,94]}
+{"kind":"textbox","id":"sh/ipkr298n","slide":10,"text":"Memory 价值：减少重复询问，让 AI 和人工客服共享同一份可延续上下文。","textPreview":"Memory 价值：减少重复询问，让 AI 和人工客服共享同一份可延续上下文。","textChars":39,"textLines":1,"bbox":[64,572,1000,34]}
+{"kind":"notes","id":"nt/fmkh2m","slide":10,"text":"[Sources] docs/10-AGENT-MEMORY.md; docs/15-MEMORY-TREE.md; packages/memory/src/layers.ts"}
+{"kind":"slide","id":"sl/324abs","slide":11,"title":"KeenAI","textShapes":15}
+{"kind":"textbox","id":"sh/5kb658bq","slide":11,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/ihk7udsz","slide":11,"text":"Memory Pipeline","textPreview":"Memory Pipeline","textChars":15,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/3ito3ytk","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/wfips3ut","slide":11,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/hgb618be","slide":11,"text":"记忆需要抽取、压缩、冲突处理和遗忘机制","textPreview":"记忆需要抽取、压缩、冲突处理和遗忘机制","textChars":19,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/ud07qtc3","slide":11,"text":"企业客服里的记忆必须可信、可纠错、可删除，才能符合运营和合规要求。","textPreview":"企业客服里的记忆必须可信、可纠错、可删除，才能符合运营和合规要求。","textChars":33,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/ve9ozyt8","slide":11,"bbox":[80,314,250,150]}
+{"kind":"textbox","id":"sh/8bipojux","slide":11,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[98,330,42,30]}
+{"kind":"textbox","id":"sh/9cr6xobi","slide":11,"text":"Extract","textPreview":"Extract","textChars":7,"textLines":1,"bbox":[144,329,166,32]}
+{"kind":"textbox","id":"sh/9ofudovm","slide":11,"text":"从对话、工单和反馈中抽取事实、偏好、实体、关系和待办。","textPreview":"从对话、工单和反馈中抽取事实、偏好、实体、关系和待办。","textChars":27,"textLines":1,"bbox":[144,370,166,80]}
+{"kind":"shape","id":"sh/8n6dkju1","slide":11,"bbox":[350,372,64,34]}
+{"kind":"shape","id":"sh/nmxcbedw","slide":11,"bbox":[434,314,250,150]}
+{"kind":"textbox","id":"sh/ml4vi9cb","slide":11,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[452,330,42,30]}
+{"kind":"textbox","id":"sh/1kvu94vq","slide":11,"text":"Consolidate","textPreview":"Consolidate","textChars":11,"textLines":1,"bbox":[498,329,166,32]}
+{"kind":"textbox","id":"sh/0jmtgzu5","slide":11,"text":"合并重复事实，压缩长对话，形成客户级、主题级和全局摘要树。","textPreview":"合并重复事实，压缩长对话，形成客户级、主题级和全局摘要树。","textChars":29,"textLines":1,"bbox":[498,370,166,80]}
+{"kind":"shape","id":"sh/zidcnudk","slide":11,"bbox":[704,372,64,34]}
+{"kind":"shape","id":"sh/eh4be9cz","slide":11,"bbox":[788,314,250,150]}
+{"kind":"textbox","id":"sh/dwvul4ve","slide":11,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[806,330,42,30]}
+{"kind":"textbox","id":"sh/cvmtczu9","slide":11,"text":"Validate","textPreview":"Validate","textChars":8,"textLines":1,"bbox":[852,329,166,32]}
+{"kind":"textbox","id":"sh/4bqlo361","slide":11,"text":"用置信度、时间衰减和矛盾检测防止错误记忆污染回答。","textPreview":"用置信度、时间衰减和矛盾检测防止错误记忆污染回答。","textChars":25,"textLines":1,"bbox":[852,370,166,80]}
+{"kind":"textbox","id":"sh/pczmho7m","slide":11,"text":"合规边界：支持数据导出、删除、审计和租户隔离；敏感信息经过 PII 处理后进入记忆层。","textPreview":"合规边界：支持数据导出、删除、审计和租户隔离；敏感信息经过 PII 处理后进入记忆层。","textChars":43,"textLines":1,"bbox":[80,548,1050,38]}
+{"kind":"notes","id":"nt/324abs","slide":11,"text":"[Sources] docs/10-AGENT-MEMORY.md; docs/15-MEMORY-TREE.md; packages/memory/src/processors/pipeline.ts"}
+{"kind":"slide","id":"sl/g3hnsc","slide":12,"title":"KeenAI","textShapes":11}
+{"kind":"textbox","id":"sh/knapkfax","slide":12,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/jm18rutc","slide":12,"text":"Workflow","textPreview":"Workflow","textChars":8,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/ils7ipsr","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/tc3qx4be","slide":12,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/sbapoza9","slide":12,"text":"Workflow 把客服处理经验变成可配置、可追踪的自动化流程","textPreview":"Workflow 把客服处理经验变成可配置、可追踪的自动化流程","textChars":31,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/7a18vuto","slide":12,"text":"Trigger + Condition + Action，让企业不写代码也能沉淀标准流程。","textPreview":"Trigger + Condition + Action，让企业不写代码也能沉淀标准流程。","textChars":45,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/6ps7mps3","slide":12,"bbox":[80,322,300,190]}
+{"kind":"shape","id":"sh/hg3q14bq","slide":12,"bbox":[80,322,3,190]}
+{"kind":"textbox","id":"sh/gfu9sza5","slide":12,"text":"Trigger","textPreview":"Trigger","textChars":7,"textLines":1,"bbox":[102,342,256,34]}
+{"kind":"textbox","id":"sh/its3uxo3","slide":12,"text":"客户发起新对话、邮件进入、Discord 提问、Ticket 状态变化、客户/客服超时未回复、定时任务、Webhook。","textPreview":"客户发起新对话、邮件进入、Discord 提问、Ticket 状态变化、客户/客服超时未回复、定时任务、Webhook。","textChars":60,"textLines":1,"bbox":[102,388,256,108]}
+{"kind":"shape","id":"sh/jul4n25o","slide":12,"bbox":[410,397,76,34]}
+{"kind":"shape","id":"sh/kvulw769","slide":12,"bbox":[516,322,300,190]}
+{"kind":"textbox","id":"sh/5w3mpcnu","slide":12,"text":"Condition","textPreview":"Condition","textChars":9,"textLines":1,"bbox":[538,342,256,34]}
+{"kind":"textbox","id":"sh/6xc3yxoz","slide":12,"text":"客户等级、渠道来源、工作时间、关键词/意图、AI 置信度、是否已有工单、SLA 状态。","textPreview":"客户等级、渠道来源、工作时间、关键词/意图、AI 置信度、是否已有工单、SLA 状态。","textChars":43,"textLines":1,"bbox":[538,388,256,108]}
+{"kind":"shape","id":"sh/7yl4r25k","slide":12,"bbox":[846,397,76,34]}
+{"kind":"shape","id":"sh/szu50765","slide":12,"bbox":[952,322,248,190]}
+{"kind":"textbox","id":"sh/t03mtcnq","slide":12,"text":"Action","textPreview":"Action","textChars":6,"textLines":1,"bbox":[974,342,204,34]}
+{"kind":"textbox","id":"sh/m183mdov","slide":12,"text":"让 AI 回答、分配团队、创建 Ticket、应用 SLA、发送通知、调用 HTTP API / MCP、关闭或重开对话。","textPreview":"让 AI 回答、分配团队、创建 Ticket、应用 SLA、发送通知、调用 HTTP API / MCP、关闭或重开对话。","textChars":61,"textLines":1,"bbox":[974,388,204,108]}
+{"kind":"notes","id":"nt/g3hnsc","slide":12,"text":"[Sources] docs/13-WORKFLOW.md; docs/02-FEATURES.md §1.5"}
+{"kind":"slide","id":"sl/35etnq","slide":13,"title":"KeenAI","textShapes":19}
+{"kind":"textbox","id":"sh/il07epkr","slide":13,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/pob6p43i","slide":13,"text":"Workflow Blocks","textPreview":"Workflow Blocks","textChars":15,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/4nipgz2x","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/ratorel8","slide":13,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/qpk7i9k3","slide":13,"text":"Block 列表覆盖 AI、消息、输入、流程控制、工单和集成","textPreview":"Block 列表覆盖 AI、消息、输入、流程控制、工单和集成","textChars":30,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/dcb6do3e","slide":13,"text":"Block 是可视化 Workflow Builder 的最小执行单元，运营团队可以组合成标准客服流程。","textPreview":"Block 是可视化 Workflow Builder 的最小执行单元，运营团队可以组合成标准客服流程。","textChars":52,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/cb2pkj2t","slide":13,"bbox":[64,308,260,130]}
+{"kind":"shape","id":"sh/7epofal4","slide":13,"bbox":[64,308,3,130]}
+{"kind":"textbox","id":"sh/6tgn65kj","slide":13,"text":"AI","textPreview":"AI","textChars":2,"textLines":1,"bbox":[86,328,216,34]}
+{"kind":"textbox","id":"sh/s7ax0bq9","slide":13,"text":"let_keeni_answer\n挂载 Keeni Agent，输出 resolution 并进入分支。","textPreview":"let_keeni_answer | 挂载 Keeni Agent，输出 resolution 并进入分支。","textChars":52,"textLines":2,"bbox":[86,374,216,48]}
+{"kind":"shape","id":"sh/t8je9g7u","slide":13,"bbox":[348,308,260,130]}
+{"kind":"textbox","id":"sh/65sfy183","slide":13,"text":"客户可见消息","textPreview":"客户可见消息","textChars":6,"textLines":1,"bbox":[370,328,216,34]}
+{"kind":"textbox","id":"sh/r61w76po","slide":13,"text":"send_message\nshow_expected_reply_time","textPreview":"send_message | show_expected_reply_time","textChars":37,"textLines":2,"bbox":[370,374,216,48]}
+{"kind":"shape","id":"sh/gbux4v6l","slide":13,"bbox":[632,308,260,130]}
+{"kind":"textbox","id":"sh/1c3yd07q","slide":13,"text":"客户输入","textPreview":"客户输入","textChars":4,"textLines":1,"bbox":[654,328,216,34]}
+{"kind":"textbox","id":"sh/e9sf2l8f","slide":13,"text":"reply_buttons\ncollect_data\ncollect_customer_reply\ndisable_customer_reply\ncsat","textPreview":"reply_buttons | collect_data | collect_customer_reply | disable_customer_reply | csat","textChars":77,"textLines":5,"bbox":[654,374,216,48]}
+{"kind":"shape","id":"sh/falgbqp0","slide":13,"bbox":[916,308,260,130]}
+{"kind":"textbox","id":"sh/wfqx8rq1","slide":13,"text":"流程控制","textPreview":"流程控制","textChars":4,"textLines":1,"bbox":[938,328,216,34]}
+{"kind":"textbox","id":"sh/hgze1w7m","slide":13,"text":"branches\napply_rules\nwait\ngoto\nend","textPreview":"branches | apply_rules | wait | goto | end","textChars":34,"textLines":5,"bbox":[938,374,216,48]}
+{"kind":"shape","id":"sh/xk7mpove","slide":13,"bbox":[64,484,348,130]}
+{"kind":"textbox","id":"sh/czylgjet","slide":13,"text":"后台动作","textPreview":"后台动作","textChars":4,"textLines":1,"bbox":[86,504,304,34]}
+{"kind":"textbox","id":"sh/byp4nyd8","slide":13,"text":"assign / mark_priority / apply_sla\nadd_note / tag_end_user / tag_conversation","textPreview":"assign / mark_priority / apply_sla | add_note / tag_end_user / tag_conversation","textChars":77,"textLines":2,"bbox":[86,550,304,48]}
+{"kind":"shape","id":"sh/axg3etwn","slide":13,"bbox":[466,484,348,130]}
+{"kind":"textbox","id":"sh/lormt8va","slide":13,"text":"状态与 Ticket","textPreview":"状态与 Ticket","textChars":10,"textLines":1,"bbox":[488,504,304,34]}
+{"kind":"textbox","id":"sh/knilk3ep","slide":13,"text":"snooze / close / reopen\nset_ticket_state / send_ticket_form / convert_to_ticket","textPreview":"snooze / close / reopen | set_ticket_state / send_ticket_form / convert_to_ticket","textChars":79,"textLines":2,"bbox":[488,550,304,48]}
+{"kind":"shape","id":"sh/zm94ryd4","slide":13,"bbox":[868,484,348,130]}
+{"kind":"shape","id":"sh/yl03itwj","slide":13,"bbox":[868,484,3,130]}
+{"kind":"textbox","id":"sh/9srmx8v6","slide":13,"text":"集成扩展","textPreview":"集成扩展","textChars":4,"textLines":1,"bbox":[890,504,304,34]}
+{"kind":"textbox","id":"sh/8ri5o3e1","slide":13,"text":"http_request / script\nwebhook_emit / mcp_call","textPreview":"http_request / script | webhook_emit / mcp_call","textChars":45,"textLines":2,"bbox":[890,550,304,48]}
+{"kind":"notes","id":"nt/35etnq","slide":13,"text":"[Sources] docs/13-WORKFLOW.md §4.1 Block overview; docs/02-FEATURES.md §1.5 Action Blocks"}
+{"kind":"slide","id":"sl/9izo7q","slide":14,"title":"KeenAI","textShapes":21}
+{"kind":"textbox","id":"sh/d4bul4fq","slide":14,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/qh0bqpgz","slide":14,"text":"Workflow Demo","textPreview":"Workflow Demo","textChars":13,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/ri9sjuxk","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/4fitofyt","slide":14,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/pgrahkfe","slide":14,"text":"Demo 图：企业客户 Bug 反馈自动转工单并通知进度","textPreview":"Demo 图：企业客户 Bug 反馈自动转工单并通知进度","textChars":28,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/2d0bmpg3","slide":14,"text":"这条流程展示 Trigger、AI Block、条件分支、Ticket Block、SLA 和通知如何组合。","textPreview":"这条流程展示 Trigger、AI Block、条件分支、Ticket Block、SLA 和通知如何组合。","textChars":54,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/3e9sfux8","slide":14,"bbox":[74,312,270,126]}
+{"kind":"textbox","id":"sh/gbytkfyx","slide":14,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[92,328,42,30]}
+{"kind":"textbox","id":"sh/hc7adkfi","slide":14,"text":"Trigger","textPreview":"Trigger","textChars":7,"textLines":1,"bbox":[138,327,186,32]}
+{"kind":"textbox","id":"sh/t4z6lcve","slide":14,"text":"Enterprise 客户从 Discord 发送 “export failed” 反馈。","textPreview":"Enterprise 客户从 Discord 发送 “export failed” 反馈。","textChars":45,"textLines":1,"bbox":[138,368,186,56]}
+{"kind":"shape","id":"sh/s3q5s7e9","slide":14,"bbox":[362,358,64,34]}
+{"kind":"shape","id":"sh/r2hojmdo","slide":14,"bbox":[444,312,270,126]}
+{"kind":"textbox","id":"sh/618nqhw3","slide":14,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[462,328,42,30]}
+{"kind":"textbox","id":"sh/50z6hcvi","slide":14,"text":"let_keeni_answer","textPreview":"let_keeni_answer","textChars":16,"textLines":1,"bbox":[508,327,186,32]}
+{"kind":"textbox","id":"sh/4z65o7ex","slide":14,"text":"Agent 检索 RAG、读取 Memory，判断为 Bug，置信度 0.84。","textPreview":"Agent 检索 RAG、读取 Memory，判断为 Bug，置信度 0.84。","textChars":40,"textLines":1,"bbox":[508,368,186,56]}
+{"kind":"shape","id":"sh/jyxof2xc","slide":14,"bbox":[732,358,64,34]}
+{"kind":"shape","id":"sh/ixonmxwr","slide":14,"bbox":[814,312,270,126]}
+{"kind":"textbox","id":"sh/xwfmdsfm","slide":14,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[832,328,42,30]}
+{"kind":"textbox","id":"sh/wb65kne1","slide":14,"text":"branches","textPreview":"branches","textChars":8,"textLines":1,"bbox":[878,327,186,32]}
+{"kind":"textbox","id":"sh/8ruxgrqt","slide":14,"text":"如果 type = bug 且 plan = enterprise，进入高优先级路径。","textPreview":"如果 type = bug 且 plan = enterprise，进入高优先级路径。","textChars":43,"textLines":1,"bbox":[878,368,186,56]}
+{"kind":"shape","id":"sh/9s3epwre","slide":14,"bbox":[934,454,42,58]}
+{"kind":"shape","id":"sh/mpsfeh83","slide":14,"bbox":[444,520,270,126]}
+{"kind":"textbox","id":"sh/nq1wnm98","slide":14,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[462,536,42,30]}
+{"kind":"textbox","id":"sh/0naxcrqx","slide":14,"text":"convert_to_ticket","textPreview":"convert_to_ticket","textChars":17,"textLines":1,"bbox":[508,535,186,32]}
+{"kind":"textbox","id":"sh/lojelwri","slide":14,"text":"创建 Customer Ticket，关联 conversation、证据和客户上下文。","textPreview":"创建 Customer Ticket，关联 conversation、证据和客户上下文。","textChars":44,"textLines":1,"bbox":[508,576,186,56]}
+{"kind":"shape","id":"sh/y1sfah8r","slide":14,"bbox":[732,566,64,34]}
+{"kind":"shape","id":"sh/z21wjm9c","slide":14,"bbox":[814,520,270,126]}
+{"kind":"textbox","id":"sh/4jexobq1","slide":14,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[832,536,42,30]}
+{"kind":"textbox","id":"sh/5knyxg7m","slide":14,"text":"assign + SLA + notify","textPreview":"assign + SLA + notify","textChars":21,"textLines":1,"bbox":[878,535,186,32]}
+{"kind":"textbox","id":"sh/fep0nato","slide":14,"text":"分配 Engineering Triage，应用 1 小时 SLA，并通知客户进度。","textPreview":"分配 Engineering Triage，应用 1 小时 SLA，并通知客户进度。","textChars":42,"textLines":1,"bbox":[878,576,186,56]}
+{"kind":"textbox","id":"sh/edgze5s3","slide":14,"text":"结果：客户收到确认与进度通知；客服接手时工单、证据、SLA 和上下文已准备好。","textPreview":"结果：客户收到确认与进度通知；客服接手时工单、证据、SLA 和上下文已准备好。","textChars":39,"textLines":1,"bbox":[74,462,720,38]}
+{"kind":"notes","id":"nt/9izo7q","slide":14,"text":"[Sources] docs/13-WORKFLOW.md §4 Action Block; docs/01-PRD.md §3 Scenario B; docs/02-FEATURES.md §1.5"}
+{"kind":"slide","id":"sl/ceruen","slide":15,"title":"KeenAI","textShapes":10}
+{"kind":"textbox","id":"sh/0zm94rq9","slide":15,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/zyd8vm9o","slide":15,"text":"AI + RAG + Memory + Workflow","textPreview":"AI + RAG + Memory + Workflow","textChars":28,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/yx4r2h83","slide":15,"text":"15","textPreview":"15","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/dwvqtwry","slide":15,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/cvm90rqd","slide":15,"text":"四个核心能力组合，才是真正的企业级 AI 客服闭环","textPreview":"四个核心能力组合，才是真正的企业级 AI 客服闭环","textChars":25,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/but8rm9s","slide":15,"text":"RAG 提供事实，Memory 提供上下文，Agent 做判断和执行，Workflow 负责治理和编排。","textPreview":"RAG 提供事实，Memory 提供上下文，Agent 做判断和执行，Workflow 负责治理和编排。","textChars":52,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/qtkryh87","slide":15,"bbox":[136,336,190,112]}
+{"kind":"textbox","id":"sh/hsfa5gr2","slide":15,"text":"RAG\n事实与来源","textPreview":"RAG | 事实与来源","textChars":9,"textLines":2,"bbox":[166,363,130,60]}
+{"kind":"shape","id":"sh/wr69cbqh","slide":15,"bbox":[342,375,70,34]}
+{"kind":"shape","id":"sh/q50jmh87","slide":15,"bbox":[430,336,190,112]}
+{"kind":"textbox","id":"sh/b6t0fm9s","slide":15,"text":"Memory\n长期上下文","textPreview":"Memory | 长期上下文","textChars":12,"textLines":2,"bbox":[460,363,130,60]}
+{"kind":"shape","id":"sh/c721orqd","slide":15,"bbox":[636,375,70,34]}
+{"kind":"shape","id":"sh/d8bihwry","slide":15,"bbox":[724,318,214,148]}
+{"kind":"textbox","id":"sh/210jih8b","slide":15,"text":"Keeni AI\nAgent","textPreview":"Keeni AI | Agent","textChars":14,"textLines":2,"bbox":[762,358,140,62]}
+{"kind":"shape","id":"sh/3290bm9w","slide":15,"bbox":[954,375,70,34]}
+{"kind":"shape","id":"sh/o3i1k7q1","slide":15,"bbox":[1042,336,170,112]}
+{"kind":"textbox","id":"sh/p4ridcrm","slide":15,"text":"Workflow\n治理与动作","textPreview":"Workflow | 治理与动作","textChars":14,"textLines":2,"bbox":[1070,363,114,60]}
+{"kind":"textbox","id":"sh/mxkju18f","slide":15,"text":"同一个客户问题可以被理解、取证、记忆、执行、升级，并把结果沉淀回知识和流程。","textPreview":"同一个客户问题可以被理解、取证、记忆、执行、升级，并把结果沉淀回知识和流程。","textChars":38,"textLines":1,"bbox":[102,548,1010,38]}
+{"kind":"notes","id":"nt/ceruen","slide":15,"text":"[Sources] docs/04-MODULES.md AI Kernel; docs/09-AGENT-ENGINE.md; docs/10-AGENT-MEMORY.md; docs/11-RAG-KNOWLEDGE.md; docs/13-WORKFLOW.md"}
+{"kind":"slide","id":"sl/w43jy2","slide":16,"title":"KeenAI","textShapes":19}
+{"kind":"textbox","id":"sh/5o7ap8jm","slide":16,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/ilwbedkb","slide":16,"text":"Architecture","textPreview":"Architecture","textChars":12,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/jmpsny1w","slide":16,"text":"16","textPreview":"16","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/srytkn2d","slide":16,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/ts7utsjy","slide":16,"text":"技术方案兼顾开箱自托管、企业扩展和 AI 可替换","textPreview":"技术方案兼顾开箱自托管、企业扩展和 AI 可替换","textChars":24,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/6pgbidk7","slide":16,"text":"TypeScript 全栈降低交付复杂度，双数据库后端覆盖轻量自托管和生产级部署。","textPreview":"TypeScript 全栈降低交付复杂度，双数据库后端覆盖轻量自托管和生产级部署。","textChars":41,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/rqpcri1s","slide":16,"bbox":[64,300,350,154]}
+{"kind":"shape","id":"sh/gfiton2p","slide":16,"bbox":[64,300,3,154]}
+{"kind":"textbox","id":"sh/1gruxsju","slide":16,"text":"Frontend & Channels","textPreview":"Frontend & Channels","textChars":19,"textLines":1,"bbox":[86,320,306,34]}
+{"kind":"textbox","id":"sh/hgrmp0j2","slide":16,"text":"Next.js Dashboard / Portal / Help Center；Preact Widget；WebSocket / SSE 实时体验。","textPreview":"Next.js Dashboard / Portal / Help Center；Preact Widget；WebSocket / SSE 实时体验。","textChars":76,"textLines":1,"bbox":[86,366,306,72]}
+{"kind":"shape","id":"sh/gfi5wv2h","slide":16,"bbox":[466,300,350,154]}
+{"kind":"textbox","id":"sh/ve94nq1w","slide":16,"text":"Service & Storage","textPreview":"Service & Storage","textChars":17,"textLines":1,"bbox":[488,320,306,34]}
+{"kind":"textbox","id":"sh/ud03ulkb","slide":16,"text":"Hono + Bun / Node；Drizzle；PostgreSQL + pgvector 或 SQLite / LibSQL；S3 / MinIO。","textPreview":"Hono + Bun / Node；Drizzle；PostgreSQL + pgvector 或 SQLite / LibSQL；S3 / MinIO。","textChars":77,"textLines":1,"bbox":[488,366,306,72]}
+{"kind":"shape","id":"sh/54bmt0jy","slide":16,"bbox":[868,300,350,154]}
+{"kind":"textbox","id":"sh/43i50f2t","slide":16,"text":"AI & Automation","textPreview":"AI & Automation","textChars":15,"textLines":1,"bbox":[890,320,306,34]}
+{"kind":"textbox","id":"sh/3i94ra18","slide":16,"text":"Vercel AI SDK；Mastra Agent；RAG；Memory；Inngest Workflow；BullMQ 队列。","textPreview":"Vercel AI SDK；Mastra Agent；RAG；Memory；Inngest Workflow；BullMQ 队列。","textChars":65,"textLines":1,"bbox":[890,366,306,72]}
+{"kind":"shape","id":"sh/ih0ny5kn","slide":16,"bbox":[64,512,250,116]}
+{"kind":"textbox","id":"sh/l87mhgju","slide":16,"text":"Lite","textPreview":"Lite","textChars":4,"textLines":1,"bbox":[86,530,206,48]}
+{"kind":"textbox","id":"sh/k7ylob29","slide":16,"text":"单机 Docker / SQLite，适合 Indie、Demo 和低成本自托管。","textPreview":"单机 Docker / SQLite，适合 Indie、Demo 和低成本自托管。","textChars":41,"textLines":1,"bbox":[86,588,206,32]}
+{"kind":"shape","id":"sh/w3mdkfeh","slide":16,"bbox":[348,512,250,116]}
+{"kind":"textbox","id":"sh/x4vetkv2","slide":16,"text":"Standard","textPreview":"Standard","textChars":8,"textLines":1,"bbox":[370,530,206,48]}
+{"kind":"textbox","id":"sh/a1kvi5wb","slide":16,"text":"PostgreSQL + Redis + MinIO，适合中小团队生产部署。","textPreview":"PostgreSQL + Redis + MinIO，适合中小团队生产部署。","textChars":38,"textLines":1,"bbox":[370,588,206,32]}
+{"kind":"shape","id":"sh/b2twraxw","slide":16,"bbox":[632,512,250,116]}
+{"kind":"textbox","id":"sh/k7mdofed","slide":16,"text":"Cloud","textPreview":"Cloud","textChars":5,"textLines":1,"bbox":[654,530,206,48]}
+{"kind":"textbox","id":"sh/l8vexkvy","slide":16,"text":"Vercel / Cloudflare / managed PG，适合托管 SaaS。","textPreview":"Vercel / Cloudflare / managed PG，适合托管 SaaS。","textChars":43,"textLines":1,"bbox":[654,588,206,32]}
+{"kind":"shape","id":"sh/y54vmpwn","slide":16,"bbox":[916,512,250,116]}
+{"kind":"textbox","id":"sh/j6dwvads","slide":16,"text":"Enterprise","textPreview":"Enterprise","textChars":10,"textLines":1,"bbox":[938,530,206,48]}
+{"kind":"textbox","id":"sh/8v6dszep","slide":16,"text":"私有化、SSO、审计、SLA、本地模型和内网集成。","textPreview":"私有化、SSO、审计、SLA、本地模型和内网集成。","textChars":25,"textLines":1,"bbox":[938,588,206,32]}
+{"kind":"notes","id":"nt/w43jy2","slide":16,"text":"[Sources] README.md §3 Tech Stack; docs/03-ARCHITECTURE.md; docs/06-TECH-STACK.md; docs/12-STORAGE-ABSTRACTION.md"}
+{"kind":"slide","id":"sl/tphtxj","slide":17,"title":"KeenAI","textShapes":17}
+{"kind":"textbox","id":"sh/8z29g7up","slide":17,"text":"KeenAI","textPreview":"KeenAI","textChars":6,"textLines":1,"bbox":[48,30,160,28]}
+{"kind":"textbox","id":"sh/7ytsn2tk","slide":17,"text":"Business","textPreview":"Business","textChars":8,"textLines":1,"bbox":[520,31,360,22]}
+{"kind":"textbox","id":"sh/6xkrexcz","slide":17,"text":"17","textPreview":"17","textChars":2,"textLines":1,"bbox":[1188,31,44,22]}
+{"kind":"shape","id":"sh/hovatcbm","slide":17,"bbox":[48,72,1184,1]}
+{"kind":"textbox","id":"sh/gnm9k7u1","slide":17,"text":"开源获客，云托管和企业私有化完成商业化","textPreview":"开源获客，云托管和企业私有化完成商业化","textChars":19,"textLines":1,"bbox":[64,110,1040,106]}
+{"kind":"textbox","id":"sh/v2dsr2tg","slide":17,"text":"KeenAI 以开源降低试用门槛，用企业级 AI、私有化和托管服务变现。","textPreview":"KeenAI 以开源降低试用门槛，用企业级 AI、私有化和托管服务变现。","textChars":36,"textLines":1,"bbox":[66,224,920,54]}
+{"kind":"shape","id":"sh/u1krihcv","slide":17,"bbox":[64,294,540,150]}
+{"kind":"shape","id":"sh/xsrahsv2","slide":17,"bbox":[64,294,3,150]}
+{"kind":"textbox","id":"sh/wri98nux","slide":17,"text":"商业模式","textPreview":"商业模式","textChars":4,"textLines":1,"bbox":[86,314,496,34]}
+{"kind":"textbox","id":"sh/al03i54f","slide":17,"text":"自托管 AGPL 免费获取社区和企业线索；云托管按 seat / AI 用量收费；企业版提供私有化、SSO、审计和 SLA。","textPreview":"自托管 AGPL 免费获取社区和企业线索；云托管按 seat / AI 用量收费；企业版提供私有化、SSO、审计和 SLA。","textChars":62,"textLines":1,"bbox":[86,360,496,68]}
+{"kind":"shape","id":"sh/vm94rql0","slide":17,"bbox":[676,294,540,150]}
+{"kind":"textbox","id":"sh/wnilkvml","slide":17,"text":"GTM","textPreview":"GTM","textChars":3,"textLines":1,"bbox":[698,314,496,34]}
+{"kind":"textbox","id":"sh/xormt036","slide":17,"text":"先抓开发者和 Indie Hacker，再进入中小 SaaS 团队，最后用私有化方案切企业内部 IT / DevTool。","textPreview":"先抓开发者和 Indie Hacker，再进入中小 SaaS 团队，最后用私有化方案切企业内部 IT / DevTool。","textChars":61,"textLines":1,"bbox":[698,360,496,68]}
+{"kind":"shape","id":"sh/ip03m54r","slide":17,"bbox":[92,536,1040,1]}
+{"kind":"shape","id":"sh/jat4valc","slide":17,"bbox":[92,524,22,22]}
+{"kind":"textbox","id":"sh/kb2lofmh","slide":17,"text":"0-3M","textPreview":"0-3M","textChars":4,"textLines":1,"bbox":[88,558,80,24]}
+{"kind":"textbox","id":"sh/5cbmxk32","slide":17,"text":"MVP\nInbox / Widget / Email / Copilot","textPreview":"MVP | Inbox / Widget / Email / Copilot","textChars":36,"textLines":2,"bbox":[88,590,240,64]}
+{"kind":"shape","id":"sh/6dk3qp4n","slide":17,"bbox":[426,524,22,22]}
+{"kind":"textbox","id":"sh/7et4zal8","slide":17,"text":"3-6M","textPreview":"3-6M","textChars":4,"textLines":1,"bbox":[422,558,80,24]}
+{"kind":"textbox","id":"sh/3idknu1g","slide":17,"text":"Core loop\nTickets / Workflow / Feedback / Help Center","textPreview":"Core loop | Tickets / Workflow / Feedback / Help Center","textChars":53,"textLines":2,"bbox":[422,590,240,64]}
+{"kind":"shape","id":"sh/2h43ep0v","slide":17,"bbox":[760,524,22,22]}
+{"kind":"textbox","id":"sh/pkv2pkjm","slide":17,"text":"6-9M","textPreview":"6-9M","textChars":4,"textLines":1,"bbox":[756,558,80,24]}
+{"kind":"textbox","id":"sh/4jmlgzi1","slide":17,"text":"AI full\nAgent / Memory / RAG / Roadmap / Changelog","textPreview":"AI full | Agent / Memory / RAG / Roadmap / Changelog","textChars":50,"textLines":2,"bbox":[756,590,240,64]}
+{"kind":"shape","id":"sh/fetkja14","slide":17,"bbox":[1094,524,22,22]}
+{"kind":"textbox","id":"sh/udkja5kj","slide":17,"text":"9-12M","textPreview":"9-12M","textChars":5,"textLines":1,"bbox":[1090,558,80,24]}
+{"kind":"textbox","id":"sh/hgb2lkja","slide":17,"text":"Commercial\nEnterprise / Cloud / Plugin ecosystem","textPreview":"Commercial | Enterprise / Cloud / Plugin ecosystem","textChars":48,"textLines":2,"bbox":[1090,590,240,64]}
+{"kind":"notes","id":"nt/tphtxj","slide":17,"text":"[Sources] docs/01-PRD.md §4 Commercial goals; docs/08-ROADMAP.md; README.md §7 Roadmap Overview"}

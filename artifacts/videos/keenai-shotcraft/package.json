@@ -1,0 +1,19 @@
+{
+  "name": "keenai-shotcraft-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "still": "remotion still src/index.ts KeenAiShotcraft out/qa/still.png --frame=1800",
+    "render": "remotion render src/index.ts KeenAiShotcraft out/keenai-shotcraft.mp4 --codec=h264 --pixel-format=yuv420p"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.484",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.484"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "typescript": "5.9.3"
+  }
+}
