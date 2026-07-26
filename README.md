@@ -10,6 +10,16 @@
 
 ---
 
+## Product Video
+
+<video src="artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4" controls width="100%">
+  Your browser does not support the video tag.
+</video>
+
+[Open the KeenAI 2-minute product video](artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4)
+
+---
+
 ## 1. Vision
 
 KeenAI is an **open-source, self-hostable, AI-native** platform that unifies customer support and product feedback — an open alternative to Featurebase, Intercom, Zendesk, and Canny for small and mid-size teams.
