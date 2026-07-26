@@ -12,10 +12,10 @@
 
 ## Product Video
 
-[![Watch the KeenAI 2-minute product video](https://raw.githubusercontent.com/2456868764/KeenAI/main/artifacts/videos/keenai-shotcraft/out/qa/final-03.png)](https://raw.githubusercontent.com/2456868764/KeenAI/main/artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4)
+[![Watch the KeenAI 2-minute product video](https://cdn.jsdelivr.net/gh/2456868764/KeenAI@main/artifacts/videos/keenai-shotcraft/out/qa/final-03.png)](https://cdn.jsdelivr.net/gh/2456868764/KeenAI@main/artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4)
 
-GitHub README does not reliably render repository-local MP4 files as inline video. Click the preview image above, or open the raw MP4 directly:
-[Watch the KeenAI 2-minute product video](https://raw.githubusercontent.com/2456868764/KeenAI/main/artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4).
+GitHub README does not reliably render repository-local MP4 files as inline video. Click the preview image above, or open the streaming MP4 directly:
+[Watch the KeenAI 2-minute product video](https://cdn.jsdelivr.net/gh/2456868764/KeenAI@main/artifacts/videos/keenai-shotcraft/out/keenai-shotcraft.mp4).
 
 ---
 
