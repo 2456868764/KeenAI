@@ -24,6 +24,7 @@ import {
   Bot,
   CheckCircle2,
   CircleAlert,
+  GripVertical,
   LayoutGrid,
   Maximize2,
   Minus,
@@ -600,7 +601,7 @@ function BlockPreview({
         <button
           type="button"
           disabled={block.buttons.length >= 8}
-          className="nodrag nopan mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="nodrag nopan ml-auto mt-3 flex h-8 w-fit items-center justify-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 text-[11px] font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={(event) => {
             event.stopPropagation();
             const nextIndex = block.buttons.length + 1;
@@ -1744,7 +1745,7 @@ function ReplyButtonOutputs({
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 }) {
   return (
-    <div className="mt-3 grid gap-1.5">
+    <div className="mt-3 grid justify-items-end gap-2">
       {block.buttons.slice(0, 8).map((button, buttonIndex) => {
         const anchor: WorkflowCanvasInsertAnchor = {
           kind: "button",
@@ -1753,10 +1754,14 @@ function ReplyButtonOutputs({
         };
         const open = sameInsertAnchor(activeAddAnchor, anchor);
         return (
-          <div key={button.id} className="relative">
+          <div
+            key={button.id}
+            className="group/route relative flex max-w-full items-center gap-1.5"
+          >
+            <GripVertical className="size-3.5 shrink-0 text-[hsl(var(--muted-foreground))]" />
             <div
               className={cn(
-                "nodrag nopan flex items-center gap-1.5 rounded-lg border bg-[hsl(var(--surface-0))] px-2 py-1.5 transition-colors",
+                "nodrag nopan flex max-w-[210px] items-center gap-1 rounded-lg border bg-[hsl(var(--surface-0))] px-3 py-1.5 shadow-sm transition-colors",
                 button.nextId
                   ? "border-emerald-400/30"
                   : "border-violet-400/30 hover:border-violet-400/60",
@@ -1769,7 +1774,7 @@ function ReplyButtonOutputs({
               <input
                 value={button.label}
                 aria-label={`Reply button ${buttonIndex + 1} label`}
-                className="min-w-0 flex-1 bg-transparent text-[11px] font-medium text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+                className="min-w-0 flex-1 bg-transparent text-right text-[11px] font-medium text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
                 placeholder={`Option ${buttonIndex + 1}`}
                 onChange={(event) => {
                   const buttons = [...block.buttons];
@@ -1780,8 +1785,8 @@ function ReplyButtonOutputs({
               <button
                 type="button"
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-violet-500/15 hover:text-violet-700",
-                  open ? "bg-violet-500/15 text-violet-700" : "",
+                  "absolute -right-8 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full border border-violet-400/60 bg-violet-500 text-white shadow-sm transition-colors hover:bg-violet-600",
+                  open ? "ring-2 ring-violet-200" : "",
                 )}
                 aria-label={`Add action for ${button.label || `button ${buttonIndex + 1}`}`}
                 onClick={(event) => {
@@ -1798,7 +1803,7 @@ function ReplyButtonOutputs({
               <button
                 type="button"
                 disabled={block.buttons.length <= 1}
-                className="flex size-6 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex size-5 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] opacity-0 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-35 group-hover/route:opacity-100"
                 aria-label={`Remove ${button.label || `button ${buttonIndex + 1}`}`}
                 onClick={(event) => {
                   event.stopPropagation();
@@ -1813,7 +1818,7 @@ function ReplyButtonOutputs({
             </div>
             {open && renderAddMenu ? (
               <div
-                className="nodrag nopan absolute left-[calc(100%+0.75rem)] top-0 z-50"
+                className="nodrag nopan absolute left-[calc(100%+2.25rem)] top-0 z-50"
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}
