@@ -24,21 +24,13 @@ import {
   Bot,
   CheckCircle2,
   CircleAlert,
-  Clock3,
-  FileInput,
-  GitBranch,
   LayoutGrid,
   Maximize2,
-  MessageSquareText,
   Minus,
   Plus,
   Redo2,
-  Send,
-  Tag,
-  Ticket,
   Trash2,
   Undo2,
-  UserCheck,
   Zap,
 } from "lucide-react";
 import {
@@ -191,24 +183,14 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
         position={Position.Left}
         className="!bg-violet-500 !border-violet-300"
       />
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "flex size-8 items-center justify-center rounded-full border border-violet-200/80",
-            styles.wash,
-            styles.icon,
-          )}
-        >
-          <BlockIcon block={block} />
-        </span>
-        <div className="min-w-0">
-          <p className={cn("text-[10px] font-semibold uppercase tracking-wide", styles.badge)}>
-            {block.type.replaceAll("_", " ")}
-          </p>
-          <p className="truncate text-sm font-semibold text-[hsl(var(--foreground))]">
-            {workflowBlockTitle(block)}
-          </p>
-        </div>
+      <div className="flex items-center gap-2 px-1">
+        <p className={cn("shrink-0 text-[10px] font-semibold tracking-wide", styles.badge)}>
+          {workflowBlockShellLabel(block)}
+        </p>
+        <span className="text-[10px] text-[hsl(var(--muted-foreground))]">/</span>
+        <p className="min-w-0 truncate text-xs font-semibold text-[hsl(var(--foreground))]">
+          {workflowBlockTitle(block)}
+        </p>
         <div className="ml-auto flex items-center gap-1">
           {data.failed ? (
             <CircleAlert className="size-4 text-red-400" />
@@ -218,7 +200,10 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
           <button
             type="button"
             disabled={!data.canDelete}
-            className="nodrag nopan flex size-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-35"
+            className={cn(
+              "nodrag nopan flex size-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] opacity-0 transition hover:bg-red-500/10 hover:text-red-500 focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-35 group-hover:opacity-100",
+              data.selected || data.failed ? "opacity-100" : "",
+            )}
             aria-label={`Delete ${workflowBlockTitle(block)}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -455,38 +440,14 @@ function miniMapNodeColor(node: Node) {
   }
 }
 
-function BlockIcon({ block }: { block: WorkflowBlock }) {
-  switch (block.type) {
-    case "send_message":
-    case "show_expected_reply_time":
-    case "reply_buttons":
-    case "collect_customer_reply":
-    case "disable_customer_reply":
-      return <MessageSquareText className="size-4" />;
-    case "let_keeni_answer":
-      return <Bot className="size-4" />;
-    case "collect_data":
-    case "send_ticket_form":
-      return <FileInput className="size-4" />;
-    case "branches":
-    case "apply_rules":
-    case "goto":
-      return <GitBranch className="size-4" />;
-    case "wait":
-    case "snooze":
-      return <Clock3 className="size-4" />;
-    case "assign":
-      return <UserCheck className="size-4" />;
-    case "convert_to_ticket":
-    case "link_ticket":
-    case "send_ticket_update":
-    case "set_ticket_state":
-      return <Ticket className="size-4" />;
-    case "tag_conversation":
-    case "tag_end_user":
-      return <Tag className="size-4" />;
+function workflowBlockShellLabel(block: WorkflowBlock): string {
+  switch (blockCategory(block)) {
+    case "message":
+      return "Website visitor flow";
+    case "condition":
+      return "Workflow Branch";
     default:
-      return <Send className="size-4" />;
+      return "Workflow Action";
   }
 }
 
