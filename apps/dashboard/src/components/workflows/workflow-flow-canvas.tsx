@@ -2584,7 +2584,6 @@ export function WorkflowFlowCanvas({
   renderAddMenu,
   triggerSettings,
   toolbar,
-  configurationPanel,
   runTracePanel,
   layoutStorageKey,
   canUndo,
@@ -2605,7 +2604,6 @@ export function WorkflowFlowCanvas({
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
   triggerSettings?: ReactNode;
   toolbar?: ReactNode;
-  configurationPanel?: ReactNode;
   runTracePanel?: ReactNode;
   layoutStorageKey?: string;
   canUndo?: boolean;
@@ -2775,11 +2773,6 @@ export function WorkflowFlowCanvas({
           />
         </ReactFlow>
         <div className="pointer-events-none absolute inset-0 z-10">
-          {configurationPanel ? (
-            <div className="pointer-events-auto absolute right-4 top-4 max-h-[calc(100%-2rem)] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
-              {configurationPanel}
-            </div>
-          ) : null}
           {runTracePanel ? (
             <div className="pointer-events-auto absolute bottom-[164px] right-4 max-h-[300px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
               {runTracePanel}

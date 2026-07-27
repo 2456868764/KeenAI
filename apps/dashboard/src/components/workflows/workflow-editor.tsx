@@ -872,11 +872,18 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 definition={definition}
                 descriptionOpen={descriptionPanelOpen}
                 onDescriptionOpen={() => {
-                  setDescriptionPanelOpen(true);
+                  setDescriptionPanelOpen((open) => !open);
                   setSelectedBlockId(null);
                   setTriggerPanelOpen(false);
                   setAddAnchor(null);
                 }}
+                onDescriptionClose={() => setDescriptionPanelOpen(false)}
+                onDescriptionChange={(description) =>
+                  commitDefinition({
+                    ...definition,
+                    description: description.trim() ? description : undefined,
+                  })
+                }
                 onSave={() => save.mutate()}
                 onSaveAndPublish={() => {
                   save.mutate(undefined, {
@@ -914,37 +921,6 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 canSave={Boolean(definition)}
               />
             }
-            configurationPanel={
-              descriptionPanelOpen ? (
-                <CanvasConfigPanel title="Description" onClose={clearFlowSelection}>
-                  <section className="space-y-2">
-                    <label
-                      htmlFor="workflow-description"
-                      className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
-                    >
-                      Workflow description
-                    </label>
-                    <textarea
-                      id="workflow-description"
-                      value={definition.description ?? ""}
-                      onChange={(event) =>
-                        commitDefinition({
-                          ...definition,
-                          description: event.target.value.trim() ? event.target.value : undefined,
-                        })
-                      }
-                      rows={6}
-                      maxLength={2000}
-                      placeholder="Add internal notes about what this workflow does and when it should be used."
-                      className="w-full resize-y rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm outline-none"
-                    />
-                    <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
-                      Saved with the workflow draft and included in published versions.
-                    </p>
-                  </section>
-                </CanvasConfigPanel>
-              ) : null
-            }
             runTracePanel={
               triggerPanelOpen || descriptionPanelOpen || runs.length === 0 ? undefined : (
                 <WorkflowRunTrace
@@ -973,6 +949,8 @@ function CanvasToolbar({
   definition,
   descriptionOpen,
   onDescriptionOpen,
+  onDescriptionClose,
+  onDescriptionChange,
   onSave,
   onSaveAndPublish,
   onTest,
@@ -998,6 +976,8 @@ function CanvasToolbar({
   definition: WorkflowDefinition;
   descriptionOpen: boolean;
   onDescriptionOpen: () => void;
+  onDescriptionClose: () => void;
+  onDescriptionChange: (description: string) => void;
   onSave: () => void;
   onSaveAndPublish: () => void;
   onTest: () => void;
@@ -1041,16 +1021,58 @@ function CanvasToolbar({
               onChange={(e) => onNameChange(e.target.value)}
               className="h-8 max-w-[380px] min-w-[180px] flex-1 border-transparent bg-transparent px-1 font-semibold shadow-none hover:border-[hsl(var(--border))] focus:border-[hsl(var(--primary))]"
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onDescriptionOpen}
-              className={descriptionOpen ? "border-[hsl(var(--primary))]" : ""}
-            >
-              <PencilLine className="size-4" />
-              Description
-            </Button>
+            <div className="relative">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onDescriptionOpen}
+                className={descriptionOpen ? "border-[hsl(var(--primary))]" : ""}
+              >
+                <PencilLine className="size-4" />
+                Description
+              </Button>
+              {descriptionOpen ? (
+                <div className="absolute left-0 top-11 z-50 w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-white shadow-2xl shadow-black/15">
+                  <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-4 py-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--primary))]">
+                        Workflow details
+                      </p>
+                      <h2 className="text-sm font-semibold">Description</h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onDescriptionClose}
+                      className="rounded-md p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+                      aria-label="Close description"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2 p-4">
+                    <label
+                      htmlFor="workflow-description"
+                      className="text-xs font-medium text-[hsl(var(--muted-foreground))]"
+                    >
+                      Workflow description
+                    </label>
+                    <textarea
+                      id="workflow-description"
+                      value={definition.description ?? ""}
+                      onChange={(event) => onDescriptionChange(event.target.value)}
+                      rows={6}
+                      maxLength={2000}
+                      placeholder="Add internal notes about what this workflow does and when it should be used."
+                      className="w-full resize-y rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-sm outline-none"
+                    />
+                    <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                      Saved with the workflow draft and included in published versions.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <span className="rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-0.5 text-[11px] font-medium capitalize text-[hsl(var(--muted-foreground))]">
               {workflow?.status ?? "draft"}
             </span>
@@ -1274,38 +1296,6 @@ function WorkflowManageMenu({
         </div>
       ) : null}
     </div>
-  );
-}
-
-function CanvasConfigPanel({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <section className="flex max-h-[calc(100vh-252px)] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-4 py-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--primary))]">
-            Canvas settings
-          </p>
-          <h2 className="text-sm font-semibold capitalize">{title}</h2>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-          aria-label="Close settings"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
-      <div className="overflow-y-auto p-4">{children}</div>
-    </section>
   );
 }
 
