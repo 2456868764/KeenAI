@@ -292,7 +292,6 @@ function WorkflowBlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
 function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
   const styles = categoryStyles.trigger;
-  const label = triggerLabel(data.trigger);
   const addAnchor: WorkflowCanvasInsertAnchor = { kind: "trigger" };
   const addMenuOpen = sameInsertAnchor(data.activeAddAnchor, addAnchor);
   const detailGroups = triggerDetailGroups(data.definition);
@@ -315,17 +314,16 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
           <p className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
             Trigger action
           </p>
-          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
-            {triggerPreviewTitle(data.trigger)}
-          </p>
         </div>
       </div>
       <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
+          {triggerPreviewTitle(data.trigger)}
+        </p>
         <p className="line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
           {triggerPreviewDescription(data.trigger)}
         </p>
         <div className="mt-3 space-y-2">
-          <TriggerChipGroup label="Trigger" values={[label]} accent />
           {detailGroups.map((group) => (
             <TriggerChipGroup key={group.label} label={group.label} values={group.values} />
           ))}
@@ -387,11 +385,9 @@ function WorkflowTriggerNode({ data }: NodeProps<Node<TriggerNodeData>>) {
 function TriggerChipGroup({
   label,
   values,
-  accent = false,
 }: {
   label: string;
   values: string[];
-  accent?: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -400,12 +396,7 @@ function TriggerChipGroup({
         {values.map((value) => (
           <span
             key={value}
-            className={cn(
-              "max-w-full truncate rounded-full px-2 py-1 text-[10px] font-medium",
-              accent
-                ? "bg-violet-500/15 text-violet-200"
-                : "bg-[hsl(var(--surface-1))] text-[hsl(var(--muted-foreground))]",
-            )}
+            className="max-w-full truncate rounded-full bg-[hsl(var(--surface-1))] px-2 py-1 text-[10px] font-medium text-[hsl(var(--muted-foreground))]"
           >
             {value}
           </span>
@@ -422,20 +413,6 @@ function triggerDetailGroups(
     case "page_view":
       return [
         { label: "Channels", values: ["Web"] },
-        {
-          label: "Page rules",
-          values:
-            definition.pageRules && definition.pageRules.length > 0
-              ? definition.pageRules
-                  .slice(0, 2)
-                  .map(
-                    (rule) =>
-                      `${rule.urlOp === "eq" ? "equals" : rule.urlOp} ${rule.url}${
-                        rule.timeOnPageSec ? ` · ${rule.timeOnPageSec}s` : ""
-                      }`,
-                  )
-              : ["Any page"],
-        },
         { label: "Audience", values: ["Users", "Leads & Visitors"] },
       ];
     case "schedule":
@@ -2310,37 +2287,37 @@ function RouteOutputs({
 function triggerPreviewTitle(trigger: WorkflowDefinition["trigger"]): string {
   switch (trigger) {
     case "page_view":
-      return "Customer visits a page";
+      return "When customer visits a page";
     case "new_messenger_conversation":
-      return "New messenger conversation";
+      return "When customer opens a new conversation";
     case "first_message":
-      return "Customer opens a new conversation";
+      return "When customer sends the first message";
     case "any_message":
-      return "Any message is received";
+      return "When any message is received";
     case "teammate_message":
-      return "Teammate sends a message";
+      return "When teammate sends a message";
     case "conversation_state_changed":
-      return "Conversation state changes";
+      return "When conversation state changes";
     case "assigned_to_team":
-      return "Conversation assigned to team";
+      return "When conversation is assigned to team";
     case "assigned_to_member":
-      return "Conversation assigned to member";
+      return "When conversation is assigned to member";
     case "customer_unresponsive":
-      return "Customer becomes unresponsive";
+      return "When customer becomes unresponsive";
     case "teammate_unresponsive":
-      return "Teammate becomes unresponsive";
+      return "When teammate becomes unresponsive";
     case "teammate_added_note":
-      return "Teammate adds a note";
+      return "When teammate adds a note";
     case "ticket_created":
-      return "Ticket is created";
+      return "When ticket is created";
     case "ticket_state_changed":
-      return "Ticket state changes";
+      return "When ticket state changes";
     case "schedule":
-      return "Scheduled workflow";
+      return "When schedule matches";
     case "webhook":
-      return "Incoming webhook";
+      return "When webhook is received";
     case "event_match":
-      return "Custom event matches";
+      return "When custom event matches";
   }
 }
 
