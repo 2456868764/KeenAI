@@ -74,6 +74,10 @@ const criteria = [
       ["apps/dashboard/src/components/workflows/workflow-editor.tsx", "Remove conversation tag"],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "reorderWorkflows"],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "workflowGroupNotice"],
+      [
+        "apps/dashboard/src/components/workflows/workflow-list-model.ts",
+        "createScratchWorkflowDefinition",
+      ],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "Choose from templates"],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "Keeni AI Agent"],
       ["apps/dashboard/src/components/workflows/workflow-list-meta.ts", "Manage agent deployment"],

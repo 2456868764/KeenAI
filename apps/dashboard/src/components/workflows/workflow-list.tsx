@@ -33,34 +33,12 @@ import { useRouter } from "next/navigation";
 import { type DragEvent, useMemo, useState } from "react";
 import { triggerLabel } from "./workflow-graph";
 import { workflowGroupNotice } from "./workflow-list-meta";
+import { createScratchWorkflowDefinition } from "./workflow-list-model";
 
 type StatusFilter = "all" | Workflow["status"];
 type TriggerFilter = "all" | WorkflowDefinition["trigger"];
 type TypeFilter = "all" | "ai" | "customer_facing" | "internal";
 type TemplateView = "browse" | "preview";
-
-const scratchDefinition: WorkflowDefinition = {
-  trigger: "page_view",
-  pageRules: [{ urlOp: "contains", url: "/", timeOnPageSec: 0 }],
-  audience: { match: "all", rules: [] },
-  blocks: [
-    {
-      id: "welcome",
-      type: "send_message",
-      plainText: "Hello! How can I help you today?",
-    },
-    {
-      id: "buttons",
-      type: "reply_buttons",
-      prompt: "Choose an option",
-      allowFreeText: true,
-      buttons: [
-        { id: "login", label: "I can't log in", nextId: null },
-        { id: "bug", label: "I found a bug", nextId: null },
-      ],
-    },
-  ],
-};
 
 const templateCategories = [
   { id: "popular", label: "Popular" },
@@ -226,9 +204,12 @@ export function WorkflowListShell() {
     setSelectedTemplate(null);
   };
 
-  const createFromScratch = () => {
+  const createFromScratch = (trigger?: WorkflowDefinition["trigger"]) => {
     setMenuOpen(false);
-    create.mutate({ name: "Untitled workflow", definition: cloneDefinition(scratchDefinition) });
+    create.mutate({
+      name: "Untitled workflow",
+      definition: createScratchWorkflowDefinition(trigger),
+    });
   };
 
   const createFromTemplate = (template: WorkflowTemplate) => {
@@ -326,7 +307,7 @@ export function WorkflowListShell() {
                   new Set(group.items.map((workflow) => workflow.definition.trigger)).size === 1
                 }
                 reordering={reorder.isPending}
-                onCreate={createFromScratch}
+                onCreate={() => createFromScratch(group.items[0]?.definition.trigger)}
                 onReorder={(workflowIds) => {
                   const trigger = group.items[0]?.definition.trigger;
                   if (!trigger) return;
@@ -686,7 +667,7 @@ function TemplateBrowser({
               name: "Untitled workflow",
               description: "",
               category: "automation",
-              definition: scratchDefinition,
+              definition: createScratchWorkflowDefinition(),
             })
           }
         >
