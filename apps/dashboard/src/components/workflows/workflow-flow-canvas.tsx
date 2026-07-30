@@ -1763,7 +1763,7 @@ function ReplyButtonOutputs({
               className={cn(
                 "nodrag nopan flex max-w-[210px] items-center gap-1 rounded-lg border bg-[hsl(var(--surface-0))] px-3 py-1.5 shadow-sm transition-colors",
                 button.nextId
-                  ? "border-emerald-400/30"
+                  ? "border-violet-400/40"
                   : "border-violet-400/30 hover:border-violet-400/60",
                 open ? "border-violet-300 bg-violet-500/20" : "",
               )}
@@ -1794,11 +1794,7 @@ function ReplyButtonOutputs({
                   onOpenAddMenu(open ? null : anchor);
                 }}
               >
-                {button.nextId ? (
-                  <CheckCircle2 className="size-3.5" />
-                ) : (
-                  <Plus className="size-3.5" />
-                )}
+                <Plus className="size-3.5" />
               </button>
               <button
                 type="button"
@@ -2012,7 +2008,7 @@ function EditableRouteRow({
       <div
         className={cn(
           "nodrag nopan flex items-center gap-1.5 rounded-lg border bg-[hsl(var(--surface-0))] px-2 py-1.5 transition-colors",
-          connected ? "border-emerald-400/30" : "border-amber-400/30 hover:border-amber-400/60",
+          connected ? "border-violet-400/40" : "border-amber-400/30 hover:border-amber-400/60",
           open ? "border-violet-300 bg-violet-500/20" : "",
         )}
         onClick={(event) => event.stopPropagation()}
@@ -2051,7 +2047,7 @@ function EditableRouteRow({
             onOpenAddMenu(open ? null : anchor);
           }}
         >
-          {connected ? <CheckCircle2 className="size-3.5" /> : <Plus className="size-3.5" />}
+          <Plus className="size-3.5" />
         </button>
       </div>
       {onChangeCondition ? (
@@ -2159,7 +2155,7 @@ function StaticRouteRow({
         className={cn(
           "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
           connected
-            ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700"
+            ? "border-violet-400/40 bg-violet-500/10 text-violet-700"
             : "border-amber-400/30 bg-[hsl(var(--surface-0))] text-amber-700 hover:bg-amber-500/15",
           open ? "border-violet-300 bg-violet-500/20" : "",
         )}
@@ -2170,11 +2166,7 @@ function StaticRouteRow({
         }}
       >
         <span className="min-w-0 flex-1 truncate">{label}</span>
-        {connected ? (
-          <CheckCircle2 className="size-3.5 shrink-0" />
-        ) : (
-          <Plus className="size-3.5 shrink-0" />
-        )}
+        <Plus className="size-3.5 shrink-0" />
       </button>
       {open && renderAddMenu ? (
         <div
@@ -2216,7 +2208,7 @@ function RouteOutputs({
               className={cn(
                 "nodrag nopan flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-[11px] transition-colors",
                 route.connected
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700"
+                  ? "border-violet-400/40 bg-violet-500/10 text-violet-700"
                   : "border-violet-400/30 bg-[hsl(var(--surface-0))] text-violet-700 hover:bg-violet-500/15",
                 open ? "border-violet-300 bg-violet-500/20" : "",
               )}
@@ -2227,11 +2219,7 @@ function RouteOutputs({
               }}
             >
               <span className="min-w-0 flex-1 truncate">{route.label}</span>
-              {route.connected ? (
-                <CheckCircle2 className="size-3.5 shrink-0" />
-              ) : (
-                <Plus className="size-3.5 shrink-0" />
-              )}
+              <Plus className="size-3.5 shrink-0" />
             </button>
             {open && renderAddMenu ? (
               <div
