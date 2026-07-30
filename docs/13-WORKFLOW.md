@@ -925,7 +925,7 @@ export const wfAutoClose = inngest.createFunction(
 
 | 用途 | 选型 |
 |------|------|
-| 画布 | `@xyflow/react` v12（dagre 初始自动布局 + 本地持久化手动位置） |
+| 画布 | `@xyflow/react` v12（dagre 自动布局 + 固定节点位置；只允许 pan/zoom，不允许任意拖动节点） |
 | 节点 | Custom Node per Block type（消息/动作/条件三种视觉风格） |
 | 配置 | canvas 内联设置：Trigger settings、Message composer、Reply buttons、Branches、Rules、Ticket/SLA/Integration fields（含 webhook headers / payload）都在节点内完成 |
 | 校验 | 客户端实时 Zod parse + 服务端 superRefine |
@@ -937,7 +937,7 @@ export const wfAutoClose = inngest.createFunction(
 
 ### 8.1.1 Canvas 框架决策
 
-当前继续使用 `@xyflow/react` v12，不迁移到新的 canvas 框架。`@xyflow/react` 已覆盖 Featurebase workflow builder 需要的核心能力：React 自定义节点、custom edge、Handle 输出点、受控 nodes/edges、MiniMap、viewport controls、fitView、pane/node 事件，以及与 dagre 初始自动布局和本地持久化手动位置的组合。现有 Trigger、Message、Reply buttons、Branches、Rules、Ticket/SLA/Integration 设置都已经在节点内完成，迁移框架不会直接提升 Featurebase 对齐度，反而会引入 pan/zoom、连接点、选中态、表单内嵌和回归测试的重做成本。
+当前继续使用 `@xyflow/react` v12，不迁移到新的 canvas 框架。`@xyflow/react` 已覆盖 Featurebase workflow builder 需要的核心能力：React 自定义节点、custom edge、Handle 输出点、受控 nodes/edges、MiniMap、viewport controls、fitView、pane/node 事件，以及与 dagre 自动布局和固定输出锚点的组合。现有 Trigger、Message、Reply buttons、Branches、Rules、Ticket/SLA/Integration 设置都已经在节点内完成，迁移框架不会直接提升 Featurebase 对齐度，反而会引入 pan/zoom、连接点、选中态、表单内嵌和回归测试的重做成本。
 
 替代方案评估：
 

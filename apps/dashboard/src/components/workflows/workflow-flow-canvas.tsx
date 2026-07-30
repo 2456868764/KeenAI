@@ -10,12 +10,10 @@ import {
   Handle,
   MiniMap,
   type Node,
-  type NodeChange,
   type NodeProps,
   Panel,
   Position,
   ReactFlow,
-  applyNodeChanges,
   getBezierPath,
   useReactFlow,
 } from "@xyflow/react";
@@ -25,7 +23,6 @@ import {
   CheckCircle2,
   CircleAlert,
   GripVertical,
-  LayoutGrid,
   Maximize2,
   Minus,
   Plus,
@@ -34,14 +31,7 @@ import {
   Undo2,
   Zap,
 } from "lucide-react";
-import {
-  type CSSProperties,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { type CSSProperties, type ReactNode, useMemo } from "react";
 import { formatWebhookHeaders, parseWebhookHeaders } from "./workflow-formats";
 import {
   blockCategory,
@@ -75,8 +65,6 @@ type TriggerNodeData = {
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void;
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 };
-
-type ManualPositionMap = Record<string, { x: number; y: number }>;
 
 export type WorkflowCanvasInsertAnchor =
   | { kind: "trigger" }
@@ -2445,7 +2433,6 @@ function definitionToFlow(
   onOpenAddMenu: (anchor: WorkflowCanvasInsertAnchor | null) => void,
   renderAddMenu: ((anchor: WorkflowCanvasInsertAnchor) => ReactNode) | undefined,
   triggerSettings: ReactNode | undefined,
-  manualPositions: ManualPositionMap,
 ): { nodes: Node[]; edges: Edge[] } {
   const graphEdges = collectWorkflowEdges(definition);
   const layoutInput = [
@@ -2468,7 +2455,7 @@ function definitionToFlow(
       id: "__trigger__",
       type: "workflowTrigger",
       zIndex: triggerSelected || insertAnchorNodeId(activeAddAnchor) === "__trigger__" ? 100 : 1,
-      position: manualPositions.__trigger__ ?? {
+      position: {
         x: positioned.find((n) => n.id === "__trigger__")?.x ?? 0,
         y: positioned.find((n) => n.id === "__trigger__")?.y ?? 0,
       },
@@ -2481,7 +2468,7 @@ function definitionToFlow(
         onOpenAddMenu,
         renderAddMenu,
       },
-      draggable: true,
+      draggable: false,
       selectable: true,
     },
     ...definition.blocks.map((block) => ({
@@ -2489,7 +2476,7 @@ function definitionToFlow(
       type: "workflowBlock",
       zIndex:
         selectedBlockId === block.id || insertAnchorNodeId(activeAddAnchor) === block.id ? 100 : 1,
-      position: manualPositions[block.id] ?? {
+      position: {
         x: positioned.find((n) => n.id === block.id)?.x ?? 0,
         y: positioned.find((n) => n.id === block.id)?.y ?? 0,
       },
@@ -2506,7 +2493,7 @@ function definitionToFlow(
         onOpenAddMenu,
         renderAddMenu,
       },
-      draggable: true,
+      draggable: false,
     })),
   ];
 
@@ -2538,7 +2525,6 @@ export function WorkflowFlowCanvas({
   triggerSettings,
   toolbar,
   runTracePanel,
-  layoutStorageKey,
   canUndo,
   canRedo,
   onUndo,
@@ -2558,64 +2544,11 @@ export function WorkflowFlowCanvas({
   triggerSettings?: ReactNode;
   toolbar?: ReactNode;
   runTracePanel?: ReactNode;
-  layoutStorageKey?: string;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
 }) {
-  const nodeIds = useMemo(
-    () => new Set(["__trigger__", ...definition.blocks.map((block) => block.id)]),
-    [definition.blocks],
-  );
-  const [manualPositions, setManualPositions] = useState<ManualPositionMap>({});
-  const [layoutLoaded, setLayoutLoaded] = useState(false);
-
-  useEffect(() => {
-    setLayoutLoaded(false);
-    if (!layoutStorageKey) {
-      setManualPositions({});
-      setLayoutLoaded(true);
-      return;
-    }
-    try {
-      const stored = window.localStorage.getItem(layoutStorageKey);
-      setManualPositions(stored ? (JSON.parse(stored) as ManualPositionMap) : {});
-    } catch {
-      setManualPositions({});
-    }
-    setLayoutLoaded(true);
-  }, [layoutStorageKey]);
-
-  useEffect(() => {
-    setManualPositions((positions) => {
-      const next = Object.fromEntries(
-        Object.entries(positions).filter(([nodeId]) => nodeIds.has(nodeId)),
-      ) as ManualPositionMap;
-      return Object.keys(next).length === Object.keys(positions).length ? positions : next;
-    });
-  }, [nodeIds]);
-
-  useEffect(() => {
-    if (!layoutStorageKey || !layoutLoaded) return;
-    try {
-      window.localStorage.setItem(layoutStorageKey, JSON.stringify(manualPositions));
-    } catch {
-      // Ignore storage failures; the canvas remains usable for the current session.
-    }
-  }, [layoutLoaded, layoutStorageKey, manualPositions]);
-
-  const resetLayout = useCallback(() => {
-    setManualPositions({});
-    if (layoutStorageKey) {
-      try {
-        window.localStorage.removeItem(layoutStorageKey);
-      } catch {
-        // Ignore storage failures; clearing in-memory positions is enough.
-      }
-    }
-  }, [layoutStorageKey]);
-
   const { nodes, edges } = useMemo(
     () =>
       definitionToFlow(
@@ -2629,7 +2562,6 @@ export function WorkflowFlowCanvas({
         onOpenAddMenu ?? (() => undefined),
         renderAddMenu,
         triggerSettings,
-        manualPositions,
       ),
     [
       definition,
@@ -2642,10 +2574,8 @@ export function WorkflowFlowCanvas({
       onOpenAddMenu,
       renderAddMenu,
       triggerSettings,
-      manualPositions,
     ],
   );
-  const [flowNodes, setFlowNodes] = useState<Node[]>(nodes);
   const initialFitNodes = useMemo(
     () => [
       { id: "__trigger__" },
@@ -2653,26 +2583,6 @@ export function WorkflowFlowCanvas({
     ],
     [definition.blocks],
   );
-
-  useEffect(() => {
-    setFlowNodes(nodes);
-  }, [nodes]);
-
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setFlowNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
-    const positionChanges = changes.filter(
-      (change): change is Extract<NodeChange, { type: "position" }> =>
-        change.type === "position" && Boolean(change.position),
-    );
-    if (positionChanges.length === 0) return;
-    setManualPositions((positions) => {
-      const next = { ...positions };
-      for (const change of positionChanges) {
-        if (change.position) next[change.id] = change.position;
-      }
-      return next;
-    });
-  }, []);
 
   return (
     <div
@@ -2682,7 +2592,7 @@ export function WorkflowFlowCanvas({
       {toolbar ? <div className="relative z-20 shrink-0">{toolbar}</div> : null}
       <div className="relative min-h-0 flex-1">
         <ReactFlow
-          nodes={flowNodes}
+          nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
@@ -2690,10 +2600,9 @@ export function WorkflowFlowCanvas({
           fitViewOptions={{ padding: 0.28, minZoom: 0.72, maxZoom: 0.96, nodes: initialFitNodes }}
           minZoom={0.6}
           maxZoom={1.4}
-          nodesDraggable
+          nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable
-          onNodesChange={onNodesChange}
           onNodeClick={(_, node) => {
             if (node.id === "__trigger__") {
               onSelectTrigger();
@@ -2713,8 +2622,6 @@ export function WorkflowFlowCanvas({
             canRedo={canRedo ?? false}
             onUndo={onUndo}
             onRedo={onRedo}
-            hasCustomLayout={Object.keys(manualPositions).length > 0}
-            onResetLayout={resetLayout}
           />
           <MiniMap
             position="bottom-right"
@@ -2742,15 +2649,11 @@ function CanvasViewportControls({
   canRedo,
   onUndo,
   onRedo,
-  hasCustomLayout,
-  onResetLayout,
 }: {
   canUndo: boolean;
   canRedo: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
-  hasCustomLayout: boolean;
-  onResetLayout: () => void;
 }) {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
   const controlClass =
@@ -2780,16 +2683,6 @@ function CanvasViewportControls({
           <Redo2 className="size-4" />
         </button>
         <div className="h-px bg-[hsl(var(--border))]" />
-        <button
-          type="button"
-          className={controlClass}
-          onClick={onResetLayout}
-          disabled={!hasCustomLayout}
-          title="Auto layout"
-          aria-label="Reset to automatic layout"
-        >
-          <LayoutGrid className="size-4" />
-        </button>
         <button
           type="button"
           className={controlClass}

@@ -930,7 +930,6 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 />
               )
             }
-            layoutStorageKey={`keenai-workflow-canvas-layout:${workflowId}`}
             canUndo={definitionHistory.past.length > 0}
             canRedo={definitionHistory.future.length > 0}
             onUndo={undoDefinition}
