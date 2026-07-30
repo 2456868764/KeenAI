@@ -32,7 +32,12 @@ import {
   Zap,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useMemo } from "react";
-import { formatWebhookHeaders, parseWebhookHeaders } from "./workflow-formats";
+import {
+  formatCommaList,
+  formatWebhookHeaders,
+  parseCommaList,
+  parseWebhookHeaders,
+} from "./workflow-formats";
 import {
   blockCategory,
   blockLabel,
@@ -544,6 +549,50 @@ function BlockPreview({
         <p className="mt-2 line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">
           {block.instructions?.trim() || `Max ${block.maxSteps ?? 8} agent steps.`}
         </p>
+        <textarea
+          value={block.instructions ?? ""}
+          rows={3}
+          aria-label="Let Keeni instructions"
+          placeholder="Override instructions for this AI workflow step"
+          className="nodrag nopan mt-3 min-h-[76px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, instructions: event.target.value || undefined })
+          }
+        />
+        <div className="mt-2 grid grid-cols-[88px_minmax(0,1fr)] gap-2">
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={block.maxSteps ?? 8}
+            aria-label="Let Keeni max steps"
+            className="nodrag nopan h-8 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({
+                ...block,
+                maxSteps: Math.max(1, Math.min(20, Number.parseInt(event.target.value, 10) || 8)),
+              })
+            }
+          />
+          <input
+            value={formatCommaList(block.toolFilter)}
+            aria-label="Let Keeni tool filter"
+            placeholder="Tool allowlist, comma separated"
+            className="nodrag nopan h-8 min-w-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({ ...block, toolFilter: parseCommaList(event.target.value) })
+            }
+          />
+        </div>
         <RouteOutputs
           routes={[
             {
@@ -2421,6 +2470,8 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "send_message":
     case "assign":
       return 340;
+    case "let_keeni_answer":
+      return 460;
     case "reply_buttons":
       return 390 + Math.min(block.buttons.length, 8) * 38;
     case "branches":

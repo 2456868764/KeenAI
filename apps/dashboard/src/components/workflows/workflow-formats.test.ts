@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatWebhookHeaders, parseWebhookHeaders } from "./workflow-formats";
+import {
+  formatCommaList,
+  formatWebhookHeaders,
+  parseCommaList,
+  parseWebhookHeaders,
+} from "./workflow-formats";
 
 describe("webhook header formatting", () => {
   it("formats headers as editable header lines", () => {
@@ -28,5 +33,21 @@ describe("webhook header formatting", () => {
   it("returns undefined when no valid headers are present", () => {
     expect(parseWebhookHeaders("invalid\nEmpty:")).toBeUndefined();
     expect(formatWebhookHeaders(undefined)).toBe("");
+  });
+});
+
+describe("comma-list formatting", () => {
+  it("formats and parses comma-separated lists", () => {
+    expect(formatCommaList(["kb.search", "ticket.lookup"])).toBe("kb.search, ticket.lookup");
+    expect(parseCommaList("kb.search, ticket.lookup, , conversation.read")).toEqual([
+      "kb.search",
+      "ticket.lookup",
+      "conversation.read",
+    ]);
+  });
+
+  it("returns undefined for empty comma-separated lists", () => {
+    expect(formatCommaList(undefined)).toBe("");
+    expect(parseCommaList(" , ")).toBeUndefined();
   });
 });

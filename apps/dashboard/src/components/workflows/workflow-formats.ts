@@ -23,3 +23,16 @@ export function parseWebhookHeaders(input: string): Record<string, string> | und
 
   return Object.keys(headers).length > 0 ? headers : undefined;
 }
+
+export function formatCommaList(values: string[] | undefined): string {
+  return (values ?? []).join(", ");
+}
+
+export function parseCommaList(input: string): string[] | undefined {
+  const values = input
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return values.length > 0 ? values : undefined;
+}

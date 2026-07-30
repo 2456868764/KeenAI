@@ -40,6 +40,12 @@ const criteria = [
     ],
     contains: [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "WorkflowTriggerNode"],
+      [
+        "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
+        "Let Keeni instructions",
+      ],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Let Keeni max steps"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Let Keeni tool filter"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
       [
         "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
