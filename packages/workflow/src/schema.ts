@@ -585,7 +585,7 @@ export type WorkflowStepResult = {
     snoozeMinutes?: number;
     ratingRequested?: boolean;
     tags?: string[];
-    tagMode?: "append" | "replace";
+    tagMode?: "append" | "replace" | "remove";
     targetCustomerId?: string;
     taggedConversationCount?: number;
     priority?: MarkPriorityInput["priority"];

@@ -933,6 +933,7 @@ export const wfAutoClose = inngest.createFunction(
 | 版本管理 | Published snapshot + versions / rollback / unpublish / duplicate / archive 操作在 builder toolbar 管理 |
 | 测试模式 | 「Set live to me only」→ trigger.config.audience 自动注入当前 user 的 email |
 | 消息编辑 | 节点内联 composer（文本、附件 ID、按钮路由直接在 canvas 内编辑） |
+| 动作菜单 | canvas route 输出点旁展开 Featurebase 风格分组搜索菜单，包含 Send / Collect / Internal / Delay / Branch / Integrations；Internal 覆盖 Tag conversation 与 Remove conversation tag |
 
 ### 8.1.1 Canvas 框架决策
 

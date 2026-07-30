@@ -1,6 +1,11 @@
 import { parseApiEnv } from "@keenai/shared";
 import { describe, expect, it, vi } from "vitest";
-import { createWorkflowActionHandlers, runWorkflowScriptBlock } from "./workflow-handlers.js";
+import {
+  createWorkflowActionHandlers,
+  mergeConversationTags,
+  mergeEndUserTags,
+  runWorkflowScriptBlock,
+} from "./workflow-handlers.js";
 
 const callTool = vi.fn();
 
@@ -72,5 +77,14 @@ describe("workflow action handlers", () => {
     expect(result).toEqual({
       result: { channel: "email", workflowId: "workflow-1" },
     });
+  });
+
+  it("removes workflow tags in remove mode", () => {
+    expect(
+      mergeConversationTags(["vip", "trial", "billing"], { tags: ["trial"], mode: "remove" }),
+    ).toEqual(["vip", "billing"]);
+    expect(
+      mergeEndUserTags(["vip", "trial", "billing"], { tags: ["vip", "billing"], mode: "remove" }),
+    ).toEqual(["trial"]);
   });
 });

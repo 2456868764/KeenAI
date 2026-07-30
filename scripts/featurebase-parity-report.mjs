@@ -42,6 +42,7 @@ const criteria = [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "WorkflowTriggerNode"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "RouteOutputs"],
+      ["apps/dashboard/src/components/workflows/workflow-editor.tsx", "Remove conversation tag"],
       ["docs/13-WORKFLOW.md", "Canvas 框架决策"],
       ["docs/13-WORKFLOW.md", "不迁移到新的 canvas 框架"],
     ],

@@ -277,6 +277,10 @@ export function buildTicketFormMessageContent(
 
 export function mergeConversationTags(existing: string[], input: TagConversationInput): string[] {
   if (input.mode === "replace") return [...new Set(input.tags)];
+  if (input.mode === "remove") {
+    const tagsToRemove = new Set(input.tags);
+    return existing.filter((tag) => !tagsToRemove.has(tag));
+  }
   return [...new Set([...existing, ...input.tags])];
 }
 
@@ -291,6 +295,10 @@ export function mergeEndUserTags(
   input: TagEndUserInput,
 ): TagEndUserResult["tags"] {
   if (input.mode === "replace") return [...new Set(input.tags)];
+  if (input.mode === "remove") {
+    const tagsToRemove = new Set(input.tags);
+    return existing.filter((tag) => !tagsToRemove.has(tag));
+  }
   return [...new Set([...existing, ...input.tags])];
 }
 

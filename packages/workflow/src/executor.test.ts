@@ -1066,6 +1066,31 @@ describe("runWorkflow", () => {
     expect(result.steps[0]?.output?.tags).toEqual(["vip", "billing"]);
   });
 
+  it("removes conversation tags via tag_conversation remove mode", async () => {
+    const tagConversation = vi.fn(async () => {});
+
+    const result = await runWorkflow(
+      {
+        trigger: "first_message",
+        blocks: [
+          {
+            id: "remove-tag",
+            type: "tag_conversation",
+            tags: ["trial"],
+            mode: "remove",
+          },
+        ],
+      },
+      { sendMessage: vi.fn(), assign: vi.fn(), close: vi.fn(), tagConversation },
+    );
+
+    expect(tagConversation).toHaveBeenCalledWith({ tags: ["trial"], mode: "remove" });
+    expect(result.steps[0]?.output).toMatchObject({
+      tags: ["trial"],
+      tagMode: "remove",
+    });
+  });
+
   it("tags end user via tag_end_user block", async () => {
     const tagEndUser = vi.fn(async () => ({
       targetCustomerId: "visitor-1",

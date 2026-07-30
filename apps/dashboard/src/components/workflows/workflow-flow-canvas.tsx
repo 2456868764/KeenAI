@@ -472,6 +472,10 @@ function workflowBlockTitle(block: WorkflowBlock): string {
       return "Branches";
     case "apply_rules":
       return "Apply rules";
+    case "tag_conversation":
+      return block.mode === "remove" ? "Remove conversation tag" : "Tag conversation";
+    case "tag_end_user":
+      return block.mode === "remove" ? "Remove end-user tag" : "Tag end user";
     default:
       return block.type.replaceAll("_", " ");
   }
@@ -804,11 +808,15 @@ function BlockPreview({
           onKeyDown={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
           onChange={(event) =>
-            onChangeBlock({ ...block, mode: event.target.value as "append" | "replace" })
+            onChangeBlock({
+              ...block,
+              mode: event.target.value as "append" | "replace" | "remove",
+            })
           }
         >
           <option value="append">Append</option>
           <option value="replace">Replace</option>
+          <option value="remove">Remove</option>
         </select>
       </div>
     );

@@ -279,8 +279,10 @@ export function blockLabel(block: WorkflowBlock): string {
     case "snooze":
       return `Snooze ${block.minutes} min`;
     case "tag_end_user":
+      if (block.mode === "remove") return `Remove end-user tag: ${block.tags.join(", ")}`;
       return `Tag end user: ${block.tags.join(", ")}`;
     case "tag_conversation":
+      if (block.mode === "remove") return `Remove tag: ${block.tags.join(", ")}`;
       return `Tag: ${block.tags.join(", ")}`;
     case "csat":
       return block.waitForRating ? "CSAT (wait for rating)" : "CSAT request";

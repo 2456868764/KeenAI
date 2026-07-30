@@ -1306,6 +1306,7 @@ type BlockAction = {
   label: string;
   description: string;
   icon: typeof Plus;
+  createBlock?: () => WorkflowBlock;
 };
 
 const ACTION_GROUP_STYLES: Record<string, string> = {
@@ -1445,6 +1446,18 @@ const ACTION_GROUPS: { title: string; items: BlockAction[] }[] = [
         label: "Tag conversation",
         description: "Append or replace conversation tags.",
         icon: Tag,
+      },
+      {
+        type: "tag_conversation",
+        label: "Remove conversation tag",
+        description: "Remove one or more tags from the conversation.",
+        icon: Tag,
+        createBlock: () => ({
+          id: newBlockId(),
+          type: "tag_conversation",
+          tags: ["vip"],
+          mode: "remove",
+        }),
       },
       {
         type: "tag_end_user",
@@ -1626,9 +1639,9 @@ function WorkflowActionMenu({
                   const Icon = item.icon;
                   return (
                     <button
-                      key={item.type}
+                      key={`${group.title}-${item.type}-${item.label}`}
                       type="button"
-                      onClick={() => onAdd(createWorkflowBlock(item.type))}
+                      onClick={() => onAdd(item.createBlock?.() ?? createWorkflowBlock(item.type))}
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-100"
                     >
                       <span
