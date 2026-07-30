@@ -584,6 +584,42 @@ function BlockPreview({
           onPointerDown={(event) => event.stopPropagation()}
           onChange={(event) => onChangeBlock({ ...block, prompt: event.target.value })}
         />
+        <label
+          className="nodrag nopan mt-3 flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={block.allowFreeText ?? false}
+            onChange={(event) => onChangeBlock({ ...block, allowFreeText: event.target.checked })}
+          />
+          Reply buttons allow free-text fallback
+        </label>
+        <select
+          value={block.autoCloseMinutes ?? ""}
+          aria-label="Reply buttons auto close timer"
+          className="nodrag nopan mt-2 h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              autoCloseMinutes: event.target.value
+                ? Number.parseInt(event.target.value, 10)
+                : undefined,
+            })
+          }
+        >
+          <option value="">No auto-close timer</option>
+          {autoCloseMinuteOptions.map((minutes) => (
+            <option key={minutes} value={minutes}>
+              Auto-close after {minutes} min
+            </option>
+          ))}
+        </select>
         <ReplyButtonOutputs
           block={block}
           activeAddAnchor={activeAddAnchor}
@@ -2384,8 +2420,9 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
       return 430 + Math.min(block.fields.length, 8) * 128;
     case "send_message":
     case "assign":
-    case "reply_buttons":
       return 340;
+    case "reply_buttons":
+      return 390 + Math.min(block.buttons.length, 8) * 38;
     case "branches":
       return 360 + Math.min(block.branches.length, 4) * 100;
     case "apply_rules":

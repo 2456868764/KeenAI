@@ -41,6 +41,14 @@ const criteria = [
     contains: [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "WorkflowTriggerNode"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
+      [
+        "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
+        "Reply buttons allow free-text fallback",
+      ],
+      [
+        "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
+        "Reply buttons auto close timer",
+      ],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "RouteOutputs"],
       [
         "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",

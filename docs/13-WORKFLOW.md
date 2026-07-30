@@ -982,7 +982,7 @@ export const workflowsRouter = new Hono()
 
 - **拖拽**：`+ Add step` 在画布上的固定锚点出现 step 类型选择（与 Featurebase 一致，不可任意拖动节点）
 - **Branches/Apply rules**：节点底部 `+ Add branch` 弹出 Predicate 编辑器（Field selector + Op + Value，可嵌套 AND/OR）
-- **Reply Buttons**：点 button label 直接编辑；右侧拖出 path
+- **Reply Buttons**：点 button label 直接编辑；free-text fallback / auto-close timer 在节点内切换；右侧固定输出点添加 path
 - **测试**：右上角 `Save and close` / `Set live` 双按钮；`Test` 按钮触发 `dry-run` 用伪事件走流程并把 Block 输出渲染在节点上
 - **顺序管理**：列表页支持拖拽排序（per trigger type 一个 sortable list）；`POST /workflows/reorder` 持久化 `sortOrder`，列表和触发调度都按 `sortOrder ASC` 执行，匹配 Featurebase 的 top-priority workflow 语义
 - **AI Agent 优先级提示**：Messenger 触发组显示 Basic AI Agent deployment notice，并提供 `Manage agent deployment` 入口，说明 AI Agent 会优先于匹配的 customer-facing workflows
