@@ -982,6 +982,7 @@ export const workflowsRouter = new Hono()
 
 - **拖拽**：`+ Add step` 在画布上的固定锚点出现 step 类型选择（与 Featurebase 一致，不可任意拖动节点）
 - **Let Keeni Answer**：instructions / max steps / tool allowlist 与 Resolved / Unresolved / Escalated outcome routes 都在节点内完成
+- **Collect / Ticket forms**：字段 key / label / required / type / options / auto-close 均在节点内编辑，字段上限与 DSL 保持一致（Collect Data 8 个，Ticket Form 16 个）
 - **Branches/Apply rules**：节点底部 `+ Add branch` 弹出 Predicate 编辑器（Field selector + Op + Value，可嵌套 AND/OR）
 - **Reply Buttons**：点 button label 直接编辑；free-text fallback / auto-close timer 在节点内切换；右侧固定输出点添加 path
 - **测试**：右上角 `Save and close` / `Set live` 双按钮；`Test` 按钮触发 `dry-run` 用伪事件走流程并把 Block 输出渲染在节点上

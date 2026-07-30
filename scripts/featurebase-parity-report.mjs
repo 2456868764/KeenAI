@@ -46,6 +46,7 @@ const criteria = [
       ],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Let Keeni max steps"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Let Keeni tool filter"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "? 16 : 8"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
       [
         "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",

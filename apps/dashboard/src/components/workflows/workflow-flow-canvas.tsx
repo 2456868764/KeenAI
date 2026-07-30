@@ -986,7 +986,7 @@ function DataCollectionPreview({
   block: Extract<WorkflowBlock, { type: "collect_data" | "send_ticket_form" }>;
   onChangeBlock: (block: WorkflowBlock) => void;
 }) {
-  const fieldLimit = block.type === "send_ticket_form" ? 8 : 6;
+  const fieldLimit = block.type === "send_ticket_form" ? 16 : 8;
 
   return (
     <div className="mt-3 grid gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
@@ -2464,9 +2464,9 @@ const edgeTypes = {
 function workflowBlockLayoutHeight(block: WorkflowBlock): number {
   switch (block.type) {
     case "collect_data":
-      return 360 + Math.min(block.fields.length, 6) * 96;
+      return 360 + Math.min(block.fields.length, 8) * 96;
     case "send_ticket_form":
-      return 430 + Math.min(block.fields.length, 8) * 128;
+      return 430 + Math.min(block.fields.length, 16) * 128;
     case "send_message":
     case "assign":
       return 340;
