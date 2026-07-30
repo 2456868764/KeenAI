@@ -1940,7 +1940,7 @@ function ConditionRouteOutputs({
   if (block.type === "branches") {
     return (
       <div className="mt-3 grid gap-1.5">
-        {block.branches.slice(0, 4).map((branch, branchIndex) => (
+        {block.branches.slice(0, 16).map((branch, branchIndex) => (
           <EditableRouteRow
             key={`${block.id}-branch-${branchIndex}`}
             label={branch.label ?? ""}
@@ -1984,7 +1984,7 @@ function ConditionRouteOutputs({
         <button
           type="button"
           className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={block.branches.length >= 8}
+          disabled={block.branches.length >= 16}
           onClick={(event) => {
             event.stopPropagation();
             const nextIndex = block.branches.length + 1;
@@ -2010,7 +2010,7 @@ function ConditionRouteOutputs({
 
   return (
     <div className="mt-3 grid gap-1.5">
-      {block.rules.slice(0, 4).map((rule, ruleIndex) => (
+      {block.rules.slice(0, 16).map((rule, ruleIndex) => (
         <EditableRouteRow
           key={`${block.id}-rule-${ruleIndex}`}
           label={rule.label ?? ""}
@@ -2046,7 +2046,7 @@ function ConditionRouteOutputs({
       <button
         type="button"
         className="nodrag nopan flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-[hsl(var(--surface-0))] text-[11px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={block.rules.length >= 8}
+        disabled={block.rules.length >= 16}
         onClick={(event) => {
           event.stopPropagation();
           const nextIndex = block.rules.length + 1;
@@ -2475,9 +2475,9 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "reply_buttons":
       return 390 + Math.min(block.buttons.length, 8) * 38;
     case "branches":
-      return 360 + Math.min(block.branches.length, 4) * 100;
+      return 360 + Math.min(block.branches.length, 16) * 100;
     case "apply_rules":
-      return 320 + Math.min(block.rules.length, 4) * 100;
+      return 320 + Math.min(block.rules.length, 16) * 100;
     case "goto":
       return 280;
     case "http_request":
