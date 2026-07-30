@@ -32,6 +32,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type DragEvent, useMemo, useState } from "react";
 import { triggerLabel } from "./workflow-graph";
+import { workflowGroupNotice } from "./workflow-list-meta";
 
 type StatusFilter = "all" | Workflow["status"];
 type TriggerFilter = "all" | WorkflowDefinition["trigger"];
@@ -428,6 +429,7 @@ function WorkflowGroup({
   onReorder: (workflowIds: string[]) => void;
 }) {
   const Icon = meta.icon;
+  const notice = workflowGroupNotice(meta.key);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const handleDrop = (targetId: string) => {
@@ -468,6 +470,20 @@ function WorkflowGroup({
           <Plus className="size-5" />
         </button>
       </div>
+      {notice ? (
+        <div className="mb-5 flex min-h-[64px] items-center gap-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-5 py-4 shadow-sm">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-[hsl(var(--primary))]">
+            <Sparkles className="size-5" />
+          </span>
+          <p className="min-w-0 flex-1 text-sm font-semibold text-slate-700">{notice.text}</p>
+          <Link
+            href={notice.href}
+            className="shrink-0 text-sm font-semibold text-[hsl(var(--primary))] hover:underline"
+          >
+            {notice.linkLabel} →
+          </Link>
+        </div>
+      ) : null}
       <div className="space-y-3">
         {workflows.map((workflow) => (
           <WorkflowRow
