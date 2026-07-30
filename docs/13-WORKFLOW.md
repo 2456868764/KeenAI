@@ -927,7 +927,7 @@ export const wfAutoClose = inngest.createFunction(
 |------|------|
 | 画布 | `@xyflow/react` v12（dagre 初始自动布局 + 本地持久化手动位置） |
 | 节点 | Custom Node per Block type（消息/动作/条件三种视觉风格） |
-| 配置 | canvas 内联设置：Trigger settings、Message composer、Reply buttons、Branches、Rules、Ticket/SLA/Integration fields 都在节点内完成 |
+| 配置 | canvas 内联设置：Trigger settings、Message composer、Reply buttons、Branches、Rules、Ticket/SLA/Integration fields（含 webhook headers / payload）都在节点内完成 |
 | 校验 | 客户端实时 Zod parse + 服务端 superRefine |
 | 数据 | TanStack Query + Hono RPC |
 | 版本管理 | Published snapshot + versions / rollback / unpublish / duplicate / archive 操作在 builder toolbar 管理 |

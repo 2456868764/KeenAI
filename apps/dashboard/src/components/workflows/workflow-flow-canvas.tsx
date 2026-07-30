@@ -42,6 +42,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { formatWebhookHeaders, parseWebhookHeaders } from "./workflow-formats";
 import {
   blockCategory,
   blockLabel,
@@ -1233,6 +1234,19 @@ function ExternalActionPreview({
           onKeyDown={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
           onChange={(event) => onChangeBlock({ ...block, payload: event.target.value })}
+        />
+        <textarea
+          value={formatWebhookHeaders(block.headers)}
+          rows={3}
+          aria-label="Webhook headers"
+          placeholder="Headers, one per line, e.g. Authorization: Bearer token"
+          className="nodrag nopan min-h-[72px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 font-mono text-[11px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChangeBlock({ ...block, headers: parseWebhookHeaders(event.target.value) })
+          }
         />
       </div>
     );

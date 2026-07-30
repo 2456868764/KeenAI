@@ -42,6 +42,8 @@ const criteria = [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "WorkflowTriggerNode"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "RouteOutputs"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Webhook headers"],
+      ["apps/dashboard/src/components/workflows/workflow-formats.ts", "parseWebhookHeaders"],
       ["apps/dashboard/src/components/workflows/workflow-editor.tsx", "Remove conversation tag"],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "reorderWorkflows"],
       ["apps/api/src/routes/workflows.ts", "/reorder"],
