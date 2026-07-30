@@ -934,6 +934,21 @@ export const wfAutoClose = inngest.createFunction(
 | 测试模式 | 「Set live to me only」→ trigger.config.audience 自动注入当前 user 的 email |
 | 消息编辑 | 节点内联 composer（文本、附件 ID、按钮路由直接在 canvas 内编辑） |
 
+### 8.1.1 Canvas 框架决策
+
+当前继续使用 `@xyflow/react` v12，不迁移到新的 canvas 框架。`@xyflow/react` 已覆盖 Featurebase workflow builder 需要的核心能力：React 自定义节点、custom edge、Handle 输出点、受控 nodes/edges、MiniMap、viewport controls、fitView、pane/node 事件，以及与 dagre 初始自动布局和本地持久化手动位置的组合。现有 Trigger、Message、Reply buttons、Branches、Rules、Ticket/SLA/Integration 设置都已经在节点内完成，迁移框架不会直接提升 Featurebase 对齐度，反而会引入 pan/zoom、连接点、选中态、表单内嵌和回归测试的重做成本。
+
+替代方案评估：
+
+| 方案 | 判断 |
+|------|------|
+| Rete.js | 更偏数据流/节点编辑引擎；适合计算图和插件式 socket，但要复刻 Featurebase 风格 support workflow 的节点布局、工具栏和内嵌表单成本更高。 |
+| LogicFlow / AntV X6 / JointJS | 图编辑和建模能力强，但 React 表单内嵌、设计系统一致性、包体和定制样式复杂度都高于当前需求。 |
+| tldraw / Excalidraw / Konva / Fabric / custom SVG canvas | 适合自由绘图或白板，但 workflow 需要稳定的 DAG 节点、Handle 连接、边路由、选择态和 viewport 行为，需要大量自研。 |
+| ELK / dagre | 这是布局引擎，不是 canvas 框架；继续作为 `@xyflow/react` 的布局补充，而不是替代方案。 |
+
+结论：v0.2.0 阶段不做 canvas 框架迁移，继续在 `@xyflow/react` 上完成 Featurebase parity。只有当超大规模 workflow 的性能、自动边路由或协同编辑成为明确瓶颈时，再单独评估 X6/LogicFlow 或专用布局引擎组合。
+
 ### 8.2 API（Hono）
 
 ```ts
