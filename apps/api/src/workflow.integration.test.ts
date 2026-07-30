@@ -2809,6 +2809,25 @@ describe("workflow integration", () => {
     const createBody = (await createRes.json()) as { workflow: { id: string } };
     const workflowId = createBody.workflow.id;
 
+    const reorderRes = await app.request("/api/v1/workflows/reorder", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trigger: "first_message",
+        workflowIds: [workflowId, templateCreateBody.workflow.id],
+      }),
+    });
+    expect(reorderRes.status).toBe(200);
+    const reorderBody = (await reorderRes.json()) as {
+      items: { id: string; sortOrder: number }[];
+    };
+    expect(reorderBody.items.slice(0, 2).map((item) => item.id)).toEqual([
+      workflowId,
+      templateCreateBody.workflow.id,
+    ]);
+    expect(reorderBody.items[0]?.sortOrder).toBe(0);
+    expect(reorderBody.items[1]?.sortOrder).toBe(1);
+
     const publishOne = await app.request(`/api/v1/workflows/${workflowId}/publish`, {
       method: "POST",
       headers: auth,
@@ -2931,6 +2950,7 @@ describe("workflow integration", () => {
       "workflow.delete",
       "workflow.publish",
       "workflow.publish",
+      "workflow.reorder",
       "workflow.rollback",
       "workflow.unpublish",
     ]);

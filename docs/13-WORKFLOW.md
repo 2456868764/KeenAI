@@ -984,7 +984,7 @@ export const workflowsRouter = new Hono()
 - **Branches/Apply rules**：节点底部 `+ Add branch` 弹出 Predicate 编辑器（Field selector + Op + Value，可嵌套 AND/OR）
 - **Reply Buttons**：点 button label 直接编辑；右侧拖出 path
 - **测试**：右上角 `Save and close` / `Set live` 双按钮；`Test` 按钮触发 `dry-run` 用伪事件走流程并把 Block 输出渲染在节点上
-- **顺序管理**：列表页支持拖拽排序（per trigger type 一个 sortable list）
+- **顺序管理**：列表页支持拖拽排序（per trigger type 一个 sortable list）；`POST /workflows/reorder` 持久化 `sortOrder`，列表和触发调度都按 `sortOrder ASC` 执行，匹配 Featurebase 的 top-priority workflow 语义
 
 ---
 

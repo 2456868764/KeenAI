@@ -556,6 +556,7 @@ export type Workflow = {
   brandId: string | null;
   name: string;
   trigger: string;
+  sortOrder: number;
   definition: WorkflowDefinition;
   status: "draft" | "published";
   publishedDefinition?: WorkflowDefinition | null;
@@ -594,6 +595,16 @@ export async function listWorkflows(): Promise<{ items: Workflow[] }> {
 
 export async function listWorkflowTemplates(): Promise<{ items: WorkflowTemplate[] }> {
   return apiFetch("/api/v1/workflows/templates");
+}
+
+export async function reorderWorkflows(input: {
+  trigger: WorkflowDefinition["trigger"];
+  workflowIds: string[];
+}): Promise<{ items: Workflow[] }> {
+  return apiFetch("/api/v1/workflows/reorder", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getWorkflow(id: string): Promise<{ workflow: Workflow }> {

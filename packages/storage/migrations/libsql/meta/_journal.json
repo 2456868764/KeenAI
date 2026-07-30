@@ -281,6 +281,13 @@
       "when": 1779856800000,
       "tag": "0039_audit_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1779860400000,
+      "tag": "0040_workflow_sort_order",
+      "breakpoints": true
     }
   ]
 }

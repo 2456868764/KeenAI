@@ -15,6 +15,7 @@ export const workflows = sqliteTable(
     brandId: text("brand_id").references(() => brands.id),
     name: text("name").notNull(),
     trigger: text("trigger").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
     definition: text("definition", { mode: "json" }).$type<WorkflowDefinitionJson>().notNull(),
     publishedDefinition: text("published_definition", {
       mode: "json",
@@ -25,6 +26,12 @@ export const workflows = sqliteTable(
   (t) => ({
     idxOrgStatus: index("idx_workflows_org_status").on(t.orgId, t.status),
     idxOrgTrigger: index("idx_workflows_org_trigger").on(t.orgId, t.trigger, t.status),
+    idxOrgTriggerSort: index("idx_workflows_org_trigger_sort").on(
+      t.orgId,
+      t.trigger,
+      t.status,
+      t.sortOrder,
+    ),
   }),
 );
 

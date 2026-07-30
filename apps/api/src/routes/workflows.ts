@@ -8,6 +8,7 @@ import {
   workflows,
 } from "@keenai/storage/schema";
 import {
+  WORKFLOW_TRIGGERS,
   type WorkflowActionHandlers,
   createWorkflowBodySchema,
   listWorkflowTemplates,
@@ -15,7 +16,7 @@ import {
   updateWorkflowBodySchema,
   workflowDefinitionSchema,
 } from "@keenai/workflow";
-import { type SQL, and, desc, eq, inArray, ne } from "drizzle-orm";
+import { type SQL, and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { assertBrandInOrg } from "../lib/conversations.js";
@@ -51,6 +52,21 @@ const workflowEventTriggerBodySchema = z.object({
   payload: z.record(z.unknown()).default({}),
 });
 
+const workflowReorderBodySchema = z
+  .object({
+    trigger: z.enum(WORKFLOW_TRIGGERS),
+    workflowIds: z.array(z.string().min(1)).min(1).max(100),
+  })
+  .superRefine((body, ctx) => {
+    if (new Set(body.workflowIds).size !== body.workflowIds.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workflowIds"],
+        message: "duplicate_workflow_ids",
+      });
+    }
+  });
+
 type WorkflowRouteContext = Context<{ Variables: AppVariables }>;
 type WorkflowAuditAuth = { orgId: string; sub: string };
 
@@ -67,7 +83,7 @@ export function workflowRoutes() {
       .db.select()
       .from(workflows)
       .where(and(eq(workflows.orgId, auth.orgId), ne(workflows.status, "archived")))
-      .orderBy(desc(workflows.updatedAt))
+      .orderBy(asc(workflows.trigger), asc(workflows.sortOrder), desc(workflows.updatedAt))
       .limit(100);
 
     return c.json({ items: rows.map(serializeWorkflow) });
@@ -83,6 +99,7 @@ export function workflowRoutes() {
       if (!brand) return c.json({ error: "brand_not_found" }, 404);
     }
 
+    const sortOrder = await nextWorkflowSortOrder(c, auth.orgId, body.definition.trigger);
     const [row] = await c
       .get("store")
       .db.insert(workflows)
@@ -91,6 +108,7 @@ export function workflowRoutes() {
         brandId: body.brandId,
         name: body.name,
         trigger: body.definition.trigger,
+        sortOrder,
         definition: body.definition,
         status: "draft",
       })
@@ -155,7 +173,7 @@ export function workflowRoutes() {
             eq(workflows.trigger, "webhook"),
           ),
         )
-        .orderBy(desc(workflows.updatedAt));
+        .orderBy(asc(workflows.sortOrder), desc(workflows.updatedAt));
 
       const runs = [];
       for (const workflow of rows) {
@@ -227,6 +245,63 @@ export function workflowRoutes() {
         triggered: runs.length,
         runs: runs.map(serializeWorkflowRun),
       });
+    },
+  );
+
+  r.post(
+    `${prefix}/reorder`,
+    requireAuth(),
+    zValidator("json", workflowReorderBodySchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const rows = await c
+        .get("store")
+        .db.select()
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.orgId, auth.orgId),
+            eq(workflows.trigger, body.trigger),
+            ne(workflows.status, "archived"),
+            inArray(workflows.id, body.workflowIds),
+          ),
+        );
+
+      if (rows.length !== body.workflowIds.length) {
+        return c.json({ error: "workflow_order_mismatch" }, 400);
+      }
+
+      for (const [index, workflowId] of body.workflowIds.entries()) {
+        await c
+          .get("store")
+          .db.update(workflows)
+          .set({ sortOrder: index })
+          .where(and(eq(workflows.id, workflowId), eq(workflows.orgId, auth.orgId)));
+      }
+
+      const orderedRows = await c
+        .get("store")
+        .db.select()
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.orgId, auth.orgId),
+            eq(workflows.trigger, body.trigger),
+            ne(workflows.status, "archived"),
+          ),
+        )
+        .orderBy(asc(workflows.sortOrder), desc(workflows.updatedAt));
+
+      await writeWorkflowAudit(c, auth, {
+        action: "workflow.reorder",
+        workflowId: body.workflowIds[0] ?? "workflow-order",
+        changes: { trigger: body.trigger, workflowIds: body.workflowIds },
+      });
+
+      return c.json({ items: orderedRows.map(serializeWorkflow) });
     },
   );
 
@@ -433,6 +508,8 @@ export function workflowRoutes() {
       .limit(1);
     if (!existing) return c.json({ error: "not_found" }, 404);
 
+    const sortOrder = await nextWorkflowSortOrder(c, existing.orgId, existing.trigger);
+
     const [row] = await c
       .get("store")
       .db.insert(workflows)
@@ -441,6 +518,7 @@ export function workflowRoutes() {
         brandId: existing.brandId,
         name: `${existing.name} copy`,
         trigger: existing.trigger,
+        sortOrder,
         definition: existing.definition,
         status: "draft",
       })
@@ -743,6 +821,25 @@ function createDryRunWorkflowHandlers(): WorkflowActionHandlers {
     tagConversation: async () => {},
     markPriority: async () => {},
   };
+}
+
+async function nextWorkflowSortOrder(
+  c: WorkflowRouteContext,
+  orgId: string,
+  trigger: string,
+): Promise<number> {
+  const [row] = await c
+    .get("store")
+    .db.select({ maxSortOrder: sql<number>`coalesce(max(${workflows.sortOrder}), -1)` })
+    .from(workflows)
+    .where(
+      and(
+        eq(workflows.orgId, orgId),
+        eq(workflows.trigger, trigger),
+        ne(workflows.status, "archived"),
+      ),
+    );
+  return (row?.maxSortOrder ?? -1) + 1;
 }
 
 async function writeWorkflowAudit(

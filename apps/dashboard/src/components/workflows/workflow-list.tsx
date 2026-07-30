@@ -7,6 +7,7 @@ import {
   createWorkflow,
   listWorkflowTemplates,
   listWorkflows,
+  reorderWorkflows,
 } from "@/lib/api";
 import { Button } from "@keenai/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,7 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { type DragEvent, useMemo, useState } from "react";
 import { triggerLabel } from "./workflow-graph";
 
 type StatusFilter = "all" | Workflow["status"];
@@ -169,6 +170,13 @@ export function WorkflowListShell() {
     },
   });
 
+  const reorder = useMutation({
+    mutationFn: reorderWorkflows,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    },
+  });
+
   const items = data?.items ?? [];
   const visibleItems = useMemo(
     () =>
@@ -192,8 +200,17 @@ export function WorkflowListShell() {
       group.items.push(workflow);
       map.set(meta.key, group);
     }
-    return [...map.values()];
+    return [...map.values()].map((group) => ({
+      ...group,
+      items: [...group.items].sort((left, right) => {
+        if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
+        return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+      }),
+    }));
   }, [visibleItems]);
+
+  const canReorderGroups =
+    statusFilter === "all" && triggerFilter === "all" && typeFilter === "all";
 
   const templates = templatesQuery.data?.items ?? [];
   const visibleTemplates =
@@ -303,7 +320,17 @@ export function WorkflowListShell() {
                 key={group.meta.key}
                 meta={group.meta}
                 workflows={group.items}
+                canReorder={
+                  canReorderGroups &&
+                  new Set(group.items.map((workflow) => workflow.definition.trigger)).size === 1
+                }
+                reordering={reorder.isPending}
                 onCreate={createFromScratch}
+                onReorder={(workflowIds) => {
+                  const trigger = group.items[0]?.definition.trigger;
+                  if (!trigger) return;
+                  reorder.mutate({ trigger, workflowIds });
+                }}
               />
             ))
           )}
@@ -388,13 +415,33 @@ function MenuAction({
 function WorkflowGroup({
   meta,
   workflows,
+  canReorder,
+  reordering,
   onCreate,
+  onReorder,
 }: {
   meta: ReturnType<typeof workflowTriggerGroup>;
   workflows: Workflow[];
+  canReorder: boolean;
+  reordering: boolean;
   onCreate: () => void;
+  onReorder: (workflowIds: string[]) => void;
 }) {
   const Icon = meta.icon;
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const handleDrop = (targetId: string) => {
+    if (!draggingId || draggingId === targetId || !canReorder || reordering) return;
+    const ordered = [...workflows];
+    const fromIndex = ordered.findIndex((workflow) => workflow.id === draggingId);
+    const toIndex = ordered.findIndex((workflow) => workflow.id === targetId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    if (!moved) return;
+    ordered.splice(toIndex, 0, moved);
+    onReorder(ordered.map((workflow) => workflow.id));
+  };
+
   return (
     <section>
       <div className="mb-5 flex items-center justify-between gap-4">
@@ -423,18 +470,65 @@ function WorkflowGroup({
       </div>
       <div className="space-y-3">
         {workflows.map((workflow) => (
-          <WorkflowRow key={workflow.id} workflow={workflow} />
+          <WorkflowRow
+            key={workflow.id}
+            workflow={workflow}
+            canReorder={canReorder && !reordering}
+            dragging={draggingId === workflow.id}
+            onDragStart={(event) => {
+              if (!canReorder || reordering) return;
+              setDraggingId(workflow.id);
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", workflow.id);
+            }}
+            onDragOver={(event) => {
+              if (!canReorder || !draggingId || draggingId === workflow.id || reordering) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              handleDrop(workflow.id);
+              setDraggingId(null);
+            }}
+            onDragEnd={() => setDraggingId(null)}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function WorkflowRow({ workflow }: { workflow: Workflow }) {
+function WorkflowRow({
+  workflow,
+  canReorder,
+  dragging,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: {
+  workflow: Workflow;
+  canReorder: boolean;
+  dragging: boolean;
+  onDragStart: (event: DragEvent<HTMLAnchorElement>) => void;
+  onDragOver: (event: DragEvent<HTMLAnchorElement>) => void;
+  onDrop: (event: DragEvent<HTMLAnchorElement>) => void;
+  onDragEnd: () => void;
+}) {
   return (
     <Link
       href={`/workflows/${workflow.id}`}
-      className="flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-5 py-4 shadow-sm transition hover:border-[hsl(var(--primary)/0.45)] hover:shadow-md"
+      draggable={canReorder}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={[
+        "flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-5 py-4 shadow-sm transition hover:border-[hsl(var(--primary)/0.45)] hover:shadow-md",
+        canReorder ? "cursor-grab active:cursor-grabbing" : "",
+        dragging ? "opacity-55 ring-2 ring-[hsl(var(--primary))]" : "",
+      ].join(" ")}
     >
       <div className="min-w-0">
         <h4 className="truncate text-base font-semibold">{workflow.name}</h4>
@@ -447,7 +541,12 @@ function WorkflowRow({ workflow }: { workflow: Workflow }) {
       <div className="flex shrink-0 items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
         <StatusBadge status={workflow.status} />
         <span>{formatUpdatedAt(workflow.updatedAt)}</span>
-        <GripVertical className="size-4" />
+        <GripVertical
+          className={[
+            "size-4",
+            canReorder ? "text-[hsl(var(--primary))]" : "text-[hsl(var(--muted-foreground))]",
+          ].join(" ")}
+        />
         <MoreHorizontal className="size-4" />
       </div>
     </Link>

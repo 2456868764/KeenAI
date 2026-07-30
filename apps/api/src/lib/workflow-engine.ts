@@ -17,7 +17,7 @@ import {
   type WorkflowTicketTrigger,
   runWorkflow,
 } from "@keenai/workflow";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
@@ -190,7 +190,7 @@ export async function dispatchConversationTriggerWorkflows(
         eq(workflows.trigger, input.trigger),
       ),
     )
-    .orderBy(desc(workflows.updatedAt));
+    .orderBy(asc(workflows.sortOrder), desc(workflows.updatedAt));
 
   const runs = [];
   for (const workflow of rows) {
@@ -291,6 +291,7 @@ export function serializeWorkflow(row: typeof workflows.$inferSelect) {
     brandId: row.brandId,
     name: row.name,
     trigger: row.trigger,
+    sortOrder: row.sortOrder,
     definition: row.definition,
     publishedDefinition: row.publishedDefinition ?? null,
     status: row.status,
