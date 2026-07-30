@@ -64,7 +64,7 @@ const scratchDefinition: WorkflowDefinition = {
 
 const templateCategories = [
   { id: "popular", label: "Popular" },
-  { id: "ai", label: "Fibi AI Agent" },
+  { id: "ai", label: "Keeni AI Agent" },
   { id: "handoff", label: "Teammate Efficiency" },
   { id: "self_serve", label: "End User Experience" },
   { id: "lead_capture", label: "Message Proactively" },

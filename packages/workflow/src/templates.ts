@@ -27,9 +27,10 @@ type WorkflowTemplateInput = Omit<WorkflowTemplate, "definition"> & {
 const templateInputs = [
   {
     id: "tpl-route-to-team",
-    name: "Route customer conversations to the right team",
-    description: "Branch by channel and assign conversations to the matching support owner.",
-    category: "routing",
+    name: "Triage issues to teams",
+    description:
+      "Triage issues and assign to different teams and let specialized Keeni AI Agents answer users first.",
+    category: "handoff",
     definition: {
       trigger: "first_message",
       blocks: [
@@ -58,8 +59,8 @@ const templateInputs = [
   },
   {
     id: "tpl-keeni-answers-first",
-    name: "Let Keeni AI Agent answer first",
-    description: "Ask Keeni to draft the first answer and fall back to a teammate when needed.",
+    name: "Let Keeni answer users first",
+    description: "Let Keeni answer users first and triage to correct teams if needed.",
     category: "ai",
     definition: {
       trigger: "first_message",
@@ -79,13 +80,39 @@ const templateInputs = [
     },
   },
   {
-    id: "tpl-self-serve-faq",
-    name: "Solve frequent queries with self-serve content",
-    description: "Offer common self-serve paths before handing off to the team.",
+    id: "tpl-prioritize-stale-conversations",
+    name: "Prioritize stale conversations",
+    description: "Automatically follow up and bump stale conversations.",
+    category: "handoff",
+    definition: {
+      trigger: "customer_unresponsive",
+      inactivityMinutes: 15,
+      blocks: [
+        { id: "tag_stale", type: "tag_conversation", tags: ["stale"], mode: "append" },
+        { id: "priority_stale", type: "mark_priority", priority: "high" },
+        { id: "assign_queue", type: "assign", assigneeId: null },
+      ],
+    },
+  },
+  {
+    id: "tpl-solve-frequent-queries",
+    name: "Solve frequent queries",
+    description: "Automatically provide answers to frequently asked questions.",
     category: "self_serve",
     definition: {
       trigger: "first_message",
       blocks: [
+        {
+          id: "keeni_faq_answer",
+          type: "let_keeni_answer",
+          instructions:
+            "Answer with KB-backed self-serve guidance. Escalate when the answer is missing.",
+          outcomeRouting: {
+            resolvedNext: null,
+            unresolvedNext: "faq_buttons",
+            escalatedNext: "assign_teammate",
+          },
+        },
         {
           id: "faq_buttons",
           type: "reply_buttons",
@@ -113,44 +140,52 @@ const templateInputs = [
     },
   },
   {
-    id: "tpl-csat-after-close",
-    name: "Ask customers for a conversation rating",
-    description: "Request CSAT after a support flow and wait for the rating.",
-    category: "csat",
+    id: "tpl-convert-trial-users",
+    name: "Convert trial users into paying customers",
+    description:
+      "Gather feedback from trial users and motivate them to upgrade by showcasing the benefits of a paid plan.",
+    category: "lead_capture",
     definition: {
-      trigger: "customer_unresponsive",
-      inactivityMinutes: 0,
+      trigger: "page_view",
+      pageRules: [{ urlOp: "contains", url: "/pricing", timeOnPageSec: 20 }],
+      audience: {
+        match: "all",
+        rules: [{ field: "attributes.plan", op: "eq", value: "trial" }],
+      },
       blocks: [
-        { id: "wait_before_csat", type: "wait", seconds: 120 },
         {
-          id: "csat_request",
-          type: "csat",
-          prompt: "How would you rate this conversation?",
-          allowComment: true,
-          waitForRating: true,
-          waitForRatingMinutes: 1440,
+          id: "trial_pitch",
+          type: "reply_buttons",
+          prompt:
+            "Hey there! You are halfway through your trial - can we help with anything before you decide?",
+          allowFreeText: true,
+          buttons: [
+            { id: "upgrade", label: "Yes, let's talk upgrading", nextId: "sales_reply" },
+            { id: "extend", label: "I would like to extend my trial", nextId: "sales_reply" },
+            { id: "convince", label: "I still need some convincing", nextId: "benefits_reply" },
+            { id: "good", label: "I'm all good", nextId: null },
+          ],
         },
-      ],
-    },
-  },
-  {
-    id: "tpl-auto-reassign-unresponsive",
-    name: "Auto-reassign for unresponsive teammates",
-    description: "Reassign stale conversations after a customer has waited too long.",
-    category: "handoff",
-    definition: {
-      trigger: "customer_unresponsive",
-      inactivityMinutes: 15,
-      blocks: [
-        { id: "tag_waiting", type: "tag_conversation", tags: ["waiting-too-long"], mode: "append" },
-        { id: "assign_queue", type: "assign", assigneeId: null },
+        {
+          id: "sales_reply",
+          type: "send_message",
+          plainText:
+            "Awesome! Someone from our sales team will be in touch shortly. You can also schedule a chat with our team here.",
+        },
+        { id: "assign_sales", type: "assign", assigneeId: null },
+        {
+          id: "benefits_reply",
+          type: "add_note",
+          plainText:
+            "Trial user asked for more convincing. Share benefits of a paid plan before publishing.",
+        },
       ],
     },
   },
   {
     id: "tpl-lead-qualify",
     name: "Collect contact details from leads",
-    description: "Gather email and company details before routing the conversation.",
+    description: "Collect contact details from leads to contact them later.",
     category: "lead_capture",
     definition: {
       trigger: "first_message",
@@ -158,7 +193,7 @@ const templateInputs = [
         {
           id: "collect_contact",
           type: "collect_data",
-          prompt: "Please share a few details so we can route you to the right person.",
+          prompt: "Please share your contact details so we can follow up.",
           allowFreeText: true,
           autoCloseMinutes: 15,
           fields: [
@@ -171,13 +206,48 @@ const templateInputs = [
     },
   },
   {
-    id: "tpl-email-only-out-of-hours",
-    name: "Require email outside office hours",
-    description: "Collect an email before follow-up when live support is unavailable.",
+    id: "tpl-friendly-inactive-reminder",
+    name: "Send a friendly reminder to inactive customers",
+    description: "Send a friendly reminder to customers who have been unresponsive for some time.",
     category: "lead_capture",
+    definition: {
+      trigger: "customer_unresponsive",
+      inactivityMinutes: 60,
+      blocks: [
+        {
+          id: "friendly_reminder",
+          type: "send_message",
+          plainText:
+            "Just checking in. Reply here if you still need help and we will pick this up.",
+        },
+        {
+          id: "collect_reply",
+          type: "collect_customer_reply",
+          prompt: "Reply here when you are ready.",
+          bufferSeconds: 2,
+        },
+      ],
+    },
+  },
+  {
+    id: "tpl-outside-office-hours",
+    name: "Keeni answers outside office hours",
+    description: "Let Keeni answer customers outside office hours.",
+    category: "ai",
     definition: {
       trigger: "first_message",
       blocks: [
+        {
+          id: "after_hours_answer",
+          type: "let_keeni_answer",
+          instructions:
+            "Answer using the knowledge base outside office hours. Escalate urgent billing or security issues.",
+          outcomeRouting: {
+            resolvedNext: null,
+            unresolvedNext: "collect_email",
+            escalatedNext: "assign_teammate",
+          },
+        },
         {
           id: "collect_email",
           type: "collect_data",
@@ -186,6 +256,7 @@ const templateInputs = [
           autoCloseMinutes: 30,
           fields: [{ key: "email", label: "Email", required: true }],
         },
+        { id: "assign_teammate", type: "assign", assigneeId: null },
       ],
     },
   },
