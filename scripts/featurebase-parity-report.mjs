@@ -66,6 +66,7 @@ const criteria = [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Webhook headers"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Insert Bold"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Remove attachment"],
+      ["apps/dashboard/src/components/workflows/workflow-block-factory.ts", "createWorkflowBlock"],
       [
         "apps/dashboard/src/components/workflows/workflow-formats.ts",
         "appendMessageComposerSnippet",
