@@ -111,7 +111,7 @@ Featurebase Inbox **不是三栏**，而是 **四栏**：
 | Branches：条件 + Add branch + else | 侧栏编辑 | `BranchNode` 内联条件行 |
 | Collect data 字段行 | 表单侧栏 | `CollectDataRow`（Attribute · Type） |
 | 左下角：Undo · +/- · Fit | 未提及 | `CanvasToolbar` fixed bottom-left |
-| 节点 **不可自由拖拽位置**（自动布局） | 自由拖拽 | **自动布局**（dagre/elk）；禁止手拖节点 |
+| 节点自动布局 + 可手动微调 | 自由拖拽 | dagre 初始布局；手动位置持久化到本地 layout storage |
 
 **顶栏**：`← Back` · Workflow 名称（内联编辑）· 右侧 `Test` · `Save draft` · **`Set live`**（紫色主按钮）
 
@@ -388,7 +388,7 @@ Actions on this conversation
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**节点配置**：点击节点 → **右侧 Sheet**（非左侧 Block 库）展示 Trigger settings / Message / Buttons / Branches。
+**节点配置**：点击节点后仍在 **canvas 内** 展开 Trigger settings / Message / Buttons / Branches；不再走右侧 Sheet 或独立 block editor。
 
 **Test 模式**：顶栏 `Test` → audience 注入当前用户 email；Inngest dev + 高亮当前 run 路径。
 

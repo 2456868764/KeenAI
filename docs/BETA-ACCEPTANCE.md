@@ -50,7 +50,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 ## Product smoke
 
 1. Dashboard → Tickets: three types visible; create + link tracker → child sync on Done.
-2. Dashboard → Workflows (Flow view): dagre layout, branch edges, click block → Sheet config; publish.
+2. Dashboard → Workflows (Flow view): dagre layout, branch edges, click block → canvas inline settings; publish.
 3. Dashboard → Settings → Brands: create second brand slug.
 4. Portal: magic link → ticket list → ticket detail page.
 5. Webhook: `POST /api/v1/webhooks/im/discord?org={slug}` with MESSAGE_CREATE payload.
@@ -92,7 +92,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 
 ## Batch 17 smoke (I117 continued)
 
-1. Dashboard Workflow editor **Flow** view → click **Trigger** node → Sheet opens for trigger/inactivity.
+1. Dashboard Workflow editor **Flow** view → click **Trigger** node → trigger/inactivity settings expand inside the canvas node.
 2. Select a recent run in **Run trace** panel → executed blocks highlight green on canvas (failed = red).
 3. Draft vs published snapshot indicator shows under workflow status.
 
@@ -169,7 +169,7 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 ## Batch 4 smoke (I117 continued)
 
 1. Flow canvas: trigger node + dagre layout; purple labeled branch/outcome edges.
-2. Click block → right Sheet opens with full config (branch targets as dropdowns).
+2. Click block → full config remains inside the canvas node (branch/rule targets are edited from routed outputs).
 3. `let_keeni_answer` outcome routing: Resolved / Unresolved / Escalated paths on canvas.
 
 ## Batch 21 smoke (I117 continued)

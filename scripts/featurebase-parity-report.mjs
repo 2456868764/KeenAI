@@ -16,12 +16,14 @@ const criteria = [
       "apps/dashboard/src/components/inbox/conversation-list.tsx",
       "apps/dashboard/src/components/inbox/message-thread.tsx",
       "apps/dashboard/src/components/inbox/rich-text-composer.tsx",
+      "apps/dashboard/src/components/layout/app-shell.tsx",
     ],
     contains: [
-      ["apps/dashboard/src/components/inbox/inbox-shell.tsx", "ViewsSidebar"],
+      ["apps/dashboard/src/components/layout/app-shell.tsx", "AI Agent"],
+      ["apps/dashboard/src/components/layout/app-shell.tsx", "My inbox"],
       ["apps/dashboard/src/components/inbox/inbox-shell.tsx", "ConversationList"],
       ["apps/dashboard/src/components/inbox/inbox-shell.tsx", "MessageThread"],
-      ["apps/dashboard/src/components/inbox/views-sidebar.tsx", "AI Agent"],
+      ["apps/dashboard/src/components/inbox/inbox-shell.tsx", "viewToStatusFilter"],
     ],
   },
   {
@@ -32,9 +34,13 @@ const criteria = [
       "apps/dashboard/src/app/workflows/page.tsx",
       "apps/dashboard/src/app/workflows/[id]/page.tsx",
       "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
-      "apps/dashboard/src/components/workflows/workflow-block-editor.tsx",
       "apps/api/src/routes/workflows.ts",
       "packages/workflow/src/index.ts",
+    ],
+    contains: [
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "WorkflowTriggerNode"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "ReplyButtonOutputs"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "RouteOutputs"],
     ],
   },
   {

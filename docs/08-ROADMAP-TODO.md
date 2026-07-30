@@ -101,7 +101,7 @@
 | P2-07 | Workflow 全 Block（`branches` / `http_request` / `wait` / …） | [x] |
 | P2-08 | Workflow 版本 draft→published + Trace | [x] `workflow_versions` publish snapshot、versions/rollback、unpublish/duplicate/archive、dry-run test API 已落地 |
 | P2-09 | SLA 50/80/100% + Office Hours | [x] |
-| P2-10 | Workflow Builder 多层 + 配置面板 | [x] |
+| P2-10 | Workflow Builder 多层 + canvas 内联配置 | [x] |
 | P2-11 | Multimodal MM-01～07（[14-MULTIMODAL.md](./14-MULTIMODAL.md)） | [x] |
 | P2-12 | Feedback schema + Board/Vote/Comment + AI 去重 | [x] |
 | P2-13 | Public Portal SSR/ISR | [x] |

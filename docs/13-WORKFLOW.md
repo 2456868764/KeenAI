@@ -9,7 +9,7 @@
 | **触发总线** | Inngest 事件 `workflow/*` + 业务事件 `conversation/*` `ticket/*` `widget/*` |
 | **持久化** | Drizzle（PG `pgvector` / LibSQL）· 详见 [07-DATA-MODEL.md § 4.6](07-DATA-MODEL.md) |
 | **审计员（earliest customer）** | Workflow Run state 内的 `targetCustomerId` |
-| **Builder UI** | [`@xyflow/react`](https://reactflow.dev/) + Shadcn `<Sheet />` 配置面板 |
+| **Builder UI** | [`@xyflow/react`](https://reactflow.dev/) + canvas 内联配置（Trigger / Block / routed outputs 不离开画布） |
 | **AI Block** | Mastra Agent + Vercel AI SDK · 详见 [09-AGENT-ENGINE.md](09-AGENT-ENGINE.md) |
 | **Audience 过滤** | 自研最小 Predicate Engine（Zod-typed AST） |
 | **测试 / Shadow** | Inngest dev mode + dry-run + 影子执行（不发消息） |
@@ -40,7 +40,7 @@
 │                          KeenAI Workflow 子系统                               │
 │  apps/dashboard/app/workflows  ──┐                                            │
 │     │ React Flow Canvas          │                                            │
-│     │ Block 配置 Sheet            │                                            │
+│     │ Canvas 内联 Block 设置       │                                            │
 │     │ Trigger 设置                │                                            │
 │     │ 测试模式                    │                                            │
 │     └──────────────┬───────────────┘                                          │
@@ -919,20 +919,20 @@ export const wfAutoClose = inngest.createFunction(
 
 ## 八、Builder UI（`apps/dashboard/app/workflows`）
 
-> **视觉与交互规范**（暗色画布、节点内嵌编辑器、紫色连线、左下角缩放工具栏）见 [05-FRONTEND.md § 2.3 / § 4.4](05-FRONTEND.md)，对标 `www.featurebase.app/workflow3.png`。
+> **视觉与交互规范**（浅色点阵画布、节点内嵌编辑器、紫色连线、左下角缩放工具栏）见 [05-FRONTEND.md § 2.3 / § 4.4](05-FRONTEND.md)，对标 `www.featurebase.app/workflow3.png`。
 
 ### 8.1 技术栈
 
 | 用途 | 选型 |
 |------|------|
-| 画布 | `@xyflow/react` v12（**dagre 自动布局** + 禁止手拖节点，符合 Featurebase 行为） |
+| 画布 | `@xyflow/react` v12（dagre 初始自动布局 + 本地持久化手动位置） |
 | 节点 | Custom Node per Block type（消息/动作/条件三种视觉风格） |
-| 配置面板 | shadcn `<Sheet />` + `react-hook-form` + Zod resolver（schema 来自 `StepSpec`） |
+| 配置 | canvas 内联设置：Trigger settings、Message composer、Reply buttons、Branches、Rules、Ticket/SLA/Integration fields 都在节点内完成 |
 | 校验 | 客户端实时 Zod parse + 服务端 superRefine |
 | 数据 | TanStack Query + Hono RPC |
-| 版本对比 | `react-diff-viewer-continued`（左旧右新 JSON） |
+| 版本管理 | Published snapshot + versions / rollback / unpublish / duplicate / archive 操作在 builder toolbar 管理 |
 | 测试模式 | 「Set live to me only」→ trigger.config.audience 自动注入当前 user 的 email |
-| 富文本 Editor | Tiptap 3（消息 Block 内联） |
+| 消息编辑 | 节点内联 composer（文本、附件 ID、按钮路由直接在 canvas 内编辑） |
 
 ### 8.2 API（Hono）
 

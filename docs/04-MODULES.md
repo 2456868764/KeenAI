@@ -690,7 +690,7 @@ Tracker T1 (Status: In Progress)
 | Wait / 中断 | `step.sleep` / `step.waitForEvent` 原生支持，客户/客服 reply / close 可中断 |
 | CSAT | 仅 Web / Email / Slack；waitForRating + 三种 toggle 完整支持 |
 | Auto-close abandoned | 独立 Inngest fn 监听 `workflow/step.awaiting_input` 计时关闭 |
-| Builder UI | `@xyflow/react` 自动布局画布 + shadcn `<Sheet />` 表单 + Tiptap 富文本 |
+| Builder UI | `@xyflow/react` 自动布局画布 + 节点内联设置（Trigger / Message / Buttons / Branches 全部在 canvas 内完成） |
 | 版本管理 | `workflows.version` + `workflow_versions` 全量快照 + 一键回滚 |
 | 测试模式 / Shadow Run | 仅自己可见 + 历史已关闭对话回放新版本 |
 | Eval | Mastra Eval + 模板黄金用例集 + CI nightly |

@@ -236,7 +236,6 @@ const criteria = [
       "apps/dashboard/src/app/workflows/page.tsx",
       "apps/dashboard/src/app/workflows/[id]/page.tsx",
       "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
-      "apps/dashboard/src/components/workflows/workflow-block-editor.tsx",
       "packages/workflow/src/executor.test.ts",
       "apps/api/src/workflow.integration.test.ts",
       "apps/dashboard/src/components/workflows/workflow-graph.test.ts",
@@ -245,7 +244,7 @@ const criteria = [
       ["packages/workflow/src/schema.ts", "let_keeni_answer"],
       ["packages/workflow/src/schema.ts", "tag_conversation"],
       ["packages/workflow/src/inngest/timers.ts", "waitForEvent"],
-      ["apps/dashboard/src/components/workflows/workflow-block-editor.tsx", "tag_conversation"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "tag_conversation"],
     ],
   },
 ];
