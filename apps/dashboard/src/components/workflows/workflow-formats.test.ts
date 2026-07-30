@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendMessageComposerSnippet,
   formatCommaList,
   formatWebhookHeaders,
   parseCommaList,
@@ -49,5 +50,17 @@ describe("comma-list formatting", () => {
   it("returns undefined for empty comma-separated lists", () => {
     expect(formatCommaList(undefined)).toBe("");
     expect(parseCommaList(" , ")).toBeUndefined();
+  });
+});
+
+describe("message composer snippets", () => {
+  it("appends inline markdown snippets with spacing", () => {
+    expect(appendMessageComposerSnippet("Hello", "bold")).toBe("Hello **bold text**");
+    expect(appendMessageComposerSnippet("Hello ", "italic")).toBe("Hello _italic text_");
+    expect(appendMessageComposerSnippet(undefined, "link")).toBe("[link](https://example.com)");
+  });
+
+  it("appends list snippets on a new line", () => {
+    expect(appendMessageComposerSnippet("Hello", "list")).toBe("Hello\n- item");
   });
 });

@@ -64,6 +64,12 @@ const criteria = [
         "nodesDraggable={false}",
       ],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Webhook headers"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Insert Bold"],
+      ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "Remove attachment"],
+      [
+        "apps/dashboard/src/components/workflows/workflow-formats.ts",
+        "appendMessageComposerSnippet",
+      ],
       ["apps/dashboard/src/components/workflows/workflow-formats.ts", "parseWebhookHeaders"],
       ["apps/dashboard/src/components/workflows/workflow-editor.tsx", "Remove conversation tag"],
       ["apps/dashboard/src/components/workflows/workflow-list.tsx", "reorderWorkflows"],

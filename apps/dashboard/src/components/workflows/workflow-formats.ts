@@ -36,3 +36,24 @@ export function parseCommaList(input: string): string[] | undefined {
 
   return values.length > 0 ? values : undefined;
 }
+
+export type MessageComposerSnippet = "bold" | "italic" | "list" | "link" | "emoji";
+
+const messageComposerSnippets: Record<MessageComposerSnippet, string> = {
+  bold: "**bold text**",
+  italic: "_italic text_",
+  list: "- item",
+  link: "[link](https://example.com)",
+  emoji: ":-)",
+};
+
+export function appendMessageComposerSnippet(
+  input: string | undefined,
+  snippet: MessageComposerSnippet,
+): string {
+  const text = input?.trimEnd() ?? "";
+  const value = messageComposerSnippets[snippet];
+  if (!text) return value;
+
+  return snippet === "list" ? `${text}\n${value}` : `${text} ${value}`;
+}

@@ -19,20 +19,29 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
+  Bold,
   Bot,
   CheckCircle2,
   CircleAlert,
   GripVertical,
+  Italic,
+  Link2,
+  List,
   Maximize2,
   Minus,
+  Paperclip,
   Plus,
   Redo2,
+  Smile,
   Trash2,
   Undo2,
+  X,
   Zap,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useMemo } from "react";
 import {
+  type MessageComposerSnippet,
+  appendMessageComposerSnippet,
   formatCommaList,
   formatWebhookHeaders,
   parseCommaList,
@@ -475,6 +484,19 @@ function workflowBlockTitle(block: WorkflowBlock): string {
   }
 }
 
+const messageComposerActions: {
+  snippet: MessageComposerSnippet;
+  label: string;
+  ariaLabel: string;
+  icon: typeof Bold;
+}[] = [
+  { snippet: "bold", label: "Bold", ariaLabel: "Insert Bold", icon: Bold },
+  { snippet: "italic", label: "Italic", ariaLabel: "Insert Italic", icon: Italic },
+  { snippet: "list", label: "List", ariaLabel: "Insert List", icon: List },
+  { snippet: "link", label: "Link", ariaLabel: "Insert Link", icon: Link2 },
+  { snippet: "emoji", label: "Emoji", ariaLabel: "Insert Emoji", icon: Smile },
+];
+
 function BlockPreview({
   block,
   allBlocks,
@@ -491,47 +513,99 @@ function BlockPreview({
   renderAddMenu?: (anchor: WorkflowCanvasInsertAnchor) => ReactNode;
 }) {
   if (block.type === "send_message") {
+    const attachmentIds = block.attachmentIds ?? [];
+
     return (
-      <div className="mt-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-          Content
-        </p>
-        <textarea
-          value={block.plainText ?? ""}
-          rows={4}
-          aria-label="Message text"
-          placeholder="Write a message for the customer..."
-          className="nodrag nopan min-h-[86px] w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 py-2 text-xs text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          onPointerDown={(event) => event.stopPropagation()}
-          onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
-        />
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[hsl(var(--muted-foreground))]">
-          <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 font-semibold">
-            B
-          </span>
-          <span className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 italic">I</span>
-          <span className="ml-auto">{block.attachmentIds?.length ?? 0} attachments</span>
+      <div className="mt-3 space-y-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
+        <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))]">
+          <div className="flex items-center gap-1 border-b border-[hsl(var(--border))] px-2 py-1.5">
+            {messageComposerActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.snippet}
+                  type="button"
+                  aria-label={action.ariaLabel}
+                  title={action.ariaLabel}
+                  className="nodrag nopan inline-flex h-7 w-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onChangeBlock({
+                      ...block,
+                      plainText: appendMessageComposerSnippet(block.plainText, action.snippet),
+                    });
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            value={block.plainText ?? ""}
+            rows={5}
+            aria-label="Message text"
+            placeholder="Write a message for the customer..."
+            className="nodrag nopan min-h-[112px] w-full resize-none border-0 bg-transparent px-3 py-2 text-xs leading-relaxed text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
+          />
         </div>
-        <input
-          value={block.attachmentIds?.join(", ") ?? ""}
-          aria-label="Attachment IDs"
-          placeholder="Attachment IDs, comma separated"
-          className="nodrag nopan mt-2 h-8 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          onPointerDown={(event) => event.stopPropagation()}
-          onChange={(event) =>
-            onChangeBlock({
-              ...block,
-              attachmentIds: event.target.value
-                .split(",")
-                .map((id) => id.trim())
-                .filter(Boolean),
-            })
-          }
-        />
+
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] p-2">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+            <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Attachments</span>
+            <span className="ml-auto normal-case tracking-normal">{attachmentIds.length}/10</span>
+          </div>
+          {attachmentIds.length > 0 ? (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachmentIds.map((attachmentId) => (
+                <span
+                  key={attachmentId}
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-[10px] text-[hsl(var(--foreground))]"
+                >
+                  <span className="max-w-[150px] truncate">{attachmentId}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove attachment ${attachmentId}`}
+                    title="Remove attachment"
+                    className="nodrag nopan rounded text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const nextIds = attachmentIds.filter((id) => id !== attachmentId);
+                      onChangeBlock({
+                        ...block,
+                        attachmentIds: nextIds.length > 0 ? nextIds : undefined,
+                      });
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <input
+            value={formatCommaList(block.attachmentIds)}
+            aria-label="Attachment IDs"
+            placeholder="Paste attachment IDs, comma separated"
+            className="nodrag nopan h-8 w-full rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              onChangeBlock({
+                ...block,
+                attachmentIds: parseCommaList(event.target.value),
+              })
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -2468,6 +2542,7 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "send_ticket_form":
       return 430 + Math.min(block.fields.length, 16) * 128;
     case "send_message":
+      return 460;
     case "assign":
       return 340;
     case "let_keeni_answer":
