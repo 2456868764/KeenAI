@@ -56,7 +56,10 @@ const sections = [
 export default function DocsHomePage() {
   return (
     <main>
-      <h1>KeenAI Docs</h1>
+      <div className="brand-heading">
+        <img src="/icon.png" alt="" className="brand-logo" />
+        <h1>KeenAI Docs</h1>
+      </div>
       <p className="lead">
         Documentation site (Fumadocs UI · v0.2.0 Phase 0). Browse repo markdown via the hub below;
         full MDX content sync lands in later phases.

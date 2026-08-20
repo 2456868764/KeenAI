@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>KeenAI brand mark</title>
+  <defs>
+    <linearGradient id="mark" x1="118" y1="104" x2="398" y2="408" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B1938"/>
+      <stop offset="1" stop-color="#0E0C1F"/>
+    </linearGradient>
+    <linearGradient id="core" x1="168" y1="178" x2="348" y2="332" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.42" stop-color="#C9B4FA"/>
+      <stop offset="1" stop-color="#7F6CFF"/>
+    </linearGradient>
+    <linearGradient id="path" x1="166" y1="304" x2="356" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#155555"/>
+      <stop offset="1" stop-color="#C9B4FA"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="256" cy="250" rx="160" ry="124" fill="#C9B4FA"/>
+  <polygon points="184,346 170,428 250,368" fill="#7F6CFF"/>
+  <rect x="166" y="200" width="180" height="104" rx="52" fill="#1B1938"/>
+  <circle cx="226" cy="252" r="17" fill="#C9B4FA"/>
+  <circle cx="286" cy="252" r="17" fill="#C9B4FA"/>
+</svg>

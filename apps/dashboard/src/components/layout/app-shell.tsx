@@ -448,9 +448,9 @@ function IconRail({
       <Link
         href="/inbox"
         aria-label="KeenAI home"
-        className="mb-5 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-sm font-bold text-[hsl(var(--primary-foreground))] shadow-sm"
+        className="mb-5 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--surface-2))] shadow-sm ring-1 ring-[hsl(var(--border))]"
       >
-        K
+        <img src="/icon.png" alt="" className="size-8" />
       </Link>
       <nav className="flex flex-1 flex-col items-center gap-2">
         {modules.map((item) => {

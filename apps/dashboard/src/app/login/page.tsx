@@ -44,9 +44,7 @@ export default function LoginPage() {
       >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex size-8 items-center justify-center rounded-md bg-[hsl(var(--primary))] text-sm font-bold text-[hsl(var(--primary-foreground))]">
-              K
-            </span>
+            <img src="/icon.png" alt="" className="size-9" />
             <h1 className="text-xl font-semibold tracking-tight text-[hsl(var(--foreground))]">
               KeenAI
             </h1>

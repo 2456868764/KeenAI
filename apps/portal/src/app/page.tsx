@@ -80,7 +80,13 @@ export default function PortalTicketsPage() {
 
   return (
     <main>
-      <h1>My tickets</h1>
+      <div className="brand-heading">
+        <img src="/icon.png" alt="" className="brand-logo" />
+        <div>
+          <h1>My tickets</h1>
+          <p className="muted">KeenAI customer portal</p>
+        </div>
+      </div>
       <p className="muted">Customer portal — sign in with a magic link to view your tickets.</p>
 
       {sessionEmail ? (

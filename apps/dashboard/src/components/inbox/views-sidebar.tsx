@@ -82,7 +82,10 @@ export function ViewsSidebar({
 function InboxSidebarHeader() {
   return (
     <div className="border-b border-[hsl(var(--border))] px-4 py-4">
-      <h1 className="text-sm font-semibold tracking-tight">KeenAI</h1>
+      <div className="flex items-center gap-2">
+        <img src="/icon.png" alt="" className="size-7" />
+        <h1 className="text-sm font-semibold tracking-tight">KeenAI</h1>
+      </div>
       <p className="text-xs text-[hsl(var(--muted-foreground))]">Support Inbox</p>
     </div>
   );
