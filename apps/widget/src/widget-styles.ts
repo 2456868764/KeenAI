@@ -466,6 +466,23 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
+.keenai-answer-handoff {
+  justify-self: start;
+  border: none;
+  border-radius: 999px;
+  background: var(--widget-primary);
+  color: #fff;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.keenai-answer-handoff:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
 .keenai-send,
 .keenai-attach {
   border: none;

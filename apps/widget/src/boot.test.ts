@@ -237,6 +237,23 @@ describe("KeenAI.boot", () => {
           );
         }
 
+        if (url.endsWith("/api/v1/widget/conversations/conv-1/handoff") && method === "POST") {
+          return jsonResponse({
+            message: {
+              id: "m-handoff",
+              plainText: "I need help from the team.",
+              senderType: "user",
+              createdAt: "2026-09-15T09:01:00.000Z",
+            },
+            conversation: {
+              id: "conv-1",
+              status: "open",
+              subject: "Question",
+              customerReplyDisabled: false,
+            },
+          });
+        }
+
         if (url.endsWith("/api/v1/widget/conversations/conv-1/messages")) {
           return jsonResponse({
             items: [
@@ -306,6 +323,12 @@ describe("KeenAI.boot", () => {
     chatForm.requestSubmit();
     await waitFor(() => root.textContent?.includes("Billing answer") ?? false);
     expect(root.textContent).toContain("Billing guide");
+    const handoffButton = Array.from(root.querySelectorAll("button")).find(
+      (button) => button.textContent === "Contact support",
+    ) as HTMLButtonElement;
+    handoffButton.click();
+    await waitFor(() => root.textContent?.includes("A teammate will follow up here.") ?? false);
+    expect(root.textContent).toContain("Team notified");
 
     const helpTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
       (button) => button.textContent === "Help",

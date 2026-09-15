@@ -25,6 +25,7 @@ export {
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
+  widgetHandoffSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,

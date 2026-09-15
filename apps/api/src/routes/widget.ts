@@ -7,6 +7,7 @@ import {
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
+  widgetHandoffSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
@@ -479,6 +480,57 @@ export function widgetRoutes() {
     const items = await listWidgetMessages(c.get("store").db, conversation.id, auth.orgId, 100);
     return c.json({ items });
   });
+
+  r.post(
+    `${prefix}/conversations/:id/handoff`,
+    requireWidgetAuth(),
+    zValidator("json", widgetHandoffSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      const denied = assertWidgetConversation(conversation, auth);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
+      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+      if (isCustomerReplyDisabled(conversation.attributes)) {
+        return c.json({ error: "customer_reply_disabled" }, 409);
+      }
+
+      const body = c.req.valid("json");
+      const result = await insertMessage(c.get("store").db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        senderType: "user",
+        senderId: auth.sub,
+        plainText: body.message,
+        isInternal: false,
+        sentVia: "widget-handoff",
+        isAgentReply: false,
+        metadata: { source: "widget-handoff" },
+      });
+
+      await recordConversationEvent(c.get("store").db, {
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        eventType: "widget.handoff_requested",
+        actorType: "user",
+        actorId: auth.sub,
+        payload: { messageId: result.message.id },
+      });
+
+      return c.json({
+        message: result.serialized,
+        conversation: result.conversation
+          ? serializeWidgetConversation(result.conversation)
+          : serializeWidgetConversation(conversation),
+      });
+    },
+  );
 
   r.post(
     `${prefix}/uploads/presign`,

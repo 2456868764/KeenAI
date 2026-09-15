@@ -77,6 +77,10 @@ export const widgetAnswerSchema = z.object({
   rerank: z.coerce.boolean().optional(),
 });
 
+export const widgetHandoffSchema = z.object({
+  message: z.string().min(1).max(5000).default("I need help from the team."),
+});
+
 export const widgetWorkflowButtonSchema = z.object({
   workflowRunId: z.string().min(1).max(64),
   blockId: z.string().min(1).max(64),

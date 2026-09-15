@@ -281,6 +281,25 @@ describe("widget integration", () => {
     expect(answerMessages.items.some((item) => item.plainText === "billing invoice")).toBe(true);
     expect(answerMessages.items.some((item) => item.senderType === "ai")).toBe(true);
 
+    const handoffRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/handoff`,
+      {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    expect(handoffRes.status).toBe(200);
+    const handoffBody = (await handoffRes.json()) as {
+      message: { plainText: string; senderType: string };
+      conversation: { id: string };
+    };
+    expect(handoffBody.conversation.id).toBe(convBody.conversation.id);
+    expect(handoffBody.message).toMatchObject({
+      plainText: "I need help from the team.",
+      senderType: "user",
+    });
+
     const ticketRes = await app.request("/api/v1/widget/tickets", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },

@@ -9,7 +9,9 @@ type ChatViewProps = {
   conversation: WidgetConversation | null;
   messages: WidgetMessagePayload[];
   answerState: WidgetAnswerState;
+  handoffRequested: boolean;
   onSend: (input: SendWidgetMessageInput) => Promise<void>;
+  onRequestHandoff: () => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
   fetchAttachmentBlob: (attachmentId: string) => Promise<string>;
 };
@@ -20,7 +22,9 @@ export function ChatView({
   conversation,
   messages,
   answerState,
+  handoffRequested,
   onSend,
+  onRequestHandoff,
   onUploadImage,
   fetchAttachmentBlob,
 }: ChatViewProps) {
@@ -63,12 +67,26 @@ export function ChatView({
   return (
     <div className="keenai-chat-layout">
       <div ref={mountRef} className="keenai-chat-view" />
-      {answerState.status !== "idle" ? <AnswerStatus state={answerState} /> : null}
+      {answerState.status !== "idle" ? (
+        <AnswerStatus
+          state={answerState}
+          handoffRequested={handoffRequested}
+          onRequestHandoff={onRequestHandoff}
+        />
+      ) : null}
     </div>
   );
 }
 
-function AnswerStatus({ state }: { state: WidgetAnswerState }) {
+function AnswerStatus({
+  state,
+  handoffRequested,
+  onRequestHandoff,
+}: {
+  state: WidgetAnswerState;
+  handoffRequested: boolean;
+  onRequestHandoff: () => Promise<void>;
+}) {
   const title =
     state.status === "error"
       ? "AI answer unavailable"
@@ -92,6 +110,14 @@ function AnswerStatus({ state }: { state: WidgetAnswerState }) {
           ))}
         </div>
       ) : null}
+      <button
+        className="keenai-answer-handoff"
+        disabled={handoffRequested}
+        type="button"
+        onClick={() => void onRequestHandoff()}
+      >
+        {handoffRequested ? "Team notified" : "Contact support"}
+      </button>
     </section>
   );
 }

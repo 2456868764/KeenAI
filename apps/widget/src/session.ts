@@ -271,6 +271,27 @@ export async function postWidgetMessage(input: {
   return body.message;
 }
 
+export async function requestWidgetHandoff(input: {
+  apiUrl?: string;
+  accessToken: string;
+  conversationId: string;
+  message?: string;
+}): Promise<{ message: WidgetMessage; conversation: WidgetConversation }> {
+  const res = await fetch(
+    `${apiBase(input.apiUrl)}/api/v1/widget/conversations/${input.conversationId}/handoff`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${input.accessToken}`,
+      },
+      body: JSON.stringify({ message: input.message }),
+    },
+  );
+  if (!res.ok) throw new Error(`handoff_failed:${res.status}`);
+  return res.json() as Promise<{ message: WidgetMessage; conversation: WidgetConversation }>;
+}
+
 export async function streamWidgetAnswer(
   input: {
     apiUrl?: string;

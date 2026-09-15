@@ -17,6 +17,7 @@ import {
   fetchWidgetMessages,
   getOrCreateWidgetConversation,
   postWidgetMessage,
+  requestWidgetHandoff,
   streamWidgetAnswer,
   uploadWidgetImage,
 } from "../session.js";
@@ -67,6 +68,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     text: "",
     citations: [],
   });
+  const [handoffRequested, setHandoffRequested] = useState(false);
 
   const activeConversationId = activeConversation?.id ?? "";
   const activeMessages = activeConversationId
@@ -100,6 +102,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const startChat = useCallback(async () => {
     if (!accessToken) return;
     setAnswerState({ status: "idle", text: "", citations: [] });
+    setHandoffRequested(false);
     setView("chat");
     const { conversation } = await getOrCreateWidgetConversation({ apiUrl, accessToken });
     setActiveConversation(conversation);
@@ -118,6 +121,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         customerReplyDisabled: summary?.customerReplyDisabled,
       });
       setAnswerState({ status: "idle", text: "", citations: [] });
+      setHandoffRequested(false);
       setView("chat");
       if (!messagesByConversation[conversationId]) {
         await loadConversationMessages(accessToken, conversationId);
@@ -131,6 +135,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
       if (!accessToken || !activeConversationId) return;
       const query = input.plainText?.trim();
       if (query && (!input.attachmentIds || input.attachmentIds.length === 0)) {
+        setHandoffRequested(false);
         setAnswerState({ status: "searching", text: "", citations: [] });
         try {
           await streamWidgetAnswer(
@@ -177,6 +182,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
       }
 
       setAnswerState({ status: "idle", text: "", citations: [] });
+      setHandoffRequested(false);
       const message = await postWidgetMessage({
         apiUrl,
         accessToken,
@@ -196,6 +202,33 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
       refreshConversations,
     ],
   );
+
+  const requestHandoff = useCallback(async () => {
+    if (!accessToken || !activeConversationId || handoffRequested) return;
+    const result = await requestWidgetHandoff({
+      apiUrl,
+      accessToken,
+      conversationId: activeConversationId,
+    });
+    setActiveConversation(result.conversation);
+    appendMessage(activeConversationId, result.message);
+    setHandoffRequested(true);
+    setAnswerState({
+      status: "done",
+      text: "A teammate will follow up here.",
+      citations: [],
+    });
+    await loadConversationMessages(accessToken, activeConversationId);
+    await refreshConversations(accessToken);
+  }, [
+    accessToken,
+    activeConversationId,
+    apiUrl,
+    appendMessage,
+    handoffRequested,
+    loadConversationMessages,
+    refreshConversations,
+  ]);
 
   const openTicketForm = useCallback((type: string) => {
     setTicketType(type);
@@ -389,7 +422,9 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             conversation={activeConversation}
             messages={activeMessages}
             answerState={answerState}
+            handoffRequested={handoffRequested}
             onSend={sendMessage}
+            onRequestHandoff={requestHandoff}
             onUploadImage={uploadImage}
             fetchAttachmentBlob={fetchAttachmentBlob}
           />
