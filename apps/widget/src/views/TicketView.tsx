@@ -2,12 +2,19 @@ import { useState } from "preact/hooks";
 
 type TicketViewProps = {
   type: string;
-  onSubmit: (input: { type: string; title: string; description: string }) => Promise<void>;
+  onSubmit: (input: {
+    type: string;
+    title: string;
+    description: string;
+    attachmentIds?: string[];
+  }) => Promise<void>;
+  onUploadFile: (file: File) => Promise<string>;
 };
 
-export function TicketView({ type, onSubmit }: TicketViewProps) {
+export function TicketView({ type, onSubmit, onUploadFile }: TicketViewProps) {
   const [title, setTitle] = useState(type === "bug" ? "Bug report" : "");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<"idle" | "submitting" | "submitted" | "error">("idle");
 
   async function submit(event: Event) {
@@ -18,7 +25,13 @@ export function TicketView({ type, onSubmit }: TicketViewProps) {
 
     setStatus("submitting");
     try {
-      await onSubmit({ type, title: cleanTitle, description: cleanDescription });
+      const attachmentIds = files.length > 0 ? await Promise.all(files.map(onUploadFile)) : [];
+      await onSubmit({
+        type,
+        title: cleanTitle,
+        description: cleanDescription,
+        attachmentIds,
+      });
       setStatus("submitted");
     } catch {
       setStatus("error");
@@ -54,6 +67,21 @@ export function TicketView({ type, onSubmit }: TicketViewProps) {
           onInput={(event) => setDescription(event.currentTarget.value)}
         />
       </label>
+      <label>
+        <span>Attachments</span>
+        <input
+          type="file"
+          multiple
+          onChange={(event) => setFiles(Array.from(event.currentTarget.files ?? []).slice(0, 5))}
+        />
+      </label>
+      {files.length > 0 ? (
+        <ul className="keenai-ticket-attachments" aria-label="Selected attachments">
+          {files.map((file) => (
+            <li key={`${file.name}-${file.size}`}>{file.name}</li>
+          ))}
+        </ul>
+      ) : null}
       {status === "error" ? <p className="keenai-form-error">Could not submit ticket.</p> : null}
       <button
         type="submit"

@@ -17,6 +17,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { toAuthConfig } from "./config.js";
+import { insertAttachment } from "./lib/attachments.js";
 import { getKbChunkFtsStore } from "./lib/kb-chunk-fts-init.js";
 import { widgetHmacSecret } from "./lib/widget.js";
 import { createLogger } from "./logger.js";
@@ -300,6 +301,28 @@ describe("widget integration", () => {
       senderType: "user",
     });
 
+    const presignRes = await app.request("/api/v1/widget/uploads/presign", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: "screenshot.png",
+        contentType: "image/png",
+        sizeBytes: 8,
+      }),
+    });
+    expect(presignRes.status).toBe(201);
+    const presignBody = (await presignRes.json()) as { uploadUrl: string };
+    expect(presignBody.uploadUrl).toContain("/api/v1/widget/uploads/");
+
+    const pendingAttachment = await insertAttachment(db, {
+      orgId: org.id,
+      storageKey: `${"a".repeat(32)}.pdf`,
+      fileName: "error-report.pdf",
+      contentType: "application/pdf",
+      sizeBytes: 128,
+      metadata: { source: "test" },
+    });
+
     const ticketRes = await app.request("/api/v1/widget/tickets", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -307,6 +330,7 @@ describe("widget integration", () => {
         type: "bug",
         title: "Bug report",
         description: "The widget submit button is not responding.",
+        attachmentIds: [pendingAttachment.id],
       }),
     });
     expect(ticketRes.status).toBe(201);
@@ -317,6 +341,20 @@ describe("widget integration", () => {
     expect(ticketBody.ticket.title).toBe("Bug report");
     expect(ticketBody.ticket.customerId).toBe(userId);
     expect(ticketBody.ticket.conversationIds).toContain(ticketBody.conversation.id);
+
+    const ticketMessagesRes = await app.request(
+      `/api/v1/widget/conversations/${ticketBody.conversation.id}/messages`,
+      { headers: auth },
+    );
+    expect(ticketMessagesRes.status).toBe(200);
+    const ticketMessages = (await ticketMessagesRes.json()) as {
+      items: { attachments?: { fileName: string | null }[] }[];
+    };
+    expect(
+      ticketMessages.items.some((item) =>
+        item.attachments?.some((attachment) => attachment.fileName === "error-report.pdf"),
+      ),
+    ).toBe(true);
 
     const badHash = await app.request("/api/v1/widget/session", {
       method: "POST",

@@ -181,6 +181,7 @@ export async function createWidgetTicket(input: {
   type: string;
   title: string;
   description: string;
+  attachmentIds?: string[];
 }): Promise<{ ticket: WidgetTicket; conversation: WidgetConversation }> {
   const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/tickets`, {
     method: "POST",
@@ -192,6 +193,7 @@ export async function createWidgetTicket(input: {
       type: input.type,
       title: input.title,
       description: input.description,
+      attachmentIds: input.attachmentIds,
     }),
   });
   if (!res.ok) throw new Error(`ticket_failed:${res.status}`);

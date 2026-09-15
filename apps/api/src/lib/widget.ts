@@ -396,7 +396,7 @@ export async function createWidgetConversation(
     brandId: string;
     userId: string;
     subject?: string;
-    initialMessage?: { plainText: string };
+    initialMessage?: { plainText: string; attachmentIds?: string[] };
   },
 ) {
   const channelId = `widget:${input.userId}`;
@@ -436,6 +436,7 @@ export async function createWidgetConversation(
       senderType: "user",
       senderId: input.userId,
       plainText: input.initialMessage.plainText,
+      attachmentIds: input.initialMessage.attachmentIds,
       content: buildMessageContent(input.initialMessage.plainText),
       isInternal: false,
       sentVia: "messenger",

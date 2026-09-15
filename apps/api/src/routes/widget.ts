@@ -209,7 +209,7 @@ export function widgetRoutes() {
         brandId: auth.brandId,
         userId: auth.sub,
         subject: body.title,
-        initialMessage: { plainText: body.description },
+        initialMessage: { plainText: body.description, attachmentIds: body.attachmentIds },
       });
       const existingTicketId = await getConversationTicketId(
         db,
@@ -544,7 +544,13 @@ export function widgetRoutes() {
       try {
         const apiBase = new URL(c.req.url).origin;
         const presigned = createPresignedUpload(c.get("env"), body, apiBase);
-        return c.json(presigned, 201);
+        return c.json(
+          {
+            ...presigned,
+            uploadUrl: `${apiBase}${prefix}/uploads/${presigned.uploadId}`,
+          },
+          201,
+        );
       } catch (e) {
         if (e instanceof Error && e.message === "file_too_large") {
           return c.json({ error: "file_too_large", maxBytes: c.get("env").UPLOAD_MAX_BYTES }, 413);

@@ -337,6 +337,24 @@ button, input { font: inherit; }
   cursor: not-allowed;
 }
 
+.keenai-ticket-attachments {
+  margin: -4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+
+.keenai-ticket-attachments li {
+  border: 1px solid var(--widget-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--widget-muted);
+  padding: 7px 9px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .keenai-form-error {
   margin: 0;
   color: #b42318;

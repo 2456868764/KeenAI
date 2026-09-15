@@ -236,7 +236,12 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   }, []);
 
   const submitTicket = useCallback(
-    async (input: { type: string; title: string; description: string }) => {
+    async (input: {
+      type: string;
+      title: string;
+      description: string;
+      attachmentIds?: string[];
+    }) => {
       if (!accessToken) return;
       const result = await createWidgetTicket({
         apiUrl,
@@ -244,6 +249,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         type: input.type,
         title: input.title,
         description: input.description,
+        attachmentIds: input.attachmentIds,
       });
       setActiveConversation(result.conversation);
       await refreshConversations(accessToken);
@@ -433,7 +439,9 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
           <HelpView collections={helpCollections} articles={helpArticles} onStartChat={startChat} />
         ) : null}
         {view === "changelog" ? <ChangelogView entries={changelogEntries} /> : null}
-        {view === "ticket" ? <TicketView type={ticketType} onSubmit={submitTicket} /> : null}
+        {view === "ticket" ? (
+          <TicketView type={ticketType} onSubmit={submitTicket} onUploadFile={uploadImage} />
+        ) : null}
       </WidgetShell>
       <Launcher
         open={open}
