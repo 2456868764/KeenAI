@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createWidgetUserHash } from "@keenai/auth";
+import { createHelpCenterStubConnector, createKeenaiKb } from "@keenai/kb";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import {
@@ -16,12 +17,13 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { toAuthConfig } from "./config.js";
+import { getKbChunkFtsStore } from "./lib/kb-chunk-fts-init.js";
 import { widgetHmacSecret } from "./lib/widget.js";
 import { createLogger } from "./logger.js";
 
 describe("widget integration", () => {
   it("HMAC session, conversation, and messages", async () => {
-    const env = parseApiEnv({ NODE_ENV: "test" });
+    const env = parseApiEnv({ NODE_ENV: "test", LLM_PROVIDER: "stub" });
     const store = createLibsqlStore({ url: ":memory:" });
     const migrationsFolder = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -65,6 +67,22 @@ describe("widget integration", () => {
       metadata: { collection: "account", slug: "reset-password", public: true },
       status: "active",
     });
+    const kb = createKeenaiKb({ db });
+    await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: source.id,
+      connector: createHelpCenterStubConnector(),
+    });
+    const chunkFts = getKbChunkFtsStore();
+    for (const document of await kb.listDocuments({ orgId: org.id, brandId: brand.id })) {
+      await kb.indexDocument({
+        orgId: org.id,
+        brandId: brand.id,
+        documentId: document.id,
+        chunkFtsIndexer: chunkFts,
+      });
+    }
     await db.insert(changelogEntries).values({
       orgId: org.id,
       brandId: brand.id,
@@ -234,6 +252,34 @@ describe("widget integration", () => {
     expect(listRes.status).toBe(200);
     const list = (await listRes.json()) as { items: { plainText: string }[] };
     expect(list.items.length).toBeGreaterThanOrEqual(2);
+
+    const answerRes = await app.request("/api/v1/widget/answer", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversationId: convBody.conversation.id,
+        query: "billing invoice",
+        limit: 5,
+        rerank: false,
+      }),
+    });
+    expect(answerRes.status).toBe(200);
+    expect(answerRes.headers.get("content-type")).toContain("text/event-stream");
+    const answerStream = await answerRes.text();
+    expect(answerStream).toContain("event: searching");
+    expect(answerStream).toContain("event: meta");
+    expect(answerStream).toContain("event: text-delta");
+    expect(answerStream).toContain("event: done");
+
+    const answerMessagesRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
+      { headers: auth },
+    );
+    const answerMessages = (await answerMessagesRes.json()) as {
+      items: { plainText: string; senderType: string }[];
+    };
+    expect(answerMessages.items.some((item) => item.plainText === "billing invoice")).toBe(true);
+    expect(answerMessages.items.some((item) => item.senderType === "ai")).toBe(true);
 
     const ticketRes = await app.request("/api/v1/widget/tickets", {
       method: "POST",

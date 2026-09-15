@@ -21,6 +21,7 @@ export {
   type SenderType,
 } from "./conversation.js";
 export {
+  widgetAnswerSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,

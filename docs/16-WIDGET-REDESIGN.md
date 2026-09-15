@@ -43,6 +43,7 @@
 - `GET /api/v1/widget/conversations` 已接入 visitor 会话列表。
 - `GET /api/v1/widget/help/*` 和 `GET /api/v1/widget/changelog/*` 已接入 widget auth 下的列表/详情读取。
 - `POST /api/v1/widget/tickets` 已接入 widget ticket 创建，并关联新建 conversation。
+- `POST /api/v1/widget/answer` 已接入 widget auth 下的 KB answer SSE，并将用户问题和 AI 回复写回 conversation。
 
 ## 3. 前端重构
 
@@ -508,11 +509,11 @@ type WidgetMenuItemRecord = {
 
 ### Phase 5：AI Chat
 
-状态：未完成。
+状态：部分完成。后端 `POST /widget/answer` SSE 已完成，包含 searching/meta/text-delta/done 事件和 conversation 写回；前端 streaming UI、citations 渲染和 fallback 交互仍未完成。
 
-- 新增 `POST /widget/answer` SSE。
+- 新增 `POST /widget/answer` SSE。（已完成）
 - 前端显示 searching / streaming / citations / done。
-- AI 回答写回 conversation。
+- AI 回答写回 conversation。（已完成）
 - 支持 fallback 到人工团队。
 
 验收：
