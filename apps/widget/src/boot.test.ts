@@ -181,6 +181,24 @@ describe("KeenAI.boot", () => {
           });
         }
 
+        if (url.endsWith("/api/v1/widget/help/articles/article-1")) {
+          return jsonResponse({
+            article: {
+              id: "article-1",
+              title: "Reset password",
+              slug: "reset-password",
+              collection: "account",
+              excerpt: "Go to settings and click reset password.",
+              body: "Reset password detailed body.",
+              content: {},
+              url: null,
+              seoTitle: null,
+              seoDescription: null,
+              updatedAt: "2026-09-15T09:00:00.000Z",
+            },
+          });
+        }
+
         if (url.endsWith("/api/v1/widget/changelog/entries")) {
           return jsonResponse({
             items: [
@@ -193,6 +211,20 @@ describe("KeenAI.boot", () => {
                 updatedAt: "2026-09-15T09:00:00.000Z",
               },
             ],
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/changelog/entries/dark-mode")) {
+          return jsonResponse({
+            entry: {
+              id: "entry-1",
+              slug: "dark-mode",
+              title: "Dark mode is here",
+              summary: "Dashboard and widget now support dark theme.",
+              plainText: "We shipped dark mode across the product.",
+              publishedAt: "2026-09-15T09:00:00.000Z",
+              updatedAt: "2026-09-15T09:00:00.000Z",
+            },
           });
         }
 
@@ -335,6 +367,16 @@ describe("KeenAI.boot", () => {
     ) as HTMLButtonElement;
     helpTab.click();
     await waitFor(() => root.textContent?.includes("Account") ?? false);
+    const articleButton = Array.from(root.querySelectorAll(".keenai-content-button")).find(
+      (button) => button.textContent?.includes("Reset password"),
+    ) as HTMLButtonElement;
+    articleButton.click();
+    await waitFor(() => root.textContent?.includes("Reset password detailed body.") ?? false);
+    const backToArticles = Array.from(root.querySelectorAll("button")).find(
+      (button) => button.textContent === "Back to articles",
+    ) as HTMLButtonElement;
+    backToArticles.click();
+    await waitFor(() => Boolean(root.querySelector('.keenai-search input[type="search"]')));
     const search = root.querySelector('.keenai-search input[type="search"]') as HTMLInputElement;
     search.value = "missing";
     search.dispatchEvent(new Event("input", { bubbles: true }));
@@ -345,6 +387,13 @@ describe("KeenAI.boot", () => {
     ) as HTMLButtonElement;
     changelogTab.click();
     await waitFor(() => root.textContent?.includes("Dark mode is here") ?? false);
+    const changelogButton = Array.from(root.querySelectorAll(".keenai-content-button")).find(
+      (button) => button.textContent?.includes("Dark mode is here"),
+    ) as HTMLButtonElement;
+    changelogButton.click();
+    await waitFor(
+      () => root.textContent?.includes("We shipped dark mode across the product.") ?? false,
+    );
 
     widget.destroy();
   });

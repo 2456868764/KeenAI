@@ -140,6 +140,14 @@ export type WidgetHelpCollection = {
 
 export type WidgetHelpArticle = WidgetHome["articles"][number];
 
+export type WidgetHelpArticleDetail = WidgetHelpArticle & {
+  body: string;
+  content: Record<string, unknown>;
+  url: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+};
+
 export type WidgetChangelogEntry = WidgetHome["changelogEntries"][number] & {
   plainText?: string;
 };

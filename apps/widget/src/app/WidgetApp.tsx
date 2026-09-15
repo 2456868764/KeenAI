@@ -9,8 +9,10 @@ import {
   createWidgetTicket,
   fetchWidgetAttachmentBlob,
   fetchWidgetChangelogEntries,
+  fetchWidgetChangelogEntry,
   fetchWidgetConfig,
   fetchWidgetConversations,
+  fetchWidgetHelpArticle,
   fetchWidgetHelpArticles,
   fetchWidgetHelpCollections,
   fetchWidgetHome,
@@ -436,9 +438,25 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
           />
         ) : null}
         {view === "help" ? (
-          <HelpView collections={helpCollections} articles={helpArticles} onStartChat={startChat} />
+          <HelpView
+            collections={helpCollections}
+            articles={helpArticles}
+            onLoadArticle={(articleId) => {
+              if (!accessToken) throw new Error("not_connected");
+              return fetchWidgetHelpArticle({ apiUrl, accessToken, articleId });
+            }}
+            onStartChat={startChat}
+          />
         ) : null}
-        {view === "changelog" ? <ChangelogView entries={changelogEntries} /> : null}
+        {view === "changelog" ? (
+          <ChangelogView
+            entries={changelogEntries}
+            onLoadEntry={(slug) => {
+              if (!accessToken) throw new Error("not_connected");
+              return fetchWidgetChangelogEntry({ apiUrl, accessToken, slug });
+            }}
+          />
+        ) : null}
         {view === "ticket" ? (
           <TicketView type={ticketType} onSubmit={submitTicket} onUploadFile={uploadImage} />
         ) : null}

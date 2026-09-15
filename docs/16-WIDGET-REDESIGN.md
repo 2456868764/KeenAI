@@ -497,11 +497,11 @@ type WidgetMenuItemRecord = {
 
 ### Phase 4：Help / Changelog
 
-状态：部分完成。Widget auth 下的 Help/Changelog endpoints 已完成；前端 Help/Changelog tab 已读取真实列表；Help 搜索和无结果状态已完成；文章/更新详情交互仍需补齐。
+状态：已完成。Widget auth 下的 Help/Changelog endpoints 已完成；前端 Help/Changelog tab 已读取真实列表；Help 搜索、无结果状态、文章详情和更新详情交互已完成。
 
 - 新增 widget help/changelog endpoints。（已完成）
 - 前端 Help 支持 collections、articles、search。（已完成）
-- Changelog 支持 list/detail。（部分完成）
+- Changelog 支持 list/detail。（已完成）
 
 验收：
 

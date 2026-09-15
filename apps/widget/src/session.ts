@@ -4,6 +4,7 @@ import type {
   WidgetConfig,
   WidgetConversationSummary,
   WidgetHelpArticle,
+  WidgetHelpArticleDetail,
   WidgetHelpCollection,
   WidgetHome,
   WidgetMessagePayload,
@@ -163,6 +164,22 @@ export async function fetchWidgetHelpArticles(input: {
   return body.items;
 }
 
+export async function fetchWidgetHelpArticle(input: {
+  apiUrl?: string;
+  accessToken: string;
+  articleId: string;
+}): Promise<WidgetHelpArticleDetail> {
+  const res = await fetch(
+    `${apiBase(input.apiUrl)}/api/v1/widget/help/articles/${input.articleId}`,
+    {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    },
+  );
+  if (!res.ok) throw new Error(`help_article_failed:${res.status}`);
+  const body = (await res.json()) as { article: WidgetHelpArticleDetail };
+  return body.article;
+}
+
 export async function fetchWidgetChangelogEntries(input: {
   apiUrl?: string;
   accessToken: string;
@@ -173,6 +190,22 @@ export async function fetchWidgetChangelogEntries(input: {
   if (!res.ok) throw new Error(`changelog_failed:${res.status}`);
   const body = (await res.json()) as { items: WidgetChangelogEntry[] };
   return body.items;
+}
+
+export async function fetchWidgetChangelogEntry(input: {
+  apiUrl?: string;
+  accessToken: string;
+  slug: string;
+}): Promise<WidgetChangelogEntry> {
+  const res = await fetch(
+    `${apiBase(input.apiUrl)}/api/v1/widget/changelog/entries/${input.slug}`,
+    {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    },
+  );
+  if (!res.ok) throw new Error(`changelog_entry_failed:${res.status}`);
+  const body = (await res.json()) as { entry: WidgetChangelogEntry };
+  return body.entry;
 }
 
 export async function createWidgetTicket(input: {

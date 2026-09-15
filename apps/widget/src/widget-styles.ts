@@ -254,9 +254,54 @@ button, input { font: inherit; }
   gap: 6px;
 }
 
+.keenai-content-button {
+  text-align: left;
+  cursor: pointer;
+}
+
 .keenai-content-card small {
   color: var(--widget-muted);
   font-weight: 700;
+}
+
+.keenai-detail {
+  padding: 18px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.keenai-detail small {
+  color: var(--widget-muted);
+  font-weight: 700;
+}
+
+.keenai-detail h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.keenai-detail p {
+  margin: 0;
+  color: var(--widget-text);
+  white-space: pre-wrap;
+}
+
+.keenai-text-button {
+  justify-self: start;
+  border: none;
+  background: transparent;
+  color: var(--widget-primary-strong);
+  padding: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.keenai-inline-status {
+  margin: 0;
+  color: var(--widget-muted);
+  font-size: 12px;
 }
 
 .keenai-search {
