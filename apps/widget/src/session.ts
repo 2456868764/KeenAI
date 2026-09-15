@@ -1,4 +1,9 @@
-import type { WidgetMessagePayload, WidgetUser } from "./types.js";
+import type {
+  WidgetConfig,
+  WidgetConversationSummary,
+  WidgetMessagePayload,
+  WidgetUser,
+} from "./types.js";
 
 export type WidgetSession = {
   accessToken: string;
@@ -69,6 +74,34 @@ export async function getOrCreateWidgetConversation(input: {
     created?: boolean;
   };
   return { conversation: body.conversation, created: body.created ?? res.status === 201 };
+}
+
+export async function fetchWidgetConfig(input: {
+  apiUrl?: string;
+  accessToken: string;
+}): Promise<WidgetConfig> {
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/config`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`config_failed:${res.status}`);
+  const body = (await res.json()) as { config: WidgetConfig };
+  return body.config;
+}
+
+export async function fetchWidgetConversations(input: {
+  apiUrl?: string;
+  accessToken: string;
+  limit?: number;
+}): Promise<WidgetConversationSummary[]> {
+  const q = new URLSearchParams();
+  if (input.limit) q.set("limit", String(input.limit));
+  const suffix = q.size > 0 ? `?${q}` : "";
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/conversations${suffix}`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`conversations_failed:${res.status}`);
+  const body = (await res.json()) as { items: WidgetConversationSummary[] };
+  return body.items;
 }
 
 export async function fetchWidgetMessages(input: {

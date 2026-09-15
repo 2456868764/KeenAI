@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [preact()],
   build: {
     lib: {
-      entry: "src/boot.ts",
+      entry: "src/boot.tsx",
       name: "KeenAI",
       formats: ["iife"],
       fileName: () => "keenai-widget.js",

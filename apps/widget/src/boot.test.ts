@@ -2,6 +2,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { boot } from "./boot.js";
 
+class MockWebSocket {
+  constructor(public url: string) {}
+  addEventListener() {}
+  close() {}
+}
+
 describe("KeenAI.boot", () => {
   afterEach(() => {
     document.querySelectorAll("[data-keenai-widget]").forEach((el) => el.remove());
@@ -27,4 +33,163 @@ describe("KeenAI.boot", () => {
     widget.destroy();
     expect(document.querySelector('[data-keenai-widget="demo"]')).toBeNull();
   });
+
+  it("renders Preact shell and switches from messages to chat", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/api/v1/widget/session")) {
+          return jsonResponse({
+            accessToken: "widget-token",
+            expiresIn: 3600,
+            org: { id: "org-1", slug: "demo" },
+            brand: { id: "brand-1", slug: "default" },
+            user: { id: "u1", userHash: "a".repeat(64) },
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/config")) {
+          return jsonResponse({
+            config: {
+              org: { id: "org-1", slug: "demo", name: "Demo" },
+              brand: {
+                id: "brand-1",
+                slug: "default",
+                name: "Default",
+                primaryColor: "#4652f2",
+              },
+              agent: {
+                name: "Keeni AI Agent",
+                subtitle: "The team can also help",
+                greetingTitle: "Hey! How can we help?",
+                greetingBody: "Ask a question or browse help articles.",
+              },
+              modules: {
+                home: true,
+                messages: true,
+                help: true,
+                changelog: true,
+                tickets: true,
+              },
+              menuItems: [
+                bottomNavItem("home", "Home", 0),
+                bottomNavItem("messages", "Messages", 1),
+                bottomNavItem("help", "Help", 2),
+                bottomNavItem("changelog", "Changelog", 3),
+              ],
+              quickActions: [
+                {
+                  id: "qa-1",
+                  label: "Ask a question",
+                  type: "start_chat",
+                  payload: {},
+                  sortOrder: 0,
+                },
+              ],
+              poweredBy: true,
+            },
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/conversations") && method === "POST") {
+          return jsonResponse({
+            created: true,
+            conversation: {
+              id: "conv-1",
+              status: "open",
+              subject: "Question",
+              customerReplyDisabled: false,
+            },
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/conversations") && method === "GET") {
+          return jsonResponse({
+            items: [
+              {
+                id: "conv-1",
+                status: "open",
+                subject: "Question",
+                lastMessagePreview: "Hello",
+                lastMessageSenderType: "user",
+                lastMessageCreatedAt: "2026-09-15T09:00:00.000Z",
+                unreadCount: 0,
+              },
+            ],
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/conversations/conv-1/messages")) {
+          return jsonResponse({
+            items: [
+              {
+                id: "m1",
+                plainText: "Hello",
+                senderType: "user",
+                createdAt: "2026-09-15T09:00:00.000Z",
+              },
+            ],
+          });
+        }
+
+        throw new Error(`unhandled fetch ${method} ${url}`);
+      }) as unknown as typeof fetch,
+    );
+
+    const widget = boot({
+      orgSlug: "demo",
+      user: { id: "u1", userHash: "a".repeat(64) },
+    });
+    widget.open();
+
+    const host = document.querySelector('[data-keenai-widget="demo"]') as HTMLElement;
+    const root = host.shadowRoot as ShadowRoot;
+
+    await waitFor(() => root.textContent?.includes("Hey! How can we help?") ?? false);
+
+    const messagesTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
+      (button) => button.textContent === "Messages",
+    ) as HTMLButtonElement;
+    messagesTab.click();
+    await waitFor(() => {
+      const text = root.querySelector(".keenai-conversation-row")?.textContent ?? "";
+      return text.includes("Question") && text.includes("Hello");
+    });
+
+    const row = root.querySelector(".keenai-conversation-row") as HTMLButtonElement;
+    row.click();
+    await waitFor(() => Boolean(root.querySelector(".keenai-input")));
+
+    widget.destroy();
+  });
 });
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function bottomNavItem(module: string, label: string, sortOrder: number) {
+  return {
+    id: `nav-${module}`,
+    label,
+    type: "module",
+    module,
+    location: "bottom_nav",
+    sortOrder,
+  };
+}
+
+async function waitFor(assertion: () => boolean): Promise<void> {
+  for (let i = 0; i < 30; i += 1) {
+    if (assertion()) return;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  expect(assertion()).toBe(true);
+}

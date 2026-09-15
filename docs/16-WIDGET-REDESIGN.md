@@ -452,12 +452,12 @@ type WidgetMenuItemRecord = {
 
 ### Phase 1：前端壳层
 
-状态：未完成。
+状态：已完成。
 
-- 改造 `apps/widget/src/boot.ts` 为 Preact mount。
-- 新增 `WidgetApp`、`WidgetShell`、`BottomNav`、`Launcher`。
-- 静态实现 Home / Messages / Help / Changelog / Chat 视图。
-- 保留现有 session 与 send message 能力。
+- 改造 `apps/widget/src/boot.tsx` 为 Preact mount。（已完成）
+- 新增 `WidgetApp`、`WidgetShell`、`BottomNav`、`Launcher`。（已完成）
+- 静态实现 Home / Messages / Help / Changelog / Chat 视图。（已完成）
+- 保留现有 session 与 send message 能力。（已完成）
 
 验收：
 
@@ -467,11 +467,11 @@ type WidgetMenuItemRecord = {
 
 ### Phase 2：消息与实时
 
-状态：部分完成。后端 `GET /widget/conversations` 已完成；前端 Preact 迁移和 realtime 视图仍未完成。
+状态：部分完成。后端 `GET /widget/conversations` 已完成；现有消息、附件和 WebSocket 能力已嵌入 Preact Chat 视图；仍需补更完整的 Messages 空状态/历史多会话体验和 Dashboard 可见性的端到端验证。
 
-- 将现有 `MessagesPanel` 能力迁移到 Preact。
-- 支持历史消息、发送、附件、WebSocket realtime。
-- 添加 empty messages state 和 `Ask a question` CTA。
+- 将现有 `MessagesPanel` 能力迁移到 Preact。（已完成）
+- 支持历史消息、发送、附件、WebSocket realtime。（已完成）
+- 添加 empty messages state 和 `Ask a question` CTA。（部分完成）
 
 验收：
 
@@ -480,7 +480,7 @@ type WidgetMenuItemRecord = {
 
 ### Phase 3：配置与聚合 API
 
-状态：部分完成。独立表、migration、schema export、`GET /widget/config` 已完成；`GET /widget/home` 和 Settings 配置写入仍未完成。
+状态：部分完成。独立表、migration、schema export、`GET /widget/config` 已完成；Widget 已读取 config 并应用 brand primary color/module visibility；`GET /widget/home` 和 Settings 配置写入仍未完成。
 
 - 新增 `GET /widget/config`。（已完成）
 - 新增 `GET /widget/home`。
