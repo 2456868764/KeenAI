@@ -110,6 +110,13 @@ describe("KeenAI.boot", () => {
                   payload: {},
                   sortOrder: 0,
                 },
+                {
+                  id: "qa-2",
+                  label: "Submit ticket",
+                  type: "submit_ticket",
+                  payload: { type: "support" },
+                  sortOrder: 1,
+                },
               ],
               featured: [],
               articles: [
@@ -132,6 +139,23 @@ describe("KeenAI.boot", () => {
                   updatedAt: "2026-09-15T09:00:00.000Z",
                 },
               ],
+            },
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/tickets")) {
+          return jsonResponse({
+            ticket: {
+              id: "ticket-1",
+              title: "Need help",
+              statusName: "Open",
+              conversationIds: ["conv-ticket"],
+            },
+            conversation: {
+              id: "conv-ticket",
+              status: "open",
+              subject: "Need help",
+              customerReplyDisabled: false,
             },
           });
         }
@@ -229,6 +253,26 @@ describe("KeenAI.boot", () => {
     await waitFor(() => root.textContent?.includes("Reset password") ?? false);
     expect(root.textContent).toContain("Reset password");
     expect(root.textContent).toContain("Dark mode is here");
+
+    const submitTicket = Array.from(root.querySelectorAll(".keenai-action-card")).find((button) =>
+      button.textContent?.includes("Submit ticket"),
+    ) as HTMLButtonElement;
+    submitTicket.click();
+    await waitFor(() => Boolean(root.querySelector(".keenai-ticket-form")));
+    const [titleInput, descriptionInput] = Array.from(
+      root.querySelectorAll(".keenai-ticket-form input, .keenai-ticket-form textarea"),
+    ) as [HTMLInputElement, HTMLTextAreaElement];
+    titleInput.value = "Need help";
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+    descriptionInput.value = "The widget needs support.";
+    descriptionInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await waitFor(() => {
+      const submit = root.querySelector(".keenai-ticket-form button") as HTMLButtonElement | null;
+      return Boolean(submit && !submit.disabled);
+    });
+    const ticketForm = root.querySelector(".keenai-ticket-form") as HTMLFormElement;
+    ticketForm.requestSubmit();
+    await waitFor(() => root.textContent?.includes("Ticket submitted") ?? false);
 
     const messagesTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
       (button) => button.textContent === "Messages",

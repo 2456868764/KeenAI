@@ -42,6 +42,7 @@
 - `GET /api/v1/widget/home` 已接入 quick actions、推荐文章、最新 changelog 聚合。
 - `GET /api/v1/widget/conversations` 已接入 visitor 会话列表。
 - `GET /api/v1/widget/help/*` 和 `GET /api/v1/widget/changelog/*` 已接入 widget auth 下的列表/详情读取。
+- `POST /api/v1/widget/tickets` 已接入 widget ticket 创建，并关联新建 conversation。
 
 ## 3. 前端重构
 
@@ -522,10 +523,10 @@ type WidgetMenuItemRecord = {
 
 ### Phase 6：Ticket
 
-状态：未完成。
+状态：部分完成。`POST /widget/tickets` 已完成；Home quick action 已支持 `Submit ticket / Bug Report` 打开 ticket 表单并提交；附件关联和动态 workflow ticket form 仍待增强。
 
-- 新增 `POST /widget/tickets`。
-- Home quick action 支持 `Submit ticket / Bug Report`。
+- 新增 `POST /widget/tickets`。（已完成）
+- Home quick action 支持 `Submit ticket / Bug Report`。（已完成）
 - 可选：将 ticket 转为 conversation 事件。
 
 验收：

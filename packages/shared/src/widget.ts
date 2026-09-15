@@ -63,6 +63,13 @@ export const widgetTicketFormInputSchema = z.object({
   values: z.record(z.string().min(1).max(64), z.unknown()),
 });
 
+export const widgetCreateTicketSchema = z.object({
+  type: z.string().min(1).max(64).default("support"),
+  title: z.string().min(1).max(240),
+  description: z.string().min(1).max(20_000),
+  attachmentIds: z.array(z.string().min(1)).max(5).optional(),
+});
+
 export const widgetWorkflowButtonSchema = z.object({
   workflowRunId: z.string().min(1).max(64),
   blockId: z.string().min(1).max(64),

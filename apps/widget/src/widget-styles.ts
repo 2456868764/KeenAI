@@ -303,6 +303,45 @@ button, input { font: inherit; }
   color: var(--widget-primary-strong);
 }
 
+.keenai-ticket-form {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.keenai-ticket-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--widget-muted);
+  font-weight: 700;
+}
+
+.keenai-ticket-form input,
+.keenai-ticket-form textarea {
+  width: 100%;
+  border: 1px solid var(--widget-border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--widget-text);
+  padding: 11px 12px;
+  outline: none;
+}
+
+.keenai-ticket-form textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.keenai-ticket-form .keenai-primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.keenai-form-error {
+  margin: 0;
+  color: #b42318;
+}
+
 .keenai-bottom-nav {
   min-height: 72px;
   padding: 8px 10px 12px;

@@ -6,6 +6,7 @@ import {
   type WidgetConversation,
   type WidgetMessage,
   createWidgetSession,
+  createWidgetTicket,
   fetchWidgetAttachmentBlob,
   fetchWidgetChangelogEntries,
   fetchWidgetConfig,
@@ -33,6 +34,7 @@ import { ChatView } from "../views/ChatView.js";
 import { HelpView } from "../views/HelpView.js";
 import { HomeView } from "../views/HomeView.js";
 import { MessagesView } from "../views/MessagesView.js";
+import { TicketView } from "../views/TicketView.js";
 import { connectWidgetWebSocket } from "../ws-client.js";
 import type { WidgetView } from "./routes.js";
 
@@ -53,6 +55,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const [helpArticles, setHelpArticles] = useState<WidgetHelpArticle[]>([]);
   const [changelogEntries, setChangelogEntries] = useState<WidgetChangelogEntry[]>([]);
   const [activeConversation, setActiveConversation] = useState<WidgetConversation | null>(null);
+  const [ticketType, setTicketType] = useState("support");
   const [conversations, setConversations] = useState<WidgetConversationSummary[]>([]);
   const [messagesByConversation, setMessagesByConversation] = useState<
     Record<string, WidgetMessage[]>
@@ -128,6 +131,27 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
       await refreshConversations(accessToken);
     },
     [accessToken, activeConversationId, apiUrl, appendMessage, refreshConversations],
+  );
+
+  const openTicketForm = useCallback((type: string) => {
+    setTicketType(type);
+    setView("ticket");
+  }, []);
+
+  const submitTicket = useCallback(
+    async (input: { type: string; title: string; description: string }) => {
+      if (!accessToken) return;
+      const result = await createWidgetTicket({
+        apiUrl,
+        accessToken,
+        type: input.type,
+        title: input.title,
+        description: input.description,
+      });
+      setActiveConversation(result.conversation);
+      await refreshConversations(accessToken);
+    },
+    [accessToken, apiUrl, refreshConversations],
   );
 
   const uploadImage = useCallback(
@@ -259,7 +283,11 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   }, [accessToken, apiUrl, changelogEntries.length, view]);
 
   const shellTitle =
-    view === "chat" ? (config?.agent.name ?? "Keeni AI Agent") : (config?.brand.name ?? "KeenAI");
+    view === "chat"
+      ? (config?.agent.name ?? "Keeni AI Agent")
+      : view === "ticket"
+        ? "Submit ticket"
+        : (config?.brand.name ?? "KeenAI");
   const shellSubtitle = view === "chat" ? config?.agent.subtitle : undefined;
 
   return (
@@ -271,11 +299,18 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         subtitle={shellSubtitle}
         config={config}
         status={status}
-        showBack={view === "chat"}
-        onBack={() => setView("messages")}
+        showBack={view === "chat" || view === "ticket"}
+        onBack={() => setView(view === "ticket" ? "home" : "messages")}
         onViewChange={setView}
       >
-        {view === "home" ? <HomeView config={config} home={home} onStartChat={startChat} /> : null}
+        {view === "home" ? (
+          <HomeView
+            config={config}
+            home={home}
+            onStartChat={startChat}
+            onSubmitTicket={openTicketForm}
+          />
+        ) : null}
         {view === "messages" ? (
           <MessagesView
             conversations={conversations}
@@ -298,6 +333,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
           <HelpView collections={helpCollections} articles={helpArticles} onStartChat={startChat} />
         ) : null}
         {view === "changelog" ? <ChangelogView entries={changelogEntries} /> : null}
+        {view === "ticket" ? <TicketView type={ticketType} onSubmit={submitTicket} /> : null}
       </WidgetShell>
       <Launcher
         open={open}

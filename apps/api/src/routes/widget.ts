@@ -5,6 +5,7 @@ import {
   presignUploadSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
+  widgetCreateTicketSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
@@ -30,6 +31,7 @@ import {
   listPublicKbArticles,
   listPublicKbCollections,
 } from "../lib/kb-public.js";
+import { createTicketFromConversation, getConversationTicketId } from "../lib/tickets.js";
 import {
   consumePresignedUpload,
   createPresignedUpload,
@@ -187,6 +189,47 @@ export function widgetRoutes() {
     if (!entry || entry.status !== "published") return c.json({ error: "not_found" }, 404);
     return c.json({ entry });
   });
+
+  r.post(
+    `${prefix}/tickets`,
+    requireWidgetAuth(),
+    zValidator("json", widgetCreateTicketSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const body = c.req.valid("json");
+      const db = c.get("store").db;
+      const result = await createWidgetConversation(db, {
+        orgId: auth.orgId,
+        brandId: auth.brandId,
+        userId: auth.sub,
+        subject: body.title,
+        initialMessage: { plainText: body.description },
+      });
+      const existingTicketId = await getConversationTicketId(
+        db,
+        auth.orgId,
+        result.conversation.id,
+      );
+      const ticket = await createTicketFromConversation(db, {
+        orgId: auth.orgId,
+        conversationId: result.conversation.id,
+        title: body.title,
+      });
+
+      if (!existingTicketId) {
+        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+        await getWorkflowDispatch().dispatchTicketTrigger({
+          orgId: auth.orgId,
+          ticketId: ticket.id,
+          trigger: "ticket_created",
+        });
+      }
+
+      return c.json({ ticket, conversation: result.conversation }, 201);
+    },
+  );
 
   r.post(
     `${prefix}/conversations`,

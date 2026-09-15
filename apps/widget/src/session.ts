@@ -6,6 +6,7 @@ import type {
   WidgetHelpCollection,
   WidgetHome,
   WidgetMessagePayload,
+  WidgetTicket,
   WidgetUser,
 } from "./types.js";
 
@@ -160,6 +161,29 @@ export async function fetchWidgetChangelogEntries(input: {
   if (!res.ok) throw new Error(`changelog_failed:${res.status}`);
   const body = (await res.json()) as { items: WidgetChangelogEntry[] };
   return body.items;
+}
+
+export async function createWidgetTicket(input: {
+  apiUrl?: string;
+  accessToken: string;
+  type: string;
+  title: string;
+  description: string;
+}): Promise<{ ticket: WidgetTicket; conversation: WidgetConversation }> {
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/tickets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${input.accessToken}`,
+    },
+    body: JSON.stringify({
+      type: input.type,
+      title: input.title,
+      description: input.description,
+    }),
+  });
+  if (!res.ok) throw new Error(`ticket_failed:${res.status}`);
+  return res.json() as Promise<{ ticket: WidgetTicket; conversation: WidgetConversation }>;
 }
 
 export async function fetchWidgetMessages(input: {

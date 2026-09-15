@@ -235,6 +235,24 @@ describe("widget integration", () => {
     const list = (await listRes.json()) as { items: { plainText: string }[] };
     expect(list.items.length).toBeGreaterThanOrEqual(2);
 
+    const ticketRes = await app.request("/api/v1/widget/tickets", {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "bug",
+        title: "Bug report",
+        description: "The widget submit button is not responding.",
+      }),
+    });
+    expect(ticketRes.status).toBe(201);
+    const ticketBody = (await ticketRes.json()) as {
+      ticket: { title: string; customerId: string | null; conversationIds: string[] };
+      conversation: { id: string };
+    };
+    expect(ticketBody.ticket.title).toBe("Bug report");
+    expect(ticketBody.ticket.customerId).toBe(userId);
+    expect(ticketBody.ticket.conversationIds).toContain(ticketBody.conversation.id);
+
     const badHash = await app.request("/api/v1/widget/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

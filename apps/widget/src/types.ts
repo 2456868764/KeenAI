@@ -129,3 +129,10 @@ export type WidgetHelpArticle = WidgetHome["articles"][number];
 export type WidgetChangelogEntry = WidgetHome["changelogEntries"][number] & {
   plainText?: string;
 };
+
+export type WidgetTicket = {
+  id: string;
+  title: string;
+  statusName: string | null;
+  conversationIds: string[];
+};

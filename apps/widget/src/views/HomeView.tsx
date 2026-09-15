@@ -4,14 +4,33 @@ type HomeViewProps = {
   config: WidgetConfig | null;
   home: WidgetHome | null;
   onStartChat: () => void;
+  onSubmitTicket: (type: string) => void;
 };
 
-export function HomeView({ config, home, onStartChat }: HomeViewProps) {
+export function HomeView({ config, home, onStartChat, onSubmitTicket }: HomeViewProps) {
   const quickActions = home?.quickActions ??
     config?.quickActions ?? [
-      { id: "start-chat", label: "Ask a question", type: "start_chat" as const },
-      { id: "submit-ticket", label: "Submit ticket", type: "submit_ticket" as const },
-      { id: "bug-report", label: "Bug report", type: "submit_ticket" as const },
+      {
+        id: "start-chat",
+        label: "Ask a question",
+        type: "start_chat" as const,
+        payload: {},
+        sortOrder: 0,
+      },
+      {
+        id: "submit-ticket",
+        label: "Submit ticket",
+        type: "submit_ticket" as const,
+        payload: { type: "support" },
+        sortOrder: 1,
+      },
+      {
+        id: "bug-report",
+        label: "Bug report",
+        type: "submit_ticket" as const,
+        payload: { type: "bug" },
+        sortOrder: 2,
+      },
     ];
   const articles = home?.articles ?? [];
   const entries = home?.changelogEntries ?? [];
@@ -36,7 +55,11 @@ export function HomeView({ config, home, onStartChat }: HomeViewProps) {
             key={action.id}
             type="button"
             className="keenai-action-card"
-            onClick={onStartChat}
+            onClick={() =>
+              action.type === "submit_ticket"
+                ? onSubmitTicket(String(action.payload.type ?? "support"))
+                : onStartChat()
+            }
           >
             <span>{action.label}</span>
             <strong>Open</strong>
