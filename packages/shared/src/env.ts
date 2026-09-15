@@ -74,12 +74,16 @@ export const apiEnvSchema = z.object({
   ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
   /** KB-19 optional LLM FAQ extract on conversation crystallize (requires OPENAI_API_KEY). */
   KEENAI_CRYSTALLIZE_MODEL: z.string().min(1).optional(),
-  /** KB document parser provider: lite | http | cloud. `http` targets services/document-parser. */
-  KEENAI_KB_DOCUMENT_PARSER: z.enum(["lite", "http", "cloud"]).default("lite"),
+  /** KB document parser provider: anydoc | http | cloud. */
+  KEENAI_KB_DOCUMENT_PARSER: z.enum(["anydoc", "http", "cloud"]).default("anydoc"),
   /** HTTP endpoint for the parser sidecar, for example http://127.0.0.1:8095/parse. */
   KEENAI_KB_DOCUMENT_PARSER_URL: z.string().url().optional(),
   /** Parser sidecar engine. The Python service currently supports docling only. */
   KEENAI_KB_DOCUMENT_PARSER_ENGINE: z.enum(["docling"]).default("docling"),
+  /** URL parser adapter for web crawl sources. Unset uses the built-in shallow fetcher. */
+  KEENAI_KB_URL_PARSER: z.enum(["firecrawl", "crawl4ai"]).optional(),
+  /** Optional override for Firecrawl scrape or Crawl4AI crawl endpoint. */
+  KEENAI_KB_URL_PARSER_URL: z.string().url().optional(),
   /** Optional cloud document parser adapter name. */
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER: z
     .enum([
@@ -94,6 +98,9 @@ export const apiEnvSchema = z.object({
     .optional(),
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL: z.string().url().optional(),
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY: z.string().min(1).optional(),
+  FIRECRAWL_API_KEY: z.string().min(1).optional(),
+  FIRECRAWL_API_URL: z.string().url().optional(),
+  CRAWL4AI_API_URL: z.string().url().optional(),
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),

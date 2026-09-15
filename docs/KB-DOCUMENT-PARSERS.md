@@ -1,19 +1,19 @@
 # KB Document Parser Providers
 
-KeenAI keeps the built-in TypeScript parser as the default `lite` provider and adds optional high-fidelity parser providers for heavier documents.
+KeenAI uses `@firecrawl/anydoc` directly from the TypeScript KB package as the default document parser for uploaded files. URL ingestion is handled by a separate URL parser adapter that can target Firecrawl or a self-hosted Crawl4AI service.
 
 ## Provider Modes
 
 | Mode | Runtime | Use case |
 |------|---------|----------|
-| `lite` | Node.js in `@keenai/kb` | Default, no extra service. Handles Markdown/HTML plus lightweight PDF/DOCX extraction. |
-| `http` | `services/document-parser` FastAPI sidecar | Local high-fidelity parsing with `engine=docling`. |
+| `anydoc` | Node.js in `@keenai/kb` | Default document parser. Uses `@firecrawl/anydoc` for PDF, Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, and CSV, then normalizes Markdown into KB sections/chunks. |
+| `http` | `services/document-parser` FastAPI sidecar | Optional Python parsing with `engine=docling`. |
 | `cloud` | HTTP adapter to managed parser API | Production OCR/layout extraction when cloud processing is acceptable. |
 
 Environment:
 
 ```bash
-KEENAI_KB_DOCUMENT_PARSER=lite
+KEENAI_KB_DOCUMENT_PARSER=anydoc
 
 # Local sidecar
 KEENAI_KB_DOCUMENT_PARSER=http
@@ -25,6 +25,23 @@ KEENAI_KB_DOCUMENT_PARSER=cloud
 KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER=azure-document-intelligence
 KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL=https://parser.example.com/parse
 KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY=...
+```
+
+## URL Parser Adapters
+
+URL parsing is separate from document parsing. If unset, web crawl sources use the built-in shallow fetcher. Set one of the adapters below to normalize remote pages through a dedicated crawler:
+
+```bash
+# Firecrawl cloud or self-hosted compatible endpoint
+KEENAI_KB_URL_PARSER=firecrawl
+FIRECRAWL_API_KEY=fc-...
+# optional, defaults to https://api.firecrawl.dev/v2/scrape
+# KEENAI_KB_URL_PARSER_URL=https://api.firecrawl.dev/v2/scrape
+
+# Crawl4AI self-hosted service
+KEENAI_KB_URL_PARSER=crawl4ai
+# optional, defaults to http://127.0.0.1:11235/crawl
+# KEENAI_KB_URL_PARSER_URL=http://127.0.0.1:11235/crawl
 ```
 
 ## Python Sidecar Engines

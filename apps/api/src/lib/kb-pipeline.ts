@@ -4,6 +4,7 @@ import {
   createKeenaiKb,
   resolveKbConnectorForSource,
   resolveKbDocumentParserProviderFromEnv,
+  resolveKbUrlParserProviderFromEnv,
 } from "@keenai/kb";
 import { type KbIngestPayload, runKbIngestPipeline } from "@keenai/kb/inngest";
 import type { ApiEnv } from "@keenai/shared";
@@ -60,6 +61,11 @@ export type RunKbIngestForSourceOptions = {
     | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER"
     | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL"
     | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY"
+    | "FIRECRAWL_API_KEY"
+    | "FIRECRAWL_API_URL"
+    | "CRAWL4AI_API_URL"
+    | "KEENAI_KB_URL_PARSER"
+    | "KEENAI_KB_URL_PARSER_URL"
   >;
 };
 
@@ -87,7 +93,8 @@ export async function runKbIngestForSource(
     throw new Error("kb_source_not_found");
   }
 
-  const connector = resolveKbConnectorForSource(source.type, source.config);
+  const urlParserProvider = options.env ? resolveKbUrlParserProviderFromEnv(options.env) : null;
+  const connector = resolveKbConnectorForSource(source.type, source.config, { urlParserProvider });
   if (!connector) {
     await markSourceError(store, payload.sourceId, `connector_unavailable:${source.type}`);
     throw new Error(`kb_connector_unavailable:${source.type}`);

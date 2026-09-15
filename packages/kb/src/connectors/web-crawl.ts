@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { KbSourceType } from "@keenai/storage/schema";
 import { webCrawlConnectorConfigSchema } from "./schemas.js";
 import type { KbConnector, KbFetchedDocument, KbResourceRef } from "./types.js";
+import type { KbUrlParserProvider } from "./url-parser.js";
 
 type WebCrawlUrlConfig =
   | string
@@ -38,6 +39,7 @@ export type WebCrawlConnectorOptions = {
   fetchFn?: WebCrawlFetch;
   now?: () => Date;
   type?: Extract<KbSourceType, "web" | "web_crawl">;
+  urlParserProvider?: KbUrlParserProvider | null;
 };
 
 type NormalizedUrl = {
@@ -234,6 +236,7 @@ export function createWebCrawlConnector(
   const includePaths = asStringArray(config.includePaths);
   const excludePaths = asStringArray(config.excludePaths);
   const pageLimit = maxPages(config.maxPages);
+  const urlParserProvider = options.urlParserProvider ?? null;
 
   async function discoverPages(): Promise<NormalizedUrl[]> {
     if (crawlMode !== "crawl_links") return pages;
@@ -302,6 +305,20 @@ export function createWebCrawlConnector(
     async fetch(ref): Promise<KbFetchedDocument> {
       const page = byExternalId.get(ref.externalId);
       if (!page) throw new Error(`web_page_not_configured:${ref.externalId}`);
+
+      if (urlParserProvider) {
+        const parsed = await urlParserProvider.parse({ url: page.url, title: page.title });
+        const title = parsed.title ?? page.title ?? titleFromUrl(page.url);
+        return {
+          externalId: page.url,
+          title,
+          url: page.url,
+          rawContent: parsed.markdown,
+          contentType: "text/markdown",
+          canonicalLocale: page.canonicalLocale,
+          updatedAt: page.updatedAt,
+        };
+      }
 
       const response = await fetchFn(page.url, { headers: { "user-agent": userAgent } });
       if (!response.ok) throw new Error(`web_fetch_failed:${response.status}`);

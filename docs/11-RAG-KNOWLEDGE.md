@@ -223,9 +223,10 @@ export type ConnectorType =
 │       - 哈希去重（SHA-256）                                     │
 ├───────────────────────────────────────────────────────────────┤
 │  2. Parse（解析）                                               │
-│       - 默认 provider：lite（内置 PDF/DOCX/HTML/Markdown 轻量解析）│
-│       - HTTP provider：FastAPI sidecar，engine=docling           │
-│       - docling：PDF / DOCX / HTML / URL → Markdown              │
+│       - 默认 provider：anydoc（Node 直接调用 @firecrawl/anydoc）  │
+│       - PDF / DOCX / PPT / Office / CSV 等文件 → Markdown         │
+│       - URL provider：Firecrawl / Crawl4AI 统一适配 → Markdown     │
+│       - HTTP provider：FastAPI sidecar，engine=docling（可选）      │
 │       - cloud provider：Azure DI / Google Document AI / Textract │
 │         / LlamaParse / Unstructured / Mistral OCR / LandingAI ADE│
 │       - 图片/视频仍按多模态管线独立处理                           │

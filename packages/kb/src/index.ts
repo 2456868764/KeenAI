@@ -35,8 +35,11 @@ export {
   createWebCrawlConnector,
   createWebCrawlStubConnector,
   createYouTubeConnector,
+  createCrawl4AiUrlParserProvider,
+  createFirecrawlUrlParserProvider,
   getKbStubConnector,
   resolveKbConnectorForSource,
+  resolveKbUrlParserProviderFromEnv,
 } from "./connectors/index.js";
 export type {
   KbConnector,
@@ -45,6 +48,13 @@ export type {
   SyncKbSourceInput,
   SyncKbSourceResult,
 } from "./connectors/types.js";
+export type {
+  KbUrlParserHttpOptions,
+  KbUrlParserInput,
+  KbUrlParserProvider,
+  KbUrlParserResult,
+  ResolveKbUrlParserProviderEnv,
+} from "./connectors/index.js";
 export { chunkKbDocument, type KbChunkDraft } from "./ingest/chunk-document.js";
 export {
   chunkKbDocumentHierarchical,
@@ -191,11 +201,13 @@ export {
   type ParseKbDocumentInput,
 } from "./ingest/parse-document.js";
 export {
+  createAnydocKbDocumentParserProvider,
   createCloudKbDocumentParserProvider,
   createHttpKbDocumentParserProvider,
-  createLiteKbDocumentParserProvider,
   parseKbDocumentWithProvider,
   resolveKbDocumentParserProviderFromEnv,
+  type KbAnydocParserOptions,
+  type KbDocumentParserEngine,
   type KbDocumentParserCloudOptions,
   type KbDocumentParserCloudProvider,
   type KbDocumentParserHttpOptions,

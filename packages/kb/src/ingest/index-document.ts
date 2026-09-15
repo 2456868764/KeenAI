@@ -13,7 +13,7 @@ import { type KbChunkEmbedder, createStubKbChunkEmbedder, embedKbChunk } from ".
 import { extractKbEntitiesFromDocument } from "./extract-kb-entities.js";
 import {
   type KbDocumentParserProvider,
-  createLiteKbDocumentParserProvider,
+  createAnydocKbDocumentParserProvider,
   parseKbDocumentWithProvider,
 } from "./providers.js";
 
@@ -29,7 +29,7 @@ export type IndexKbDocumentInput = {
   extractEntities?: boolean;
   /** KB-18: optional Contextual Retrieval enrichment before embed/index. */
   contextualRetrieval?: false | AddKbContextualRetrievalOptions;
-  /** Document parsing provider. Defaults to the built-in lite parser. */
+  /** Document parsing provider. Defaults to the Node anydoc parser. */
   parserProvider?: KbDocumentParserProvider;
 };
 
@@ -86,7 +86,7 @@ export async function indexKbDocument(
       contentType: document.contentType,
       url: document.url,
     },
-    input.parserProvider ?? createLiteKbDocumentParserProvider(),
+    input.parserProvider ?? createAnydocKbDocumentParserProvider(),
   );
   const baseDrafts = chunkKbDocument(parsed);
   const drafts = input.contextualRetrieval

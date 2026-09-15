@@ -1,6 +1,6 @@
 # KeenAI Document Parser Sidecar
 
-FastAPI service for high-fidelity KB document parsing. The TypeScript KB package keeps the built-in `lite` parser as the default provider; this sidecar is only used when `KEENAI_KB_DOCUMENT_PARSER=http`.
+FastAPI service for optional high-fidelity KB document parsing. The TypeScript KB package uses the Node `@firecrawl/anydoc` provider by default; this Python sidecar is only used when `KEENAI_KB_DOCUMENT_PARSER=http`.
 
 ## API
 
@@ -25,13 +25,11 @@ POST /parse
 }
 ```
 
-`raw_content` and `url` are alternative inputs; send exactly one of them. Supported engine values are only:
+`raw_content` and `url` are alternative inputs; send exactly one of them. The Python sidecar supports only:
 
 - `docling`: uses `docling-project/docling`. It can parse PDF, DOCX, HTML, and URL inputs supported by Docling.
 
-MinerU is intentionally not included in this Python sidecar for now. The service ships one
-engine, `docling`, and the TypeScript provider defaults invalid or missing engine config back to
-`docling`.
+Anydoc is intentionally not routed through this service. KeenAI calls `@firecrawl/anydoc` directly from the Node KB package for PDF, Word, PowerPoint, and other document files. MinerU is intentionally not included in this Python sidecar for now.
 
 ## Local Run
 

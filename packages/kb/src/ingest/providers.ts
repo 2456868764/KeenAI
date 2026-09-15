@@ -27,13 +27,29 @@ export type KbDocumentParserProvider = {
   parse(input: ParseKbDocumentInput): Promise<KbDocumentParserResult | ParsedKbDocument>;
 };
 
+type AnydocModule = {
+  toMarkdownBytes?: (
+    bytes: Uint8Array,
+    format?: string,
+    options?: Record<string, unknown>,
+  ) => Promise<string>;
+};
+
+export type KbAnydocParserOptions = {
+  loadModule?: () => Promise<AnydocModule>;
+  ocr?: "hosted" | false;
+  apiKey?: string;
+};
+
 export type KbDocumentParserHttpOptions = {
   id?: string;
   endpoint: string;
-  engine?: "docling";
+  engine?: KbDocumentParserEngine;
   headers?: Record<string, string>;
   fetchFn?: typeof fetch;
 };
+
+export type KbDocumentParserEngine = "docling";
 
 export type KbDocumentParserCloudProvider =
   | "azure-document-intelligence"
@@ -50,12 +66,13 @@ export type KbDocumentParserCloudOptions = Omit<KbDocumentParserHttpOptions, "id
 };
 
 export type ResolveKbDocumentParserProviderEnv = {
-  KEENAI_KB_DOCUMENT_PARSER?: "lite" | "http" | "cloud" | string;
+  KEENAI_KB_DOCUMENT_PARSER?: "anydoc" | "http" | "cloud" | string;
   KEENAI_KB_DOCUMENT_PARSER_URL?: string;
-  KEENAI_KB_DOCUMENT_PARSER_ENGINE?: "docling" | string;
+  KEENAI_KB_DOCUMENT_PARSER_ENGINE?: KbDocumentParserEngine | string;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER?: KbDocumentParserCloudProvider;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_URL?: string;
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY?: string;
+  FIRECRAWL_API_KEY?: string;
 };
 
 function isParsedDocument(
@@ -81,17 +98,110 @@ function mergeParserMetadata(
   };
 }
 
-export function createLiteKbDocumentParserProvider(): KbDocumentParserProvider {
+function contentTypeIncludes(contentType: string | null | undefined, token: string): boolean {
+  return contentType?.toLowerCase().includes(token) ?? false;
+}
+
+function extensionFromFileName(fileName: string | null | undefined): string | undefined {
+  const name = fileName?.toLowerCase().split(/[?#]/, 1)[0];
+  const ext = name?.match(/\.([a-z0-9]+)$/)?.[1];
+  return ext || undefined;
+}
+
+function anydocFormatForInput(input: ParseKbDocumentInput): string | undefined {
+  const fromName = extensionFromFileName(input.fileName ?? input.url);
+  if (fromName) return fromName;
+  if (contentTypeIncludes(input.contentType, "pdf")) return "pdf";
+  if (contentTypeIncludes(input.contentType, "wordprocessingml")) return "docx";
+  if (contentTypeIncludes(input.contentType, "msword")) return "doc";
+  if (contentTypeIncludes(input.contentType, "presentationml")) return "pptx";
+  if (contentTypeIncludes(input.contentType, "powerpoint")) return "ppt";
+  if (contentTypeIncludes(input.contentType, "spreadsheetml")) return "xlsx";
+  if (contentTypeIncludes(input.contentType, "excel")) return "xls";
+  if (contentTypeIncludes(input.contentType, "rtf")) return "rtf";
+  if (contentTypeIncludes(input.contentType, "epub")) return "epub";
+  if (contentTypeIncludes(input.contentType, "csv")) return "csv";
+  return undefined;
+}
+
+function shouldUseAnydoc(input: ParseKbDocumentInput): boolean {
+  const format = anydocFormatForInput(input);
+  return !!format && !["md", "markdown", "html", "htm", "txt", "text"].includes(format);
+}
+
+function decodeRawContentBytes(
+  input: ParseKbDocumentInput,
+  format: string | undefined,
+): Uint8Array {
+  const raw = input.rawContent;
+  const dataUrl = /^data:[^;]+;base64,(.+)$/s.exec(raw.trim());
+  if (dataUrl?.[1]) return Buffer.from(dataUrl[1].replace(/\s+/g, ""), "base64");
+
+  if (
+    contentTypeIncludes(input.contentType, "text/") ||
+    format === "csv" ||
+    format === "txt" ||
+    format === "md" ||
+    format === "markdown"
+  ) {
+    return Buffer.from(raw, "utf8");
+  }
+
+  const compact = raw.replace(/\s+/g, "");
+  if (compact.length > 0 && compact.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(compact)) {
+    const decoded = Buffer.from(compact, "base64");
+    const magic4 = decoded.subarray(0, 4).toString("latin1");
+    if (
+      magic4 === "%PDF" ||
+      magic4.startsWith("PK") ||
+      decoded.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]))
+    ) {
+      return decoded;
+    }
+  }
+
+  return Buffer.from(raw, "utf8");
+}
+
+async function loadDefaultAnydocModule(): Promise<AnydocModule> {
+  return (await import("@firecrawl/anydoc")) as AnydocModule;
+}
+
+export function createAnydocKbDocumentParserProvider(
+  options: KbAnydocParserOptions = {},
+): KbDocumentParserProvider {
   return {
-    id: "lite",
+    id: "anydoc",
     supports() {
       return true;
     },
     async parse(input) {
+      if (shouldUseAnydoc(input)) {
+        const anydoc = await (options.loadModule ?? loadDefaultAnydocModule)();
+        if (typeof anydoc.toMarkdownBytes !== "function") {
+          throw new Error("kb_anydoc_to_markdown_bytes_unavailable");
+        }
+        const format = anydocFormatForInput(input);
+        const markdown = await anydoc.toMarkdownBytes(
+          decodeRawContentBytes(input, format),
+          format,
+          {
+            ...(options.ocr ? { ocr: options.ocr } : {}),
+            ...(options.apiKey ? { apiKey: options.apiKey } : {}),
+          },
+        );
+        return {
+          title: input.title,
+          markdown,
+          provider: "anydoc",
+          metadata: { engine: "anydoc", format },
+        };
+      }
+
       return {
         ...parseKbDocument(input),
-        parserProvider: "lite",
-        metadata: { parserProvider: "lite" },
+        parserProvider: "anydoc",
+        metadata: { engine: "anydoc", parserProvider: "anydoc", adapter: "native-text" },
       };
     },
   };
@@ -209,15 +319,20 @@ export function createCloudKbDocumentParserProvider(
   });
 }
 
-function isParserEngine(value: string | undefined): value is "docling" {
+function isParserEngine(value: string | undefined): value is KbDocumentParserEngine {
   return value === "docling";
 }
 
 export function resolveKbDocumentParserProviderFromEnv(
   env: ResolveKbDocumentParserProviderEnv = process.env as ResolveKbDocumentParserProviderEnv,
 ): KbDocumentParserProvider {
-  const mode = env.KEENAI_KB_DOCUMENT_PARSER ?? "lite";
-  if (mode === "lite") return createLiteKbDocumentParserProvider();
+  const mode = env.KEENAI_KB_DOCUMENT_PARSER ?? "anydoc";
+  if (mode === "anydoc") {
+    return createAnydocKbDocumentParserProvider({
+      apiKey: env.FIRECRAWL_API_KEY,
+      ocr: env.FIRECRAWL_API_KEY ? "hosted" : false,
+    });
+  }
 
   if (mode === "http") {
     if (!env.KEENAI_KB_DOCUMENT_PARSER_URL) {
@@ -251,7 +366,7 @@ export function resolveKbDocumentParserProviderFromEnv(
 
 export async function parseKbDocumentWithProvider(
   input: ParseKbDocumentInput,
-  provider: KbDocumentParserProvider = createLiteKbDocumentParserProvider(),
+  provider: KbDocumentParserProvider = createAnydocKbDocumentParserProvider(),
 ): Promise<ParsedKbDocument> {
   if (!provider.supports(input)) {
     throw new Error(`kb_document_parser_unsupported:${provider.id}`);

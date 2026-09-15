@@ -14,6 +14,7 @@ import { createRoadmapConnector } from "./roadmap.js";
 import { createSlackConnector } from "./slack.js";
 import { createSqlTableConnector } from "./sql-table.js";
 import type { KbConnector } from "./types.js";
+import type { KbUrlParserProvider } from "./url-parser.js";
 import { createWebCrawlConnector } from "./web-crawl.js";
 import { createWebCrawlStubConnector } from "./web-stub.js";
 import { createYouTubeConnector } from "./youtube.js";
@@ -32,9 +33,14 @@ export function getKbStubConnector(type: string): KbConnector | null {
 }
 
 /** Resolve a KB connector from source type + source config. */
+export type ResolveKbConnectorForSourceOptions = {
+  urlParserProvider?: KbUrlParserProvider | null;
+};
+
 export function resolveKbConnectorForSource(
   type: string,
   config: Record<string, unknown> | null | undefined,
+  options: ResolveKbConnectorForSourceOptions = {},
 ): KbConnector | null {
   if (type === "file") return createFileUploadConnector(config ?? {});
   if (type === "file_upload") return createFileUploadConnector(config ?? {}, { type });
@@ -43,7 +49,7 @@ export function resolveKbConnectorForSource(
     Array.isArray(config?.urls) &&
     config.urls.length > 0
   ) {
-    return createWebCrawlConnector(config, { type });
+    return createWebCrawlConnector(config, { type, urlParserProvider: options.urlParserProvider });
   }
   if (type === "github") return createGitHubConnector(config ?? {});
   if (type === "notion") return createNotionConnector(config ?? {});
@@ -82,3 +88,13 @@ export {
   createWebCrawlStubConnector,
   createYouTubeConnector,
 };
+export {
+  createCrawl4AiUrlParserProvider,
+  createFirecrawlUrlParserProvider,
+  resolveKbUrlParserProviderFromEnv,
+  type KbUrlParserHttpOptions,
+  type KbUrlParserInput,
+  type KbUrlParserProvider,
+  type KbUrlParserResult,
+  type ResolveKbUrlParserProviderEnv,
+} from "./url-parser.js";

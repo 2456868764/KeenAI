@@ -3,10 +3,12 @@ import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 import {
   chunkKbDocumentHierarchical,
+  createAnydocKbDocumentParserProvider,
+  createCrawl4AiUrlParserProvider,
+  createFirecrawlUrlParserProvider,
   createHelpCenterStubConnector,
   createHttpKbDocumentParserProvider,
   createKeenaiKb,
-  createLiteKbDocumentParserProvider,
   embedKbChunkStub,
   parseKbDocument,
   parseKbDocumentWithProvider,
@@ -120,19 +122,42 @@ describe("KB ingestion pipeline", () => {
     expect(chunkKbDocument(parsed)[0]?.content).toContain("Billing FAQ");
   });
 
-  it("uses the lite parser provider by default", async () => {
+  it("uses the anydoc parser provider by default", async () => {
+    const parsed = await parseKbDocumentWithProvider({
+      title: "Default Manual",
+      rawContent: "# Setup\n\nInstall the app.",
+      contentType: "text/markdown",
+    });
+
+    expect(parsed.parserProvider).toBe("anydoc");
+    expect(parsed.metadata?.parserProvider).toBe("anydoc");
+    expect(parsed.sections[0]?.heading).toBe("Setup");
+  });
+
+  it("uses anydoc for binary Office and PDF formats", async () => {
+    const provider = createAnydocKbDocumentParserProvider({
+      loadModule: async () => ({
+        async toMarkdownBytes(bytes, format) {
+          expect(Buffer.from(bytes).toString("utf8")).toBe("PKpptx bytes");
+          expect(format).toBe("pptx");
+          return "# Deck\n\nSlide content.";
+        },
+      }),
+    });
+
     const parsed = await parseKbDocumentWithProvider(
       {
-        title: "Lite Manual",
-        rawContent: "# Setup\n\nInstall the app.",
-        contentType: "text/markdown",
+        title: "Deck",
+        rawContent: Buffer.from("PKpptx bytes").toString("base64"),
+        contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        fileName: "deck.pptx",
       },
-      createLiteKbDocumentParserProvider(),
+      provider,
     );
 
-    expect(parsed.parserProvider).toBe("lite");
-    expect(parsed.metadata?.parserProvider).toBe("lite");
-    expect(parsed.sections[0]?.heading).toBe("Setup");
+    expect(parsed.parserProvider).toBe("anydoc");
+    expect(parsed.metadata?.format).toBe("pptx");
+    expect(parsed.sections[0]?.heading).toBe("Deck");
   });
 
   it("posts documents to the HTTP parser provider with the docling engine", async () => {
@@ -185,6 +210,58 @@ describe("KB ingestion pipeline", () => {
     });
 
     expect(provider.id).toBe("http:docling");
+  });
+
+  it("normalizes Firecrawl URL parser responses", async () => {
+    const provider = createFirecrawlUrlParserProvider({
+      endpoint: "https://firecrawl.local/v1/scrape",
+      apiKey: "fc-test",
+      fetchFn: (async (_url, init) => {
+        expect(JSON.parse(String(init?.body ?? "{}"))).toEqual({
+          url: "https://docs.example.com",
+          formats: ["markdown"],
+        });
+        expect((init?.headers as Record<string, string>).authorization).toBe("Bearer fc-test");
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { success: true, data: { markdown: "# Docs", metadata: { title: "Docs" } } };
+          },
+        } as Response;
+      }) as typeof fetch,
+    });
+
+    await expect(provider.parse({ url: "https://docs.example.com" })).resolves.toMatchObject({
+      provider: "firecrawl",
+      title: "Docs",
+      markdown: "# Docs",
+    });
+  });
+
+  it("normalizes Crawl4AI URL parser responses", async () => {
+    const provider = createCrawl4AiUrlParserProvider({
+      endpoint: "http://127.0.0.1:11235/crawl",
+      fetchFn: (async (_url, init) => {
+        expect(JSON.parse(String(init?.body ?? "{}"))).toMatchObject({
+          url: "https://docs.example.com",
+          urls: ["https://docs.example.com"],
+        });
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { results: [{ markdown: "# Crawl4AI Docs", metadata: { title: "Crawl4AI" } }] };
+          },
+        } as Response;
+      }) as typeof fetch,
+    });
+
+    await expect(provider.parse({ url: "https://docs.example.com" })).resolves.toMatchObject({
+      provider: "crawl4ai",
+      title: "Crawl4AI",
+      markdown: "# Crawl4AI Docs",
+    });
   });
 
   it("chunks on paragraph and sentence boundaries with context overlap", () => {
