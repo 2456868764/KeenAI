@@ -471,11 +471,11 @@ type WidgetMenuItemRecord = {
 
 ### Phase 2：消息与实时
 
-状态：部分完成。后端 `GET /widget/conversations` 已完成；现有消息、附件和 WebSocket 能力已嵌入 Preact Chat 视图；仍需补更完整的 Messages 空状态/历史多会话体验和 Dashboard 可见性的端到端验证。
+状态：已完成。后端 `GET /widget/conversations` 已完成；现有消息、附件和 WebSocket 能力已嵌入 Preact Chat 视图；Messages 空状态、历史会话列表和 Dashboard 可见性的集成验证已完成。
 
 - 将现有 `MessagesPanel` 能力迁移到 Preact。（已完成）
 - 支持历史消息、发送、附件、WebSocket realtime。（已完成）
-- 添加 empty messages state 和 `Ask a question` CTA。（部分完成）
+- 添加 empty messages state 和 `Ask a question` CTA。（已完成）
 
 验收：
 

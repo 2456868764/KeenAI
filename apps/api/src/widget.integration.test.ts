@@ -351,6 +351,25 @@ describe("widget integration", () => {
       unreadCount: 0,
     });
 
+    const dashboardConversationsRes = await app.request(
+      `/api/v1/conversations?brandId=${brand.id}`,
+      { headers: adminAuth },
+    );
+    expect(dashboardConversationsRes.status).toBe(200);
+    const dashboardConversationsBody = (await dashboardConversationsRes.json()) as {
+      items: { id: string; channelType: string; userId: string | null; messageCount: number }[];
+    };
+    expect(dashboardConversationsBody.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: convBody.conversation.id,
+          channelType: "messenger",
+          userId,
+          messageCount: expect.any(Number),
+        }),
+      ]),
+    );
+
     const listRes = await app.request(
       `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
       { headers: auth },
