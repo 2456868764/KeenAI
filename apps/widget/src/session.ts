@@ -1,6 +1,7 @@
 import type {
   WidgetConfig,
   WidgetConversationSummary,
+  WidgetHome,
   WidgetMessagePayload,
   WidgetUser,
 } from "./types.js";
@@ -102,6 +103,18 @@ export async function fetchWidgetConversations(input: {
   if (!res.ok) throw new Error(`conversations_failed:${res.status}`);
   const body = (await res.json()) as { items: WidgetConversationSummary[] };
   return body.items;
+}
+
+export async function fetchWidgetHome(input: {
+  apiUrl?: string;
+  accessToken: string;
+}): Promise<WidgetHome> {
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/home`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`home_failed:${res.status}`);
+  const body = (await res.json()) as { home: WidgetHome };
+  return body.home;
 }
 
 export async function fetchWidgetMessages(input: {

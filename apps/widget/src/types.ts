@@ -84,3 +84,36 @@ export type WidgetConversationSummary = {
   unreadCount: number;
   customerReplyDisabled?: boolean;
 };
+
+export type WidgetHome = {
+  greeting: {
+    title: string;
+    body: string;
+  };
+  quickActions: WidgetConfig["quickActions"];
+  featured: {
+    id: string;
+    type: "kb_article" | "changelog_entry" | "external";
+    contentId: string | null;
+    title: string | null;
+    imageUrl: string | null;
+    href: string | null;
+    sortOrder: number;
+  }[];
+  articles: {
+    id: string;
+    title: string;
+    slug: string;
+    collection: string;
+    excerpt: string | null;
+    updatedAt: string;
+  }[];
+  changelogEntries: {
+    id: string;
+    slug: string;
+    title: string;
+    summary: string | null;
+    publishedAt: string | null;
+    updatedAt: string;
+  }[];
+};

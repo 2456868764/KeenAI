@@ -95,6 +95,47 @@ describe("KeenAI.boot", () => {
           });
         }
 
+        if (url.endsWith("/api/v1/widget/home")) {
+          return jsonResponse({
+            home: {
+              greeting: {
+                title: "Hey! How can we help?",
+                body: "Ask a question or browse help articles.",
+              },
+              quickActions: [
+                {
+                  id: "qa-1",
+                  label: "Ask a question",
+                  type: "start_chat",
+                  payload: {},
+                  sortOrder: 0,
+                },
+              ],
+              featured: [],
+              articles: [
+                {
+                  id: "article-1",
+                  title: "Reset password",
+                  slug: "reset-password",
+                  collection: "account",
+                  excerpt: "Go to settings and click reset password.",
+                  updatedAt: "2026-09-15T09:00:00.000Z",
+                },
+              ],
+              changelogEntries: [
+                {
+                  id: "entry-1",
+                  slug: "dark-mode",
+                  title: "Dark mode is here",
+                  summary: "Dashboard and widget now support dark theme.",
+                  publishedAt: "2026-09-15T09:00:00.000Z",
+                  updatedAt: "2026-09-15T09:00:00.000Z",
+                },
+              ],
+            },
+          });
+        }
+
         if (url.endsWith("/api/v1/widget/conversations") && method === "POST") {
           return jsonResponse({
             created: true,
@@ -149,7 +190,9 @@ describe("KeenAI.boot", () => {
     const host = document.querySelector('[data-keenai-widget="demo"]') as HTMLElement;
     const root = host.shadowRoot as ShadowRoot;
 
-    await waitFor(() => root.textContent?.includes("Hey! How can we help?") ?? false);
+    await waitFor(() => root.textContent?.includes("Reset password") ?? false);
+    expect(root.textContent).toContain("Reset password");
+    expect(root.textContent).toContain("Dark mode is here");
 
     const messagesTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
       (button) => button.textContent === "Messages",

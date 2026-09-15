@@ -9,6 +9,7 @@ import {
   fetchWidgetAttachmentBlob,
   fetchWidgetConfig,
   fetchWidgetConversations,
+  fetchWidgetHome,
   fetchWidgetMessages,
   getOrCreateWidgetConversation,
   postWidgetMessage,
@@ -19,6 +20,7 @@ import type {
   SendWidgetMessageInput,
   WidgetConfig,
   WidgetConversationSummary,
+  WidgetHome,
 } from "../types.js";
 import { ChangelogView } from "../views/ChangelogView.js";
 import { ChatView } from "../views/ChatView.js";
@@ -40,6 +42,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const [status, setStatus] = useState("Connecting...");
   const [accessToken, setAccessToken] = useState("");
   const [config, setConfig] = useState<WidgetConfig | null>(null);
+  const [home, setHome] = useState<WidgetHome | null>(null);
   const [activeConversation, setActiveConversation] = useState<WidgetConversation | null>(null);
   const [conversations, setConversations] = useState<WidgetConversationSummary[]>([]);
   const [messagesByConversation, setMessagesByConversation] = useState<
@@ -151,13 +154,15 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         if (cancelled) return;
         setAccessToken(session.accessToken);
 
-        const [nextConfig, conversation] = await Promise.all([
+        const [nextConfig, nextHome, conversation] = await Promise.all([
           fetchWidgetConfig({ apiUrl, accessToken: session.accessToken }),
+          fetchWidgetHome({ apiUrl, accessToken: session.accessToken }),
           getOrCreateWidgetConversation({ apiUrl, accessToken: session.accessToken }),
         ]);
         if (cancelled) return;
 
         setConfig(nextConfig);
+        setHome(nextHome);
         setActiveConversation(conversation.conversation);
         await Promise.all([
           loadConversationMessages(session.accessToken, conversation.conversation.id),
@@ -224,7 +229,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         onBack={() => setView("messages")}
         onViewChange={setView}
       >
-        {view === "home" ? <HomeView config={config} onStartChat={startChat} /> : null}
+        {view === "home" ? <HomeView config={config} home={home} onStartChat={startChat} /> : null}
         {view === "messages" ? (
           <MessagesView
             conversations={conversations}

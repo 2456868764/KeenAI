@@ -3,7 +3,14 @@ import { fileURLToPath } from "node:url";
 import { createWidgetUserHash } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { brands, organizations, widgetSettings } from "@keenai/storage/schema";
+import {
+  brands,
+  changelogEntries,
+  kbDocuments,
+  kbSources,
+  organizations,
+  widgetSettings,
+} from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
@@ -43,6 +50,31 @@ describe("widget integration", () => {
       .values({ orgId: org.id, slug: "default", name: "Default" })
       .returning();
     if (!brand) throw new Error("brand");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "help_center", name: "Help" })
+      .returning();
+    if (!source) throw new Error("source");
+    await db.insert(kbDocuments).values({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: source.id,
+      title: "Reset password",
+      rawContent: "Go to settings and click reset password.",
+      metadata: { collection: "account", slug: "reset-password", public: true },
+      status: "active",
+    });
+    await db.insert(changelogEntries).values({
+      orgId: org.id,
+      brandId: brand.id,
+      slug: "dark-mode",
+      title: "Dark mode is here",
+      summary: "Dashboard and widget now support dark theme.",
+      plainText: "We shipped dark mode across the product.",
+      status: "published",
+      publishedAt: new Date("2026-09-15T09:00:00.000Z"),
+    });
 
     const secret = widgetHmacSecret(env);
     const userId = "visitor-test-1";
@@ -98,6 +130,23 @@ describe("widget integration", () => {
       .where(eq(widgetSettings.brandId, brand.id))
       .limit(1);
     expect(storedSettings?.brandId).toBe(brand.id);
+
+    const homeRes = await app.request("/api/v1/widget/home", { headers: auth });
+    expect(homeRes.status).toBe(200);
+    const homeBody = (await homeRes.json()) as {
+      home: {
+        quickActions: { label: string }[];
+        articles: { title: string; slug: string }[];
+        changelogEntries: { title: string; slug: string }[];
+      };
+    };
+    expect(homeBody.home.quickActions.map((action) => action.label)).toContain("Ask a question");
+    expect(homeBody.home.articles).toEqual(
+      expect.arrayContaining([expect.objectContaining({ slug: "reset-password" })]),
+    );
+    expect(homeBody.home.changelogEntries).toEqual(
+      expect.arrayContaining([expect.objectContaining({ slug: "dark-mode" })]),
+    );
 
     const convRes = await app.request("/api/v1/widget/conversations", {
       method: "POST",

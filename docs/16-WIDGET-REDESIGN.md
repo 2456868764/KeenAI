@@ -39,6 +39,7 @@
 - LibSQL migration 已添加：`0041_widget_settings.sql`。
 - SQLite / Postgres schema 已导出对应 widget 表。
 - `GET /api/v1/widget/config` 已接入默认配置初始化。
+- `GET /api/v1/widget/home` 已接入 quick actions、推荐文章、最新 changelog 聚合。
 - `GET /api/v1/widget/conversations` 已接入 visitor 会话列表。
 
 ## 3. 前端重构
@@ -480,10 +481,10 @@ type WidgetMenuItemRecord = {
 
 ### Phase 3：配置与聚合 API
 
-状态：部分完成。独立表、migration、schema export、`GET /widget/config` 已完成；Widget 已读取 config 并应用 brand primary color/module visibility；`GET /widget/home` 和 Settings 配置写入仍未完成。
+状态：部分完成。独立表、migration、schema export、`GET /widget/config`、`GET /widget/home` 已完成；Widget 已读取 config/home 并应用 brand primary color/module visibility；Settings 配置写入仍未完成。
 
 - 新增 `GET /widget/config`。（已完成）
-- 新增 `GET /widget/home`。
+- 新增 `GET /widget/home`。（已完成）
 - 侧栏 Settings > Branding 的 widget/portal menu 配置与返回结构对齐。
 
 验收：

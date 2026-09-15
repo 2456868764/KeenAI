@@ -35,6 +35,7 @@ import {
   createWidgetConversation,
   findOpenWidgetConversation,
   getWidgetConfig,
+  getWidgetHome,
   listWidgetConversations,
   listWidgetMessages,
   resolveBrandBySlug,
@@ -103,6 +104,19 @@ export function widgetRoutes() {
     if (!config) return c.json({ error: "not_found" }, 404);
 
     return c.json({ config });
+  });
+
+  r.get(`${prefix}/home`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const home = await getWidgetHome(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+    });
+    if (!home) return c.json({ error: "not_found" }, 404);
+
+    return c.json({ home });
   });
 
   r.post(

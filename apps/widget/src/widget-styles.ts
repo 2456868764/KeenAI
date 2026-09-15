@@ -152,6 +152,18 @@ button, input { font: inherit; }
   margin-top: 14px;
 }
 
+.keenai-home-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.keenai-home-section h3 {
+  margin: 0;
+  color: var(--widget-text);
+  font-size: 14px;
+}
+
 .keenai-action-card,
 .keenai-content-card,
 .keenai-search-card,

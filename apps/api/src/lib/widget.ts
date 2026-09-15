@@ -4,12 +4,14 @@ import {
   conversations,
   messages,
   organizations,
+  widgetFeaturedContent,
   widgetMenuItems,
   widgetQuickActions,
   widgetSettings,
 } from "@keenai/storage/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
+import { listPublicChangelogEntries } from "./changelog.js";
 import {
   buildMessageContent,
   type getConversationForOrg,
@@ -18,6 +20,7 @@ import {
   serializeConversation,
   serializeMessagesWithAttachments,
 } from "./conversations.js";
+import { listPublicKbArticles } from "./kb-public.js";
 
 export function widgetHmacSecret(env: AppVariables["env"]): string {
   return env.WIDGET_HMAC_SECRET ?? env.JWT_SECRET;
@@ -259,6 +262,50 @@ export async function getWidgetConfig(
       sortOrder: action.sortOrder,
     })),
     poweredBy: settings.poweredByEnabled,
+  };
+}
+
+export async function getWidgetHome(
+  db: AppVariables["store"]["db"],
+  input: { orgId: string; brandId: string },
+) {
+  const config = await getWidgetConfig(db, input);
+  if (!config) return null;
+
+  const [featured, articles, changelogEntries] = await Promise.all([
+    db
+      .select()
+      .from(widgetFeaturedContent)
+      .where(
+        and(
+          eq(widgetFeaturedContent.orgId, input.orgId),
+          eq(widgetFeaturedContent.brandId, input.brandId),
+          eq(widgetFeaturedContent.enabled, true),
+        ),
+      )
+      .orderBy(asc(widgetFeaturedContent.sortOrder))
+      .limit(8),
+    listPublicKbArticles(db, { orgId: input.orgId, brandId: input.brandId, limit: 5 }),
+    listPublicChangelogEntries(db, input.orgId, input.brandId, 3),
+  ]);
+
+  return {
+    greeting: {
+      title: config.agent.greetingTitle,
+      body: config.agent.greetingBody,
+    },
+    quickActions: config.quickActions,
+    featured: featured.map((item) => ({
+      id: item.id,
+      type: item.contentType,
+      contentId: item.contentId,
+      title: item.titleOverride,
+      imageUrl: item.imageUrl,
+      href: item.href,
+      sortOrder: item.sortOrder,
+    })),
+    articles,
+    changelogEntries,
   };
 }
 
