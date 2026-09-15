@@ -147,4 +147,24 @@ export {
   type ChangelogEntryRow,
   type ChangelogEntryStatus,
 } from "./changelog";
+export {
+  WIDGET_FEATURED_CONTENT_TYPES,
+  WIDGET_MENU_ITEM_TYPES,
+  WIDGET_MENU_LOCATIONS,
+  WIDGET_MODULE_KEYS,
+  WIDGET_QUICK_ACTION_TYPES,
+  widgetFeaturedContent,
+  widgetMenuItems,
+  widgetQuickActions,
+  widgetSettings,
+  type WidgetFeaturedContentRow,
+  type WidgetFeaturedContentType,
+  type WidgetMenuItemRow,
+  type WidgetMenuItemType,
+  type WidgetMenuLocation,
+  type WidgetModuleKey,
+  type WidgetQuickActionRow,
+  type WidgetQuickActionType,
+  type WidgetSettingsRow,
+} from "./widget";
 export { workflowRuns, workflowVersions, workflows } from "./workflow";

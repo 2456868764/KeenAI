@@ -34,6 +34,8 @@ import {
   assertWidgetConversation,
   createWidgetConversation,
   findOpenWidgetConversation,
+  getWidgetConfig,
+  listWidgetConversations,
   listWidgetMessages,
   resolveBrandBySlug,
   resolveOrgBySlug,
@@ -88,6 +90,19 @@ export function widgetRoutes() {
       brand: { id: brand.id, slug: brand.slug },
       user: { id: body.user.id, email: body.user.email, name: body.user.name },
     });
+  });
+
+  r.get(`${prefix}/config`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const config = await getWidgetConfig(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+    });
+    if (!config) return c.json({ error: "not_found" }, 404);
+
+    return c.json({ config });
   });
 
   r.post(
@@ -201,6 +216,22 @@ export function widgetRoutes() {
       return c.json({ conversation, created, dispatched: true }, created ? 201 : 200);
     },
   );
+
+  r.get(`${prefix}/conversations`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const rawLimit = Number(c.req.query("limit") ?? 20);
+    const limit = Number.isFinite(rawLimit) ? rawLimit : 20;
+    const items = await listWidgetConversations(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+      userId: auth.sub,
+      limit,
+    });
+
+    return c.json({ items });
+  });
 
   r.get(`${prefix}/conversations/:id`, requireWidgetAuth(), async (c) => {
     const auth = c.get("widgetAuth");

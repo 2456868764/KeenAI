@@ -288,6 +288,13 @@
       "when": 1779860400000,
       "tag": "0040_workflow_sort_order",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1779864000000,
+      "tag": "0041_widget_settings",
+      "breakpoints": true
     }
   ]
 }

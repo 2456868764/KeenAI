@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import { createWidgetUserHash } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { brands, organizations } from "@keenai/storage/schema";
+import { brands, organizations, widgetSettings } from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -60,6 +61,44 @@ describe("widget integration", () => {
     const session = (await sessionRes.json()) as { accessToken: string };
     const auth = { Authorization: `Bearer ${session.accessToken}` };
 
+    const configRes = await app.request("/api/v1/widget/config", { headers: auth });
+    expect(configRes.status).toBe(200);
+    const configBody = (await configRes.json()) as {
+      config: {
+        brand: { name: string; primaryColor: string };
+        modules: Record<string, boolean>;
+        menuItems: { label: string; module: string | null }[];
+        quickActions: { label: string; type: string; payload: Record<string, unknown> }[];
+      };
+    };
+    expect(configBody.config.brand.name).toBe("Default");
+    expect(configBody.config.brand.primaryColor).toBe("#7c5cff");
+    expect(configBody.config.modules).toMatchObject({
+      home: true,
+      messages: true,
+      help: true,
+      changelog: true,
+      tickets: true,
+    });
+    expect(configBody.config.menuItems.map((item) => item.label)).toEqual([
+      "Home",
+      "Messages",
+      "Help",
+      "Changelog",
+    ]);
+    expect(configBody.config.quickActions.map((action) => action.label)).toEqual([
+      "Ask a question",
+      "Submit ticket",
+      "Bug report",
+    ]);
+
+    const [storedSettings] = await db
+      .select()
+      .from(widgetSettings)
+      .where(eq(widgetSettings.brandId, brand.id))
+      .limit(1);
+    expect(storedSettings?.brandId).toBe(brand.id);
+
     const convRes = await app.request("/api/v1/widget/conversations", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -80,6 +119,24 @@ describe("widget integration", () => {
       },
     );
     expect(msgRes.status).toBe(201);
+
+    const conversationsRes = await app.request("/api/v1/widget/conversations", { headers: auth });
+    expect(conversationsRes.status).toBe(200);
+    const conversationsBody = (await conversationsRes.json()) as {
+      items: {
+        id: string;
+        status: string;
+        lastMessagePreview: string | null;
+        unreadCount: number;
+      }[];
+    };
+    expect(conversationsBody.items).toHaveLength(1);
+    expect(conversationsBody.items[0]).toMatchObject({
+      id: convBody.conversation.id,
+      status: "open",
+      lastMessagePreview: "Follow-up",
+      unreadCount: 0,
+    });
 
     const listRes = await app.request(
       `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
