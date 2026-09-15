@@ -224,6 +224,19 @@ describe("KeenAI.boot", () => {
           });
         }
 
+        if (url.endsWith("/api/v1/widget/answer") && method === "POST") {
+          return new Response(
+            [
+              'event: searching\ndata: {"query":"billing invoice"}',
+              'event: meta\ndata: {"logId":"answer-1","providerId":"kb","citations":[{"chunkId":"chunk-1","documentTitle":"Billing guide"}]}',
+              'event: text-delta\ndata: {"text":"Billing answer"}',
+              "event: done\ndata: {}",
+              "",
+            ].join("\n\n"),
+            { status: 200, headers: { "Content-Type": "text/event-stream" } },
+          );
+        }
+
         if (url.endsWith("/api/v1/widget/conversations/conv-1/messages")) {
           return jsonResponse({
             items: [
@@ -286,6 +299,13 @@ describe("KeenAI.boot", () => {
     const row = root.querySelector(".keenai-conversation-row") as HTMLButtonElement;
     row.click();
     await waitFor(() => Boolean(root.querySelector(".keenai-input")));
+    const chatInput = root.querySelector(".keenai-input") as HTMLInputElement;
+    chatInput.value = "billing invoice";
+    chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+    const chatForm = root.querySelector(".keenai-compose") as HTMLFormElement;
+    chatForm.requestSubmit();
+    await waitFor(() => root.textContent?.includes("Billing answer") ?? false);
+    expect(root.textContent).toContain("Billing guide");
 
     const helpTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
       (button) => button.textContent === "Help",

@@ -509,10 +509,10 @@ type WidgetMenuItemRecord = {
 
 ### Phase 5：AI Chat
 
-状态：部分完成。后端 `POST /widget/answer` SSE 已完成，包含 searching/meta/text-delta/done 事件和 conversation 写回；前端 streaming UI、citations 渲染和 fallback 交互仍未完成。
+状态：部分完成。后端 `POST /widget/answer` SSE 已完成，包含 searching/meta/text-delta/done 事件和 conversation 写回；前端已接入 streaming UI 与 citations 渲染；fallback 到人工团队仍未完成。
 
 - 新增 `POST /widget/answer` SSE。（已完成）
-- 前端显示 searching / streaming / citations / done。
+- 前端显示 searching / streaming / citations / done。（已完成）
 - AI 回答写回 conversation。（已完成）
 - 支持 fallback 到人工团队。
 

@@ -34,6 +34,20 @@ export type SendWidgetMessageInput = {
   attachmentIds?: string[];
 };
 
+export type WidgetAnswerCitation = {
+  chunkId: string;
+  documentTitle: string;
+};
+
+export type WidgetAnswerStatus = "idle" | "searching" | "streaming" | "done" | "error";
+
+export type WidgetAnswerState = {
+  status: WidgetAnswerStatus;
+  text: string;
+  citations: WidgetAnswerCitation[];
+  error?: string;
+};
+
 export type WidgetModuleKey = "home" | "messages" | "help" | "changelog" | "tickets";
 
 export type WidgetConfig = {

@@ -379,8 +379,15 @@ button, input { font: inherit; }
   border: 2px solid currentColor;
 }
 
-.keenai-chat-view {
+.keenai-chat-layout {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.keenai-chat-view {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -416,6 +423,48 @@ button, input { font: inherit; }
 }
 
 .keenai-input:disabled { opacity: 0.6; }
+
+.keenai-answer-status {
+  margin: 0 12px 10px;
+  border: 1px solid var(--widget-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(25, 30, 45, 0.08);
+  color: var(--widget-text);
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.keenai-answer-status strong {
+  font-size: 12px;
+  color: var(--widget-muted);
+}
+
+.keenai-answer-status__text,
+.keenai-answer-status__error {
+  margin: 0;
+  font-size: 13px;
+}
+
+.keenai-answer-status__error {
+  color: #b42318;
+}
+
+.keenai-answer-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.keenai-answer-citation {
+  border-radius: 999px;
+  background: #eef0ff;
+  color: var(--widget-primary-strong);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
 
 .keenai-send,
 .keenai-attach {

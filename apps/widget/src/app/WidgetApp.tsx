@@ -17,11 +17,13 @@ import {
   fetchWidgetMessages,
   getOrCreateWidgetConversation,
   postWidgetMessage,
+  streamWidgetAnswer,
   uploadWidgetImage,
 } from "../session.js";
 import type {
   ConversationRealtimeEvent,
   SendWidgetMessageInput,
+  WidgetAnswerState,
   WidgetChangelogEntry,
   WidgetConfig,
   WidgetConversationSummary,
@@ -60,6 +62,11 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const [messagesByConversation, setMessagesByConversation] = useState<
     Record<string, WidgetMessage[]>
   >({});
+  const [answerState, setAnswerState] = useState<WidgetAnswerState>({
+    status: "idle",
+    text: "",
+    citations: [],
+  });
 
   const activeConversationId = activeConversation?.id ?? "";
   const activeMessages = activeConversationId
@@ -92,6 +99,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
 
   const startChat = useCallback(async () => {
     if (!accessToken) return;
+    setAnswerState({ status: "idle", text: "", citations: [] });
     setView("chat");
     const { conversation } = await getOrCreateWidgetConversation({ apiUrl, accessToken });
     setActiveConversation(conversation);
@@ -109,6 +117,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         subject: summary?.subject ?? null,
         customerReplyDisabled: summary?.customerReplyDisabled,
       });
+      setAnswerState({ status: "idle", text: "", citations: [] });
       setView("chat");
       if (!messagesByConversation[conversationId]) {
         await loadConversationMessages(accessToken, conversationId);
@@ -120,6 +129,54 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const sendMessage = useCallback(
     async (input: SendWidgetMessageInput) => {
       if (!accessToken || !activeConversationId) return;
+      const query = input.plainText?.trim();
+      if (query && (!input.attachmentIds || input.attachmentIds.length === 0)) {
+        setAnswerState({ status: "searching", text: "", citations: [] });
+        try {
+          await streamWidgetAnswer(
+            {
+              apiUrl,
+              accessToken,
+              conversationId: activeConversationId,
+              query,
+            },
+            {
+              onSearching: () => {
+                setAnswerState((current) => ({ ...current, status: "searching" }));
+              },
+              onMeta: (meta) => {
+                setAnswerState((current) => ({
+                  ...current,
+                  citations: meta.citations,
+                }));
+              },
+              onTextDelta: (text) => {
+                setAnswerState((current) => ({
+                  ...current,
+                  status: "streaming",
+                  text: `${current.text}${text}`,
+                }));
+              },
+              onDone: () => {
+                setAnswerState((current) => ({ ...current, status: "done" }));
+              },
+            },
+          );
+        } catch (error) {
+          setAnswerState({
+            status: "error",
+            text: "",
+            citations: [],
+            error: error instanceof Error ? error.message : "answer_failed",
+          });
+        } finally {
+          await loadConversationMessages(accessToken, activeConversationId);
+          await refreshConversations(accessToken);
+        }
+        return;
+      }
+
+      setAnswerState({ status: "idle", text: "", citations: [] });
       const message = await postWidgetMessage({
         apiUrl,
         accessToken,
@@ -130,7 +187,14 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
       appendMessage(activeConversationId, message);
       await refreshConversations(accessToken);
     },
-    [accessToken, activeConversationId, apiUrl, appendMessage, refreshConversations],
+    [
+      accessToken,
+      activeConversationId,
+      apiUrl,
+      appendMessage,
+      loadConversationMessages,
+      refreshConversations,
+    ],
   );
 
   const openTicketForm = useCallback((type: string) => {
@@ -324,6 +388,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             accessToken={accessToken}
             conversation={activeConversation}
             messages={activeMessages}
+            answerState={answerState}
             onSend={sendMessage}
             onUploadImage={uploadImage}
             fetchAttachmentBlob={fetchAttachmentBlob}
