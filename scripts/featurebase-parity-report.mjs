@@ -59,6 +59,7 @@ const criteria = [
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "branches.slice(0, 16)"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "rules.slice(0, 16)"],
       ["apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx", "RouteOutputs"],
+      ["apps/dashboard/src/components/workflows/workflow-route-defaults.ts", "createDefaultRule"],
       [
         "apps/dashboard/src/components/workflows/workflow-flow-canvas.tsx",
         "nodesDraggable={false}",

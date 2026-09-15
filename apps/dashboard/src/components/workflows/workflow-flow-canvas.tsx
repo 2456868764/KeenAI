@@ -55,6 +55,7 @@ import {
   triggerLabel,
   workflowNodeSize,
 } from "./workflow-graph";
+import { createDefaultBranch, createDefaultRule } from "./workflow-route-defaults";
 
 type BlockNodeData = {
   block: WorkflowBlock;
@@ -2064,14 +2065,7 @@ function ConditionRouteOutputs({
             const nextIndex = block.branches.length + 1;
             onChangeBlock({
               ...block,
-              branches: [
-                ...block.branches,
-                {
-                  label: `Branch ${nextIndex}`,
-                  condition: { field: "channelType", op: "eq", value: "" },
-                  nextId: null,
-                },
-              ],
+              branches: [...block.branches, createDefaultBranch(nextIndex)],
             });
           }}
         >
@@ -2124,16 +2118,10 @@ function ConditionRouteOutputs({
         onClick={(event) => {
           event.stopPropagation();
           const nextIndex = block.rules.length + 1;
+          const nextId = block.rules[0]?.nextId ?? block.id;
           onChangeBlock({
             ...block,
-            rules: [
-              ...block.rules,
-              {
-                label: `Rule ${nextIndex}`,
-                condition: { field: "channelType", op: "eq", value: "" },
-                nextId: block.rules[0]?.nextId ?? block.id,
-              },
-            ],
+            rules: [...block.rules, createDefaultRule(nextIndex, nextId)],
           });
         }}
       >
