@@ -484,7 +484,7 @@ type WidgetMenuItemRecord = {
 
 ### Phase 3：配置与聚合 API
 
-状态：部分完成。独立表、migration、schema export、`GET /widget/config`、`GET /widget/home` 已完成；Widget 已读取 config/home 并应用 brand primary color/module visibility；Settings 配置写入仍未完成。
+状态：已完成。独立表、migration、schema export、`GET /widget/config`、`GET /widget/home` 已完成；Widget 已读取 config/home 并应用 brand primary color/module visibility；Settings 配置通过 `GET/PATCH /widget/settings/:brandId` 写入 widget 独立表。
 
 - 新增 `GET /widget/config`。（已完成）
 - 新增 `GET /widget/home`。（已完成）

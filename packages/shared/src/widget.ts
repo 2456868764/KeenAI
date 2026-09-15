@@ -81,6 +81,73 @@ export const widgetHandoffSchema = z.object({
   message: z.string().min(1).max(5000).default("I need help from the team."),
 });
 
+const widgetModuleKeySchema = z.enum(["home", "messages", "help", "changelog", "tickets"]);
+
+export const updateWidgetSettingsSchema = z.object({
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
+  launcherIconUrl: z.string().url().nullable().optional(),
+  agentName: z.string().min(1).max(120).optional(),
+  agentSubtitle: z.string().min(1).max(240).optional(),
+  agentAvatarUrl: z.string().url().nullable().optional(),
+  greetingTitle: z.string().min(1).max(200).optional(),
+  greetingBody: z.string().min(1).max(1000).optional(),
+  poweredByEnabled: z.boolean().optional(),
+  modules: z
+    .object({
+      home: z.boolean().optional(),
+      messages: z.boolean().optional(),
+      help: z.boolean().optional(),
+      changelog: z.boolean().optional(),
+      tickets: z.boolean().optional(),
+    })
+    .optional(),
+  menuItems: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(120),
+        description: z.string().max(240).nullable().optional(),
+        icon: z.string().max(64).nullable().optional(),
+        type: z.enum(["module", "external"]),
+        module: widgetModuleKeySchema.nullable().optional(),
+        href: z.string().url().nullable().optional(),
+        location: z.enum(["bottom_nav", "home_card", "portal_menu"]),
+        enabled: z.boolean().default(true),
+        sortOrder: z.number().int().min(0).max(10_000).default(0),
+      }),
+    )
+    .max(20)
+    .optional(),
+  quickActions: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(120),
+        type: z.enum(["start_chat", "submit_ticket", "open_help", "open_url"]),
+        payload: z.record(z.string(), z.unknown()).default({}),
+        enabled: z.boolean().default(true),
+        sortOrder: z.number().int().min(0).max(10_000).default(0),
+      }),
+    )
+    .max(20)
+    .optional(),
+  featured: z
+    .array(
+      z.object({
+        type: z.enum(["kb_article", "changelog_entry", "external"]),
+        contentId: z.string().max(128).nullable().optional(),
+        title: z.string().max(200).nullable().optional(),
+        imageUrl: z.string().url().nullable().optional(),
+        href: z.string().url().nullable().optional(),
+        enabled: z.boolean().default(true),
+        sortOrder: z.number().int().min(0).max(10_000).default(0),
+      }),
+    )
+    .max(20)
+    .optional(),
+});
+
 export const widgetWorkflowButtonSchema = z.object({
   workflowRunId: z.string().min(1).max(64),
   blockId: z.string().min(1).max(64),
@@ -89,3 +156,4 @@ export const widgetWorkflowButtonSchema = z.object({
 
 export type WidgetUser = z.infer<typeof widgetUserSchema>;
 export type WidgetSessionInput = z.infer<typeof widgetSessionSchema>;
+export type UpdateWidgetSettingsInput = z.infer<typeof updateWidgetSettingsSchema>;

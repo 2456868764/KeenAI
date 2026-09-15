@@ -1,14 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createWidgetUserHash } from "@keenai/auth";
+import { createWidgetUserHash, hashPassword } from "@keenai/auth";
 import { createHelpCenterStubConnector, createKeenaiKb } from "@keenai/kb";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import {
+  accounts,
   brands,
   changelogEntries,
   kbDocuments,
   kbSources,
+  members,
   organizations,
   widgetSettings,
 } from "@keenai/storage/schema";
@@ -53,6 +55,21 @@ describe("widget integration", () => {
       .values({ orgId: org.id, slug: "default", name: "Default" })
       .returning();
     if (!brand) throw new Error("brand");
+    const [account] = await db
+      .insert(accounts)
+      .values({
+        email: "owner@widget.test",
+        name: "Widget Owner",
+        passwordHash: await hashPassword("password12345"),
+      })
+      .returning();
+    if (!account) throw new Error("account");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: account.id,
+      role: "admin",
+      status: "active",
+    });
 
     const [source] = await db
       .insert(kbSources)
@@ -98,6 +115,18 @@ describe("widget integration", () => {
     const secret = widgetHmacSecret(env);
     const userId = "visitor-test-1";
     const userHash = createWidgetUserHash(secret, userId);
+    const loginRes = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "owner@widget.test",
+        password: "password12345",
+        orgSlug: "demo",
+      }),
+    });
+    expect(loginRes.status).toBe(200);
+    const loginBody = (await loginRes.json()) as { accessToken: string };
+    const adminAuth = { Authorization: `Bearer ${loginBody.accessToken}` };
 
     const sessionRes = await app.request("/api/v1/widget/session", {
       method: "POST",
@@ -143,6 +172,73 @@ describe("widget integration", () => {
       "Bug report",
     ]);
 
+    const settingsPatchRes = await app.request(`/api/v1/widget/settings/${brand.id}`, {
+      method: "PATCH",
+      headers: { ...adminAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        primaryColor: "#123abc",
+        agentName: "Demo Agent",
+        greetingTitle: "Welcome to Demo",
+        modules: { changelog: false },
+        menuItems: [
+          {
+            label: "Home",
+            type: "module",
+            module: "home",
+            location: "bottom_nav",
+            sortOrder: 0,
+          },
+          {
+            label: "Docs",
+            type: "external",
+            href: "https://docs.example.com",
+            location: "home_card",
+            sortOrder: 1,
+          },
+        ],
+        quickActions: [
+          {
+            label: "Ask support",
+            type: "start_chat",
+            payload: { source: "settings" },
+            sortOrder: 0,
+          },
+        ],
+        featured: [
+          {
+            type: "external",
+            title: "Release notes",
+            href: "https://example.com/releases",
+            sortOrder: 0,
+          },
+        ],
+      }),
+    });
+    expect(settingsPatchRes.status).toBe(200);
+    const settingsPatchBody = (await settingsPatchRes.json()) as {
+      config: {
+        brand: { primaryColor: string };
+        agent: { name: string; greetingTitle: string };
+        modules: Record<string, boolean>;
+        menuItems: { label: string; href?: string | null }[];
+        quickActions: { label: string; payload: Record<string, unknown> }[];
+      };
+    };
+    expect(settingsPatchBody.config.brand.primaryColor).toBe("#123abc");
+    expect(settingsPatchBody.config.agent.name).toBe("Demo Agent");
+    expect(settingsPatchBody.config.agent.greetingTitle).toBe("Welcome to Demo");
+    expect(settingsPatchBody.config.modules.changelog).toBe(false);
+    expect(settingsPatchBody.config.menuItems.map((item) => item.label)).toEqual(["Home", "Docs"]);
+    expect(settingsPatchBody.config.quickActions[0]).toMatchObject({
+      label: "Ask support",
+      payload: { source: "settings" },
+    });
+
+    const settingsGetRes = await app.request(`/api/v1/widget/settings/${brand.id}`, {
+      headers: adminAuth,
+    });
+    expect(settingsGetRes.status).toBe(200);
+
     const [storedSettings] = await db
       .select()
       .from(widgetSettings)
@@ -155,11 +251,20 @@ describe("widget integration", () => {
     const homeBody = (await homeRes.json()) as {
       home: {
         quickActions: { label: string }[];
+        featured: { title: string | null; href: string | null }[];
         articles: { title: string; slug: string }[];
         changelogEntries: { title: string; slug: string }[];
       };
     };
-    expect(homeBody.home.quickActions.map((action) => action.label)).toContain("Ask a question");
+    expect(homeBody.home.quickActions.map((action) => action.label)).toContain("Ask support");
+    expect(homeBody.home.featured).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Release notes",
+          href: "https://example.com/releases",
+        }),
+      ]),
+    );
     expect(homeBody.home.articles).toEqual(
       expect.arrayContaining([expect.objectContaining({ slug: "reset-password" })]),
     );

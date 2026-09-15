@@ -26,6 +26,7 @@ export {
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
   widgetHandoffSchema,
+  updateWidgetSettingsSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
@@ -33,6 +34,7 @@ export {
   widgetUserSchema,
   widgetWorkflowInputSchema,
   widgetWorkflowButtonSchema,
+  type UpdateWidgetSettingsInput,
   type WidgetSessionInput,
   type WidgetUser,
 } from "./widget.js";

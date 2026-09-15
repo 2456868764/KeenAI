@@ -3,6 +3,7 @@ import { randomToken, signWidgetAccessToken, verifyWidgetUserHash } from "@keena
 import {
   API_VERSION,
   presignUploadSchema,
+  updateWidgetSettingsSchema,
   widgetAnswerSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
@@ -52,8 +53,10 @@ import {
   listWidgetMessages,
   resolveBrandBySlug,
   resolveOrgBySlug,
+  updateWidgetSettings,
   widgetHmacSecret,
 } from "../lib/widget.js";
+import { requireAuth } from "../middleware/auth.js";
 import { requireWidgetAuth } from "../middleware/widget-auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -130,6 +133,38 @@ export function widgetRoutes() {
 
     return c.json({ home });
   });
+
+  r.get(`${prefix}/settings/:brandId`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const config = await getWidgetConfig(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: c.req.param("brandId"),
+    });
+    if (!config) return c.json({ error: "not_found" }, 404);
+
+    return c.json({ config });
+  });
+
+  r.patch(
+    `${prefix}/settings/:brandId`,
+    requireAuth(),
+    zValidator("json", updateWidgetSettingsSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const config = await updateWidgetSettings(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: c.req.param("brandId"),
+        patch: c.req.valid("json"),
+      });
+      if (!config) return c.json({ error: "not_found" }, 404);
+
+      return c.json({ config });
+    },
+  );
 
   r.get(`${prefix}/help/collections`, requireWidgetAuth(), async (c) => {
     const auth = c.get("widgetAuth");

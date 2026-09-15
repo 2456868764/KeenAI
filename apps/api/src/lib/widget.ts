@@ -1,4 +1,5 @@
 import type { WidgetAccessClaims } from "@keenai/auth";
+import type { UpdateWidgetSettingsInput } from "@keenai/shared";
 import {
   brands,
   conversations,
@@ -263,6 +264,118 @@ export async function getWidgetConfig(
     })),
     poweredBy: settings.poweredByEnabled,
   };
+}
+
+export async function updateWidgetSettings(
+  db: AppVariables["store"]["db"],
+  input: { orgId: string; brandId: string; patch: UpdateWidgetSettingsInput },
+) {
+  const [brand] = await db
+    .select()
+    .from(brands)
+    .where(and(eq(brands.id, input.brandId), eq(brands.orgId, input.orgId)))
+    .limit(1);
+  if (!brand) return null;
+
+  const settings = await ensureWidgetSettings(db, {
+    orgId: input.orgId,
+    brandId: input.brandId,
+    brandName: brand.name,
+    brandLogoUrl: brand.logoUrl,
+    brandTheme: brand.theme,
+  });
+  const now = new Date();
+  const patch = input.patch;
+
+  await db
+    .update(widgetSettings)
+    .set({
+      primaryColor: patch.primaryColor ?? settings.primaryColor,
+      launcherIconUrl:
+        patch.launcherIconUrl === undefined ? settings.launcherIconUrl : patch.launcherIconUrl,
+      agentName: patch.agentName ?? settings.agentName,
+      agentSubtitle: patch.agentSubtitle ?? settings.agentSubtitle,
+      agentAvatarUrl:
+        patch.agentAvatarUrl === undefined ? settings.agentAvatarUrl : patch.agentAvatarUrl,
+      greetingTitle: patch.greetingTitle ?? settings.greetingTitle,
+      greetingBody: patch.greetingBody ?? settings.greetingBody,
+      homeEnabled: patch.modules?.home ?? settings.homeEnabled,
+      messagesEnabled: patch.modules?.messages ?? settings.messagesEnabled,
+      helpEnabled: patch.modules?.help ?? settings.helpEnabled,
+      changelogEnabled: patch.modules?.changelog ?? settings.changelogEnabled,
+      ticketsEnabled: patch.modules?.tickets ?? settings.ticketsEnabled,
+      poweredByEnabled: patch.poweredByEnabled ?? settings.poweredByEnabled,
+      updatedAt: now,
+    })
+    .where(eq(widgetSettings.id, settings.id));
+
+  if (patch.menuItems) {
+    await db.delete(widgetMenuItems).where(eq(widgetMenuItems.settingsId, settings.id));
+    if (patch.menuItems.length > 0) {
+      await db.insert(widgetMenuItems).values(
+        patch.menuItems.map((item) => ({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          settingsId: settings.id,
+          label: item.label,
+          description: item.description ?? null,
+          icon: item.icon ?? null,
+          itemType: item.type,
+          moduleKey: item.module ?? null,
+          href: item.href ?? null,
+          location: item.location,
+          enabled: item.enabled,
+          sortOrder: item.sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+    }
+  }
+
+  if (patch.quickActions) {
+    await db.delete(widgetQuickActions).where(eq(widgetQuickActions.settingsId, settings.id));
+    if (patch.quickActions.length > 0) {
+      await db.insert(widgetQuickActions).values(
+        patch.quickActions.map((action) => ({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          settingsId: settings.id,
+          label: action.label,
+          actionType: action.type,
+          payload: action.payload,
+          enabled: action.enabled,
+          sortOrder: action.sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+    }
+  }
+
+  if (patch.featured) {
+    await db.delete(widgetFeaturedContent).where(eq(widgetFeaturedContent.settingsId, settings.id));
+    if (patch.featured.length > 0) {
+      await db.insert(widgetFeaturedContent).values(
+        patch.featured.map((item) => ({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          settingsId: settings.id,
+          contentType: item.type,
+          contentId: item.contentId ?? null,
+          titleOverride: item.title ?? null,
+          imageUrl: item.imageUrl ?? null,
+          href: item.href ?? null,
+          enabled: item.enabled,
+          sortOrder: item.sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+    }
+  }
+
+  return getWidgetConfig(db, { orgId: input.orgId, brandId: input.brandId });
 }
 
 export async function getWidgetHome(
