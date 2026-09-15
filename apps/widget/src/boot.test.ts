@@ -136,6 +136,42 @@ describe("KeenAI.boot", () => {
           });
         }
 
+        if (url.endsWith("/api/v1/widget/help/collections")) {
+          return jsonResponse({
+            items: [{ slug: "account", name: "Account", articleCount: 1 }],
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/help/articles")) {
+          return jsonResponse({
+            items: [
+              {
+                id: "article-1",
+                title: "Reset password",
+                slug: "reset-password",
+                collection: "account",
+                excerpt: "Go to settings and click reset password.",
+                updatedAt: "2026-09-15T09:00:00.000Z",
+              },
+            ],
+          });
+        }
+
+        if (url.endsWith("/api/v1/widget/changelog/entries")) {
+          return jsonResponse({
+            items: [
+              {
+                id: "entry-1",
+                slug: "dark-mode",
+                title: "Dark mode is here",
+                summary: "Dashboard and widget now support dark theme.",
+                publishedAt: "2026-09-15T09:00:00.000Z",
+                updatedAt: "2026-09-15T09:00:00.000Z",
+              },
+            ],
+          });
+        }
+
         if (url.endsWith("/api/v1/widget/conversations") && method === "POST") {
           return jsonResponse({
             created: true,
@@ -206,6 +242,22 @@ describe("KeenAI.boot", () => {
     const row = root.querySelector(".keenai-conversation-row") as HTMLButtonElement;
     row.click();
     await waitFor(() => Boolean(root.querySelector(".keenai-input")));
+
+    const helpTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
+      (button) => button.textContent === "Help",
+    ) as HTMLButtonElement;
+    helpTab.click();
+    await waitFor(() => root.textContent?.includes("Account") ?? false);
+    const search = root.querySelector('.keenai-search input[type="search"]') as HTMLInputElement;
+    search.value = "missing";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await waitFor(() => root.textContent?.includes("No matching articles") ?? false);
+
+    const changelogTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
+      (button) => button.textContent === "Changelog",
+    ) as HTMLButtonElement;
+    changelogTab.click();
+    await waitFor(() => root.textContent?.includes("Dark mode is here") ?? false);
 
     widget.destroy();
   });

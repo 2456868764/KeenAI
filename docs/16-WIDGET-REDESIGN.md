@@ -41,6 +41,7 @@
 - `GET /api/v1/widget/config` 已接入默认配置初始化。
 - `GET /api/v1/widget/home` 已接入 quick actions、推荐文章、最新 changelog 聚合。
 - `GET /api/v1/widget/conversations` 已接入 visitor 会话列表。
+- `GET /api/v1/widget/help/*` 和 `GET /api/v1/widget/changelog/*` 已接入 widget auth 下的列表/详情读取。
 
 ## 3. 前端重构
 
@@ -494,11 +495,11 @@ type WidgetMenuItemRecord = {
 
 ### Phase 4：Help / Changelog
 
-状态：未完成。
+状态：部分完成。Widget auth 下的 Help/Changelog endpoints 已完成；前端 Help/Changelog tab 已读取真实列表；Help 搜索和无结果状态已完成；文章/更新详情交互仍需补齐。
 
-- 新增 widget help/changelog endpoints。
-- 前端 Help 支持 collections、articles、search。
-- Changelog 支持 list/detail。
+- 新增 widget help/changelog endpoints。（已完成）
+- 前端 Help 支持 collections、articles、search。（已完成）
+- Changelog 支持 list/detail。（部分完成）
 
 验收：
 

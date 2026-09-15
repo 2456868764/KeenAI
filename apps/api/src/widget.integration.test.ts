@@ -148,6 +148,46 @@ describe("widget integration", () => {
       expect.arrayContaining([expect.objectContaining({ slug: "dark-mode" })]),
     );
 
+    const collectionsRes = await app.request("/api/v1/widget/help/collections", { headers: auth });
+    expect(collectionsRes.status).toBe(200);
+    const collectionsBody = (await collectionsRes.json()) as { items: { slug: string }[] };
+    expect(collectionsBody.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ slug: "account" })]),
+    );
+
+    const articlesRes = await app.request("/api/v1/widget/help/articles?q=reset", {
+      headers: auth,
+    });
+    expect(articlesRes.status).toBe(200);
+    const articlesBody = (await articlesRes.json()) as { items: { id: string; slug: string }[] };
+    expect(articlesBody.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ slug: "reset-password" })]),
+    );
+
+    const articleRes = await app.request(
+      `/api/v1/widget/help/articles/${articlesBody.items[0]?.id}`,
+      { headers: auth },
+    );
+    expect(articleRes.status).toBe(200);
+    const articleBody = (await articleRes.json()) as { article: { body: string } };
+    expect(articleBody.article.body).toContain("reset password");
+
+    const changelogRes = await app.request("/api/v1/widget/changelog/entries", { headers: auth });
+    expect(changelogRes.status).toBe(200);
+    const changelogBody = (await changelogRes.json()) as { items: { slug: string }[] };
+    expect(changelogBody.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ slug: "dark-mode" })]),
+    );
+
+    const changelogDetailRes = await app.request("/api/v1/widget/changelog/entries/dark-mode", {
+      headers: auth,
+    });
+    expect(changelogDetailRes.status).toBe(200);
+    const changelogDetail = (await changelogDetailRes.json()) as {
+      entry: { plainText: string };
+    };
+    expect(changelogDetail.entry.plainText).toContain("dark mode");
+
     const convRes = await app.request("/api/v1/widget/conversations", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },

@@ -117,3 +117,15 @@ export type WidgetHome = {
     updatedAt: string;
   }[];
 };
+
+export type WidgetHelpCollection = {
+  slug: string;
+  name: string;
+  articleCount: number;
+};
+
+export type WidgetHelpArticle = WidgetHome["articles"][number];
+
+export type WidgetChangelogEntry = WidgetHome["changelogEntries"][number] & {
+  plainText?: string;
+};

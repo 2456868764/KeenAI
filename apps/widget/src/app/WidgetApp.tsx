@@ -7,8 +7,11 @@ import {
   type WidgetMessage,
   createWidgetSession,
   fetchWidgetAttachmentBlob,
+  fetchWidgetChangelogEntries,
   fetchWidgetConfig,
   fetchWidgetConversations,
+  fetchWidgetHelpArticles,
+  fetchWidgetHelpCollections,
   fetchWidgetHome,
   fetchWidgetMessages,
   getOrCreateWidgetConversation,
@@ -18,8 +21,11 @@ import {
 import type {
   ConversationRealtimeEvent,
   SendWidgetMessageInput,
+  WidgetChangelogEntry,
   WidgetConfig,
   WidgetConversationSummary,
+  WidgetHelpArticle,
+  WidgetHelpCollection,
   WidgetHome,
 } from "../types.js";
 import { ChangelogView } from "../views/ChangelogView.js";
@@ -43,6 +49,9 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const [accessToken, setAccessToken] = useState("");
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [home, setHome] = useState<WidgetHome | null>(null);
+  const [helpCollections, setHelpCollections] = useState<WidgetHelpCollection[]>([]);
+  const [helpArticles, setHelpArticles] = useState<WidgetHelpArticle[]>([]);
+  const [changelogEntries, setChangelogEntries] = useState<WidgetChangelogEntry[]>([]);
   const [activeConversation, setActiveConversation] = useState<WidgetConversation | null>(null);
   const [conversations, setConversations] = useState<WidgetConversationSummary[]>([]);
   const [messagesByConversation, setMessagesByConversation] = useState<
@@ -212,6 +221,43 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     refreshConversations,
   ]);
 
+  useEffect(() => {
+    if (!accessToken || view !== "help" || helpCollections.length > 0 || helpArticles.length > 0) {
+      return;
+    }
+
+    let cancelled = false;
+    async function loadHelp() {
+      const [collections, articles] = await Promise.all([
+        fetchWidgetHelpCollections({ apiUrl, accessToken }),
+        fetchWidgetHelpArticles({ apiUrl, accessToken }),
+      ]);
+      if (cancelled) return;
+      setHelpCollections(collections);
+      setHelpArticles(articles);
+    }
+
+    void loadHelp();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, apiUrl, helpArticles.length, helpCollections.length, view]);
+
+  useEffect(() => {
+    if (!accessToken || view !== "changelog" || changelogEntries.length > 0) return;
+
+    let cancelled = false;
+    async function loadChangelog() {
+      const entries = await fetchWidgetChangelogEntries({ apiUrl, accessToken });
+      if (!cancelled) setChangelogEntries(entries);
+    }
+
+    void loadChangelog();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, apiUrl, changelogEntries.length, view]);
+
   const shellTitle =
     view === "chat" ? (config?.agent.name ?? "Keeni AI Agent") : (config?.brand.name ?? "KeenAI");
   const shellSubtitle = view === "chat" ? config?.agent.subtitle : undefined;
@@ -248,8 +294,10 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             fetchAttachmentBlob={fetchAttachmentBlob}
           />
         ) : null}
-        {view === "help" ? <HelpView onStartChat={startChat} /> : null}
-        {view === "changelog" ? <ChangelogView /> : null}
+        {view === "help" ? (
+          <HelpView collections={helpCollections} articles={helpArticles} onStartChat={startChat} />
+        ) : null}
+        {view === "changelog" ? <ChangelogView entries={changelogEntries} /> : null}
       </WidgetShell>
       <Launcher
         open={open}

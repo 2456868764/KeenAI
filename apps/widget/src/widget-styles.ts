@@ -277,6 +277,25 @@ button, input { font: inherit; }
   outline: none;
 }
 
+.keenai-chip-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+.keenai-chip {
+  border: 1px solid var(--widget-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--widget-muted);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .keenai-secondary-button {
   margin-top: 14px;
   width: 100%;

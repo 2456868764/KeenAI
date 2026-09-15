@@ -1,6 +1,9 @@
 import type {
+  WidgetChangelogEntry,
   WidgetConfig,
   WidgetConversationSummary,
+  WidgetHelpArticle,
+  WidgetHelpCollection,
   WidgetHome,
   WidgetMessagePayload,
   WidgetUser,
@@ -115,6 +118,48 @@ export async function fetchWidgetHome(input: {
   if (!res.ok) throw new Error(`home_failed:${res.status}`);
   const body = (await res.json()) as { home: WidgetHome };
   return body.home;
+}
+
+export async function fetchWidgetHelpCollections(input: {
+  apiUrl?: string;
+  accessToken: string;
+}): Promise<WidgetHelpCollection[]> {
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/help/collections`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`help_collections_failed:${res.status}`);
+  const body = (await res.json()) as { items: WidgetHelpCollection[] };
+  return body.items;
+}
+
+export async function fetchWidgetHelpArticles(input: {
+  apiUrl?: string;
+  accessToken: string;
+  collection?: string;
+  query?: string;
+}): Promise<WidgetHelpArticle[]> {
+  const q = new URLSearchParams();
+  if (input.collection) q.set("collection", input.collection);
+  if (input.query) q.set("q", input.query);
+  const suffix = q.size > 0 ? `?${q}` : "";
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/help/articles${suffix}`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`help_articles_failed:${res.status}`);
+  const body = (await res.json()) as { items: WidgetHelpArticle[] };
+  return body.items;
+}
+
+export async function fetchWidgetChangelogEntries(input: {
+  apiUrl?: string;
+  accessToken: string;
+}): Promise<WidgetChangelogEntry[]> {
+  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/changelog/entries`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
+  });
+  if (!res.ok) throw new Error(`changelog_failed:${res.status}`);
+  const body = (await res.json()) as { items: WidgetChangelogEntry[] };
+  return body.items;
 }
 
 export async function fetchWidgetMessages(input: {

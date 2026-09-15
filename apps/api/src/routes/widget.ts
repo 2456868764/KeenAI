@@ -16,6 +16,7 @@ import { conversations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { insertAttachment } from "../lib/attachments.js";
+import { getChangelogEntryBySlug, listPublicChangelogEntries } from "../lib/changelog.js";
 import {
   getConversationForOrg,
   insertMessage,
@@ -24,6 +25,11 @@ import {
 } from "../lib/conversations.js";
 import { getKbDispatch } from "../lib/kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "../lib/kb-dispatch.js";
+import {
+  getPublicKbArticle,
+  listPublicKbArticles,
+  listPublicKbCollections,
+} from "../lib/kb-public.js";
 import {
   consumePresignedUpload,
   createPresignedUpload,
@@ -117,6 +123,69 @@ export function widgetRoutes() {
     if (!home) return c.json({ error: "not_found" }, 404);
 
     return c.json({ home });
+  });
+
+  r.get(`${prefix}/help/collections`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const items = await listPublicKbCollections(c.get("store").db, auth.orgId, auth.brandId);
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/help/articles`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const collection = c.req.query("collection") ?? undefined;
+    const q = c.req.query("q")?.trim().toLowerCase();
+    const items = await listPublicKbArticles(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+      collection,
+      limit: 50,
+    });
+    const filtered = q
+      ? items.filter((item) =>
+          `${item.title} ${item.excerpt ?? ""} ${item.collection}`.toLowerCase().includes(q),
+        )
+      : items;
+    return c.json({ items: filtered });
+  });
+
+  r.get(`${prefix}/help/articles/:id`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const article = await getPublicKbArticle(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+      articleId: c.req.param("id"),
+    });
+    if (!article) return c.json({ error: "not_found" }, 404);
+    return c.json({ article });
+  });
+
+  r.get(`${prefix}/changelog/entries`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const items = await listPublicChangelogEntries(c.get("store").db, auth.orgId, auth.brandId, 50);
+    return c.json({ items });
+  });
+
+  r.get(`${prefix}/changelog/entries/:slug`, requireWidgetAuth(), async (c) => {
+    const auth = c.get("widgetAuth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+    const entry = await getChangelogEntryBySlug(
+      c.get("store").db,
+      auth.orgId,
+      auth.brandId,
+      c.req.param("slug"),
+    );
+    if (!entry || entry.status !== "published") return c.json({ error: "not_found" }, 404);
+    return c.json({ entry });
   });
 
   r.post(
