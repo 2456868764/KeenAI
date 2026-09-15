@@ -524,11 +524,12 @@ type WidgetMenuItemRecord = {
 
 ### Phase 6：Ticket
 
-状态：部分完成。`POST /widget/tickets` 已完成；Home quick action 已支持 `Submit ticket / Bug Report` 打开 ticket 表单并提交；附件上传/关联已完成；动态 workflow ticket form 仍待增强。
+状态：已完成。`POST /widget/tickets` 已完成；Home quick action 已支持 `Submit ticket / Bug Report` 打开 ticket 表单并提交；附件上传/关联已完成；动态 workflow ticket form 已在消息流中渲染并提交到 workflow resume endpoint。
 
 - 新增 `POST /widget/tickets`。（已完成）
 - Home quick action 支持 `Submit ticket / Bug Report`。（已完成）
 - Ticket 表单支持附件上传并关联到初始 conversation message。（已完成）
+- Workflow `send_ticket_form` 消息支持动态字段渲染与提交。（已完成）
 - 可选：将 ticket 转为 conversation 事件。
 
 验收：

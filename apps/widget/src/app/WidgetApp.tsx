@@ -21,6 +21,7 @@ import {
   postWidgetMessage,
   requestWidgetHandoff,
   streamWidgetAnswer,
+  submitWidgetWorkflowTicketForm,
   uploadWidgetImage,
 } from "../session.js";
 import type {
@@ -33,6 +34,7 @@ import type {
   WidgetHelpArticle,
   WidgetHelpCollection,
   WidgetHome,
+  WidgetWorkflowTicketFormSubmission,
 } from "../types.js";
 import { ChangelogView } from "../views/ChangelogView.js";
 import { ChatView } from "../views/ChatView.js";
@@ -231,6 +233,21 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     loadConversationMessages,
     refreshConversations,
   ]);
+
+  const submitWorkflowTicketForm = useCallback(
+    async (submission: WidgetWorkflowTicketFormSubmission) => {
+      if (!accessToken || !activeConversationId) return;
+      await submitWidgetWorkflowTicketForm({
+        apiUrl,
+        accessToken,
+        conversationId: activeConversationId,
+        submission,
+      });
+      await loadConversationMessages(accessToken, activeConversationId);
+      await refreshConversations(accessToken);
+    },
+    [accessToken, activeConversationId, apiUrl, loadConversationMessages, refreshConversations],
+  );
 
   const openTicketForm = useCallback((type: string) => {
     setTicketType(type);
@@ -433,6 +450,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             handoffRequested={handoffRequested}
             onSend={sendMessage}
             onRequestHandoff={requestHandoff}
+            onSubmitWorkflowTicketForm={submitWorkflowTicketForm}
             onUploadImage={uploadImage}
             fetchAttachmentBlob={fetchAttachmentBlob}
           />

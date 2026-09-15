@@ -372,6 +372,35 @@ button, input { font: inherit; }
   outline: none;
 }
 
+.keenai-workflow-form {
+  margin-top: 6px;
+  display: grid;
+  gap: 9px;
+}
+
+.keenai-workflow-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--widget-muted);
+}
+
+.keenai-workflow-form input,
+.keenai-workflow-form select {
+  width: 100%;
+  border: 1px solid rgba(31, 36, 51, 0.16);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--widget-text);
+  padding: 7px 8px;
+}
+
+.keenai-workflow-form input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
 .keenai-ticket-form textarea {
   min-height: 150px;
   resize: vertical;

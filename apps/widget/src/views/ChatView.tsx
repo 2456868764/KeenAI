@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "preact/hooks";
 import { MessagesPanel } from "../messages-panel.js";
 import type { WidgetConversation } from "../session.js";
-import type { SendWidgetMessageInput, WidgetAnswerState, WidgetMessagePayload } from "../types.js";
+import type {
+  SendWidgetMessageInput,
+  WidgetAnswerState,
+  WidgetMessagePayload,
+  WidgetWorkflowTicketFormSubmission,
+} from "../types.js";
 
 type ChatViewProps = {
   apiUrl: string;
@@ -12,6 +17,7 @@ type ChatViewProps = {
   handoffRequested: boolean;
   onSend: (input: SendWidgetMessageInput) => Promise<void>;
   onRequestHandoff: () => Promise<void>;
+  onSubmitWorkflowTicketForm: (input: WidgetWorkflowTicketFormSubmission) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
   fetchAttachmentBlob: (attachmentId: string) => Promise<string>;
 };
@@ -25,6 +31,7 @@ export function ChatView({
   handoffRequested,
   onSend,
   onRequestHandoff,
+  onSubmitWorkflowTicketForm,
   onUploadImage,
   fetchAttachmentBlob,
 }: ChatViewProps) {
@@ -39,13 +46,14 @@ export function ChatView({
       accessToken,
       onSend,
       onUploadImage,
+      onSubmitWorkflowTicketForm,
       fetchAttachmentBlob,
     });
     return () => {
       mountRef.current?.replaceChildren();
       panelRef.current = null;
     };
-  }, [apiUrl, accessToken, onSend, onUploadImage, fetchAttachmentBlob]);
+  }, [apiUrl, accessToken, onSend, onUploadImage, onSubmitWorkflowTicketForm, fetchAttachmentBlob]);
 
   useEffect(() => {
     panelRef.current?.renderHistory(messages);

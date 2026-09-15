@@ -10,6 +10,7 @@ import type {
   WidgetMessagePayload,
   WidgetTicket,
   WidgetUser,
+  WidgetWorkflowTicketFormSubmission,
 } from "./types.js";
 
 export type WidgetSession = {
@@ -325,6 +326,27 @@ export async function requestWidgetHandoff(input: {
   );
   if (!res.ok) throw new Error(`handoff_failed:${res.status}`);
   return res.json() as Promise<{ message: WidgetMessage; conversation: WidgetConversation }>;
+}
+
+export async function submitWidgetWorkflowTicketForm(input: {
+  apiUrl?: string;
+  accessToken: string;
+  conversationId: string;
+  submission: WidgetWorkflowTicketFormSubmission;
+}): Promise<{ ok: boolean; status: string; ticketId: string }> {
+  const res = await fetch(
+    `${apiBase(input.apiUrl)}/api/v1/widget/conversations/${input.conversationId}/workflow-ticket-form`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${input.accessToken}`,
+      },
+      body: JSON.stringify(input.submission),
+    },
+  );
+  if (!res.ok) throw new Error(`workflow_ticket_form_failed:${res.status}`);
+  return res.json() as Promise<{ ok: boolean; status: string; ticketId: string }>;
 }
 
 export async function streamWidgetAnswer(

@@ -2,6 +2,7 @@ import type {
   ConversationRealtimeEvent,
   SendWidgetMessageInput,
   WidgetMessagePayload,
+  WidgetWorkflowTicketFormSubmission,
 } from "./types.js";
 
 export type MessageRow = WidgetMessagePayload & { createdAt?: string };
@@ -12,6 +13,7 @@ export type MessagesPanelOptions = {
   accessToken: string;
   onSend: (input: SendWidgetMessageInput) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
+  onSubmitWorkflowTicketForm?: (input: WidgetWorkflowTicketFormSubmission) => Promise<void>;
   fetchAttachmentBlob: (attachmentId: string) => Promise<string>;
 };
 
@@ -172,6 +174,11 @@ export class MessagesPanel {
       row.append(link);
     }
 
+    const workflowTicketForm = parseWorkflowTicketForm(msg.content);
+    if (workflowTicketForm) {
+      row.append(this.#renderWorkflowTicketForm(workflowTicketForm));
+    }
+
     if (msg.createdAt) {
       const time = document.createElement("time");
       time.className = "keenai-bubble__time";
@@ -182,6 +189,61 @@ export class MessagesPanel {
 
     this.#listEl.append(row);
     this.#listEl.scrollTop = this.#listEl.scrollHeight;
+  }
+
+  #renderWorkflowTicketForm(form: WorkflowTicketForm): HTMLElement {
+    const formEl = document.createElement("form");
+    formEl.className = "keenai-workflow-form";
+
+    const status = document.createElement("p");
+    status.className = "keenai-inline-status";
+
+    for (const field of form.fields) {
+      const label = document.createElement("label");
+      const labelText = document.createElement("span");
+      labelText.textContent = field.required ? `${field.label} *` : field.label;
+      label.append(labelText);
+
+      const input = createWorkflowFieldInput(field);
+      input.dataset.fieldKey = field.key;
+      label.append(input);
+      formEl.append(label);
+    }
+
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "keenai-primary-button";
+    submit.textContent = "Submit";
+    formEl.append(submit, status);
+
+    formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!this.opts.onSubmitWorkflowTicketForm) return;
+      const values = readWorkflowFormValues(formEl, form.fields);
+      if (!values) {
+        status.textContent = "Please complete the required fields.";
+        return;
+      }
+      submit.disabled = true;
+      status.textContent = "Submitting...";
+      void this.opts
+        .onSubmitWorkflowTicketForm({
+          workflowRunId: form.workflowRunId,
+          blockId: form.blockId,
+          ticketId: form.ticketId,
+          values,
+        })
+        .then(() => {
+          status.textContent = "Submitted.";
+          submit.textContent = "Submitted";
+        })
+        .catch(() => {
+          submit.disabled = false;
+          status.textContent = "Could not submit form.";
+        });
+    });
+
+    return formEl;
   }
 
   async #onSubmit(e: Event) {
@@ -225,4 +287,107 @@ function formatTime(iso: string): string {
   } catch {
     return "";
   }
+}
+
+type WorkflowTicketField = {
+  key: string;
+  label: string;
+  type: "text" | "number" | "boolean" | "select" | "date";
+  required: boolean;
+  options?: string[];
+};
+
+type WorkflowTicketForm = {
+  workflowRunId: string;
+  blockId: string;
+  ticketId?: string;
+  fields: WorkflowTicketField[];
+};
+
+function parseWorkflowTicketForm(
+  content: Record<string, unknown> | undefined,
+): WorkflowTicketForm | null {
+  if (!content || content.type !== "workflow_ticket_form") return null;
+  const workflow = content.workflow;
+  if (!workflow || typeof workflow !== "object") return null;
+  const raw = workflow as Record<string, unknown>;
+  if (
+    raw.kind !== "send_ticket_form" ||
+    typeof raw.workflowRunId !== "string" ||
+    typeof raw.blockId !== "string" ||
+    !Array.isArray(raw.fields)
+  ) {
+    return null;
+  }
+
+  const fields = raw.fields.filter(isWorkflowTicketField);
+  if (fields.length === 0) return null;
+  return {
+    workflowRunId: raw.workflowRunId,
+    blockId: raw.blockId,
+    ticketId: typeof raw.ticketId === "string" ? raw.ticketId : undefined,
+    fields,
+  };
+}
+
+function isWorkflowTicketField(value: unknown): value is WorkflowTicketField {
+  if (!value || typeof value !== "object") return false;
+  const field = value as Record<string, unknown>;
+  return (
+    typeof field.key === "string" &&
+    typeof field.label === "string" &&
+    typeof field.type === "string" &&
+    ["text", "number", "boolean", "select", "date"].includes(field.type) &&
+    typeof field.required === "boolean"
+  );
+}
+
+function createWorkflowFieldInput(
+  field: WorkflowTicketField,
+): HTMLInputElement | HTMLSelectElement {
+  if (field.type === "select") {
+    const select = document.createElement("select");
+    select.name = field.key;
+    select.required = field.required;
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "Select...";
+    select.append(empty);
+    for (const option of field.options ?? []) {
+      const item = document.createElement("option");
+      item.value = option;
+      item.textContent = option;
+      select.append(item);
+    }
+    return select;
+  }
+
+  const input = document.createElement("input");
+  input.name = field.key;
+  input.required = field.required && field.type !== "boolean";
+  input.type = field.type === "boolean" ? "checkbox" : field.type;
+  return input;
+}
+
+function readWorkflowFormValues(
+  formEl: HTMLFormElement,
+  fields: WorkflowTicketField[],
+): Record<string, unknown> | null {
+  const values: Record<string, unknown> = {};
+  for (const field of fields) {
+    const input = formEl.elements.namedItem(field.key) as
+      | HTMLInputElement
+      | HTMLSelectElement
+      | null;
+    if (!input) return null;
+    if (field.type === "boolean") {
+      values[field.key] = (input as HTMLInputElement).checked;
+      continue;
+    }
+    const value = input.value.trim();
+    if (field.required && !value) return null;
+    if (!value) continue;
+    values[field.key] = field.type === "number" ? Number(value) : value;
+  }
+  return values;
 }

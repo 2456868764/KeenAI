@@ -148,4 +148,66 @@ describe("MessagesPanel", () => {
     await Promise.resolve();
     expect(file.href).toBe("blob:att-file");
   });
+
+  it("renders and submits workflow ticket forms", async () => {
+    const container = document.createElement("div");
+    const onSubmitWorkflowTicketForm = vi.fn(async () => {});
+
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      onSubmitWorkflowTicketForm,
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
+
+    panel.renderHistory([
+      {
+        id: "m-form",
+        plainText: "Share a few details.",
+        senderType: "agent",
+        content: {
+          type: "workflow_ticket_form",
+          text: "Share a few details.",
+          workflow: {
+            kind: "send_ticket_form",
+            workflowRunId: "run-1",
+            blockId: "ticket-form",
+            ticketId: "ticket-1",
+            fields: [
+              { key: "impact", label: "Impact", type: "text", required: true },
+              { key: "affected_users", label: "Affected users", type: "number", required: false },
+              {
+                key: "severity",
+                label: "Severity",
+                type: "select",
+                required: true,
+                options: ["low", "high"],
+              },
+            ],
+          },
+        },
+      },
+    ]);
+
+    const form = container.querySelector(".keenai-workflow-form") as HTMLFormElement;
+    (form.elements.namedItem("impact") as HTMLInputElement).value = "Checkout blocked";
+    (form.elements.namedItem("affected_users") as HTMLInputElement).value = "42";
+    (form.elements.namedItem("severity") as HTMLSelectElement).value = "high";
+    form.requestSubmit();
+
+    await Promise.resolve();
+    expect(onSubmitWorkflowTicketForm).toHaveBeenCalledWith({
+      workflowRunId: "run-1",
+      blockId: "ticket-form",
+      ticketId: "ticket-1",
+      values: {
+        impact: "Checkout blocked",
+        affected_users: 42,
+        severity: "high",
+      },
+    });
+  });
 });

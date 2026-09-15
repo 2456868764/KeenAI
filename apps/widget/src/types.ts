@@ -17,6 +17,7 @@ export type WidgetMessagePayload = {
   id: string;
   plainText: string;
   senderType: string;
+  content?: Record<string, unknown>;
   createdAt?: string;
   messageKind?: string;
   attachments?: WidgetAttachment[];
@@ -157,4 +158,11 @@ export type WidgetTicket = {
   title: string;
   statusName: string | null;
   conversationIds: string[];
+};
+
+export type WidgetWorkflowTicketFormSubmission = {
+  workflowRunId: string;
+  blockId: string;
+  ticketId?: string;
+  values: Record<string, unknown>;
 };
