@@ -16,6 +16,7 @@ import {
   parseKbMarkdownDocument,
   parseKbPdfDocument,
   resolveKbDocumentParserProviderFromEnv,
+  resolveKbUrlParserProviderFromEnv,
 } from "@keenai/kb";
 import { chunkKbDocument } from "@keenai/kb";
 import { createLibsqlKbChunkFtsStore, createLibsqlStore } from "@keenai/storage";
@@ -241,17 +242,17 @@ describe("KB ingestion pipeline", () => {
 
   it("normalizes Crawl4AI URL parser responses", async () => {
     const provider = createCrawl4AiUrlParserProvider({
-      endpoint: "http://127.0.0.1:11235/crawl",
+      endpoint: "http://127.0.0.1:11235/md",
       fetchFn: (async (_url, init) => {
-        expect(JSON.parse(String(init?.body ?? "{}"))).toMatchObject({
+        expect(JSON.parse(String(init?.body ?? "{}"))).toEqual({
           url: "https://docs.example.com",
-          urls: ["https://docs.example.com"],
+          f: "fit",
         });
         return {
           ok: true,
           status: 200,
           async json() {
-            return { results: [{ markdown: "# Crawl4AI Docs", metadata: { title: "Crawl4AI" } }] };
+            return { markdown: "# Crawl4AI Docs", metadata: { title: "Crawl4AI" } };
           },
         } as Response;
       }) as typeof fetch,
@@ -262,6 +263,47 @@ describe("KB ingestion pipeline", () => {
       title: "Crawl4AI",
       markdown: "# Crawl4AI Docs",
     });
+  });
+
+  it("resolves URL parser providers from the new crawler environment variables", async () => {
+    const originalFetch = globalThis.fetch;
+    const requests: Array<{ url: string; authorization?: string }> = [];
+    globalThis.fetch = (async (url, init) => {
+      requests.push({
+        url: String(url),
+        authorization: (init?.headers as Record<string, string> | undefined)?.authorization,
+      });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { data: { markdown: "# Parsed", metadata: { title: "Parsed" } } };
+        },
+      } as Response;
+    }) as typeof fetch;
+
+    try {
+      const firecrawl = resolveKbUrlParserProviderFromEnv({
+        KEENAI_KB_URL_PARSER: "firecrawl",
+        FIRECRAWL_API_KEY: "fc-test",
+        FIRECRAWL_API_URL: "https://api.firecrawl.dev",
+      });
+      await firecrawl?.parse({ url: "https://docs.example.com" });
+
+      const crawl4ai = resolveKbUrlParserProviderFromEnv({
+        KEENAI_KB_URL_PARSER: "crawl4ai",
+        CRAWL4AI_URL: "http://127.0.0.1:11235",
+        CRAWL4AI_API_TOKEN: "crawl-token",
+      });
+      await crawl4ai?.parse({ url: "https://docs.example.com" });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(requests).toEqual([
+      { url: "https://api.firecrawl.dev/v2/scrape", authorization: "Bearer fc-test" },
+      { url: "http://127.0.0.1:11235/md", authorization: "Bearer crawl-token" },
+    ]);
   });
 
   it("chunks on paragraph and sentence boundaries with context overlap", () => {

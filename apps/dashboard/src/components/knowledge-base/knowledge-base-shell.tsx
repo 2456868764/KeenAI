@@ -1264,6 +1264,17 @@ function SourceDetailDialog({
             <span>{source.chunkCount} chunks</span>
             <span>Started {formatDate(source.createdAt)}</span>
           </div>
+          {source.error ? (
+            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm leading-6 text-red-500">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <div>
+                  <p className="font-semibold">Ingestion failed</p>
+                  <p className="break-words">{source.error}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {urls.length > 0 ? (
             <div className="mt-6">
               <h3 className="mb-3 text-sm font-semibold">Source URLs ({urls.length})</h3>

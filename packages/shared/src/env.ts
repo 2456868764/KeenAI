@@ -82,8 +82,6 @@ export const apiEnvSchema = z.object({
   KEENAI_KB_DOCUMENT_PARSER_ENGINE: z.enum(["docling"]).default("docling"),
   /** URL parser adapter for web crawl sources. Unset uses the built-in shallow fetcher. */
   KEENAI_KB_URL_PARSER: z.enum(["firecrawl", "crawl4ai"]).optional(),
-  /** Optional override for Firecrawl scrape or Crawl4AI crawl endpoint. */
-  KEENAI_KB_URL_PARSER_URL: z.string().url().optional(),
   /** Optional cloud document parser adapter name. */
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_PROVIDER: z
     .enum([
@@ -100,7 +98,8 @@ export const apiEnvSchema = z.object({
   KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY: z.string().min(1).optional(),
   FIRECRAWL_API_KEY: z.string().min(1).optional(),
   FIRECRAWL_API_URL: z.string().url().optional(),
-  CRAWL4AI_API_URL: z.string().url().optional(),
+  CRAWL4AI_URL: z.string().url().optional(),
+  CRAWL4AI_API_TOKEN: z.string().min(1).optional(),
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   KIMI_API_KEY: z.string().min(1).optional(),

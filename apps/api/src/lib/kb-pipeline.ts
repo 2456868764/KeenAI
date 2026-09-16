@@ -38,6 +38,15 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function stateFailureMessage(failedStep: string | undefined, artifacts: Record<string, unknown>) {
+  const step = failedStep ?? "unknown";
+  const detail =
+    typeof artifacts.error === "string" && artifacts.error.trim()
+      ? artifacts.error.trim()
+      : undefined;
+  return detail ? `failed:${step}:${detail}` : `failed:${step}`;
+}
+
 function createChunkFtsIndexer(store: Store): KbChunkFtsIndexer | null {
   if (store.dialect !== "libsql") return null;
   return createLibsqlKbChunkFtsStore((store as LibsqlStore).client);
@@ -63,9 +72,9 @@ export type RunKbIngestForSourceOptions = {
     | "KEENAI_KB_CLOUD_DOCUMENT_PARSER_API_KEY"
     | "FIRECRAWL_API_KEY"
     | "FIRECRAWL_API_URL"
-    | "CRAWL4AI_API_URL"
+    | "CRAWL4AI_URL"
+    | "CRAWL4AI_API_TOKEN"
     | "KEENAI_KB_URL_PARSER"
-    | "KEENAI_KB_URL_PARSER_URL"
   >;
 };
 
@@ -195,7 +204,11 @@ export async function runKbIngestForSource(
             agentReevaluationQueued: true,
           });
         } else {
-          await markSourceError(store, payload.sourceId, `failed:${state.failedStep}`);
+          await markSourceError(
+            store,
+            payload.sourceId,
+            stateFailureMessage(state.failedStep, state.artifacts),
+          );
         }
         await store.notify<KbIngestNotifyPayload>(KB_INGEST_NOTIFY_CHANNEL, {
           ...payload,

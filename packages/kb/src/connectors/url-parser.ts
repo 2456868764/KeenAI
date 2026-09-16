@@ -23,14 +23,26 @@ export type KbUrlParserHttpOptions = {
 
 export type ResolveKbUrlParserProviderEnv = {
   KEENAI_KB_URL_PARSER?: "firecrawl" | "crawl4ai" | string;
-  KEENAI_KB_URL_PARSER_URL?: string;
   FIRECRAWL_API_KEY?: string;
   FIRECRAWL_API_URL?: string;
-  CRAWL4AI_API_URL?: string;
+  CRAWL4AI_URL?: string;
+  CRAWL4AI_API_TOKEN?: string;
 };
 
 function readString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function readMarkdown(value: unknown): string | undefined {
+  if (typeof value === "string") return readString(value);
+  const object = readObject(value);
+  if (!object) return undefined;
+  return (
+    readString(object.fit_markdown) ??
+    readString(object.raw_markdown) ??
+    readString(object.markdown_with_citations) ??
+    readString(object.references_markdown)
+  );
 }
 
 function readObject(value: unknown): Record<string, unknown> | undefined {
@@ -54,11 +66,11 @@ function extractMarkdown(body: Record<string, unknown>): {
   const nestedMetadata = readObject(data.metadata) ?? readObject(body.metadata);
   return {
     markdown:
-      readString(data.markdown) ??
+      readMarkdown(data.markdown) ??
       readString(data.content) ??
       readString(data.cleaned_html) ??
       readString(data.html) ??
-      readString(body.markdown),
+      readMarkdown(body.markdown),
     title:
       readString(data.title) ??
       readString(nestedMetadata?.title) ??
@@ -75,17 +87,24 @@ async function postJson(
   const fetchFn = options.fetchFn ?? globalThis.fetch;
   if (!fetchFn) throw new Error("kb_url_parser_fetch_unavailable");
 
-  const response = await fetchFn(options.endpoint, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+  try {
+    response = await fetchFn(options.endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`kb_url_parser_fetch_failed:${options.endpoint}:${message}`);
+  }
 
   if (!response.ok) {
-    throw new Error(`kb_url_parser_http_failed:${response.status}`);
+    const detail = (await response.text()).trim().slice(0, 500);
+    throw new Error(`kb_url_parser_http_failed:${response.status}${detail ? `:${detail}` : ""}`);
   }
 
   return (await response.json()) as Record<string, unknown>;
@@ -110,6 +129,11 @@ function normalizeUrlParserResult(
   };
 }
 
+function endpointWithPath(baseUrl: string, path: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith(path) ? trimmed : `${trimmed}${path}`;
+}
+
 export function createFirecrawlUrlParserProvider(
   options: KbUrlParserHttpOptions,
 ): KbUrlParserProvider {
@@ -132,10 +156,8 @@ export function createCrawl4AiUrlParserProvider(
     id: "crawl4ai",
     async parse(input) {
       const body = await postJson(options, {
-        urls: [input.url],
         url: input.url,
-        browser_config: {},
-        crawler_config: {},
+        f: "fit",
       });
       return normalizeUrlParserResult("crawl4ai", input, body);
     },
@@ -150,18 +172,18 @@ export function resolveKbUrlParserProviderFromEnv(
 
   if (mode === "firecrawl") {
     return createFirecrawlUrlParserProvider({
-      endpoint:
-        env.KEENAI_KB_URL_PARSER_URL ??
-        env.FIRECRAWL_API_URL ??
-        "https://api.firecrawl.dev/v2/scrape",
+      endpoint: endpointWithPath(
+        env.FIRECRAWL_API_URL ?? "https://api.firecrawl.dev",
+        "/v2/scrape",
+      ),
       apiKey: env.FIRECRAWL_API_KEY,
     });
   }
 
   if (mode === "crawl4ai") {
     return createCrawl4AiUrlParserProvider({
-      endpoint:
-        env.KEENAI_KB_URL_PARSER_URL ?? env.CRAWL4AI_API_URL ?? "http://127.0.0.1:11235/crawl",
+      endpoint: endpointWithPath(env.CRAWL4AI_URL ?? "http://127.0.0.1:11235", "/md"),
+      apiKey: env.CRAWL4AI_API_TOKEN,
     });
   }
 

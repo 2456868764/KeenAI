@@ -109,6 +109,7 @@ export async function runKbIngestPipeline(
         metadata: output?.metadata,
       });
     } catch (error) {
+      state.artifacts.error = errorMessage(error);
       state.failedStep = step;
       steps.push({
         step,
