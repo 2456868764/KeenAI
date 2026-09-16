@@ -21,21 +21,24 @@ import {
   CircleCheck,
   CirclePlus,
   ExternalLink,
+  Eye,
   FolderArchive,
   Globe2,
   HelpCircle,
   Inbox,
   Languages,
   LayoutGrid,
+  LogOut,
   Mail,
   Map as MapIcon,
   Megaphone,
   MessageCircle,
   MessageSquare,
+  Moon,
   Network,
   Palette,
+  Paperclip,
   PenLine,
-  Plus,
   Rocket,
   Search,
   Send,
@@ -60,6 +63,7 @@ type ProductModule = {
   title: string;
   href: string;
   icon: NavIcon;
+  hideInRail?: boolean;
   match: (pathname: string) => boolean;
   sections: NavSection[];
 };
@@ -80,6 +84,7 @@ type NavItem = {
   label: string;
   href: string;
   icon?: NavIcon;
+  iconClassName?: string;
   count?: string | number;
   badge?: string;
   disabled?: boolean;
@@ -88,8 +93,17 @@ type NavItem = {
   children?: Omit<NavItem, "children">[];
 };
 
+type ThemeChoice = "light" | "dark";
+
+const THEME_STORAGE_KEY = "keenai_dashboard_theme";
+
 function hasRoutePrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function applyDashboardTheme(choice: ThemeChoice) {
+  if (typeof window === "undefined") return;
+  document.documentElement.dataset.theme = choice;
 }
 
 function isWorkflowEditorRoute(pathname: string): boolean {
@@ -173,12 +187,36 @@ const modules: ProductModule[] = [
       {
         title: "Statuses",
         items: [
-          { label: "Under Review", href: "/feedback?status=under_review", icon: Circle },
-          { label: "Planned", href: "/feedback?status=planned", icon: Circle },
-          { label: "Active", href: "/feedback?status=active", icon: Circle },
-          { label: "Done", href: "/feedback?status=done", icon: CircleCheck },
-          { label: "Closed", href: "/feedback?status=closed", icon: CircleCheck },
-          { label: "Reset all filters", href: "/feedback", icon: ChevronRight },
+          {
+            label: "Under Review",
+            href: "/feedback?status=under_review",
+            icon: Circle,
+            iconClassName: "text-slate-400",
+          },
+          {
+            label: "Planned",
+            href: "/feedback?status=planned",
+            icon: Circle,
+            iconClassName: "text-purple-300",
+          },
+          {
+            label: "Active",
+            href: "/feedback?status=active",
+            icon: Circle,
+            iconClassName: "text-sky-500",
+          },
+          {
+            label: "Done",
+            href: "/feedback?status=done",
+            icon: CircleCheck,
+            iconClassName: "text-emerald-500",
+          },
+          {
+            label: "Closed",
+            href: "/feedback?status=closed",
+            icon: CircleCheck,
+            iconClassName: "text-slate-400",
+          },
         ],
       },
       {
@@ -192,7 +230,7 @@ const modules: ProductModule[] = [
         title: "More",
         items: [
           { label: "AI Tools", href: "/custom-actions", icon: Sparkles, expanded: false },
-          { label: "Analytics", href: "/analytics", icon: BarChart3 },
+          { label: "Analytics", href: "/analytics?module=feedback", icon: BarChart3 },
         ],
       },
     ],
@@ -358,15 +396,16 @@ const modules: ProductModule[] = [
   {
     id: "settings",
     title: "Settings",
-    href: "/settings/brands",
+    href: "/settings/profile",
     icon: Settings,
+    hideInRail: true,
     match: (pathname) => hasRoutePrefix(pathname, "/settings"),
     sections: [
       {
         title: "Personal",
         items: [
-          { label: "Profile", href: "/settings/brands", icon: UserCircle },
-          { label: "Notifications", href: "/settings/channels", icon: Bell },
+          { label: "Profile", href: "/settings/profile", icon: UserCircle },
+          { label: "Notifications", href: "/settings/notifications", icon: Bell },
         ],
       },
       {
@@ -382,13 +421,15 @@ const modules: ProductModule[] = [
         title: "Workspace",
         items: [
           { label: "General", href: "/settings/brands", icon: Wrench },
-          { label: "Branding", href: "/settings/personality", icon: Palette },
+          { label: "Branding", href: "/settings/branding", icon: Palette },
           { label: "Members and teams", href: "/directory", icon: Users },
           { label: "Billing", href: "/settings/brands", icon: WalletCards },
-          { label: "Emails", href: "/settings/channels", icon: Mail },
+          { label: "Emails", href: "/settings/emails", icon: Mail },
           { label: "Custom Domain", href: "/settings/brands", icon: Globe2 },
           { label: "Multilingual", href: "/settings/brands", icon: Languages },
           { label: "Access & Security", href: "/settings/brands", icon: Shield },
+          { label: "MCP", href: "/settings/mcp", icon: Paperclip, badge: "NEW" },
+          { label: "Integrations", href: "/settings/integrations", icon: LayoutGrid },
         ],
       },
     ],
@@ -423,6 +464,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))]">
       <IconRail
         activeModuleId={activeModule.id}
+        pathname={pathname}
         onSignOut={() => {
           clearAccessToken();
           router.replace("/login");
@@ -438,22 +480,48 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
 
 function IconRail({
   activeModuleId,
+  pathname,
   onSignOut,
 }: {
   activeModuleId: string;
+  pathname: string;
   onSignOut: () => void;
 }) {
+  const railModules = modules.filter((item) => !item.hideInRail);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationTab, setNotificationTab] = useState<NotificationTab>("all");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [awayMode, setAwayMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined" ? window.localStorage.getItem(THEME_STORAGE_KEY) : null;
+    const choice: ThemeChoice = stored === "dark" ? "dark" : "light";
+    setDarkMode(choice === "dark");
+    applyDashboardTheme(choice);
+  }, []);
+
+  function toggleDarkMode() {
+    const nextDarkMode = !darkMode;
+    const nextTheme: ThemeChoice = nextDarkMode ? "dark" : "light";
+    setDarkMode(nextDarkMode);
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    applyDashboardTheme(nextTheme);
+  }
+
   return (
-    <aside className="flex w-[72px] shrink-0 flex-col items-center border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] py-3">
+    <aside className="relative flex w-[72px] shrink-0 flex-col items-center border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] py-3">
       <Link
         href="/inbox"
         aria-label="KeenAI home"
-        className="mb-5 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--surface-2))] shadow-sm ring-1 ring-[hsl(var(--border))]"
+        className="group relative mb-5 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--surface-2))] shadow-sm ring-1 ring-[hsl(var(--border))]"
       >
         <img src="/icon.png" alt="" className="size-8" />
+        <RailTooltip label="Home" />
       </Link>
       <nav className="flex flex-1 flex-col items-center gap-2">
-        {modules.map((item) => {
+        {railModules.map((item) => {
           const Icon = item.icon;
           const active = activeModuleId === item.id;
           return (
@@ -461,55 +529,350 @@ function IconRail({
               key={item.id}
               href={item.href}
               aria-label={item.title}
-              title={item.title}
               className={cn(
-                "flex size-10 items-center justify-center rounded-xl border text-[hsl(var(--muted-foreground))] transition-colors",
+                "group relative flex size-10 items-center justify-center rounded-xl border text-[hsl(var(--muted-foreground))] transition-colors",
                 active
                   ? "border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--primary))] shadow-sm"
                   : "border-transparent hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]",
               )}
             >
               <Icon className="size-5" />
+              <RailTooltip label={item.title} />
             </Link>
           );
         })}
       </nav>
       <div className="flex flex-col items-center gap-2">
-        <RailButton icon={Bell} label="Notifications" href="/settings/channels" />
-        <RailButton icon={Settings} label="Settings" href="/settings/brands" />
+        <RailActionButton
+          icon={Bell}
+          label="Notifications"
+          active={notificationsOpen}
+          onClick={() => {
+            setAccountMenuOpen(false);
+            setNotificationsOpen((open) => !open);
+          }}
+        />
+        <RailButton
+          icon={Settings}
+          label="Settings"
+          href="/settings/profile"
+          active={activeModuleId === "settings" && pathname !== "/settings/notifications"}
+        />
         <button
           type="button"
-          onClick={onSignOut}
-          className="flex size-10 items-center justify-center rounded-xl text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-          title="Sign out"
-          aria-label="Sign out"
+          aria-label="Account menu"
+          onClick={() => {
+            setNotificationsOpen(false);
+            setAccountMenuOpen((open) => !open);
+          }}
+          className={cn(
+            "group relative mt-1 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm transition-transform hover:scale-[1.02]",
+            accountMenuOpen &&
+              "ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-[hsl(var(--surface-1))]",
+          )}
         >
-          <ExternalLink className="size-5" />
+          <img src="/icon.png" alt="" className="size-6 brightness-0 invert" />
+          <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-[hsl(var(--surface-1))] bg-emerald-500" />
+          <RailTooltip label="Account" />
         </button>
-        <Link
-          href="/inbox"
-          aria-label="Create"
-          title="Create"
-          className="relative mt-1 flex size-12 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm"
-        >
-          <Plus className="size-7" />
-          <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-[hsl(var(--surface-1))] bg-emerald-500" />
-        </Link>
       </div>
+      {notificationsOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close notifications"
+            className="fixed inset-y-0 left-[72px] right-0 z-30 cursor-default bg-transparent"
+            onClick={() => setNotificationsOpen(false)}
+          />
+          <NotificationsPopover activeTab={notificationTab} onTabChange={setNotificationTab} />
+        </>
+      ) : null}
+      {accountMenuOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close account menu"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            onClick={() => setAccountMenuOpen(false)}
+          />
+          <AccountMenuPopover
+            awayMode={awayMode}
+            darkMode={darkMode}
+            onAwayModeChange={() => setAwayMode((enabled) => !enabled)}
+            onDarkModeChange={toggleDarkMode}
+            onNavigate={() => setAccountMenuOpen(false)}
+            onSignOut={onSignOut}
+          />
+        </>
+      ) : null}
     </aside>
   );
 }
 
-function RailButton({ icon: Icon, label, href }: { icon: NavIcon; label: string; href: string }) {
+type NotificationTab = "all" | "comments" | "posts" | "assignments" | "mentions";
+
+const notificationTabs: Array<{ id: NotificationTab; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "comments", label: "Comments" },
+  { id: "posts", label: "Posts" },
+  { id: "assignments", label: "Assignments" },
+  { id: "mentions", label: "Mentions" },
+];
+
+function AccountMenuPopover({
+  awayMode,
+  darkMode,
+  onAwayModeChange,
+  onDarkModeChange,
+  onNavigate,
+  onSignOut,
+}: {
+  awayMode: boolean;
+  darkMode: boolean;
+  onAwayModeChange: () => void;
+  onDarkModeChange: () => void;
+  onNavigate: () => void;
+  onSignOut: () => void;
+}) {
+  return (
+    <section
+      className="fixed bottom-2 left-[72px] z-50 w-[255px] overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-[13px] font-semibold text-[hsl(var(--muted-foreground))] shadow-2xl"
+      aria-label="Account menu"
+    >
+      <div className="border-b border-[hsl(var(--border))]">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))]"
+        >
+          <Rocket className="size-4" />
+          <span>We're hiring ✨</span>
+        </button>
+      </div>
+
+      <div className="border-b border-[hsl(var(--border))]">
+        <button
+          type="button"
+          onClick={onAwayModeChange}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-[15px] transition-colors hover:bg-[hsl(var(--surface-2))]"
+        >
+          <span>Away mode</span>
+          <span
+            className={cn(
+              "relative h-5 w-9 rounded-full transition-colors",
+              awayMode ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--surface-2))]",
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform",
+                awayMode ? "translate-x-[18px]" : "translate-x-0.5",
+              )}
+            />
+          </span>
+        </button>
+      </div>
+
+      <div className="p-1.5">
+        <AccountMenuLink
+          href="/settings/profile"
+          icon={UserCircle}
+          label="My Profile"
+          onNavigate={onNavigate}
+        />
+        <AccountMenuLink
+          href="/settings/notifications"
+          icon={Bell}
+          label="Notification preferences"
+          onNavigate={onNavigate}
+        />
+        <button
+          type="button"
+          onClick={onDarkModeChange}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--surface-2))]"
+        >
+          <Moon className="size-4" />
+          <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+        <AccountMenuLink
+          href="/settings/brands"
+          icon={Building2}
+          label="My Organizations"
+          onNavigate={onNavigate}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate();
+            onSignOut();
+          }}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--surface-2))]"
+        >
+          <LogOut className="size-4" />
+          <span>Sign out</span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AccountMenuLink({
+  href,
+  icon: Icon,
+  label,
+  onNavigate,
+}: {
+  href: string;
+  icon: NavIcon;
+  label: string;
+  onNavigate: () => void;
+}) {
   return (
     <Link
       href={href}
-      title={label}
+      onClick={onNavigate}
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[hsl(var(--surface-2))]"
+    >
+      <Icon className="size-4" />
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function RailButton({
+  icon: Icon,
+  label,
+  href,
+  active,
+}: {
+  icon: NavIcon;
+  label: string;
+  href: string;
+  active?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
       aria-label={label}
-      className="flex size-10 items-center justify-center rounded-xl text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+      className={cn(
+        "group relative flex size-10 items-center justify-center rounded-xl border text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]",
+        active
+          ? "border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--primary))] shadow-sm"
+          : "border-transparent",
+      )}
     >
       <Icon className="size-5" />
+      <RailTooltip label={label} />
     </Link>
+  );
+}
+
+function RailActionButton({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: NavIcon;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "group relative flex size-10 items-center justify-center rounded-xl border text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]",
+        active
+          ? "border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--primary))] shadow-sm"
+          : "border-transparent",
+      )}
+    >
+      <Icon className="size-5" />
+      <RailTooltip label={label} />
+    </button>
+  );
+}
+
+function RailTooltip({ label }: { label: string }) {
+  return (
+    <span className="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2.5 py-1.5 text-xs font-semibold text-[hsl(var(--foreground))] opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+    </span>
+  );
+}
+
+function NotificationsPopover({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: NotificationTab;
+  onTabChange: (tab: NotificationTab) => void;
+}) {
+  return (
+    <section
+      className="fixed bottom-[10vh] left-[72px] top-[10vh] z-40 flex w-[min(570px,calc(100vw-88px))] flex-col overflow-hidden rounded-r-2xl border border-l-0 border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] text-sm shadow-2xl"
+      aria-label="Notifications inbox"
+    >
+      <header className="border-b border-[hsl(var(--border))] px-6 py-5">
+        <h2 className="text-lg font-semibold tracking-tight text-[hsl(var(--foreground))]">
+          Inbox
+        </h2>
+      </header>
+      <div className="flex items-end justify-between border-b border-[hsl(var(--border))] px-6">
+        <nav className="flex min-w-0 items-end gap-5" aria-label="Notification views">
+          {notificationTabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={cn(
+                  "relative h-12 whitespace-nowrap text-sm font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]",
+                  active && "text-[hsl(var(--foreground))]",
+                )}
+              >
+                {tab.label}
+                {active ? (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[hsl(var(--primary))]" />
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
+        <button
+          type="button"
+          className="mb-3 flex size-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+          aria-label="Mark all notifications as seen"
+          title="Mark all notifications as seen"
+        >
+          <Eye className="size-5" />
+        </button>
+      </div>
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-14 text-center">
+        <div className="relative h-28 w-80 max-w-full">
+          <div className="absolute left-8 top-3 flex h-16 w-64 items-center gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 shadow-lg">
+            <span className="flex size-11 items-center justify-center rounded-full border-4 border-blue-200 bg-[hsl(var(--surface-2))]" />
+            <span className="space-y-3">
+              <span className="block h-3 w-44 rounded-full bg-[hsl(var(--surface-2))]" />
+              <span className="block h-3 w-28 rounded-full bg-[hsl(var(--surface-2))]" />
+            </span>
+          </div>
+          <div className="absolute bottom-0 right-5 flex h-16 w-64 items-center gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-3 shadow-lg">
+            <span className="flex size-11 items-center justify-center rounded-full border-4 border-rose-200 bg-[hsl(var(--surface-2))]" />
+            <span className="space-y-3">
+              <span className="block h-3 w-44 rounded-full bg-[hsl(var(--surface-2))]" />
+              <span className="block h-3 w-28 rounded-full bg-[hsl(var(--surface-2))]" />
+            </span>
+          </div>
+        </div>
+        <p className="mt-7 text-base font-semibold text-[hsl(var(--muted-foreground))]">
+          You're all caught up!
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -522,22 +885,26 @@ function ModuleSidebar({
   pathname: string;
   searchParams: URLSearchParams;
 }) {
+  const HeaderActionIcon = module.id === "feedback" ? ExternalLink : Search;
+  const headerActionLabel =
+    module.id === "feedback" ? "Open feedback portal" : `Search ${module.title}`;
+
   return (
-    <aside className="flex w-[280px] shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]">
-      <div className="flex h-20 items-center justify-between border-b border-[hsl(var(--border))] px-6">
-        <h1 className="truncate text-2xl font-semibold tracking-tight text-[hsl(var(--foreground))]">
+    <aside className="flex w-[210px] shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]">
+      <div className="flex h-16 items-center justify-between border-b border-[hsl(var(--border))] px-4">
+        <h1 className="truncate text-xl font-semibold tracking-tight text-[hsl(var(--foreground))]">
           {module.title}
         </h1>
         <button
           type="button"
-          className="flex size-9 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-          aria-label={`Search ${module.title}`}
-          title={`Search ${module.title}`}
+          className="flex size-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+          aria-label={headerActionLabel}
+          title={headerActionLabel}
         >
-          <Search className="size-4" />
+          <HeaderActionIcon className="size-4" />
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         {module.sections.map((section, index) => (
           <NavSectionView
             key={`${module.id}-${section.title ?? index}`}
@@ -564,9 +931,9 @@ function NavSectionView({
   return (
     <section className="mb-5 last:mb-0">
       {section.title || section.actions?.length ? (
-        <div className="mb-2 flex items-center justify-between px-2">
+        <div className="mb-2 flex items-center justify-between px-1.5">
           {section.title ? (
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
               {section.title}
             </h2>
           ) : (
@@ -620,13 +987,13 @@ function NavItemView({
   const active = isItemActive(item, pathname, searchParams);
   const content = (
     <>
-      {Icon ? <Icon className="size-4 shrink-0" /> : null}
+      {Icon ? <Icon className={cn("size-4 shrink-0", item.iconClassName)} /> : null}
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.count !== undefined ? (
         <span className="text-xs text-[hsl(var(--muted-foreground))]">{item.count}</span>
       ) : null}
       {item.badge ? (
-        <span className="rounded-full bg-[hsl(var(--surface-2))] px-2 py-0.5 text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">
+        <span className="rounded-full bg-[hsl(var(--primary)/0.12)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(var(--primary))]">
           {item.badge}
         </span>
       ) : null}
@@ -643,14 +1010,14 @@ function NavItemView({
   return (
     <div>
       {item.disabled ? (
-        <div className="flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-[hsl(var(--muted-foreground)/0.55)]">
+        <div className="flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-medium text-[hsl(var(--muted-foreground)/0.55)]">
           {content}
         </div>
       ) : (
         <Link
           href={item.href}
           className={cn(
-            "flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+            "flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-medium transition-colors",
             active
               ? "bg-[hsl(var(--surface-2))] text-[hsl(var(--foreground))]"
               : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]",
@@ -660,7 +1027,7 @@ function NavItemView({
         </Link>
       )}
       {item.children?.length && item.expanded ? (
-        <div className="ml-5 mt-1 space-y-1 border-l border-[hsl(var(--border))] pl-3">
+        <div className="ml-4 mt-1 space-y-1 border-l border-[hsl(var(--border))] pl-2.5">
           {item.children.map((child) => (
             <NavItemView
               key={`${child.href}-${child.label}`}

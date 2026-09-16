@@ -38,7 +38,15 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { type CSSProperties, type ReactNode, useMemo } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type MessageComposerSnippet,
   appendMessageComposerSnippet,
@@ -2676,6 +2684,7 @@ export function WorkflowFlowCanvas({
   triggerSettings,
   toolbar,
   runTracePanel,
+  onCloseRunTracePanel,
   canUndo,
   canRedo,
   onUndo,
@@ -2695,6 +2704,7 @@ export function WorkflowFlowCanvas({
   triggerSettings?: ReactNode;
   toolbar?: ReactNode;
   runTracePanel?: ReactNode;
+  onCloseRunTracePanel?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
@@ -2785,12 +2795,125 @@ export function WorkflowFlowCanvas({
         </ReactFlow>
         <div className="pointer-events-none absolute inset-0 z-10">
           {runTracePanel ? (
-            <div className="pointer-events-auto absolute bottom-[164px] right-4 max-h-[300px] w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl">
+            <DraggableRunTracePanel onClose={onCloseRunTracePanel}>
               {runTracePanel}
-            </div>
+            </DraggableRunTracePanel>
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+type DragPosition = { x: number; y: number };
+
+type DragState = {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startX: number;
+  startY: number;
+};
+
+function DraggableRunTracePanel({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const [position, setPosition] = useState<DragPosition | null>(null);
+
+  const clampPosition = useCallback((x: number, y: number): DragPosition => {
+    const panel = panelRef.current;
+    const parent = panel?.parentElement;
+    if (!panel || !parent) return { x, y };
+
+    const parentRect = parent.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const maxX = Math.max(8, parentRect.width - panelRect.width - 8);
+    const maxY = Math.max(8, parentRect.height - panelRect.height - 8);
+
+    return {
+      x: Math.min(Math.max(8, x), maxX),
+      y: Math.min(Math.max(8, y), maxY),
+    };
+  }, []);
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    const panel = panelRef.current;
+    const parent = panel?.parentElement;
+    if (!panel || !parent) return;
+
+    const panelRect = panel.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const startPosition =
+      position ?? clampPosition(panelRect.left - parentRect.left, panelRect.top - parentRect.top);
+
+    setPosition(startPosition);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: startPosition.x,
+      startY: startPosition.y,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function moveDrag(event: PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    setPosition(
+      clampPosition(
+        drag.startX + event.clientX - drag.startClientX,
+        drag.startY + event.clientY - drag.startClientY,
+      ),
+    );
+  }
+
+  function stopDrag(event: PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  return (
+    <div
+      ref={panelRef}
+      className={cn(
+        "pointer-events-auto absolute w-[360px] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-xl",
+        position ? "" : "bottom-[164px] right-4",
+      )}
+      style={position ? { left: position.x, top: position.y } : undefined}
+    >
+      <div
+        className="flex h-7 cursor-grab touch-none items-center justify-between border-b border-[hsl(var(--border))] px-2 text-[hsl(var(--muted-foreground))] active:cursor-grabbing"
+        onPointerDown={startDrag}
+        onPointerMove={moveDrag}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+        aria-label="Drag run trace panel"
+      >
+        <span className="size-5" aria-hidden="true" />
+        <GripVertical className="size-4" />
+        <button
+          type="button"
+          className="flex size-5 cursor-default items-center justify-center rounded-md transition-colors hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+          aria-label="Close run trace"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onClose}
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+      {children}
     </div>
   );
 }

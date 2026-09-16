@@ -15,7 +15,7 @@ export function WorkflowRunTrace({
 
   if (runs.length === 0) {
     return (
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
+      <div className="bg-[hsl(var(--surface-1))] p-4">
         <h3 className="text-sm font-medium">Run trace</h3>
         <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">No runs recorded yet.</p>
       </div>
@@ -23,7 +23,7 @@ export function WorkflowRunTrace({
   }
 
   return (
-    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4">
+    <div className="bg-[hsl(var(--surface-1))] p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">Run trace</h3>
         {selectedRunId ? (

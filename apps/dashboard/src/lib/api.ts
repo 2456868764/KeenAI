@@ -1,7 +1,15 @@
 import { parseApiError } from "./api-errors";
-import { getAccessToken } from "./auth-store";
+import { clearAccessToken, getAccessToken } from "./auth-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8090";
+
+function redirectToLoginOnUnauthorized(path: string, token: string | null) {
+  if (!token || typeof window === "undefined" || path.startsWith("/api/v1/auth/")) return;
+  clearAccessToken();
+  const next = `${window.location.pathname}${window.location.search}`;
+  const target = next && next !== "/login" ? `/login?next=${encodeURIComponent(next)}` : "/login";
+  window.location.assign(target);
+}
 
 export type Conversation = {
   id: string;
@@ -56,10 +64,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   const res = await fetch(`${API_URL}${path}`, { ...init, headers });
   if (!res.ok) {
+    if (res.status === 401) redirectToLoginOnUnauthorized(path, token);
     const body = await res.text();
     throw new Error(parseApiError(body, `Request failed (${res.status})`));
   }
-  return res.json() as Promise<T>;
+  if (res.status === 204) return undefined as T;
+  const body = await res.text();
+  if (!body) return undefined as T;
+  return JSON.parse(body) as T;
 }
 
 export function getApiUrl(): string {
@@ -86,7 +98,10 @@ export async function fetchAttachmentBlob(
   const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`attachment_fetch_failed:${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401) redirectToLoginOnUnauthorized("/api/v1/attachments", token);
+    throw new Error(`attachment_fetch_failed:${res.status}`);
+  }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
@@ -919,7 +934,7 @@ export async function listFeedbackPosts(slug: string): Promise<{
 
 export async function createFeedbackPost(
   slug: string,
-  input: { title: string; plainText: string },
+  input: { title: string; plainText: string; tags?: string[] },
 ): Promise<{ post: FeedbackPost }> {
   return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/posts`, {
     method: "POST",
@@ -1155,8 +1170,11 @@ export async function listTicketEvents(id: string): Promise<{ items: TicketEvent
 }
 
 export type MeResponse = {
+  account: { id: string; email: string; name: string | null; avatarUrl: string | null } | null;
+  member: { id: string; role: string; status: string; orgId: string } | null;
   brandIds: string[];
-  organization: { id: string; slug: string; name: string } | null;
+  organization: { id: string; slug: string; name: string; plan?: string | null } | null;
+  permissions?: { billingRead?: boolean };
 };
 
 export async function fetchMe(): Promise<MeResponse> {

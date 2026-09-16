@@ -73,7 +73,7 @@ export function CopilotCommand({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[15vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[15vh] text-sm"
       onClick={() => onOpenChange(false)}
       onKeyDown={(e) => e.key === "Escape" && onOpenChange(false)}
       role="presentation"

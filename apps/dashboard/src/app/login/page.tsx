@@ -34,7 +34,11 @@ export default function LoginPage() {
           try {
             const res = await login(email, password, orgSlug);
             setAccessToken(res.accessToken);
-            router.replace("/inbox");
+            const next =
+              typeof window !== "undefined"
+                ? new URLSearchParams(window.location.search).get("next")
+                : null;
+            router.replace(next?.startsWith("/") && !next.startsWith("//") ? next : "/inbox");
           } catch (err) {
             setError(err instanceof Error ? err.message : "Login failed");
           } finally {

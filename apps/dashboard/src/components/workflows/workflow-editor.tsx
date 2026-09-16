@@ -195,6 +195,8 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
   const [descriptionPanelOpen, setDescriptionPanelOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [addAnchor, setAddAnchor] = useState<WorkflowCanvasInsertAnchor | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [runTraceDismissed, setRunTraceDismissed] = useState(false);
   const [dryRuns, setDryRuns] = useState<WorkflowRun[]>([]);
   const [definitionHistory, setDefinitionHistory] = useState<{
     past: WorkflowDefinition[];
@@ -300,8 +302,9 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     mutationFn: () => archiveWorkflow(workflowId),
     onSuccess: () => {
       setManageOpen(false);
+      setDeleteDialogOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
-      router.push("/workflows");
+      router.replace("/workflows");
     },
   });
 
@@ -333,6 +336,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
       };
       setDryRuns((items) => [run, ...items].slice(0, 5));
       setSelectedRunId(run.id);
+      setRunTraceDismissed(false);
       setSelectedBlockId(null);
       setTriggerPanelOpen(false);
       setAddAnchor(null);
@@ -366,6 +370,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             ];
       setDryRuns((items) => [...runs, ...items].slice(0, 12));
       setSelectedRunId(runs[0]?.id ?? null);
+      setRunTraceDismissed(false);
       setSelectedBlockId(null);
       setTriggerPanelOpen(false);
       setAddAnchor(null);
@@ -896,7 +901,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 versions={versionsData?.items ?? []}
                 onUnpublish={() => unpublish.mutate()}
                 onDuplicate={() => duplicate.mutate()}
-                onArchive={() => archive.mutate()}
+                onArchive={() => setDeleteDialogOpen(true)}
                 onRollback={(version) => rollback.mutate(version)}
                 onTest={() => {
                   save.mutate(undefined, {
@@ -923,7 +928,10 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
               />
             }
             runTracePanel={
-              triggerPanelOpen || descriptionPanelOpen || runs.length === 0 ? undefined : (
+              triggerPanelOpen ||
+              descriptionPanelOpen ||
+              runs.length === 0 ||
+              runTraceDismissed ? undefined : (
                 <WorkflowRunTrace
                   runs={runs}
                   selectedRunId={selectedRunId}
@@ -931,6 +939,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
                 />
               )
             }
+            onCloseRunTracePanel={() => setRunTraceDismissed(true)}
             canUndo={definitionHistory.past.length > 0}
             canRedo={definitionHistory.future.length > 0}
             onUndo={undoDefinition}
@@ -938,6 +947,15 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
           />
         )}
       </main>
+      {deleteDialogOpen ? (
+        <DeleteWorkflowDialog
+          workflowName={name}
+          pending={archive.isPending}
+          error={archive.error}
+          onCancel={() => setDeleteDialogOpen(false)}
+          onConfirm={() => archive.mutate()}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1097,11 +1115,7 @@ function CanvasToolbar({
             size="sm"
             variant="outline"
             disabled={archivePending || managePending}
-            onClick={() => {
-              if (window.confirm("Archive this workflow? It will be removed from the list.")) {
-                onArchive();
-              }
-            }}
+            onClick={onArchive}
           >
             {archivePending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -1255,11 +1269,7 @@ function WorkflowManageMenu({
             <button
               type="button"
               disabled={pending}
-              onClick={() => {
-                if (window.confirm("Archive this workflow? It will be removed from the list.")) {
-                  onArchive();
-                }
-              }}
+              onClick={onArchive}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
             >
               <Trash2 className="size-3.5" />
@@ -1670,6 +1680,81 @@ function WorkflowActionMenu({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function DeleteWorkflowDialog({
+  workflowName,
+  pending,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  workflowName: string;
+  pending: boolean;
+  error: Error | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/35 p-4 text-sm backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !pending) onCancel();
+      }}
+    >
+      <dialog
+        open
+        aria-modal="true"
+        aria-labelledby="delete-workflow-title"
+        className="static m-0 w-full max-w-md rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-5 text-sm shadow-2xl backdrop:bg-transparent"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
+              <Trash2 className="size-5" />
+            </div>
+            <h2
+              id="delete-workflow-title"
+              className="text-lg font-semibold tracking-tight text-[hsl(var(--foreground))]"
+            >
+              Delete workflow?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+              This will archive <span className="font-semibold">{workflowName}</span> and remove it
+              from the workflow list.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={pending}
+            aria-label="Close delete workflow dialog"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))] disabled:opacity-50"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {error ? <p className="mt-4 text-sm text-red-500">{error.message}</p> : null}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={pending}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={pending}
+            className="bg-red-500 text-white hover:bg-red-600"
+          >
+            {pending ? <Loader2 className="size-4 animate-spin" /> : null}
+            Confirm delete
+          </Button>
+        </div>
+      </dialog>
     </div>
   );
 }

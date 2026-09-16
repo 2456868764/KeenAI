@@ -8,7 +8,7 @@ export function loadEnv(): ApiEnv {
 export function toAuthConfig(env: ApiEnv): AuthConfig {
   return {
     jwtSecret: env.JWT_SECRET,
-    accessTtlSec: parseTtlSeconds(env.JWT_ACCESS_TTL, 900),
+    accessTtlSec: parseTtlSeconds(env.JWT_ACCESS_TTL, 7_200),
     refreshTtlSec: parseTtlSeconds(env.JWT_REFRESH_TTL, 604_800),
     widgetAccessTtlSec: 86_400,
     portalAccessTtlSec: 604_800,

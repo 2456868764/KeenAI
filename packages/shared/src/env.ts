@@ -8,7 +8,7 @@ export const apiEnvSchema = z.object({
   LOG_FORMAT: z.enum(["pretty", "json"]).default("pretty"),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32).default("dev-only-change-me-in-production-keenai-32"),
-  JWT_ACCESS_TTL: z.string().default("15m"),
+  JWT_ACCESS_TTL: z.string().default("2h"),
   JWT_REFRESH_TTL: z.string().default("7d"),
   APP_URL: z.string().url().default("http://localhost:3000"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),

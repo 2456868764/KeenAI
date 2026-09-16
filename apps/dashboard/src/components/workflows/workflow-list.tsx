@@ -604,7 +604,7 @@ function TemplateDialog({
   onUse: (template: WorkflowTemplate) => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-6 text-sm backdrop-blur-sm">
       <button
         type="button"
         aria-label="Close templates"
@@ -657,7 +657,7 @@ function TemplateBrowser({
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-[hsl(var(--border))] px-7 py-6">
-        <h2 className="text-2xl font-semibold">Choose from templates</h2>
+        <h2 className="text-xl font-semibold">Choose from templates</h2>
         <Button
           type="button"
           variant="outline"
@@ -766,7 +766,7 @@ function TemplatePreview({
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-[hsl(var(--border))] px-7 py-6">
         <div>
-          <h2 className="text-xl font-semibold">{template.name}</h2>
+          <h2 className="text-lg font-semibold">{template.name}</h2>
           <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{template.description}</p>
         </div>
         <div className="flex items-center gap-2">

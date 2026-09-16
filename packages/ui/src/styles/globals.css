@@ -57,6 +57,9 @@
   --warning: 38 90% 45%;
   --danger: 0 75% 50%;
   --info: 199 85% 42%;
+
+  --widget-user-bubble: 271 45% 42%;
+  --widget-agent-bubble: 220 20% 96%;
 }
 
 @layer base {

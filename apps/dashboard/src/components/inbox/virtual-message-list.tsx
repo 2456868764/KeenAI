@@ -247,6 +247,13 @@ function MessageFile({ attachment }: { attachment: NonNullable<Message["attachme
 function MessageBubble({ message }: { message: Message }) {
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
+  const bubbleTone = message.isInternal ? "internal" : isAgent ? "agent" : "customer";
+  const subtleTextClass =
+    bubbleTone === "agent"
+      ? "text-white/75"
+      : bubbleTone === "customer"
+        ? "text-[hsl(var(--muted-foreground))]"
+        : "text-amber-700";
   const imageAttachments =
     message.attachments?.filter((a) => a.contentType?.startsWith("image/")) ?? [];
   const audioAttachments =
@@ -281,9 +288,7 @@ function MessageBubble({ message }: { message: Message }) {
         {showPlainText ? (
           <p className="whitespace-pre-wrap">{message.plainText}</p>
         ) : message.plainText && audioAttachments.length === 0 && videoAttachments.length === 0 ? (
-          <p className="whitespace-pre-wrap text-[hsl(var(--muted-foreground))]">
-            {message.plainText}
-          </p>
+          <p className={cn("whitespace-pre-wrap", subtleTextClass)}>{message.plainText}</p>
         ) : null}
         {imageAttachments.map((att) => (
           <MessageImage key={att.id} attachmentId={att.id} />
@@ -297,7 +302,7 @@ function MessageBubble({ message }: { message: Message }) {
         {fileAttachments.map((att) => (
           <MessageFile key={att.id} attachment={att} />
         ))}
-        <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+        <p className={cn("mt-1 text-[10px]", subtleTextClass)}>
           {message.isInternal ? "internal note" : message.senderType}
           {isOptimistic ? " · sending" : ""}
         </p>

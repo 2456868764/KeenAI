@@ -847,7 +847,7 @@ function DialogShell({
   width?: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 text-sm backdrop-blur-sm">
       <div
         className={`relative max-h-[86vh] w-full overflow-y-auto rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-6 shadow-2xl ${width}`}
       >
@@ -908,7 +908,7 @@ function UploadDialog({
 
   return (
     <DialogShell onClose={onClose}>
-      <h2 className="text-xl font-semibold">Add Training Data</h2>
+      <h2 className="text-lg font-semibold">Add Training Data</h2>
       <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
         Upload documents to train your AI agent. Supported formats include PDF, Word, text files,
         and Markdown.
@@ -924,7 +924,7 @@ function UploadDialog({
         className="mt-6 flex min-h-56 w-full flex-col items-center justify-center rounded-lg border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-6 text-center"
       >
         <Upload className="mb-4 size-7 text-[hsl(var(--muted-foreground))]" />
-        <span className="text-base font-semibold">
+        <span className="text-sm font-semibold">
           Drag & drop files here, or click to select files
         </span>
         <span className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
@@ -1006,7 +1006,7 @@ function CrawlDialog({
 
   return (
     <DialogShell onClose={onClose}>
-      <h2 className="text-xl font-semibold">Crawling options</h2>
+      <h2 className="text-lg font-semibold">Crawling options</h2>
       <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
         Crawl specific web pages or submit sitemaps to continuously update your AI with the latest
         content. Configure included and excluded paths to refine what your AI learns.
@@ -1141,7 +1141,7 @@ function QaDialog({
 
   return (
     <DialogShell onClose={onClose}>
-      <h2 className="text-xl font-semibold">Add responses for common questions</h2>
+      <h2 className="text-lg font-semibold">Add responses for common questions</h2>
       <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
         Craft responses for important questions, ensuring your AI Agent shares the most relevant
         info.
@@ -1253,7 +1253,7 @@ function SourceDetailDialog({
             ) : (
               <FileText className="size-5 text-[hsl(var(--primary))]" />
             )}
-            <h2 className="text-xl font-semibold">{sourceTitle(source)}</h2>
+            <h2 className="text-lg font-semibold">{sourceTitle(source)}</h2>
           </div>
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-[hsl(var(--muted-foreground))]">
             <span className="inline-flex items-center gap-1.5">
