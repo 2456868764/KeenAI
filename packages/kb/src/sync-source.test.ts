@@ -338,6 +338,79 @@ describe("KB source connectors", () => {
     await store.close();
   });
 
+  it("matches crawl include and exclude paths without requiring a leading slash", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ slug: "web-paths", name: "Web Paths" })
+      .returning();
+    const [brand] = await db
+      .insert(brands)
+      .values({ orgId: org?.id ?? "", slug: "default", name: "Default" })
+      .returning();
+    if (!org?.id || !brand?.id) throw new Error("fixture missing");
+
+    const [source] = await db
+      .insert(kbSources)
+      .values({ orgId: org.id, brandId: brand.id, type: "web_crawl", name: "Docs" })
+      .returning();
+    const kbSource = requireRow(source, "source");
+    const kb = createKeenaiKb({ db });
+
+    const result = await kb.syncSource({
+      orgId: org.id,
+      brandId: brand.id,
+      sourceId: kbSource.id,
+      connector: createWebCrawlConnector(
+        {
+          crawlMode: "crawl_links",
+          includePaths: ["ai/*"],
+          excludePaths: ["ai/private/*"],
+          urls: ["https://docs.example.com/ai/introduction"],
+        },
+        {
+          fetchFn: async (url) => ({
+            ok: true,
+            status: 200,
+            url,
+            headers: { get: (name) => (name === "content-type" ? "text/html" : null) },
+            async text() {
+              if (url.endsWith("/ai/setup")) {
+                return "<html><title>Setup</title><h1>Setup</h1></html>";
+              }
+              return `
+                <html>
+                  <title>Introduction</title>
+                  <a href="/ai/setup">Setup</a>
+                  <a href="/ai/private/secret">Secret</a>
+                  <a href="/admin/users">Admin</a>
+                </html>
+              `;
+            },
+          }),
+          now: () => new Date("2026-07-01T00:00:00.000Z"),
+          type: "web_crawl",
+        },
+      ),
+    });
+
+    expect(result.synced).toBe(2);
+    const documents = await kb.listDocuments({ orgId: org.id, brandId: brand.id });
+    expect(documents.map((document) => document.url).sort()).toEqual([
+      "https://docs.example.com/ai/introduction",
+      "https://docs.example.com/ai/setup",
+    ]);
+
+    await store.close();
+  });
+
   it("ignores stylesheet assets during web crawl discovery", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;

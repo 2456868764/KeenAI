@@ -152,8 +152,15 @@ function extensionFromPath(path: string): string {
 }
 
 function patternMatchesPath(pattern: string, path: string): boolean {
-  const normalized = pattern.trim();
+  let normalized = pattern.trim();
   if (!normalized) return false;
+  try {
+    const parsed = new URL(normalized);
+    normalized = parsed.pathname || "/";
+  } catch {
+    // Patterns are usually path fragments such as "docs/*"; keep them as paths.
+  }
+  if (!normalized.startsWith("/")) normalized = `/${normalized}`;
   const escaped = normalized.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("\\*", ".*");
   return new RegExp(`^${escaped}`).test(path);
 }
