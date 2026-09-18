@@ -9,7 +9,7 @@ import {
   buildPlainTextFromParts,
   inferMessageKind,
 } from "@keenai/shared";
-import { conversations, messages } from "@keenai/storage/schema";
+import { channelConversationLinks, conversations, messages } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import {
@@ -38,6 +38,7 @@ export async function ingestInboundIm(
     brandId: string;
     parsed: ParsedInboundImMessage;
     env: ApiEnv;
+    channelCredentials?: Record<string, unknown>;
     conversation?: EnsuredImConversation;
   },
 ) {
@@ -54,7 +55,7 @@ export async function ingestInboundIm(
 
   const attachmentRows = [];
   for (const file of input.parsed.attachments) {
-    const content = await downloadImAttachment(input.env, file);
+    const content = await downloadImAttachment(input.env, file, input.channelCredentials);
     const ext = path.extname(file.fileName).slice(0, 32) || ".bin";
     const storageKey = `${randomBytes(16).toString("hex")}${ext}`;
     await saveUploadFile(input.env, storageKey, content);
@@ -164,42 +165,57 @@ export type EnsuredImConversation = {
 
 export async function ensureInboundImConversation(
   db: AppVariables["store"]["db"],
-  input: { orgId: string; brandId: string; parsed: ParsedInboundImMessage },
+  input: {
+    orgId: string;
+    brandId: string;
+    connectionId?: string;
+    parsed: ParsedInboundImMessage;
+  },
 ): Promise<EnsuredImConversation> {
   const channelType = input.parsed.channelType;
-  const [existing] = await db
-    .select({
-      id: conversations.id,
-      channelId: conversations.channelId,
-      subject: conversations.subject,
-    })
-    .from(conversations)
-    .where(
-      and(
-        eq(conversations.orgId, input.orgId),
-        eq(conversations.brandId, input.brandId),
-        eq(conversations.channelType, channelType),
-        eq(conversations.channelId, input.parsed.channelId),
-      ),
-    )
-    .limit(1);
+  const [linked] = input.connectionId
+    ? await db
+        .select({
+          id: conversations.id,
+          channelId: conversations.channelId,
+          subject: conversations.subject,
+        })
+        .from(channelConversationLinks)
+        .innerJoin(conversations, eq(conversations.id, channelConversationLinks.conversationId))
+        .where(
+          and(
+            eq(channelConversationLinks.connectionId, input.connectionId),
+            eq(channelConversationLinks.externalThreadId, input.parsed.channelId),
+            eq(conversations.orgId, input.orgId),
+          ),
+        )
+        .limit(1)
+    : [];
+  const [legacy] = input.connectionId
+    ? []
+    : await db
+        .select({
+          id: conversations.id,
+          channelId: conversations.channelId,
+          subject: conversations.subject,
+        })
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.orgId, input.orgId),
+            eq(conversations.brandId, input.brandId),
+            eq(conversations.channelType, channelType),
+            eq(conversations.channelId, input.parsed.channelId),
+          ),
+        )
+        .limit(1);
+  const existing = linked ?? legacy;
 
   let conversation = existing;
   let created = false;
 
   if (!conversation) {
-    const subject =
-      channelType === "telegram"
-        ? `Telegram ${input.parsed.channelId}`
-        : channelType === "discord"
-          ? `Discord ${input.parsed.channelId}`
-          : channelType === "feishu"
-            ? `Feishu ${input.parsed.channelId}`
-            : channelType === "dingtalk"
-              ? `DingTalk ${input.parsed.channelId}`
-              : channelType === "whatsapp"
-                ? `WhatsApp ${input.parsed.channelId}`
-                : `Slack ${input.parsed.channelId}`;
+    const subject = `${channelDisplayName(channelType)} ${input.parsed.channelId}`;
 
     const [row] = await db
       .insert(conversations)
@@ -222,14 +238,57 @@ export async function ensureInboundImConversation(
     conversation = { id: row.id, channelId: row.channelId, subject };
     created = true;
 
-    await recordConversationEvent(db, {
-      orgId: input.orgId,
-      conversationId: row.id,
-      eventType: "conversation.created",
-      actorType: "user",
-      actorId: input.parsed.userId,
-      payload: { channel: channelType },
-    });
+    if (input.connectionId) {
+      const [insertedLink] = await db
+        .insert(channelConversationLinks)
+        .values({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          connectionId: input.connectionId,
+          conversationId: row.id,
+          externalThreadId: input.parsed.channelId,
+          metadata: input.parsed.conversationAttributes ?? {},
+        })
+        .onConflictDoNothing({
+          target: [
+            channelConversationLinks.connectionId,
+            channelConversationLinks.externalThreadId,
+          ],
+        })
+        .returning({ id: channelConversationLinks.id });
+      if (!insertedLink) {
+        await db.delete(conversations).where(eq(conversations.id, row.id));
+        const [winner] = await db
+          .select({
+            id: conversations.id,
+            channelId: conversations.channelId,
+            subject: conversations.subject,
+          })
+          .from(channelConversationLinks)
+          .innerJoin(conversations, eq(conversations.id, channelConversationLinks.conversationId))
+          .where(
+            and(
+              eq(channelConversationLinks.connectionId, input.connectionId),
+              eq(channelConversationLinks.externalThreadId, input.parsed.channelId),
+            ),
+          )
+          .limit(1);
+        if (!winner) throw new Error("conversation_link_race_failed");
+        conversation = winner;
+        created = false;
+      }
+    }
+
+    if (created) {
+      await recordConversationEvent(db, {
+        orgId: input.orgId,
+        conversationId: conversation.id,
+        eventType: "conversation.created",
+        actorType: "user",
+        actorId: input.parsed.userId,
+        payload: { channel: channelType },
+      });
+    }
   } else if (input.parsed.conversationAttributes) {
     const [existingRow] = await db
       .select({ attributes: conversations.attributes })
@@ -249,6 +308,14 @@ export async function ensureInboundImConversation(
   }
 
   return { conversation, created };
+}
+
+function channelDisplayName(channelType: ParsedInboundImMessage["channelType"]): string {
+  if (channelType === "wecom") return "WeCom";
+  if (channelType === "whatsapp") return "WhatsApp";
+  if (channelType === "dingtalk") return "DingTalk";
+  if (channelType === "feishu") return "Feishu";
+  return channelType.charAt(0).toUpperCase() + channelType.slice(1);
 }
 
 async function resolveImReplyContext(

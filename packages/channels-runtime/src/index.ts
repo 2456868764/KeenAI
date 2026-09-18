@@ -1,4 +1,17 @@
 export {
+  claimChannelConnectionRuntime,
+  failChannelConnectionRuntime,
+  heartbeatChannelConnectionRuntime,
+  listRunnableChannelConnections,
+  releaseChannelConnectionRuntime,
+  type ClaimedChannelConnectionRuntime,
+} from "./connection-runtime.js";
+export {
+  replayChannelDeadLetter,
+  resolveChannelDeadLetter,
+  type ChannelDeadLetterReplayTarget,
+} from "./dead-letter.js";
+export {
   admitIngressEvent,
   claimIngressEvent,
   completeIngressEvent,

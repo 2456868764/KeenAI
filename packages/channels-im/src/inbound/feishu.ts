@@ -1,3 +1,4 @@
+import type { ChannelDeliveryReceipt } from "@keenai/channels-core";
 import { type MessagePart, inferMessageKind } from "@keenai/shared";
 import type { ParsedInboundImMessage } from "../types.js";
 
@@ -16,6 +17,8 @@ type FeishuMessage = {
 type FeishuEvent = {
   sender?: { sender_id?: { open_id?: string; user_id?: string } };
   message?: FeishuMessage;
+  message_id_list?: string[];
+  read_time?: string;
 };
 
 export type FeishuEventPayload = {
@@ -69,4 +72,26 @@ export function adaptFeishuEvent(payload: FeishuEventPayload): ParsedInboundImMe
     messageKind: inferMessageKind(parts),
     attachments: [],
   };
+}
+
+export function parseFeishuDeliveryReceipts(payload: FeishuEventPayload): ChannelDeliveryReceipt[] {
+  if (payload.header?.event_type !== "im.message.message_read_v1") return [];
+  const occurredAt = parseFeishuTimestamp(payload.event?.read_time) ?? new Date();
+  return (payload.event?.message_id_list ?? []).map((providerMessageId) => ({
+    providerMessageId,
+    status: "read",
+    occurredAt,
+    payload,
+  }));
+}
+
+function parseFeishuTimestamp(value: string | undefined): Date | null {
+  if (!value) return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    const date = new Date(numeric < 10_000_000_000 ? numeric * 1_000 : numeric);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }

@@ -10,6 +10,7 @@ import {
   channelDeliveryAttempts,
   channelDeliveryReceipts,
   channelMessageLinks,
+  channelOutbox,
   conversations,
   messages,
   organizations,
@@ -19,6 +20,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   admitIngressEvent,
+  claimChannelConnectionRuntime,
   claimIngressEvent,
   claimOutboxDelivery,
   claimSessionCommand,
@@ -28,6 +30,11 @@ import {
   enqueueOutboxDelivery,
   enqueueSessionCommand,
   failOutboxDelivery,
+  heartbeatChannelConnectionRuntime,
+  recordDeliveryReceipt,
+  releaseChannelConnectionRuntime,
+  replayChannelDeadLetter,
+  resolveChannelDeadLetter,
 } from "./index.js";
 
 const migrationsFolder = path.join(
@@ -148,6 +155,64 @@ describe("durable channel runtime", () => {
     ).toBe(true);
   });
 
+  it("fences competing long-lived connection runtimes and persists cursors", async () => {
+    await store.db
+      .update(channelConnections)
+      .set({ transport: "gateway" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const startedAt = new Date("2026-09-18T10:00:00.000Z");
+    const first = await claimChannelConnectionRuntime(store, {
+      connectionId: fixture.connectionId,
+      ownerId: "runtime-a",
+      now: startedAt,
+      leaseMs: 10_000,
+    });
+    expect(first?.connection.runtimeState).toBe("connecting");
+    expect(
+      await claimChannelConnectionRuntime(store, {
+        connectionId: fixture.connectionId,
+        ownerId: "runtime-b",
+        now: new Date(startedAt.getTime() + 5_000),
+      }),
+    ).toBeNull();
+
+    const second = await claimChannelConnectionRuntime(store, {
+      connectionId: fixture.connectionId,
+      ownerId: "runtime-b",
+      now: new Date(startedAt.getTime() + 11_000),
+    });
+    expect(second).not.toBeNull();
+    expect(
+      await heartbeatChannelConnectionRuntime(store, {
+        connectionId: fixture.connectionId,
+        ownerId: "runtime-a",
+        leaseToken: first?.leaseToken ?? "",
+      }),
+    ).toBe(false);
+    expect(
+      await heartbeatChannelConnectionRuntime(store, {
+        connectionId: fixture.connectionId,
+        ownerId: "runtime-b",
+        leaseToken: second?.leaseToken ?? "",
+        cursor: { sequence: 42 },
+      }),
+    ).toBe(true);
+
+    const [connected] = await store.db
+      .select()
+      .from(channelConnections)
+      .where(eq(channelConnections.id, fixture.connectionId));
+    expect(connected?.runtimeState).toBe("connected");
+    expect(connected?.runtimeCursor).toEqual({ sequence: 42 });
+    expect(
+      await releaseChannelConnectionRuntime(store, {
+        connectionId: fixture.connectionId,
+        ownerId: "runtime-b",
+        leaseToken: second?.leaseToken ?? "",
+      }),
+    ).toBe(true);
+  });
+
   it("serializes commands within one conversation", async () => {
     for (const id of ["command-1", "command-2"]) {
       await enqueueSessionCommand(store, {
@@ -234,6 +299,29 @@ describe("durable channel runtime", () => {
     expect(attempts).toHaveLength(2);
     expect(links).toHaveLength(1);
     expect(receipts.map((receipt) => receipt.status)).toEqual(["accepted"]);
+
+    expect(
+      await recordDeliveryReceipt(store, {
+        orgId: fixture.orgId,
+        connectionId: fixture.connectionId,
+        receipt: {
+          providerMessageId: "slack-message-1",
+          status: "read",
+          occurredAt: new Date("2026-09-18T08:26:40.000Z"),
+          payload: { event: "message_read" },
+        },
+      }),
+    ).toBe(true);
+    const [updatedMessage] = await store.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, fixture.messageId));
+    const updatedReceipts = await store.db
+      .select()
+      .from(channelDeliveryReceipts)
+      .where(eq(channelDeliveryReceipts.providerMessageId, "slack-message-1"));
+    expect(updatedMessage?.deliveryStatus).toBe("read");
+    expect(updatedReceipts.map((receipt) => receipt.status)).toEqual(["accepted", "read"]);
   });
 
   it("does not blindly replay an unknown-after-send result", async () => {
@@ -266,5 +354,75 @@ describe("durable channel runtime", () => {
       .from(channelDeadLetters)
       .where(eq(channelDeadLetters.sourceId, "delivery-unknown"));
     expect(deadLetters).toHaveLength(1);
+  });
+
+  it("replays and resolves a delivery dead letter", async () => {
+    await enqueueOutboxDelivery(store, {
+      deliveryId: "delivery-replay",
+      idempotencyKey: "message-replay:slack",
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: fixture.connectionId,
+      conversationId: fixture.conversationId,
+      messageId: fixture.messageId,
+      channelType: "slack",
+      externalThreadId: "thread-1",
+      parts: [{ type: "text", text: "Replay me" }],
+    });
+    const claimed = await claimOutboxDelivery(store);
+    expect(
+      await failOutboxDelivery(store, {
+        outboxId: claimed?.delivery.id ?? "",
+        claimToken: claimed?.claimToken ?? "",
+        error: {
+          disposition: "terminal",
+          code: "provider_rejected",
+          message: "provider rejected the message",
+        },
+      }),
+    ).toBe("dead_letter");
+
+    const [deadLetter] = await store.db
+      .select()
+      .from(channelDeadLetters)
+      .where(eq(channelDeadLetters.sourceId, "delivery-replay"));
+    const replayed = await replayChannelDeadLetter(store, {
+      orgId: fixture.orgId,
+      deadLetterId: deadLetter?.id ?? "",
+    });
+    expect(replayed).toEqual({ sourceType: "delivery", sourceId: "delivery-replay" });
+
+    const [delivery] = await store.db
+      .select()
+      .from(channelOutbox)
+      .where(eq(channelOutbox.id, "delivery-replay"));
+    const [message] = await store.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, fixture.messageId));
+    const [updatedDeadLetter] = await store.db
+      .select()
+      .from(channelDeadLetters)
+      .where(eq(channelDeadLetters.id, deadLetter?.id ?? ""));
+    expect(delivery?.status).toBe("retrying");
+    expect(delivery?.attempts).toBe(1);
+    expect(delivery?.maxAttempts).toBe(16);
+    expect(delivery?.lastError).toBeNull();
+    expect(message?.deliveryStatus).toBe("pending");
+    expect(updatedDeadLetter?.replayCount).toBe(1);
+    expect(updatedDeadLetter?.resolvedAt).toBeInstanceOf(Date);
+
+    expect(
+      await resolveChannelDeadLetter(store, {
+        orgId: fixture.orgId,
+        deadLetterId: deadLetter?.id ?? "",
+      }),
+    ).toBe(true);
+    expect(
+      await resolveChannelDeadLetter(store, {
+        orgId: "different-org",
+        deadLetterId: deadLetter?.id ?? "",
+      }),
+    ).toBe(false);
   });
 });

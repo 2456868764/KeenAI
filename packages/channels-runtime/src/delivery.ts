@@ -293,6 +293,7 @@ export async function failOutboxDelivery(
             reasonCode: input.error.code,
             reason: input.error.message,
             payload: delivery.payload,
+            resolvedAt: null,
             updatedAt: now,
           },
         });

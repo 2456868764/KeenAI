@@ -6,6 +6,8 @@ import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import {
   brands,
+  channelConnections,
+  channelConversationLinks,
   channelIngressEvents,
   channelOutbox,
   conversations,
@@ -17,6 +19,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { insertMessage } from "./lib/conversations.js";
+import { ensureInboundImConversation } from "./lib/im-ingest.js";
 import { createLogger } from "./logger.js";
 import { requireRow } from "./test-helpers.js";
 
@@ -71,6 +74,52 @@ describe("durable channel runtime", () => {
     await fixture.store.close();
   });
 
+  it("requires an explicit connection when a webhook channel has multiple accounts", async () => {
+    const fixture = await createFixture();
+    await fixture.store.db.insert(channelConnections).values({
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      channelType: "telegram",
+      name: "Telegram Secondary",
+      externalAccountId: "secondary",
+    });
+    const payload = {
+      update_id: 91002,
+      message: {
+        message_id: 302,
+        from: { id: 43, first_name: "Taylor" },
+        chat: { id: 9002, type: "private" },
+        text: "Account-routed hello",
+      },
+    };
+
+    const ambiguous = await fixture.app.request(
+      "/api/v1/webhooks/im/telegram?org=channel-runtime",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    expect(ambiguous.status).toBe(409);
+
+    const selected = await fixture.app.request(
+      `/api/v1/webhooks/im/telegram?org=channel-runtime&connection=${fixture.connectionId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    expect(selected.status).toBe(202);
+    await eventually(async () => {
+      const [event] = await fixture.store.db.select().from(channelIngressEvents);
+      expect(event?.connectionId).toBe(fixture.connectionId);
+      expect(event?.status).toBe("completed");
+    });
+    await fixture.store.close();
+  });
+
   it("persists final widget delivery before marking the message sent", async () => {
     const fixture = await createFixture();
     const [conversationRow] = await fixture.store.db
@@ -108,6 +157,62 @@ describe("durable channel runtime", () => {
     });
     await fixture.store.close();
   });
+
+  it("isolates the same external thread across different provider connections", async () => {
+    const fixture = await createFixture();
+    const connections = await fixture.store.db
+      .insert(channelConnections)
+      .values([
+        {
+          orgId: fixture.orgId,
+          brandId: fixture.brandId,
+          channelType: "slack",
+          name: "Workspace A",
+          externalAccountId: "workspace-a",
+        },
+        {
+          orgId: fixture.orgId,
+          brandId: fixture.brandId,
+          channelType: "slack",
+          name: "Workspace B",
+          externalAccountId: "workspace-b",
+        },
+      ])
+      .returning();
+    const parsed = {
+      platformMessageId: "message-1",
+      channelType: "slack" as const,
+      channelId: "shared-channel-id",
+      userId: "user-1",
+      plainText: "hello",
+      parts: [{ type: "text" as const, text: "hello" }],
+      messageKind: "text" as const,
+      attachments: [],
+    };
+    const first = await ensureInboundImConversation(fixture.store.db, {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: connections[0]?.id,
+      parsed,
+    });
+    const second = await ensureInboundImConversation(fixture.store.db, {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: connections[1]?.id,
+      parsed,
+    });
+    const repeated = await ensureInboundImConversation(fixture.store.db, {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: connections[0]?.id,
+      parsed,
+    });
+
+    expect(first.conversation.id).not.toBe(second.conversation.id);
+    expect(repeated.conversation.id).toBe(first.conversation.id);
+    expect(await fixture.store.db.select().from(channelConversationLinks)).toHaveLength(2);
+    await fixture.store.close();
+  });
 });
 
 async function createFixture() {
@@ -130,6 +235,17 @@ async function createFixture() {
     .values({ orgId: org.id, slug: "default", name: "Default" })
     .returning();
   const brand = requireRow(brandRow, "brand");
+  const [connectionRow] = await store.db
+    .insert(channelConnections)
+    .values({
+      orgId: org.id,
+      brandId: brand.id,
+      channelType: "telegram",
+      name: "Telegram",
+      externalAccountId: "default",
+    })
+    .returning();
+  const connection = requireRow(connectionRow, "connection");
   const env = parseApiEnv({
     NODE_ENV: "production",
     DATABASE_URL: `file:${databasePath}`,
@@ -148,7 +264,13 @@ async function createFixture() {
     log: createLogger(env),
     startedAt: new Date(),
   });
-  return { app, store, orgId: org.id, brandId: brand.id };
+  return {
+    app,
+    store,
+    orgId: org.id,
+    brandId: brand.id,
+    connectionId: connection.id,
+  };
 }
 
 async function eventually(assertion: () => Promise<void>, timeoutMs = 3_000) {

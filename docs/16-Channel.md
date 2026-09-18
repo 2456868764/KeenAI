@@ -1,6 +1,6 @@
 # Channel Gateway 统一渠道架构
 
-> 状态：核心可靠消息链路已落地。KeenAI 已实现 Durable Channel Ingress、持久化 Session/Command Queue 和 Durable Final Delivery；Webhook/Email 生产入站、Agent/Workflow 出站已接入该链路。长连接 supervisor、更多提供方回执和管理端 DLQ 重放仍属增强项。
+> 状态：核心可靠消息链路已落地。KeenAI 已实现 Durable Channel Ingress、持久化 Session/Command Queue、Durable Final Delivery、Connection Runtime 租约、Discord Gateway supervisor、恢复扫描和管理端 DLQ 重放。Webhook/Email 生产入站与 Agent/Workflow 出站已接入该链路；WhatsApp/飞书回执可推进内部消息状态。
 
 本文将原 Widget 重构方案扩展为 KeenAI 的统一渠道设计。所有外部消息入口，包括 Widget、Email、Slack、Discord、WhatsApp、微信/企业微信、飞书、钉钉和 Telegram，均通过同一套接入、路由、策略、会话和可靠投递基础设施进入系统；渠道差异只保留在插件适配层。
 
@@ -76,7 +76,11 @@ packages/
   channels-email/         # Email 插件
   channels-im/            # Slack/Discord/Telegram/WhatsApp/WeCom/Feishu/DingTalk
 apps/api/src/routes/      # Webhook 与连接配置 API
-apps/api/src/lib/channel-dispatch.ts # Ingress/Session/Delivery 调度与恢复
+apps/api/src/lib/channel-dispatch.ts # Ingress/Session/Delivery 调度
+apps/api/src/lib/channel-recovery-scheduler.ts # 无外部队列时的恢复扫描
+apps/api/src/lib/channel-connection-supervisor.ts # 有状态连接租约与生命周期
+apps/api/src/lib/discord-gateway.ts # Discord IDENTIFY/RESUME/heartbeat
+apps/api/src/routes/channel-dead-letters.ts # DLQ 查询、重放与解决
 packages/storage/src/schema/sqlite/channel.ts # 可靠链路事实表
 ```
 
@@ -88,34 +92,18 @@ packages/storage/src/schema/sqlite/channel.ts # 可靠链路事实表
 
 ```ts
 export interface ChannelPlugin {
-  id: ChannelType;
-  displayName: string;
-  capabilities: ChannelCapabilities;
-  connection: {
-    validate(config: unknown): Promise<ValidatedConnection>;
-    refresh?(connection: ChannelConnection): Promise<TokenUpdate>;
-    health(connection: ChannelConnection): Promise<HealthResult>;
-  };
-  inbound: {
-    verify(request: RawChannelRequest, secret: SecretRef): Promise<void>;
-    parse(request: RawChannelRequest): Promise<ProviderEvent[]>;
-    normalize(event: ProviderEvent, ctx: NormalizeContext): Promise<InboundEnvelope[]>;
-  };
-  routing: {
-    identityKey(envelope: InboundEnvelope): string;
-    conversationKey(envelope: InboundEnvelope): string;
-    threadKey?(envelope: InboundEnvelope): string | undefined;
-  };
-  outbound: {
-    validate(message: OutboundEnvelope): ValidationResult;
-    send(message: OutboundEnvelope, ctx: SendContext): Promise<SendResult>;
-  };
-  receipts?: {
-    normalize(event: ProviderEvent): Promise<DeliveryReceipt[]>;
-  };
-  runtime?: ChannelRuntimeFactory;
+  readonly type: ChannelType;
+  readonly capabilities: ReadonlySet<ChannelCapability>;
+  verifyWebhook?(request, connection): Promise<ChannelVerificationResult>;
+  parseWebhook?(request, connection): Promise<ChannelProviderEvent[]>;
+  normalizeInbound?(event, connection): Promise<ChannelInboundEnvelope | null>;
+  send(envelope, connection): Promise<ChannelSendResult>;
+  parseDeliveryReceipts?(request, connection): Promise<ChannelDeliveryReceipt[]>;
+  classifyError(error): ChannelClassifiedError;
 }
 ```
+
+连接校验、Token 交换和长连接生命周期属于 Gateway/Connection Runtime，不塞进插件业务契约。当前 Registry 注册 `widget`、`email` 与七个 IM 插件；统一契约测试覆盖所有 IM 插件的能力声明与出站动作生成。
 
 能力声明至少包含入站、出站、线程、附件、Reaction、编辑、删除、Typing、已读/送达回执、模板、最大文本长度和最大附件大小。核心层根据能力降级：例如不支持编辑时发送更正消息，不支持线程时使用外部会话主键，超过长度时由公共内容适配器分段。
 
@@ -127,12 +115,14 @@ export interface ChannelPlugin {
 - **有状态接入**：Socket Mode、Gateway WebSocket、长轮询、IMAP IDLE。Runtime Worker 持有租约，确保一个连接同一时刻只有一个活跃消费者。
 
 ```text
-pending -> connecting -> active -> degraded -> reconnecting
-                         │                     │
-                         └-> disabled/error <-┘
+connection.status: active | disabled | error
+runtime_state:     stopped -> connecting -> connected -> reconnecting
+                               │                │
+                               └---- error <----┘
 ```
 
 - 数据库租约或 Redis lease 包含 `owner_id`、`lease_expires_at`、`heartbeat_at`。
+- 每次 claim 生成 fencing token；过期 owner 即使恢复也不能再 heartbeat、提交 cursor 或释放新 owner 的租约。
 - 重连使用指数退避和随机抖动；Token 刷新使用版本号避免多 Worker 覆盖。
 - 凭据只保存 Secret 引用；日志、Trace 和错误不得输出 Token、签名密钥或邮件密码。
 - 健康状态区分配置错误、鉴权错误、限流、网络错误和提供方故障。
@@ -193,12 +183,13 @@ queued -> sending -> accepted -> delivered -> read
 - 请求超时且无法确认提供方是否接收时标记 `unknown`，不能立即假定失败并无限重发。
 - 重试遵守 `Retry-After`，并按连接和渠道分别限流。
 - 死信支持后台查看、修复连接后重放和完整审计。
+- 管理端通过组织隔离的 DLQ API 查询、重放或解决失败任务；重放保留历史 attempt，并提升该任务后续可用的最大尝试次数。
 
 ## 9. 核心数据模型
 
 | 表 | 作用 | 关键约束 |
 |---|---|---|
-| `channel_connections` | 租户下的渠道账号、传输配置、Secret 引用、租约和健康状态 | 外部应用/范围在组织和渠道类型内唯一 |
+| `channel_connections` | 租户下的渠道账号、传输配置、加密凭据、运行状态、fencing token、租约、cursor 和退避时间 | `(org, brand, channel_type, external_account_id)` 唯一 |
 | `channel_ingress_events` | 入站原始事件、处理状态、重试和错误 | `(connection_id, provider_event_id)` 唯一 |
 | `channel_identities` | 外部用户到 KeenAI Contact/User 的映射 | `(connection_id, external_user_id)` 唯一 |
 | `channel_conversation_links` | 外部会话/线程到内部 Conversation 的映射 | 连接 + 外部会话 + 线程唯一 |
@@ -206,7 +197,7 @@ queued -> sending -> accepted -> delivered -> read
 | `channel_session_commands` | 按 Conversation 串行的持久化 Agent/Workflow 命令 | 幂等键唯一，Conversation + sequence 唯一 |
 | `channel_outbox` | 待发送标准消息、锁、重试和最终结果 | `(connection_id, idempotency_key)` 唯一 |
 | `channel_delivery_attempts` | 每次提供方调用的脱敏结果 | `(outbox_id, attempt_no)` 唯一 |
-| `channel_delivery_receipts` | 送达、已读、退信和拒绝回执 | `(connection_id, provider_receipt_id)` 唯一 |
+| `channel_delivery_receipts` | 接受、发送、送达、已读和失败回执 | `(connection_id, provider_message_id, status)` 唯一 |
 | `channel_dead_letters` | 入站/出站不可恢复任务及审计重放 | 来源方向、表和记录唯一 |
 
 `Message` 先以 pending 状态持久化，Outbox 通过稳定幂等键创建，恢复扫描补齐两步之间的崩溃窗口；`messages.delivery_status` 只保存便于 UI 查询的状态摘要，完整事实保存在发送尝试和回执表。原始 Payload、死信 Payload 和提供方响应需要脱敏、加密并设置保留期限。完整 Drizzle 模型见 [07-DATA-MODEL.md § 4.4](07-DATA-MODEL.md)。
@@ -218,10 +209,10 @@ queued -> sending -> accepted -> delivered -> read
 | Widget | HTTP/WS | HTTP/WS | 无状态 + 实时连接 | 匿名身份、Origin 校验、断线续传 |
 | Email | Provider Webhook/IMAP | Provider API/SMTP | Webhook 或 IMAP IDLE | Threading、退信、附件、抑制列表 |
 | Slack | Events API/Socket Mode | Web API | 可选 Socket Runtime | team/channel/thread、OAuth scopes |
-| Discord | Gateway/Webhook | REST | Gateway Runtime | intents、guild/channel/thread、限流 bucket |
-| WhatsApp | Meta Webhook | Cloud API | 无状态 | 模板窗口、phone number、消息回执 |
+| Discord | Gateway/Webhook | REST | **Gateway Runtime 已实现** | IDENTIFY/RESUME、heartbeat、cursor、租约 fencing |
+| WhatsApp | Meta Webhook | Cloud API | 无状态 | phone number 隔离、sent/delivered/read/failed 回执 |
 | 微信/企业微信 | 回调/WebSocket（按产品） | 官方 API | 视接入模式 | 签名、加解密、corp/app 隔离 |
-| 飞书 | Event Subscription/WebSocket | Open API | 可选 WS Runtime | tenant/app/chat/thread、Token 刷新 |
+| 飞书 | Event Subscription | Open API | 当前 Webhook | tenant/app/chat、Token 刷新、message read 回执 |
 | 钉钉 | Stream/Webhook | Open API | Stream Runtime | corp/app/conversation、签名与限流 |
 | Telegram | Webhook/Long Polling | Bot API | 可选 Poll Runtime | bot/chat/topic、文件限制 |
 
@@ -345,7 +336,7 @@ KeenAI 保留上述三层分工，但按企业多租户和多实例部署调整�
 | Session / Command Queue | `channel_session_commands` | `enqueueSessionCommand` / `processChannelSession` | 每会话 FIFO、幂等、lease fencing、退避、DLQ |
 | Durable Final Delivery | `channel_outbox` 及 attempt/receipt 表 | `enqueueMessageForChannelDelivery` / `processChannelOutbox` | 发送前持久化、可重试错误退避、回执推进、未知结果不盲目重发 |
 
-代码位置：`packages/channels-runtime/src/{ingress,session-queue,delivery}.ts`、`apps/api/src/lib/channel-dispatch.ts`、`apps/api/src/routes/{im-webhooks,email-webhooks}.ts`。
+代码位置：`packages/channels-runtime/src/{ingress,session-queue,delivery,dead-letter,connection-runtime}.ts`、`apps/api/src/lib/{channel-dispatch,channel-recovery-scheduler,channel-connection-supervisor,discord-gateway}.ts`、`apps/api/src/routes/{im-webhooks,email-webhooks,channel-connections,channel-dead-letters}.ts`。
 
 ---
 

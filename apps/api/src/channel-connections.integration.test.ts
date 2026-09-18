@@ -5,11 +5,13 @@ import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
 import {
   accounts,
+  auditLogs,
   brands,
   channelConnections,
   members,
   organizations,
 } from "@keenai/storage/schema";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -107,6 +109,29 @@ describe("channel connections", () => {
       items: Array<{ configuredCredentialKeys: string[] }>;
     };
     expect(body.items[0]?.configuredCredentialKeys).toEqual(["botToken"]);
+
+    const createdAudits = await store.db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "channel.connection.created"));
+    expect(createdAudits).toHaveLength(1);
+    expect(JSON.stringify(createdAudits[0]?.changes)).not.toContain("super-secret-token");
+
+    const disabled = await app.request(
+      `/api/v1/dashboard/channel-connections/${stored?.id ?? ""}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+    expect(disabled.status).toBe(204);
+    const [stillStored] = await store.db.select().from(channelConnections).limit(1);
+    expect(stillStored?.status).toBe("disabled");
+    const disabledAudits = await store.db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "channel.connection.disabled"));
+    expect(disabledAudits).toHaveLength(1);
     await store.close();
   });
 });

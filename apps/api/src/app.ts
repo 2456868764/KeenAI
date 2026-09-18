@@ -5,6 +5,7 @@ import { accounts, members, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { initChannelDispatch } from "./lib/channel-dispatch.js";
 import { initFeedbackPostVectorFromStore } from "./lib/feedback-post-vector-init.js";
@@ -37,6 +38,7 @@ import { authRoutes } from "./routes/auth.js";
 import { brandRoutes } from "./routes/brands.js";
 import { changelogRoutes } from "./routes/changelog.js";
 import { channelConnectionRoutes } from "./routes/channel-connections.js";
+import { channelDeadLetterRoutes } from "./routes/channel-dead-letters.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { customActionRoutes } from "./routes/custom-actions.js";
@@ -161,6 +163,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", emailWebhookRoutes());
   app.route("/", imWebhookRoutes());
   app.route("/", channelConnectionRoutes());
+  app.route("/", channelDeadLetterRoutes());
   app.route("/", notificationRoutes());
   app.route("/", memberRoutes());
   app.route("/", brandRoutes());
@@ -236,6 +239,13 @@ export function createApp(ctx: AppContext) {
   app.notFound((c) => c.json({ error: "not_found" }, 404));
 
   app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      c.get("log").warn(
+        { err, requestId: c.get("requestId"), status: err.status },
+        "request rejected",
+      );
+      return err.getResponse();
+    }
     c.get("log").error({ err, requestId: c.get("requestId") }, "unhandled");
     return c.json({ error: "internal_error" }, 500);
   });

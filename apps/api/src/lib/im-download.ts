@@ -14,26 +14,32 @@ const STUB_WEBM = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x01, 0x02, 0x03]);
 export async function downloadImAttachment(
   env: ApiEnv,
   attachment: ImPendingAttachment,
+  credentials: Record<string, unknown> = {},
 ): Promise<Uint8Array> {
   if (attachment.content) return attachment.content;
 
   if (attachment.platform === "telegram") {
-    return downloadTelegramFile(env, attachment);
+    return downloadTelegramFile(env, attachment, credentials);
   }
 
   if (attachment.platform === "whatsapp") {
-    return downloadWhatsAppMedia(env, attachment);
+    return downloadWhatsAppMedia(env, attachment, credentials);
   }
 
-  return downloadSlackFile(env, attachment);
+  if (attachment.platform === "slack") {
+    return downloadSlackFile(env, attachment, credentials);
+  }
+
+  return downloadPublicFile(env, attachment);
 }
 
 async function downloadTelegramFile(
   env: ApiEnv,
   attachment: ImPendingAttachment,
+  credentials: Record<string, unknown>,
 ): Promise<Uint8Array> {
-  const token = env.TELEGRAM_BOT_TOKEN;
-  if (!token) return stubBytesForMime(attachment.contentType);
+  const token = credential(credentials, "botToken") ?? env.TELEGRAM_BOT_TOKEN;
+  if (!token) return missingCredential(env, attachment, "telegram_bot_token_missing");
 
   const fileRes = await fetch(
     `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(attachment.platformRef)}`,
@@ -52,9 +58,10 @@ async function downloadTelegramFile(
 async function downloadSlackFile(
   env: ApiEnv,
   attachment: ImPendingAttachment,
+  credentials: Record<string, unknown>,
 ): Promise<Uint8Array> {
-  const token = env.SLACK_BOT_TOKEN;
-  if (!token) return stubBytesForMime(attachment.contentType);
+  const token = credential(credentials, "botToken") ?? env.SLACK_BOT_TOKEN;
+  if (!token) return missingCredential(env, attachment, "slack_bot_token_missing");
 
   const url = attachment.platformRef.startsWith("http")
     ? attachment.platformRef
@@ -72,11 +79,13 @@ async function downloadSlackFile(
 async function downloadWhatsAppMedia(
   env: ApiEnv,
   attachment: ImPendingAttachment,
+  credentials: Record<string, unknown>,
 ): Promise<Uint8Array> {
-  const token = env.WHATSAPP_ACCESS_TOKEN;
-  if (!token) return stubBytesForMime(attachment.contentType);
+  const token = credential(credentials, "accessToken") ?? env.WHATSAPP_ACCESS_TOKEN;
+  if (!token) return missingCredential(env, attachment, "whatsapp_access_token_missing");
 
-  const version = env.WHATSAPP_GRAPH_API_VERSION || "v20.0";
+  const version =
+    credential(credentials, "graphApiVersion") ?? env.WHATSAPP_GRAPH_API_VERSION ?? "v20.0";
   const metaRes = await fetch(
     `https://graph.facebook.com/${version}/${encodeURIComponent(attachment.platformRef)}`,
     {
@@ -93,6 +102,33 @@ async function downloadWhatsAppMedia(
   });
   if (!contentRes.ok) throw new Error("whatsapp_media_download_failed");
   return new Uint8Array(await contentRes.arrayBuffer());
+}
+
+async function downloadPublicFile(
+  env: ApiEnv,
+  attachment: ImPendingAttachment,
+): Promise<Uint8Array> {
+  if (!/^https:\/\//i.test(attachment.platformRef)) {
+    if (env.NODE_ENV === "test") return stubBytesForMime(attachment.contentType);
+    throw new Error(`${attachment.platform}_attachment_url_missing`);
+  }
+  const response = await fetch(attachment.platformRef);
+  if (!response.ok) throw new Error(`${attachment.platform}_download_failed`);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+function missingCredential(
+  env: ApiEnv,
+  attachment: ImPendingAttachment,
+  errorCode: string,
+): Uint8Array {
+  if (env.NODE_ENV === "test") return stubBytesForMime(attachment.contentType);
+  throw new Error(errorCode);
+}
+
+function credential(credentials: Record<string, unknown>, key: string): string | undefined {
+  const value = credentials[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 function stubBytesForMime(contentType: string): Uint8Array {

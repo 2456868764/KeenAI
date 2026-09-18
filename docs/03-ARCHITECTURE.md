@@ -586,7 +586,7 @@ Vector:  pgvector / Turso 向量 / Qdrant Cloud
 
 ### 2.9 Channel Gateway（统一渠道接入与可靠投递）
 
-> 核心可靠消息链路已落地，长连接 supervisor 和管理端 DLQ 重放仍按连接逐步增强。完整契约、数据流和 Widget 专项设计见 [16-Channel.md](16-Channel.md)。
+> 核心可靠消息链路已落地，包括 Discord Gateway supervisor、连接租约/cursor、恢复扫描和管理端 DLQ 重放。完整契约、数据流和 Widget 专项设计见 [16-Channel.md](16-Channel.md)。
 
 Widget、Email、Slack、Discord、WhatsApp、微信/企业微信、飞书、钉钉和 Telegram 统一进入 Channel Gateway，不再由各业务模块直接调用提供方 SDK。
 
@@ -606,7 +606,7 @@ Channels
 架构边界：
 
 - **Channel Plugin** 只适配协议并声明能力，不直接操作 Workflow、Agent 或业务表。
-- **Connection Runtime** 负责凭据、Token 交换和有状态连接生命周期；Webhook 已落地，需要常驻 Socket/Stream 的连接 supervisor 仍待增强。
+- **Connection Runtime** 负责加密凭据、Token 交换、数据库租约、fencing token、cursor 和有状态连接生命周期；Discord Gateway supervisor 已落地，其他 Socket/Stream transport 按插件继续扩展。
 - **Durable Ingress** 以 `(connection_id, provider_event_id)` 去重，成功持久化后才向提供方 ACK。
 - **Durable Session Commands** 以 `channel_session_commands` 按 Conversation 串行调度，不依赖进程内队列恢复业务事实。
 - **Durable Delivery** 使用可恢复 Outbox；业务提交不等于外部送达，最终状态由提供方回执推进。

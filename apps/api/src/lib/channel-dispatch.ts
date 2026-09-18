@@ -1,16 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { CHANNEL_TYPES, type ChannelType } from "@keenai/channels-core";
-import {
-  type ImPlatform,
-  type ParsedInboundImMessage,
-  adaptDingTalkRobot,
-  adaptDiscordEvent,
-  adaptFeishuEvent,
-  adaptSlackEvent,
-  adaptTelegramUpdate,
-  adaptWeComMessage,
-  adaptWhatsAppWebhook,
-} from "@keenai/channels-im";
+import type { ImPlatform, ParsedInboundImMessage } from "@keenai/channels-im";
 import {
   type ClaimedIngressEvent,
   admitIngressEvent,
@@ -26,6 +16,7 @@ import {
   failOutboxDelivery,
   failSessionCommand,
 } from "@keenai/channels-runtime";
+import { inferMessageKind } from "@keenai/shared";
 import {
   channelConnections,
   channelConversationLinks,
@@ -148,7 +139,12 @@ export async function enqueueMessageForChannelDelivery(input: {
     ? await ctx.store.db
         .select()
         .from(channelConnections)
-        .where(eq(channelConnections.id, link.connectionId))
+        .where(
+          and(
+            eq(channelConnections.id, link.connectionId),
+            eq(channelConnections.status, "active"),
+          ),
+        )
         .limit(1)
     : await ctx.store.db
         .select()
@@ -163,6 +159,9 @@ export async function enqueueMessageForChannelDelivery(input: {
         )
         .limit(1);
 
+  if (!connection && link) {
+    return { enqueued: false as const, reason: "connection_not_active" };
+  }
   if (!connection) {
     if (ctx.env.NODE_ENV === "test") {
       return { enqueued: false as const, reason: "connection_not_found" };
@@ -375,14 +374,12 @@ async function processClaimedIngress(ctx: ChannelRuntimeContext, claimed: Claime
     if (claimed.event.channelType === "email") {
       return await processClaimedEmailIngress(ctx, claimed);
     }
-    const parsed = parseImPayload(
-      claimed.event.channelType as ImPlatform,
-      claimed.event.rawPayload,
-    );
+    const parsed = await normalizeImPayload(ctx, claimed.event);
     if (!parsed) throw new TerminalChannelError("unsupported_or_empty_channel_event");
     const ensured = await ensureInboundImConversation(ctx.store.db, {
       orgId: claimed.event.orgId,
       brandId: claimed.event.brandId,
+      connectionId: claimed.event.connectionId,
       parsed,
     });
     const now = new Date();
@@ -581,13 +578,20 @@ export async function processChannelSession(ctx: ChannelRuntimeContext, conversa
       await getChannelDispatch().dispatchSession(conversationId);
       return { processed: true, messageId: result.messageId };
     }
-    const parsed = parseImPayload(event.channelType as ImPlatform, event.rawPayload);
+    const parsed = await normalizeImPayload(ctx, event);
     if (!parsed) throw new TerminalChannelError("unsupported_or_empty_channel_event");
+    const [connection] = await ctx.store.db
+      .select({ credentials: channelConnections.credentials })
+      .from(channelConnections)
+      .where(eq(channelConnections.id, event.connectionId))
+      .limit(1);
+    if (!connection) throw new TerminalChannelError("connection_not_found");
     const result = await ingestInboundIm(ctx.store.db, {
       orgId: event.orgId,
       brandId: event.brandId,
       parsed,
       env: ctx.env,
+      channelCredentials: openChannelCredentials(connection.credentials, ctx.authConfig.jwtSecret),
       conversation: {
         conversation: { id: conversationId, channelId: parsed.channelId, subject: null },
         created: false,
@@ -719,8 +723,15 @@ export async function recoverChannelQueues(ctx: ChannelRuntimeContext, limit: nu
   for (let index = 0; index < limit; index++) {
     const claimed = await claimIngressEvent(ctx.store);
     if (!claimed) break;
-    await processClaimedIngress(ctx, claimed);
-    ingress += 1;
+    try {
+      await processClaimedIngress(ctx, claimed);
+      ingress += 1;
+    } catch (error) {
+      ctx.log.error(
+        { err: error, ingressEventId: claimed.event.id },
+        "channel ingress recovery item failed",
+      );
+    }
   }
 
   const now = new Date();
@@ -736,7 +747,14 @@ export async function recoverChannelQueues(ctx: ChannelRuntimeContext, limit: nu
     .orderBy(asc(channelSessionCommands.availableAt))
     .limit(limit);
   for (const session of new Set(sessions.map((row) => row.conversationId))) {
-    await processChannelSession(ctx, session);
+    try {
+      await processChannelSession(ctx, session);
+    } catch (error) {
+      ctx.log.error(
+        { err: error, conversationId: session },
+        "channel session recovery item failed",
+      );
+    }
   }
 
   const pendingMessages = await ctx.store.db
@@ -756,14 +774,25 @@ export async function recoverChannelQueues(ctx: ChannelRuntimeContext, limit: nu
     .orderBy(asc(messages.createdAt))
     .limit(limit);
   for (const message of pendingMessages) {
-    const result = await enqueueMessageForChannelDelivery(message);
-    if (result.enqueued) deliveryIntents += 1;
+    try {
+      const result = await enqueueMessageForChannelDelivery(message);
+      if (result.enqueued) deliveryIntents += 1;
+    } catch (error) {
+      ctx.log.error(
+        { err: error, messageId: message.messageId },
+        "channel delivery intent recovery failed",
+      );
+    }
   }
 
   for (let index = 0; index < limit; index++) {
-    const result = await processChannelOutbox(ctx);
-    if (!result.processed) break;
-    delivery += 1;
+    try {
+      const result = await processChannelOutbox(ctx);
+      if (!result.processed) break;
+      delivery += 1;
+    } catch (error) {
+      ctx.log.error({ err: error }, "channel delivery recovery item failed");
+    }
   }
   return { ingress, sessions: sessions.length, deliveryIntents, delivery };
 }
@@ -808,16 +837,57 @@ export async function ensureChannelConnection(
   return existing;
 }
 
-function parseImPayload(platform: ImPlatform, payload: unknown): ParsedInboundImMessage | null {
-  const record = isRecord(payload) ? (payload as Record<string, never>) : {};
-  if (platform === "telegram") return adaptTelegramUpdate(record);
-  if (platform === "discord") return adaptDiscordEvent(record);
-  if (platform === "slack") return adaptSlackEvent(record);
-  if (platform === "feishu") return adaptFeishuEvent(record);
-  if (platform === "dingtalk") return adaptDingTalkRobot(record);
-  if (platform === "whatsapp") return adaptWhatsAppWebhook(record);
-  if (platform === "wecom") return adaptWeComMessage(record);
-  return null;
+async function normalizeImPayload(
+  ctx: ChannelRuntimeContext,
+  event: typeof channelIngressEvents.$inferSelect,
+): Promise<ParsedInboundImMessage | null> {
+  if (event.channelType === "email" || event.channelType === "widget") return null;
+  const [connection] = await ctx.store.db
+    .select()
+    .from(channelConnections)
+    .where(eq(channelConnections.id, event.connectionId))
+    .limit(1);
+  if (!connection) throw new TerminalChannelError("connection_not_found");
+  const plugin = getChannelPluginRegistry().get(event.channelType);
+  if (!plugin.normalizeInbound) throw new TerminalChannelError("channel_normalizer_not_available");
+  const envelope = await plugin.normalizeInbound(
+    {
+      providerEventId: event.providerEventId,
+      eventType: event.eventType,
+      payload: event.rawPayload,
+    },
+    {
+      connectionId: connection.id,
+      orgId: connection.orgId,
+      brandId: connection.brandId,
+      channelType: connection.channelType,
+      credentials: openChannelCredentials(connection.credentials, ctx.authConfig.jwtSecret),
+      settings: connection.settings,
+    },
+  );
+  if (!envelope) return null;
+  const attributes = envelope.attributes ?? {};
+  return {
+    platformMessageId: envelope.providerMessageId,
+    channelType: envelope.channelType as ImPlatform,
+    channelId: envelope.externalThreadId,
+    userId: envelope.externalUserId,
+    plainText: envelope.plainText,
+    parts: envelope.parts,
+    messageKind: inferMessageKind(envelope.parts),
+    attachments: envelope.attachments
+      .map((attachment, index) => ({
+        fileName: attachment.fileName ?? `attachment-${index + 1}`,
+        contentType: attachment.contentType ?? "application/octet-stream",
+        sizeBytes: attachment.sizeBytes ?? 0,
+        platform: envelope.channelType as ImPlatform,
+        platformRef: attachment.url ?? attachment.providerAttachmentId ?? "",
+      }))
+      .filter((attachment) => attachment.platformRef.length > 0),
+    replyToMessageId: envelope.replyToProviderMessageId,
+    mediaGroupId: typeof attributes.mediaGroupId === "string" ? attributes.mediaGroupId : undefined,
+    conversationAttributes: attributes,
+  };
 }
 
 function channelDisplayName(platform: ChannelType): string {

@@ -20,6 +20,18 @@ export type ChannelType = (typeof CHANNEL_TYPES)[number];
 export const CHANNEL_CONNECTION_STATUSES = ["active", "disabled", "error"] as const;
 export type ChannelConnectionStatus = (typeof CHANNEL_CONNECTION_STATUSES)[number];
 
+export const CHANNEL_CONNECTION_TRANSPORTS = ["webhook", "gateway", "polling", "stream"] as const;
+export type ChannelConnectionTransport = (typeof CHANNEL_CONNECTION_TRANSPORTS)[number];
+
+export const CHANNEL_CONNECTION_RUNTIME_STATES = [
+  "stopped",
+  "connecting",
+  "connected",
+  "reconnecting",
+  "error",
+] as const;
+export type ChannelConnectionRuntimeState = (typeof CHANNEL_CONNECTION_RUNTIME_STATES)[number];
+
 export const CHANNEL_JOB_STATUSES = [
   "pending",
   "processing",
@@ -63,6 +75,7 @@ export const channelConnections = sqliteTable(
     name: text("name").notNull(),
     externalAccountId: text("external_account_id").notNull().default("default"),
     status: text("status").$type<ChannelConnectionStatus>().notNull().default("active"),
+    transport: text("transport").$type<ChannelConnectionTransport>().notNull().default("webhook"),
     credentials: text("credentials", { mode: "json" })
       .$type<Record<string, unknown>>()
       .notNull()
@@ -73,6 +86,20 @@ export const channelConnections = sqliteTable(
       .default({}),
     lastError: text("last_error"),
     lastConnectedAt: integer("last_connected_at", { mode: "timestamp_ms" }),
+    runtimeState: text("runtime_state")
+      .$type<ChannelConnectionRuntimeState>()
+      .notNull()
+      .default("stopped"),
+    runtimeOwnerId: text("runtime_owner_id"),
+    runtimeLeaseToken: text("runtime_lease_token"),
+    runtimeLeaseExpiresAt: integer("runtime_lease_expires_at", { mode: "timestamp_ms" }),
+    runtimeHeartbeatAt: integer("runtime_heartbeat_at", { mode: "timestamp_ms" }),
+    runtimeNextAttemptAt: integer("runtime_next_attempt_at", { mode: "timestamp_ms" }),
+    runtimeCursor: text("runtime_cursor", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    reconnectAttempts: integer("reconnect_attempts").notNull().default(0),
     ...sqliteTimestamps,
   },
   (table) => ({
@@ -86,6 +113,12 @@ export const channelConnections = sqliteTable(
       table.brandId,
       table.channelType,
       table.status,
+    ),
+    idxRuntimeLease: index("idx_channel_connections_runtime_lease").on(
+      table.status,
+      table.transport,
+      table.runtimeNextAttemptAt,
+      table.runtimeLeaseExpiresAt,
     ),
   }),
 );

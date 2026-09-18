@@ -198,6 +198,7 @@ export async function failIngressEvent(
             reasonCode: input.errorCode,
             reason: input.errorMessage,
             payload: event.rawPayload,
+            resolvedAt: null,
             updatedAt: now,
           },
         });

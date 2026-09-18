@@ -1419,10 +1419,15 @@ export type ChannelConnection = {
   name: string;
   externalAccountId: string;
   status: "active" | "disabled" | "error";
+  transport: "webhook" | "gateway" | "polling" | "stream";
   configuredCredentialKeys: string[];
   settings: Record<string, unknown>;
   lastError: string | null;
   lastConnectedAt: string | null;
+  runtimeState: "stopped" | "connecting" | "connected" | "reconnecting" | "error";
+  runtimeHeartbeatAt: string | null;
+  runtimeNextAttemptAt: string | null;
+  reconnectAttempts: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -1440,6 +1445,7 @@ export async function saveChannelConnection(input: {
   name: string;
   externalAccountId?: string;
   status?: ChannelConnection["status"];
+  transport?: ChannelConnection["transport"];
   credentials?: Record<string, unknown>;
   settings?: Record<string, unknown>;
 }): Promise<{ connection: ChannelConnection }> {
@@ -1450,9 +1456,51 @@ export async function saveChannelConnection(input: {
       name: input.name,
       externalAccountId: input.externalAccountId ?? "default",
       status: input.status ?? "active",
+      transport: input.transport ?? "webhook",
       credentials: input.credentials,
       settings: input.settings ?? {},
     }),
+  });
+}
+
+export type ChannelDeadLetter = {
+  id: string;
+  sourceType: "ingress" | "session" | "delivery";
+  sourceId: string;
+  reasonCode: string;
+  reason: string;
+  replayCount: number;
+  lastReplayedAt: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listChannelDeadLetters(input?: {
+  status?: "open" | "resolved" | "all";
+  sourceType?: ChannelDeadLetter["sourceType"];
+  limit?: number;
+}): Promise<{ items: ChannelDeadLetter[] }> {
+  const query = new URLSearchParams();
+  if (input?.status) query.set("status", input.status);
+  if (input?.sourceType) query.set("sourceType", input.sourceType);
+  if (input?.limit) query.set("limit", String(input.limit));
+  const suffix = query.size > 0 ? `?${query}` : "";
+  return apiFetch(`/api/v1/dashboard/channel-dead-letters${suffix}`);
+}
+
+export async function replayChannelDeadLetter(id: string): Promise<{
+  replayed: true;
+  target: { sourceType: ChannelDeadLetter["sourceType"]; sourceId: string };
+}> {
+  return apiFetch(`/api/v1/dashboard/channel-dead-letters/${encodeURIComponent(id)}/replay`, {
+    method: "POST",
+  });
+}
+
+export async function resolveChannelDeadLetter(id: string): Promise<{ resolved: true }> {
+  return apiFetch(`/api/v1/dashboard/channel-dead-letters/${encodeURIComponent(id)}/resolve`, {
+    method: "POST",
   });
 }
 

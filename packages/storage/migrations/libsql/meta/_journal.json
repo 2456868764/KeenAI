@@ -337,6 +337,13 @@
       "when": 1789747200000,
       "tag": "0047_channel_runtime",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1789750800000,
+      "tag": "0048_channel_connection_runtime",
+      "breakpoints": true
     }
   ]
 }

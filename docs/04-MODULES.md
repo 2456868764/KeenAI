@@ -242,11 +242,12 @@ export interface LLMProvider {
 | Channel SDK | `packages/channels-core` | 标准 Envelope、Plugin 接口、Capabilities、错误分类和 contract tests |
 | Channel Plugins | `packages/channels-widget`, `packages/channels-email`, `packages/channels-im` | Widget、Email 和七种 IM 协议适配 |
 | Gateway | `apps/api/src/routes/im-webhooks.ts`, `email-webhooks.ts` | Webhook/IMAP 接入、签名验证、租户解析、原始事件持久化和快速 ACK |
-| Connection Runtime | `apps/api/src/routes/channel-connections.ts`, `apps/api/src/lib/channel-plugins.ts` | 加密凭据、Token 交换、插件初始化；长连接 supervisor 仍待增强 |
+| Connection Runtime | `packages/channels-runtime/src/connection-runtime.ts`, `apps/api/src/lib/channel-connection-supervisor.ts`, `discord-gateway.ts` | 加密凭据、租约 fencing、cursor、心跳、退避和 Discord Gateway 生命周期 |
 | Durable Ingress | `packages/channels-runtime/src/ingress.ts` | 去重、lease claim、重试、死信和恢复 |
 | Session Commands | `packages/channels-runtime/src/session-queue.ts` | 按 Conversation 串行的持久化命令、幂等、lease 和死信 |
 | Delivery Runtime | `packages/channels-runtime/src/delivery.ts` | Outbox、发送尝试、重试、回执、死信和 `unknown_after_send` 防重 |
 | Dispatcher | `apps/api/src/lib/channel-dispatch.ts` | Inngest/本地调度、Ingress 转 Session、Session 入库、Outbox 发送与恢复扫描 |
+| Recovery / DLQ | `channel-recovery-scheduler.ts`, `dead-letter.ts`, `channel-dead-letters.ts` | 无外部队列时恢复扫描、组织隔离查询、审计重放和人工解决 |
 
 ### 2.2 插件边界
 

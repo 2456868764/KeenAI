@@ -1,9 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 import { CHANNEL_TYPES, type ChannelType } from "@keenai/channels-core";
 import { DASHBOARD_API_PREFIX } from "@keenai/shared";
-import { channelConnections } from "@keenai/storage/schema";
+import { auditLogs, channelConnections } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import {
   channelCredentialKeys,
@@ -20,6 +20,7 @@ const upsertConnectionSchema = z.object({
   name: z.string().trim().min(1).max(120),
   externalAccountId: z.string().trim().min(1).max(255).default("default"),
   status: z.enum(["active", "disabled", "error"]).default("active"),
+  transport: z.enum(["webhook", "gateway", "polling", "stream"]).default("webhook"),
   credentials: z.record(z.string(), z.unknown()).optional(),
   settings: z.record(z.string(), z.unknown()).default({}),
 });
@@ -86,9 +87,11 @@ export function channelConnectionRoutes() {
             .set({
               name: body.name,
               status: body.status,
+              transport: body.transport,
               credentials: sealChannelCredentials(credentials, secret),
               settings: body.settings,
               lastError: null,
+              runtimeNextAttemptAt: null,
               updatedAt: now,
             })
             .where(eq(channelConnections.id, existing.id))
@@ -103,12 +106,29 @@ export function channelConnectionRoutes() {
               name: body.name,
               externalAccountId: body.externalAccountId,
               status: body.status,
+              transport: body.transport,
               credentials: sealChannelCredentials(credentials, secret),
               settings: body.settings,
               lastConnectedAt: now,
             })
             .returning();
       if (!row) return c.json({ error: "save_failed" }, 500);
+      await writeConnectionAudit(c, auth.sub, {
+        action: existing ? "channel.connection.updated" : "channel.connection.created",
+        connectionId: row.id,
+        changes: {
+          brandId: body.brandId,
+          channelType,
+          externalAccountId: body.externalAccountId,
+          status: body.status,
+          transport: body.transport,
+          configuredCredentialKeys: Object.entries(body.credentials ?? {})
+            .filter(([, value]) => value !== undefined && value !== null && value !== "")
+            .map(([key]) => key)
+            .sort(),
+          settingsKeys: Object.keys(body.settings).sort(),
+        },
+      });
       return c.json({ connection: serializeConnection(row, secret) });
     },
   );
@@ -118,15 +138,50 @@ export function channelConnectionRoutes() {
     if (!auth) return c.json({ error: "unauthorized" }, 401);
     const rows = await c
       .get("store")
-      .db.delete(channelConnections)
+      .db.update(channelConnections)
+      .set({ status: "disabled", updatedAt: new Date() })
       .where(
         and(eq(channelConnections.id, c.req.param("id")), eq(channelConnections.orgId, auth.orgId)),
       )
-      .returning({ id: channelConnections.id });
-    return rows.length === 0 ? c.json({ error: "not_found" }, 404) : c.body(null, 204);
+      .returning({ id: channelConnections.id, channelType: channelConnections.channelType });
+    const connection = rows[0];
+    if (!connection) return c.json({ error: "not_found" }, 404);
+    await writeConnectionAudit(c, auth.sub, {
+      action: "channel.connection.disabled",
+      connectionId: connection.id,
+      changes: { channelType: connection.channelType, status: "disabled" },
+    });
+    return c.body(null, 204);
   });
 
   return r;
+}
+
+async function writeConnectionAudit(
+  c: Context<{ Variables: AppVariables }>,
+  actorId: string,
+  input: {
+    action: string;
+    connectionId: string;
+    changes?: Record<string, unknown>;
+  },
+) {
+  const auth = c.get("auth");
+  if (!auth) return;
+  await c
+    .get("store")
+    .db.insert(auditLogs)
+    .values({
+      orgId: auth.orgId,
+      actorType: "account",
+      actorId,
+      action: input.action,
+      resourceType: "channel_connection",
+      resourceId: input.connectionId,
+      changes: input.changes,
+      ipAddress: c.req.header("x-forwarded-for")?.split(",")[0]?.trim(),
+      userAgent: c.req.header("user-agent"),
+    });
 }
 
 function serializeConnection(row: typeof channelConnections.$inferSelect, secret: string) {
@@ -137,10 +192,15 @@ function serializeConnection(row: typeof channelConnections.$inferSelect, secret
     name: row.name,
     externalAccountId: row.externalAccountId,
     status: row.status,
+    transport: row.transport,
     configuredCredentialKeys: channelCredentialKeys(row.credentials, secret),
     settings: row.settings,
     lastError: row.lastError,
     lastConnectedAt: row.lastConnectedAt?.toISOString() ?? null,
+    runtimeState: row.runtimeState,
+    runtimeHeartbeatAt: row.runtimeHeartbeatAt?.toISOString() ?? null,
+    runtimeNextAttemptAt: row.runtimeNextAttemptAt?.toISOString() ?? null,
+    reconnectAttempts: row.reconnectAttempts,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

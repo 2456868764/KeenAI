@@ -5,6 +5,8 @@ import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
 import { startAgentAutoCloseScheduler } from "./lib/agent-auto-close-scheduler.js";
 import { startAgentRecoveryScheduler } from "./lib/agent-recovery-scheduler.js";
+import { startChannelConnectionSupervisor } from "./lib/channel-connection-supervisor.js";
+import { startChannelRecoveryScheduler } from "./lib/channel-recovery-scheduler.js";
 import { startEmailImapPollScheduler } from "./lib/email-imap-scheduler.js";
 import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 import { createLogger } from "./logger.js";
@@ -22,6 +24,32 @@ initSentry(env, log);
 await initOtel(env, log);
 
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
+
+if (env.NODE_ENV !== "test" && env.CHANNEL_CONNECTION_SCAN_INTERVAL_SECONDS > 0) {
+  startChannelConnectionSupervisor(
+    { store, fts, authConfig, env, log, startedAt },
+    { intervalMs: env.CHANNEL_CONNECTION_SCAN_INTERVAL_SECONDS * 1_000 },
+  );
+  log.info(
+    { intervalSeconds: env.CHANNEL_CONNECTION_SCAN_INTERVAL_SECONDS },
+    "channel connection supervisor started",
+  );
+}
+
+if (
+  env.NODE_ENV !== "test" &&
+  !env.INNGEST_EVENT_KEY &&
+  env.CHANNEL_RECOVERY_INTERVAL_SECONDS > 0
+) {
+  startChannelRecoveryScheduler(
+    { store, fts, authConfig, env, log, startedAt },
+    env.CHANNEL_RECOVERY_INTERVAL_SECONDS,
+  );
+  log.info(
+    { intervalSeconds: env.CHANNEL_RECOVERY_INTERVAL_SECONDS },
+    "channel recovery scheduler started",
+  );
+}
 
 if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.AGENT_RECOVERY_INTERVAL_MINUTES > 0) {
   startAgentRecoveryScheduler(

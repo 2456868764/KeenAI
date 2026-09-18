@@ -3,10 +3,14 @@
 import { AppHeader } from "@/components/layout/app-header";
 import {
   type ChannelConnection,
+  type ChannelDeadLetter,
   type ChannelType,
   fetchMe,
   listBrands,
   listChannelConnections,
+  listChannelDeadLetters,
+  replayChannelDeadLetter,
+  resolveChannelDeadLetter,
   saveChannelConnection,
 } from "@/lib/api";
 import { Button, Input } from "@keenai/ui";
@@ -14,6 +18,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
   Boxes,
+  CheckCircle2,
+  CircleAlert,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -36,6 +42,7 @@ type Integration = {
   icon: LucideIcon;
   iconTone: string;
   action: "Connect" | "Configure";
+  transport?: ChannelConnection["transport"];
   webhookPath?: string;
   env?: string[];
   setup?: string;
@@ -71,6 +78,7 @@ const integrations: Integration[] = [
     icon: MessageCircle,
     iconTone: "text-indigo-500",
     action: "Configure",
+    transport: "gateway",
     webhookPath: "/api/v1/webhooks/im/discord",
     env: ["DISCORD_BOT_TOKEN"],
     setup: "Connect a Discord bot token and forward message events to this endpoint.",
@@ -198,6 +206,10 @@ export default function IntegrationsSettingsPage() {
     queryFn: () => listChannelConnections(brandId),
     enabled: Boolean(brandId),
   });
+  const { data: deadLetters } = useQuery({
+    queryKey: ["channel-dead-letters", "open"],
+    queryFn: () => listChannelDeadLetters({ status: "open", limit: 50 }),
+  });
   const [query, setQuery] = useState("");
   const [modalIntegration, setModalIntegration] = useState<Integration | null>(null);
 
@@ -270,6 +282,8 @@ export default function IntegrationsSettingsPage() {
               </div>
 
               {filteredIntegrations.length === 0 ? <EmptyState /> : null}
+
+              <DeadLetterPanel items={deadLetters?.items ?? []} />
             </section>
           </div>
         </div>
@@ -286,6 +300,94 @@ export default function IntegrationsSettingsPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+function DeadLetterPanel({ items }: { items: ChannelDeadLetter[] }) {
+  const queryClient = useQueryClient();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ["channel-dead-letters", "open"] });
+  const replay = useMutation({
+    mutationFn: replayChannelDeadLetter,
+    onMutate: (id) => {
+      setPendingId(id);
+      setError(null);
+    },
+    onSuccess: refresh,
+    onError: (cause) => setError(cause instanceof Error ? cause.message : "Replay failed"),
+    onSettled: () => setPendingId(null),
+  });
+  const resolve = useMutation({
+    mutationFn: resolveChannelDeadLetter,
+    onMutate: (id) => {
+      setPendingId(id);
+      setError(null);
+    },
+    onSuccess: refresh,
+    onError: (cause) => setError(cause instanceof Error ? cause.message : "Resolve failed"),
+    onSettled: () => setPendingId(null),
+  });
+
+  return (
+    <section className="mt-10" aria-labelledby="channel-failures-title">
+      <div className="mb-4 flex items-center gap-2">
+        <CircleAlert className="size-5 text-amber-500" />
+        <h2
+          id="channel-failures-title"
+          className="text-lg font-semibold text-[hsl(var(--foreground))]"
+        >
+          Failed channel jobs
+        </h2>
+        <span className="text-sm text-[hsl(var(--muted-foreground))]">({items.length})</span>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]">
+        {items.length === 0 ? (
+          <div className="flex items-center gap-3 px-5 py-6 text-sm text-[hsl(var(--muted-foreground))]">
+            <CheckCircle2 className="size-5 text-emerald-500" />
+            No unresolved channel jobs.
+          </div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col gap-4 border-b border-[hsl(var(--border))] px-5 py-4 last:border-b-0 sm:flex-row sm:items-center"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-[hsl(var(--surface-2))] px-2 py-1 text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))]">
+                    {item.sourceType}
+                  </span>
+                  <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                    {item.reasonCode}
+                  </span>
+                </div>
+                <p className="mt-2 break-words text-sm text-[hsl(var(--muted-foreground))]">
+                  {item.reason}
+                </p>
+                <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                  {new Date(item.createdAt).toLocaleString()} · replayed {item.replayCount} times
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  variant="outline"
+                  disabled={pendingId === item.id}
+                  onClick={() => resolve.mutate(item.id)}
+                >
+                  Resolve
+                </Button>
+                <Button disabled={pendingId === item.id} onClick={() => replay.mutate(item.id)}>
+                  Replay
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+    </section>
   );
 }
 
@@ -351,6 +453,7 @@ function IntegrationConfigDialog({
         credentials: values,
         settings: connection?.settings ?? {},
         status: "active",
+        transport: integration.transport ?? "webhook",
       });
     },
     onSuccess: async () => {
@@ -359,7 +462,9 @@ function IntegrationConfigDialog({
     },
   });
   const webhookUrl = integration.webhookPath
-    ? `${API_URL}${integration.webhookPath}?org=${encodeURIComponent(orgSlug)}`
+    ? `${API_URL}${integration.webhookPath}?org=${encodeURIComponent(orgSlug)}${
+        connection ? `&connection=${encodeURIComponent(connection.id)}` : ""
+      }`
     : null;
 
   return (
@@ -468,6 +573,7 @@ function IntegrationConfigDialog({
               ) : null}
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
                 Status: {connection?.status ?? "Not configured"}
+                {connection ? ` · ${connection.transport} · ${connection.runtimeState}` : ""}
               </p>
             </div>
           ) : (

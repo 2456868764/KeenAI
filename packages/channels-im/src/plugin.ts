@@ -1,4 +1,5 @@
 import type {
+  ChannelCapability,
   ChannelClassifiedError,
   ChannelConnectionConfig,
   ChannelDeliveryReceipt,
@@ -9,7 +10,7 @@ import type {
 } from "@keenai/channels-core";
 import { adaptDingTalkRobot } from "./inbound/dingtalk.js";
 import { adaptDiscordEvent } from "./inbound/discord.js";
-import { adaptFeishuEvent } from "./inbound/feishu.js";
+import { adaptFeishuEvent, parseFeishuDeliveryReceipts } from "./inbound/feishu.js";
 import { adaptSlackEvent } from "./inbound/slack.js";
 import { adaptTelegramUpdate } from "./inbound/telegram.js";
 import { adaptWeComMessage } from "./inbound/wecom.js";
@@ -68,6 +69,7 @@ export function createDefaultImPlugins(executeActions: ImOutboundActionExecutor)
       platform: "feishu",
       adaptInbound: (payload) => adaptFeishuEvent(asRecord(payload)),
       providerEventId: (payload) => nestedStringField(payload, "header", "event_id"),
+      parseDeliveryReceipts: (payload) => parseFeishuDeliveryReceipts(asRecord(payload)),
       executeActions,
     }),
     createImChannelPlugin({
@@ -92,9 +94,17 @@ export function createDefaultImPlugins(executeActions: ImOutboundActionExecutor)
 }
 
 export function createImChannelPlugin(options: ImChannelPluginOptions): ChannelPlugin {
+  const capabilities = new Set<ChannelCapability>(["text"]);
+  if (["telegram", "slack", "discord", "whatsapp"].includes(options.platform)) {
+    capabilities.add("attachments");
+  }
+  if (["telegram", "slack", "discord"].includes(options.platform)) {
+    capabilities.add("threads");
+  }
+  if (options.parseDeliveryReceipts) capabilities.add("delivery_receipts");
   return {
     type: options.platform,
-    capabilities: new Set(["text", "attachments", "threads", "delivery_receipts"]),
+    capabilities,
     verifyWebhook: options.verifyWebhook,
     async parseWebhook(request: ChannelWebhookRequest): Promise<ChannelProviderEvent[]> {
       const payload = parseJsonBody(request.rawBody);
@@ -126,12 +136,16 @@ export function createImChannelPlugin(options: ImChannelPluginOptions): ChannelP
         parts: parsed.parts,
         attachments: parsed.attachments.map((attachment) => ({
           providerAttachmentId: attachment.platformRef,
+          url: attachment.platformRef,
           fileName: attachment.fileName,
           contentType: attachment.contentType,
           sizeBytes: attachment.sizeBytes,
         })),
         replyToProviderMessageId: parsed.replyToMessageId,
-        attributes: parsed.conversationAttributes,
+        attributes: {
+          ...(parsed.conversationAttributes ?? {}),
+          ...(parsed.mediaGroupId ? { mediaGroupId: parsed.mediaGroupId } : {}),
+        },
       };
     },
     async send(envelope, connection) {

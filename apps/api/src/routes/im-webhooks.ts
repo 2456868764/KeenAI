@@ -1,4 +1,10 @@
 import {
+  createHmac,
+  createPublicKey,
+  timingSafeEqual,
+  verify as verifySignature,
+} from "node:crypto";
+import {
   type ImPlatform,
   type ParsedInboundImMessage,
   type WeComMessagePayload,
@@ -12,7 +18,6 @@ import {
   decryptWeComPayload,
   feishuUrlVerificationChallenge,
   parseWeComMessageXml,
-  parseWhatsAppDeliveryReceipts,
   readWeComXmlTag,
   slackUrlVerificationChallenge,
   verifyWeComSignature,
@@ -24,6 +29,7 @@ import { and, eq } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ensureChannelConnection, getChannelDispatch } from "../lib/channel-dispatch.js";
+import { getChannelPluginRegistry } from "../lib/channel-plugins.js";
 import { openChannelCredentials } from "../lib/channel-secrets.js";
 import { ingestInboundIm } from "../lib/im-ingest.js";
 import { resolveOrgBrandBySlug } from "../lib/org-brand.js";
@@ -46,6 +52,7 @@ async function acceptInboundMessage(
     platform: ImPlatform;
     parsed: ParsedInboundImMessage;
     rawPayload: unknown;
+    connection?: typeof channelConnections.$inferSelect | null;
   },
 ) {
   // Keep existing synchronous response details in integration tests. Production
@@ -59,21 +66,32 @@ async function acceptInboundMessage(
     });
   }
 
-  const connection = await ensureChannelConnection(
-    { store: c.get("store") },
-    {
-      orgId: input.orgId,
-      brandId: input.brandId,
-      channelType: input.platform,
-      externalAccountId: externalAccountId(input.parsed),
-    },
-  );
+  const connection =
+    input.connection ??
+    (c.get("env").NODE_ENV === "production"
+      ? null
+      : await ensureChannelConnection(
+          { store: c.get("store") },
+          {
+            orgId: input.orgId,
+            brandId: input.brandId,
+            channelType: input.platform,
+            externalAccountId: externalAccountId(input.parsed),
+          },
+        ));
+  if (!connection) throw new HTTPException(503, { message: "channel_not_configured" });
+  const providerEventId = await resolveProviderEventId(c, {
+    platform: input.platform,
+    rawPayload: input.rawPayload,
+    connection,
+    fallback: input.parsed.platformMessageId,
+  });
   const admission = await admitIngressEvent(c.get("store"), {
     orgId: input.orgId,
     brandId: input.brandId,
     connectionId: connection.id,
     channelType: input.platform,
-    providerEventId: input.parsed.platformMessageId,
+    providerEventId,
     eventType: "message",
     rawPayload: input.rawPayload,
     requestHeaders: c.req.header(),
@@ -99,7 +117,15 @@ async function acceptInboundMessage(
 
 function externalAccountId(parsed: ParsedInboundImMessage): string {
   const attributes = parsed.conversationAttributes;
-  for (const key of ["teamId", "guildId", "phoneNumberId", "appId", "agentId"]) {
+  for (const key of [
+    "teamId",
+    "guildId",
+    "phoneNumberId",
+    "whatsappPhoneNumberId",
+    "appId",
+    "agentId",
+    "wecomAgentId",
+  ]) {
     const value = attributes?.[key];
     if (typeof value === "string" || typeof value === "number") return String(value);
   }
@@ -131,28 +157,16 @@ async function loadWeComCryptoConfig(
   return typeof token === "string" &&
     typeof encodingAesKey === "string" &&
     typeof corpId === "string"
-    ? { token, encodingAesKey, corpId }
+    ? { token, encodingAesKey, corpId, connection }
     : null;
 }
 
 async function readVerifiedChannelJson<T>(
   c: ImWebhookContext,
   input: { orgId: string; brandId: string; channelType: ImPlatform },
-): Promise<T> {
+): Promise<{ body: T; connection: typeof channelConnections.$inferSelect | null }> {
   const rawBody = await c.req.text();
-  const [connection] = await c
-    .get("store")
-    .db.select()
-    .from(channelConnections)
-    .where(
-      and(
-        eq(channelConnections.orgId, input.orgId),
-        eq(channelConnections.brandId, input.brandId),
-        eq(channelConnections.channelType, input.channelType),
-        eq(channelConnections.status, "active"),
-      ),
-    )
-    .limit(1);
+  const connection = await loadWebhookConnection(c, input);
   const credentials = connection
     ? openChannelCredentials(connection.credentials, c.get("authConfig").jwtSecret)
     : {};
@@ -168,7 +182,110 @@ async function readVerifiedChannelJson<T>(
   if (input.channelType === "feishu" && !verifyFeishuToken(body, credentials.verificationToken)) {
     throw new HTTPException(403, { message: "invalid_provider_signature" });
   }
-  return body;
+  return { body, connection };
+}
+
+async function loadWebhookConnection(
+  c: ImWebhookContext,
+  input: { orgId: string; brandId: string; channelType: ImPlatform },
+) {
+  const connectionId = c.req.query("connection");
+  const filters = [
+    eq(channelConnections.orgId, input.orgId),
+    eq(channelConnections.brandId, input.brandId),
+    eq(channelConnections.channelType, input.channelType),
+    eq(channelConnections.status, "active"),
+  ];
+  if (connectionId) filters.push(eq(channelConnections.id, connectionId));
+  const rows = await c
+    .get("store")
+    .db.select()
+    .from(channelConnections)
+    .where(and(...filters))
+    .limit(connectionId ? 1 : 2);
+  if (rows.length > 1) {
+    throw new HTTPException(409, { message: "ambiguous_channel_connection" });
+  }
+  const connection = rows[0] ?? null;
+  if (!connection && c.get("env").NODE_ENV === "production") {
+    throw new HTTPException(503, { message: "channel_not_configured" });
+  }
+  return connection;
+}
+
+async function resolveProviderEventId(
+  c: ImWebhookContext,
+  input: {
+    platform: ImPlatform;
+    rawPayload: unknown;
+    connection: typeof channelConnections.$inferSelect;
+    fallback: string;
+  },
+) {
+  const plugin = getChannelPluginRegistry().get(input.platform);
+  if (!plugin.parseWebhook) return input.fallback;
+  const rawBody = new TextEncoder().encode(JSON.stringify(input.rawPayload));
+  const events = await plugin.parseWebhook(
+    {
+      headers: c.req.header(),
+      query: Object.fromEntries(new URL(c.req.url).searchParams),
+      rawBody,
+      receivedAt: new Date(),
+    },
+    {
+      connectionId: input.connection.id,
+      orgId: input.connection.orgId,
+      brandId: input.connection.brandId,
+      channelType: input.connection.channelType,
+      credentials: openChannelCredentials(
+        input.connection.credentials,
+        c.get("authConfig").jwtSecret,
+      ),
+      settings: input.connection.settings,
+    },
+  );
+  return events[0]?.providerEventId ?? input.fallback;
+}
+
+async function acceptDeliveryReceipts(
+  c: ImWebhookContext,
+  input: {
+    orgId: string;
+    platform: ImPlatform;
+    rawPayload: unknown;
+    connection: typeof channelConnections.$inferSelect | null;
+  },
+) {
+  if (!input.connection) return 0;
+  const plugin = getChannelPluginRegistry().get(input.platform);
+  if (!plugin.parseDeliveryReceipts) return 0;
+  const receipts = await plugin.parseDeliveryReceipts(
+    {
+      headers: c.req.header(),
+      query: Object.fromEntries(new URL(c.req.url).searchParams),
+      rawBody: new TextEncoder().encode(JSON.stringify(input.rawPayload)),
+      receivedAt: new Date(),
+    },
+    {
+      connectionId: input.connection.id,
+      orgId: input.connection.orgId,
+      brandId: input.connection.brandId,
+      channelType: input.connection.channelType,
+      credentials: openChannelCredentials(
+        input.connection.credentials,
+        c.get("authConfig").jwtSecret,
+      ),
+      settings: input.connection.settings,
+    },
+  );
+  for (const receipt of receipts) {
+    await recordDeliveryReceipt(c.get("store"), {
+      orgId: input.orgId,
+      connectionId: input.connection.id,
+      receipt,
+    });
+  }
+  return receipts.length;
 }
 
 function verifyConfiguredChannelSignature(
@@ -268,11 +385,12 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptTelegramUpdate>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptTelegramUpdate>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "telegram",
     });
+    const { body } = verified;
     const parsed = adaptTelegramUpdate(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
 
@@ -282,6 +400,7 @@ export function imWebhookRoutes() {
       platform: "telegram",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -297,11 +416,12 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptDiscordEvent>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptDiscordEvent>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "discord",
     });
+    const { body } = verified;
     const parsed = adaptDiscordEvent(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
 
@@ -311,6 +431,7 @@ export function imWebhookRoutes() {
       platform: "discord",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -326,11 +447,12 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptSlackEvent>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptSlackEvent>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "slack",
     });
+    const { body } = verified;
     const challenge = slackUrlVerificationChallenge(body);
     if (challenge) return c.json({ challenge });
 
@@ -343,6 +465,7 @@ export function imWebhookRoutes() {
       platform: "slack",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -358,13 +481,22 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptFeishuEvent>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptFeishuEvent>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "feishu",
     });
+    const { body } = verified;
     const challenge = feishuUrlVerificationChallenge(body);
     if (challenge) return c.json({ challenge });
+
+    const receipts = await acceptDeliveryReceipts(c, {
+      orgId: resolved.org.id,
+      platform: "feishu",
+      rawPayload: body,
+      connection: verified.connection,
+    });
+    if (receipts > 0) return c.json({ accepted: true, receipts }, 202);
 
     const parsed = adaptFeishuEvent(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
@@ -375,6 +507,7 @@ export function imWebhookRoutes() {
       platform: "feishu",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -390,11 +523,12 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptDingTalkRobot>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptDingTalkRobot>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "dingtalk",
     });
+    const { body } = verified;
     const parsed = adaptDingTalkRobot(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
 
@@ -404,6 +538,7 @@ export function imWebhookRoutes() {
       platform: "dingtalk",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -419,19 +554,11 @@ export function imWebhookRoutes() {
     if (orgSlug) {
       const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
       if (!("error" in resolved)) {
-        const [connection] = await c
-          .get("store")
-          .db.select()
-          .from(channelConnections)
-          .where(
-            and(
-              eq(channelConnections.orgId, resolved.org.id),
-              eq(channelConnections.brandId, resolved.brand.id),
-              eq(channelConnections.channelType, "whatsapp"),
-              eq(channelConnections.status, "active"),
-            ),
-          )
-          .limit(1);
+        const connection = await loadWebhookConnection(c, {
+          orgId: resolved.org.id,
+          brandId: resolved.brand.id,
+          channelType: "whatsapp",
+        });
         if (connection) {
           const credentials = openChannelCredentials(
             connection.credentials,
@@ -459,36 +586,19 @@ export function imWebhookRoutes() {
     const resolved = await resolveOrgBrandBySlug(c.get("store").db, orgSlug, brandSlug);
     if ("error" in resolved) return c.json({ error: resolved.error }, 404);
 
-    const body = await readVerifiedChannelJson<Parameters<typeof adaptWhatsAppWebhook>[0]>(c, {
+    const verified = await readVerifiedChannelJson<Parameters<typeof adaptWhatsAppWebhook>[0]>(c, {
       orgId: resolved.org.id,
       brandId: resolved.brand.id,
       channelType: "whatsapp",
     });
-    const receipts = parseWhatsAppDeliveryReceipts(body);
-    if (receipts.length > 0) {
-      const [connection] = await c
-        .get("store")
-        .db.select()
-        .from(channelConnections)
-        .where(
-          and(
-            eq(channelConnections.orgId, resolved.org.id),
-            eq(channelConnections.brandId, resolved.brand.id),
-            eq(channelConnections.channelType, "whatsapp"),
-            eq(channelConnections.status, "active"),
-          ),
-        )
-        .limit(1);
-      if (!connection) return c.json({ error: "whatsapp_not_configured" }, 503);
-      for (const receipt of receipts) {
-        await recordDeliveryReceipt(c.get("store"), {
-          orgId: resolved.org.id,
-          connectionId: connection.id,
-          receipt,
-        });
-      }
-      return c.json({ accepted: true, receipts: receipts.length }, 202);
-    }
+    const { body } = verified;
+    const receipts = await acceptDeliveryReceipts(c, {
+      orgId: resolved.org.id,
+      platform: "whatsapp",
+      rawPayload: body,
+      connection: verified.connection,
+    });
+    if (receipts > 0) return c.json({ accepted: true, receipts }, 202);
     const parsed = adaptWhatsAppWebhook(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
 
@@ -498,6 +608,7 @@ export function imWebhookRoutes() {
       platform: "whatsapp",
       parsed,
       rawPayload: body,
+      connection: verified.connection,
     });
 
     return c.json({ accepted: true, ...result }, 202);
@@ -547,6 +658,7 @@ export function imWebhookRoutes() {
 
     const contentType = c.req.header("content-type") ?? "";
     let body: WeComMessagePayload;
+    let connection: typeof channelConnections.$inferSelect | null = null;
     let officialCallback = false;
     if (contentType.includes("xml") || contentType.includes("text/plain")) {
       officialCallback = true;
@@ -555,6 +667,7 @@ export function imWebhookRoutes() {
         brandId: resolved.brand.id,
       });
       if (!config) return c.json({ error: "wecom_not_configured" }, 503);
+      connection = config.connection;
       const xml = await c.req.text();
       const encrypted = readWeComXmlTag(xml, "Encrypt");
       const signature = c.req.query("msg_signature");
@@ -577,6 +690,11 @@ export function imWebhookRoutes() {
       body = parseWeComMessageXml(decryptWeComPayload(encrypted, config));
     } else {
       body = await c.req.json<WeComMessagePayload>();
+      connection = await loadWebhookConnection(c, {
+        orgId: resolved.org.id,
+        brandId: resolved.brand.id,
+        channelType: "wecom",
+      });
     }
     const parsed = adaptWeComMessage(body);
     if (!parsed) return c.json({ ok: true, ignored: true });
@@ -587,15 +705,10 @@ export function imWebhookRoutes() {
       platform: "wecom",
       parsed,
       rawPayload: body,
+      connection,
     });
     return officialCallback ? c.text("success", 202) : c.json({ accepted: true, ...result }, 202);
   });
 
   return r;
 }
-import {
-  createHmac,
-  createPublicKey,
-  timingSafeEqual,
-  verify as verifySignature,
-} from "node:crypto";

@@ -222,7 +222,12 @@ export async function failSessionCommand(
         })
         .onConflictDoUpdate({
           target: [channelDeadLetters.sourceType, channelDeadLetters.sourceId],
-          set: { reason: input.errorMessage, payload: command.payload, updatedAt: now },
+          set: {
+            reason: input.errorMessage,
+            payload: command.payload,
+            resolvedAt: null,
+            updatedAt: now,
+          },
         });
     }
     return status;

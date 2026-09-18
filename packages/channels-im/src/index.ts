@@ -22,6 +22,7 @@ export { adaptDiscordEvent, type DiscordGatewayPayload } from "./inbound/discord
 export {
   adaptFeishuEvent,
   feishuUrlVerificationChallenge,
+  parseFeishuDeliveryReceipts,
   type FeishuEventPayload,
 } from "./inbound/feishu.js";
 export { adaptSlackEvent, slackUrlVerificationChallenge } from "./inbound/slack.js";

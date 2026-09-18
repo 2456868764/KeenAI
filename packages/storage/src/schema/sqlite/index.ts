@@ -55,6 +55,8 @@ export {
 export { magicLinks, sessions } from "./auth";
 export {
   CHANNEL_CONNECTION_STATUSES,
+  CHANNEL_CONNECTION_RUNTIME_STATES,
+  CHANNEL_CONNECTION_TRANSPORTS,
   CHANNEL_DELIVERY_RECEIPT_STATUSES,
   CHANNEL_JOB_STATUSES,
   CHANNEL_SESSION_COMMAND_TYPES,
@@ -71,6 +73,8 @@ export {
   channelSessionCommands,
   type ChannelConnectionRow,
   type ChannelConnectionStatus,
+  type ChannelConnectionRuntimeState,
+  type ChannelConnectionTransport,
   type ChannelConversationLinkRow,
   type ChannelDeadLetterRow,
   type ChannelDeliveryAttemptRow,
