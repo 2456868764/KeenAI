@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION, listNotificationsSchema } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX, listNotificationsSchema } from "@keenai/shared";
 import { notifications } from "@keenai/storage/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
@@ -10,7 +10,7 @@ import type { AppVariables } from "../types.js";
 
 export function notificationRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/notifications`;
+  const prefix = `${DASHBOARD_API_PREFIX}/notifications`;
 
   r.get(prefix, requireAuth(), zValidator("query", listNotificationsSchema), async (c) => {
     const auth = c.get("auth");

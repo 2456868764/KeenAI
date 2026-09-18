@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createTicketFromConversationBodySchema,
   createTicketSchema,
   linkTicketsSchema,
@@ -31,7 +31,7 @@ import type { AppVariables } from "../types.js";
 
 export function ticketRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/tickets`;
+  const prefix = `${DASHBOARD_API_PREFIX}/tickets`;
 
   async function dispatchTicketTrigger(input: {
     orgId: string;

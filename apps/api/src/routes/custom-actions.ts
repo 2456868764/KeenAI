@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   customActionBodySchema,
   executeCustomActionBodySchema,
   listCustomActionLogsQuerySchema,
@@ -11,13 +11,14 @@ import { customActionLogs, customActions } from "@keenai/storage/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { assertBrandInOrg, canAccessBrand } from "../lib/conversations.js";
-import { executeAndLogCustomAction } from "../lib/custom-action-call-log.js";
 import { resolveCustomActionSecretFromEnv } from "../lib/custom-action-executor.js";
+import { createCustomActionDraftTool } from "../lib/custom-action-tools.js";
 import {
   isUniqueConstraintError,
   serializeCustomAction,
   serializeCustomActionLog,
 } from "../lib/custom-actions.js";
+import { executeGovernedToolCall } from "../lib/workflow-tool-runtime.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppVariables } from "../types.js";
 
@@ -41,7 +42,7 @@ function mapExecutorError(error: unknown): { status: 400 | 422 | 501 | 502; erro
 
 export function customActionRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/custom-actions`;
+  const prefix = `${DASHBOARD_API_PREFIX}/custom-actions`;
 
   r.get(prefix, requireAuth(), zValidator("query", listCustomActionsQuerySchema), async (c) => {
     const auth = c.get("auth");
@@ -267,23 +268,73 @@ export function customActionRoutes() {
       }
 
       try {
-        const result = await executeAndLogCustomAction(
+        const idempotencyHeader = c.req.header("Idempotency-Key")?.trim();
+        const idempotencyScope = idempotencyHeader
+          ? `api:custom-action:${auth.orgId}:${row.id}:${idempotencyHeader}`
+          : undefined;
+        const tool = createCustomActionDraftTool(
           c.get("store").db,
           row,
           {
             orgId: auth.orgId,
-            brandId: row.brandId,
             source: "api",
-            triggeredBy: auth.sub,
+            triggeredBy: auth.memberId,
+            timeoutMs: body.timeoutMs,
           },
-          body,
           {
             fetch: globalThis.fetch.bind(globalThis),
             getSecret: (secretRef) => resolveCustomActionSecretFromEnv(secretRef),
           },
-          { otelEnabled: c.get("env").OTEL_ENABLED },
+          { otelEnabled: c.get("env").OTEL_ENABLED, resultMode: "envelope" },
         );
-        return c.json({ result });
+        const result = await executeGovernedToolCall(c.get("store").db, {
+          orgId: auth.orgId,
+          brandId: row.brandId,
+          trigger: "api_custom_action",
+          actorType: "member",
+          actorId: auth.memberId,
+          actorRole: auth.role,
+          channel: "api",
+          executionMode: "governed",
+          tool,
+          arguments: body.parameters,
+          idempotencyScope,
+          inputSnapshot: {
+            source: "api",
+            actionId: row.id,
+            parameters: body.parameters,
+            timeoutMs: body.timeoutMs ?? null,
+            idempotencyScope: idempotencyScope ?? null,
+            toolExecutionMode: "governed",
+          },
+        });
+        if (result.status === "completed") {
+          return c.json({ result: result.result, agentRunId: result.runId });
+        }
+        if (result.status === "awaiting_approval") {
+          return c.json(
+            {
+              result: {
+                runId: result.runId,
+                status: result.status,
+                approvalId: result.approvalId,
+              },
+            },
+            202,
+          );
+        }
+        if (result.status === "escalated") {
+          return c.json(
+            { error: result.errorCode ?? "custom_action_escalated", agentRunId: result.runId },
+            409,
+          );
+        }
+        const mapped = mapExecutorError(new Error(result.errorCode ?? "custom_action_failed"));
+        if (mapped) return c.json({ error: mapped.error, agentRunId: result.runId }, mapped.status);
+        return c.json(
+          { error: result.errorCode ?? "custom_action_failed", agentRunId: result.runId },
+          502,
+        );
       } catch (error) {
         const mapped = mapExecutorError(error);
         if (mapped) {

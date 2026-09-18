@@ -1,10 +1,15 @@
-import { assembleUnifiedAgentContext, buildKeeniAgentContext } from "@keenai/agent";
+import {
+  assembleUnifiedAgentContext,
+  buildKeeniAgentContext,
+  isAgentToolExposed,
+} from "@keenai/agent";
 import type { DraftMessage, DraftRequest } from "@keenai/llm";
 import type { MemoryScope } from "@keenai/memory-tree";
 import { type ApiEnv, attachmentMetadataSchema } from "@keenai/shared";
 import { messages } from "@keenai/storage/schema";
 import { and, asc, eq } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
+import { loadAgentToolPolicyRules } from "./agent-audit-store.js";
 import { loadAttachmentsForMessages } from "./attachments.js";
 import { loadBrandPersonality } from "./brand-personality.js";
 import { resolveCustomActionSecretFromEnv } from "./custom-action-executor.js";
@@ -42,7 +47,12 @@ export async function buildCopilotDraftRequest(
     subject?: string;
     instruction?: string;
   },
-): Promise<{ request: DraftRequest; memoryScope: MemoryScope; toolNames: string[] }> {
+): Promise<{
+  request: DraftRequest;
+  memoryScope: MemoryScope;
+  toolNames: string[];
+  auditContext: Awaited<ReturnType<typeof assembleUnifiedAgentContext>>;
+}> {
   const rows = await db
     .select({
       id: messages.id,
@@ -134,7 +144,7 @@ export async function buildCopilotDraftRequest(
     kbSearch: getKbContextSearch(),
   });
 
-  const [customTools, mcpTools, personality] = await Promise.all([
+  const [customTools, mcpTools, personality, policyRules] = await Promise.all([
     loadCustomActionDraftTools(
       db,
       {
@@ -150,8 +160,11 @@ export async function buildCopilotDraftRequest(
     ),
     loadMcpDraftTools(env),
     loadBrandPersonality(db, { orgId: input.orgId, brandId: input.brandId }),
+    loadAgentToolPolicyRules(db, { orgId: input.orgId, brandId: input.brandId }),
   ]);
-  const tools = [...customTools, ...mcpTools];
+  const tools = [...customTools, ...mcpTools].filter((tool) =>
+    isAgentToolExposed(tool, policyRules),
+  );
 
   const agentContext = buildKeeniAgentContext({
     params: {
@@ -174,5 +187,6 @@ export async function buildCopilotDraftRequest(
     memoryScope: memory.memoryScope as MemoryScope,
     toolNames: tools.map((tool) => tool.name),
     request: agentContext.draftRequest,
+    auditContext: memory,
   };
 }

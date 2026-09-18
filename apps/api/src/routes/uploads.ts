@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION, presignUploadSchema } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX, presignUploadSchema } from "@keenai/shared";
 import { Hono } from "hono";
 import { insertAttachment } from "../lib/attachments.js";
 import {
@@ -15,7 +15,7 @@ import type { AppContext, AppVariables } from "../types.js";
 
 export function uploadRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/uploads`;
+  const prefix = `${DASHBOARD_API_PREFIX}/uploads`;
 
   r.post(`${prefix}/presign`, requireAuth(), zValidator("json", presignUploadSchema), async (c) => {
     const auth = c.get("auth");
@@ -24,7 +24,7 @@ export function uploadRoutes(ctx: AppContext) {
     const body = c.req.valid("json");
     try {
       const apiBase = new URL(c.req.url).origin;
-      const presigned = createPresignedUpload(ctx.env, body, apiBase);
+      const presigned = createPresignedUpload(ctx.env, body, apiBase, prefix);
       return c.json(presigned, 201);
     } catch (e) {
       if (e instanceof Error && e.message === "file_too_large") {

@@ -70,7 +70,7 @@ test.describe("API smoke @smoke", () => {
   });
 
   test("auth login with seeded demo user", async ({ request }) => {
-    const res = await request.post(`${apiUrl}/api/v1/auth/login`, {
+    const res = await request.post(`${apiUrl}/api/v1/dashboard/auth/login`, {
       data: {
         email: "owner@keenai.local",
         password: "keenai-demo-12",
@@ -91,7 +91,7 @@ test.describe("API smoke @smoke", () => {
   });
 
   test("authenticated workflows, tickets, and analytics endpoints", async ({ request }) => {
-    const loginRes = await request.post(`${apiUrl}/api/v1/auth/login`, {
+    const loginRes = await request.post(`${apiUrl}/api/v1/dashboard/auth/login`, {
       data: {
         email: "owner@keenai.local",
         password: "keenai-demo-12",
@@ -102,17 +102,19 @@ test.describe("API smoke @smoke", () => {
     const { accessToken } = (await loginRes.json()) as { accessToken: string };
     const auth = { Authorization: `Bearer ${accessToken}` };
 
-    const workflows = await request.get(`${apiUrl}/api/v1/workflows`, { headers: auth });
+    const workflows = await request.get(`${apiUrl}/api/v1/dashboard/workflows`, { headers: auth });
     expect(workflows.ok()).toBeTruthy();
     const workflowsBody = (await workflows.json()) as { items: unknown[] };
     expect(Array.isArray(workflowsBody.items)).toBe(true);
 
-    const tickets = await request.get(`${apiUrl}/api/v1/tickets`, { headers: auth });
+    const tickets = await request.get(`${apiUrl}/api/v1/dashboard/tickets`, { headers: auth });
     expect(tickets.ok()).toBeTruthy();
     const ticketsBody = (await tickets.json()) as { items: unknown[] };
     expect(Array.isArray(ticketsBody.items)).toBe(true);
 
-    const analytics = await request.get(`${apiUrl}/api/v1/analytics/dashboard`, { headers: auth });
+    const analytics = await request.get(`${apiUrl}/api/v1/dashboard/analytics/dashboard`, {
+      headers: auth,
+    });
     expect(analytics.ok()).toBeTruthy();
     const analyticsBody = (await analytics.json()) as {
       dashboard?: { support?: unknown; feedback?: unknown };
@@ -122,7 +124,7 @@ test.describe("API smoke @smoke", () => {
   });
 
   test("GET /api/v1/mcp/expose/tools returns KeenAI server catalog", async ({ request }) => {
-    const loginRes = await request.post(`${apiUrl}/api/v1/auth/login`, {
+    const loginRes = await request.post(`${apiUrl}/api/v1/dashboard/auth/login`, {
       data: {
         email: "owner@keenai.local",
         password: "keenai-demo-12",
@@ -131,7 +133,7 @@ test.describe("API smoke @smoke", () => {
     });
     expect(loginRes.ok()).toBeTruthy();
     const { accessToken } = (await loginRes.json()) as { accessToken: string };
-    const res = await request.get(`${apiUrl}/api/v1/mcp/expose/tools`, {
+    const res = await request.get(`${apiUrl}/api/v1/dashboard/mcp/expose/tools`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(res.ok()).toBeTruthy();

@@ -43,7 +43,7 @@
 - `GET /api/v1/widget/conversations` 已接入 visitor 会话列表。
 - `GET /api/v1/widget/help/*` 和 `GET /api/v1/widget/changelog/*` 已接入 widget auth 下的列表/详情读取。
 - `POST /api/v1/widget/tickets` 已接入 widget ticket 创建，并关联新建 conversation。
-- `POST /api/v1/widget/answer` 已接入 widget auth 下的 KB answer SSE，并将用户问题和 AI 回复写回 conversation。
+- Widget 统一通过 conversation message 接口发送问题；Basic Agent 是否执行由服务端 Workflow Dispatch 决定。
 
 ## 3. 前端重构
 
@@ -199,40 +199,22 @@ Authorization: Bearer <widget-token>
 ### 4.4 AI Answer
 
 ```http
-POST /api/v1/widget/answer
+POST /api/v1/widget/conversations/:id/messages
 Authorization: Bearer <widget-token>
 Content-Type: application/json
 
 {
-  "conversationId": "conv_...",
-  "query": "如何和 discord 集成"
+  "plainText": "如何和 discord 集成"
 }
 ```
 
-返回 SSE：
+消息落库后产生 `any_message` Workflow 触发。Workflow Dispatch 读取 Brand 的 Deploy 设置：
 
-```text
-event: searching
-data: {"query":"...", "keywords":["Discord integration","Discord setup guide"]}
+- Basic Agent 开启：运行系统内置 Basic Agent，同时跳过包含 `let_keeni_answer` 的用户 Workflow。
+- Basic Agent 关闭：不运行系统 Basic Agent，用户配置的 Agent Workflow 正常执行。
+- 不包含 `let_keeni_answer` 的 Automation Workflow 在两种模式下都正常执行。
 
-event: meta
-data: {"logId":"...", "citations":[...]}
-
-event: text-delta
-data: {"text":"..."}
-
-event: done
-data: {}
-```
-
-内部复用：
-
-- `preparePublicKbAnswerStream`
-- `searchKbChunks`
-- `createKbQueryLog`
-- `insertMessage`
-
-同时将用户问题和 AI 回复写入 conversation，保证 Dashboard Inbox 可见。
+Widget 不读取 Deploy 设置，也不选择 AI 接口。Agent 回复通过 conversation realtime 事件和消息历史返回，保证 Dashboard Inbox 与 Widget 使用同一份消息记录。
 
 ### 4.5 Help
 
@@ -509,17 +491,17 @@ type WidgetMenuItemRecord = {
 
 ### Phase 5：AI Chat
 
-状态：已完成。后端 `POST /widget/answer` SSE 已完成，包含 searching/meta/text-delta/done 事件和 conversation 写回；前端已接入 streaming UI 与 citations 渲染；fallback 到人工团队通过 `POST /widget/conversations/:id/handoff` 完成。
+状态：已完成。Widget 统一写入 conversation message；服务端 Workflow Dispatch 根据 Deploy 设置启动系统 Basic Agent 或用户 Agent Workflow，fallback 到人工团队通过 `POST /widget/conversations/:id/handoff` 完成。
 
-- 新增 `POST /widget/answer` SSE。（已完成）
-- 前端显示 searching / streaming / citations / done。（已完成）
+- Widget 统一调用 conversation message 接口。（已完成）
+- Deploy 模式判断位于服务端 Workflow Dispatch。（已完成）
 - AI 回答写回 conversation。（已完成）
 - 支持 fallback 到人工团队。（已完成）
 
 验收：
 
-- 提问后可看到 `Searching knowledge base...` 状态。
-- SSE 文本逐步渲染。
+- Widget 不请求或缓存 Deploy 模式。
+- Basic Agent 开启后，普通消息产生一个可审计的 `basic_agent` Agent Run。
 - 刷新后历史中有用户问题与 AI 回答。
 
 ### Phase 6：Ticket

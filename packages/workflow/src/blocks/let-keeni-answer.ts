@@ -1,5 +1,6 @@
 import type { KeeniResolution, KeeniResolutionType } from "@keenai/agent/resolution";
 import { z } from "zod";
+import type { WorkflowToolExecutionMode } from "../schema.js";
 
 export const letKeeniAnswerOutcomeRoutingSchema = z.object({
   resolvedNext: z.string().nullable(),
@@ -28,7 +29,10 @@ export type LetKeeniAnswerInput = {
     conversationId: string;
     targetCustomerId?: string | null;
     subject?: string;
+    channelType?: string;
     isShadowRun?: boolean;
+    workflowRunId?: string;
+    toolExecutionMode?: WorkflowToolExecutionMode;
   };
 };
 
@@ -36,6 +40,9 @@ export type LetKeeniAnswerResult = {
   replyText: string;
   resolution: KeeniResolution;
   nextBlockId: string | null;
+  agentRunId?: string;
+  agentRunStatus?: "completed" | "awaiting_approval" | "escalated" | "failed";
+  approvalId?: string;
 };
 
 export function resolveLetKeeniAnswerNext(

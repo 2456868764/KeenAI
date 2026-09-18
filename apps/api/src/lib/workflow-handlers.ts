@@ -1,5 +1,6 @@
 import vm from "node:vm";
 import type { AuthConfig } from "@keenai/auth";
+import type { DraftToolRuntime } from "@keenai/llm";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
 import {
@@ -33,8 +34,14 @@ import type {
   WorkflowDefinition,
   WorkflowRunContext,
   WorkflowStepResult,
+  WorkflowToolExecutionMode,
 } from "@keenai/workflow";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { hashAuditValue } from "./agent-audit-store.js";
+import {
+  cancelPendingConversationAutoCloseJobs,
+  clearConversationAutoCloseMarker,
+} from "./conversation-auto-close.js";
 import { buildMessageContent, insertMessage } from "./conversations.js";
 import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
@@ -57,6 +64,7 @@ import {
   transitionTicketStatus,
 } from "./tickets.js";
 import { runLetKeeniAnswerBlock } from "./workflow-keeni-answer.js";
+import { executeWorkflowToolCall } from "./workflow-tool-runtime.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
 type ConversationRow = typeof conversations.$inferSelect;
@@ -374,8 +382,42 @@ export function createWorkflowActionHandlers(
   env: ApiEnv,
   authConfig: AuthConfig | undefined,
   workflowRunId: string,
+  options?: {
+    resumeTool?: { blockId: string; agentRunId: string; actorId?: string | null };
+  },
 ): WorkflowActionHandlers {
   const conversationId = conversation.id;
+
+  async function runTool(
+    blockId: string,
+    executionMode: WorkflowToolExecutionMode,
+    tool: DraftToolRuntime,
+    args: Record<string, unknown>,
+  ) {
+    return executeWorkflowToolCall(db, {
+      orgId: workflow.orgId,
+      brandId: conversation.brandId,
+      conversationId,
+      workflowId: workflow.id,
+      workflowRunId,
+      blockId,
+      executionMode,
+      tool,
+      arguments: args,
+      channel: conversation.channelType,
+      existingRunId:
+        options?.resumeTool?.blockId === blockId ? options.resumeTool.agentRunId : undefined,
+      actorId: options?.resumeTool?.actorId,
+    });
+  }
+
+  function governance(result: Awaited<ReturnType<typeof runTool>>) {
+    return {
+      agentRunId: result.runId,
+      status: result.status,
+      approvalId: result.approvalId,
+    };
+  }
 
   return {
     sendMessage: async ({ plainText, attachmentIds }) => {
@@ -425,9 +467,19 @@ export function createWorkflowActionHandlers(
       return result;
     },
     close: async () => {
+      await cancelPendingConversationAutoCloseJobs(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        reason: "workflow_closed_conversation",
+      });
       await db
         .update(conversations)
-        .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
+        .set({
+          status: "closed",
+          closedAt: new Date(),
+          attributes: clearConversationAutoCloseMarker(conversation.attributes ?? {}),
+          updatedAt: new Date(),
+        })
         .where(eq(conversations.id, conversationId));
       try {
         await dispatchKbConversationClosed(getKbDispatch(), db, {
@@ -440,12 +492,18 @@ export function createWorkflowActionHandlers(
       }
     },
     reopen: async () => {
+      await cancelPendingConversationAutoCloseJobs(db, {
+        orgId: workflow.orgId,
+        conversationId,
+        reason: "workflow_reopened_conversation",
+      });
       await db
         .update(conversations)
         .set({
           status: "open",
           closedAt: null,
           snoozedUntil: null,
+          attributes: clearConversationAutoCloseMarker(conversation.attributes ?? {}),
           updatedAt: new Date(),
         })
         .where(eq(conversations.id, conversationId));
@@ -586,52 +644,154 @@ export function createWorkflowActionHandlers(
     wait: async (ms) => {
       await new Promise((resolve) => setTimeout(resolve, ms));
     },
-    httpRequest: async ({ method, url, body }) => {
-      const res = await fetch(url, {
-        method,
-        headers: body ? { "Content-Type": "application/json" } : undefined,
-        body: body ?? undefined,
-        signal: AbortSignal.timeout(30_000),
-      });
-      const text = await res.text();
-      return { status: res.status, body: text.slice(0, 4000) };
-    },
-    webhookEmit: async ({ blockId, url, eventName, payload, headers }) => {
-      const resolvedEventName = eventName?.trim() || "workflow.webhook_emit";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({
-          event: resolvedEventName,
-          payload: parseWebhookPayload(payload),
-          context: {
-            orgId: workflow.orgId,
-            brandId: conversation.brandId,
-            workflowId: workflow.id,
-            workflowRunId,
-            conversationId,
-            blockId,
+    httpRequest: async ({ blockId, executionMode, method, url, body }) => {
+      const resolvedBlockId = blockId ?? `http-${method.toLowerCase()}`;
+      const args = { method, url, body };
+      const idempotencyKey = hashAuditValue([workflowRunId, resolvedBlockId, args]);
+      const result = await runTool(
+        resolvedBlockId,
+        executionMode ?? "governed",
+        {
+          name: `workflow_http_${method.toLowerCase()}`,
+          description: `${method} an HTTP endpoint from a workflow`,
+          parametersSchema: { type: "object" },
+          audit: {
+            source: "workflow",
+            sourceId: resolvedBlockId,
+            riskLevel: method === "GET" ? "r0" : "r2",
+            idempotent: method === "GET",
           },
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      const text = await res.text();
-      return { status: res.status, body: text.slice(0, 4000), eventName: resolvedEventName };
+          execute: async () => {
+            const res = await fetch(url, {
+              method,
+              headers: {
+                ...(body ? { "Content-Type": "application/json" } : {}),
+                ...(method === "POST" ? { "Idempotency-Key": idempotencyKey } : {}),
+              },
+              body: body ?? undefined,
+              signal: AbortSignal.timeout(30_000),
+            });
+            const text = await res.text();
+            return { status: res.status, body: text.slice(0, 4000) };
+          },
+        },
+        args,
+      );
+      const output = result.result as { status?: number; body?: string } | undefined;
+      return { status: output?.status, body: output?.body, governance: governance(result) };
+    },
+    webhookEmit: async ({ blockId, executionMode, url, eventName, payload, headers }) => {
+      const resolvedBlockId = blockId ?? "webhook-emit";
+      const resolvedEventName = eventName?.trim() || "workflow.webhook_emit";
+      const webhookBody = {
+        event: resolvedEventName,
+        payload: parseWebhookPayload(payload),
+        context: {
+          orgId: workflow.orgId,
+          brandId: conversation.brandId,
+          workflowId: workflow.id,
+          workflowRunId,
+          conversationId,
+          blockId: resolvedBlockId,
+        },
+      };
+      const idempotencyKey = hashAuditValue([workflowRunId, resolvedBlockId, url, webhookBody]);
+      const result = await runTool(
+        resolvedBlockId,
+        executionMode ?? "governed",
+        {
+          name: "workflow_webhook_emit",
+          description: "Emit a workflow webhook",
+          parametersSchema: { type: "object" },
+          audit: {
+            source: "workflow",
+            sourceId: resolvedBlockId,
+            riskLevel: "r2",
+            idempotent: false,
+          },
+          execute: async () => {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Idempotency-Key": idempotencyKey,
+                ...headers,
+              },
+              body: JSON.stringify(webhookBody),
+              signal: AbortSignal.timeout(30_000),
+            });
+            const text = await res.text();
+            return {
+              status: res.status,
+              body: text.slice(0, 4000),
+              eventName: resolvedEventName,
+            };
+          },
+        },
+        { url, eventName: resolvedEventName, payload: webhookBody.payload, headers: headers ?? {} },
+      );
+      const output = result.result as
+        | { status?: number; body?: string; eventName?: string }
+        | undefined;
+      return {
+        status: output?.status,
+        body: output?.body,
+        eventName: output?.eventName ?? resolvedEventName,
+        governance: governance(result),
+      };
     },
     mcpCall: async ({
+      blockId,
+      executionMode,
       serverId,
       toolName,
       arguments: args,
     }: McpCallInput): Promise<McpCallResult> => {
+      const resolvedBlockId = blockId ?? `mcp-${serverId}-${toolName}`;
       const host = await getSharedMcpHost(env);
       if (!host) throw new Error("mcp_host_disabled");
-      const result = await host.callTool(serverId, toolName, args);
-      return { serverId, toolName, result };
+      const listed = (await host.listTools(serverId)).find((tool) => tool.name === toolName);
+      if (!listed) throw new Error("mcp_tool_not_found");
+      const result = await runTool(
+        resolvedBlockId,
+        executionMode ?? "governed",
+        {
+          name: listed.qualifiedName,
+          description: listed.description,
+          parametersSchema: listed.inputSchema,
+          audit: { source: "mcp", sourceId: `${serverId}:${toolName}`, idempotent: false },
+          execute: async (toolArgs) => host.callTool(serverId, toolName, toolArgs),
+        },
+        args,
+      );
+      return { serverId, toolName, result: result.result, governance: governance(result) };
     },
-    script: async (input: ScriptInput): Promise<ScriptResult> => runWorkflowScriptBlock(env, input),
+    script: async (input: ScriptInput): Promise<ScriptResult> => {
+      const blockId = input.blockId ?? "script";
+      const result = await runTool(
+        blockId,
+        input.executionMode ?? "governed",
+        {
+          name: "workflow_script_execute",
+          description: "Execute deterministic JavaScript in the workflow sandbox",
+          parametersSchema: { type: "object" },
+          audit: {
+            source: "workflow",
+            sourceId: blockId,
+            riskLevel: "r2",
+            idempotent: true,
+          },
+          execute: async () => runWorkflowScriptBlock(env, input).result,
+        },
+        {
+          code: input.code,
+          timeoutMs: input.timeoutMs,
+          memoryMb: input.memoryMb,
+          facts: input.facts,
+        },
+      );
+      return { result: result.result, governance: governance(result) };
+    },
     applySla: async ({ policyId }) => {
       const result = await evaluateConversationSla(db, {
         orgId: workflow.orgId,
@@ -785,7 +945,9 @@ export function createWorkflowRunContext(
   workflow: WorkflowRow,
   conversation: ConversationRow,
   workflowRunId: string,
+  definitionOverride?: WorkflowDefinition,
 ): WorkflowRunContext {
+  const definition = definitionOverride ?? resolveActiveWorkflowDefinition(workflow);
   return {
     workflowId: workflow.id,
     workflowRunId,
@@ -794,6 +956,8 @@ export function createWorkflowRunContext(
     conversationId: conversation.id,
     targetCustomerId: conversation.userId,
     subject: conversation.subject ?? undefined,
+    channelType: conversation.channelType,
+    toolExecutionMode: definition.toolExecutionMode,
     facts: {
       channelType: conversation.channelType,
       priority: conversation.priority ?? "normal",

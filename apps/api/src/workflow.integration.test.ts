@@ -2773,7 +2773,7 @@ describe("workflow integration", () => {
         };
       }[];
     };
-    expect(templatesBody.items).toHaveLength(11);
+    expect(templatesBody.items).toHaveLength(12);
     const keeniTemplate = templatesBody.items.find((item) => item.id === "tpl-keeni-answers-first");
     expect(keeniTemplate?.definition.blocks[0]).toMatchObject({
       id: "keeni_answer",

@@ -1,4 +1,4 @@
-import { API_VERSION } from "@keenai/shared";
+import { API_PREFIX } from "@keenai/shared";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import {
@@ -13,9 +13,8 @@ import type { AppContext, AppVariables } from "../types.js";
 
 type AttachmentContext = Context<{ Variables: AppVariables }>;
 
-export function attachmentRoutes(ctx: AppContext) {
+export function attachmentRoutes(ctx: AppContext, prefix = `${API_PREFIX}/attachments`) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/attachments`;
 
   r.get(`${prefix}/:id`, async (c) => {
     const denied = await assertAttachmentAccess(c);

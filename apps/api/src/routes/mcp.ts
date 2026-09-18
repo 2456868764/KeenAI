@@ -1,5 +1,5 @@
 import { getKeenaiExposeServerCommand, listKeenaiExposeTools } from "@keenai/mcp";
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import { Hono } from "hono";
 import { getSharedMcpHost, listConfiguredMcpServers } from "../lib/mcp-tools.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -7,7 +7,7 @@ import type { AppVariables } from "../types.js";
 
 export function mcpRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/mcp`;
+  const prefix = `${DASHBOARD_API_PREFIX}/mcp`;
 
   r.get(`${prefix}/servers`, requireAuth(), async (c) => {
     const auth = c.get("auth");

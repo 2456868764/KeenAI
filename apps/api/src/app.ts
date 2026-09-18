@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { canAccess } from "@keenai/auth";
-import { API_VERSION, APP_NAME } from "@keenai/shared";
+import { API_PREFIX, API_VERSION, APP_NAME, DASHBOARD_API_PREFIX } from "@keenai/shared";
 import { accounts, members, organizations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -28,6 +28,8 @@ import { optionalPortalAuth } from "./middleware/portal-auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { optionalWidgetAuth } from "./middleware/widget-auth.js";
+import { agentRunRoutes } from "./routes/agent-runs.js";
+import { agentSettingsRoutes } from "./routes/agent-settings.js";
 import { analyticsRoutes } from "./routes/analytics.js";
 import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
@@ -61,6 +63,17 @@ import { widgetRoutes } from "./routes/widget.js";
 import { workflowRoutes } from "./routes/workflows.js";
 import type { AppContext, AppVariables } from "./types.js";
 
+const NON_DASHBOARD_API_SEGMENTS = new Set([
+  "attachments",
+  "health",
+  "inngest",
+  "openapi.json",
+  "portal",
+  "public",
+  "webhooks",
+  "widget",
+]);
+
 export function createApp(ctx: AppContext) {
   initWorkflowDispatch(ctx);
   initMediaDispatch(ctx);
@@ -78,18 +91,35 @@ export function createApp(ctx: AppContext) {
   }
   const app = new Hono<{ Variables: AppVariables }>();
 
+  // Keep existing admin clients operational while the canonical routes move under /dashboard.
+  app.use(`${API_PREFIX}/*`, async (c, next) => {
+    const path = c.req.path;
+    if (path === DASHBOARD_API_PREFIX || path.startsWith(`${DASHBOARD_API_PREFIX}/`)) {
+      return next();
+    }
+    if (c.req.header("upgrade")?.toLowerCase() === "websocket") return next();
+
+    const suffix = path.slice(`${API_PREFIX}/`.length);
+    const firstSegment = suffix.split("/", 1)[0];
+    if (!firstSegment || NON_DASHBOARD_API_SEGMENTS.has(firstSegment)) return next();
+
+    const url = new URL(c.req.url);
+    url.pathname = `${DASHBOARD_API_PREFIX}/${suffix}`;
+    return app.fetch(new Request(url, c.req.raw));
+  });
+
   app.use("*", cors());
   app.use("*", requestId());
   app.use("*", injectContext(ctx));
   app.use("*", attachLogger(ctx.log));
   app.use(
-    `/api/${API_VERSION}/*`,
+    `${API_PREFIX}/*`,
     rateLimit({ windowMs: ctx.env.RATE_LIMIT_WINDOW_MS, max: ctx.env.RATE_LIMIT_MAX }),
   );
-  app.use(`/api/${API_VERSION}/*`, optionalAuth(ctx.authConfig));
-  app.use(`/api/${API_VERSION}/widget/*`, optionalWidgetAuth(ctx.authConfig));
-  app.use(`/api/${API_VERSION}/attachments/*`, optionalWidgetAuth(ctx.authConfig));
-  app.use(`/api/${API_VERSION}/portal/*`, optionalPortalAuth(ctx.authConfig));
+  app.use(`${API_PREFIX}/*`, optionalAuth(ctx.authConfig));
+  app.use(`${API_PREFIX}/widget/*`, optionalWidgetAuth(ctx.authConfig));
+  app.use(`${API_PREFIX}/attachments/*`, optionalWidgetAuth(ctx.authConfig));
+  app.use(`${API_PREFIX}/portal/*`, optionalPortalAuth(ctx.authConfig));
 
   app.get("/health", (c) =>
     c.json({
@@ -99,7 +129,7 @@ export function createApp(ctx: AppContext) {
     }),
   );
 
-  app.get(`/api/${API_VERSION}/health`, async (c) => {
+  app.get(`${API_PREFIX}/health`, async (c) => {
     let db: "ok" | "error" = "ok";
     try {
       await ctx.store.ping();
@@ -139,6 +169,8 @@ export function createApp(ctx: AppContext) {
   app.route("/", helpCenterRoutes());
   app.route("/", slaRoutes());
   app.route("/", analyticsRoutes());
+  app.route("/", agentRunRoutes(ctx));
+  app.route("/", agentSettingsRoutes());
   app.route("/", workflowRoutes());
   app.route("/", emailJobRoutes(ctx));
   app.route("/", inngestRoutes(ctx));
@@ -150,8 +182,9 @@ export function createApp(ctx: AppContext) {
   app.route("/", uploadRoutes(ctx));
   app.route("/", toolRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));
+  app.route("/", attachmentRoutes(ctx, `${DASHBOARD_API_PREFIX}/attachments`));
 
-  app.get(`/api/${API_VERSION}/me`, requireAuth(), async (c) => {
+  app.get(`${DASHBOARD_API_PREFIX}/me`, requireAuth(), async (c) => {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 
@@ -185,7 +218,7 @@ export function createApp(ctx: AppContext) {
   });
 
   app.get(
-    `/api/${API_VERSION}/rbac/check`,
+    `${DASHBOARD_API_PREFIX}/rbac/check`,
     requireAuth(),
     zValidator("query", rbacProbeSchema),
     async (c) => {

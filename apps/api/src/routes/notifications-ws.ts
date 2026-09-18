@@ -1,13 +1,20 @@
 import { verifyAccessToken } from "@keenai/auth";
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import type { Hono } from "hono";
 import { upgradeWebSocket } from "hono/bun";
 import { subscribeNotifications } from "../lib/notification-bus.js";
 import type { AppVariables } from "../types.js";
 
 export function registerNotificationsWebSocket(app: Hono<{ Variables: AppVariables }>) {
+  return registerNotificationsWebSocketAt(app, `${DASHBOARD_API_PREFIX}/notifications/ws`);
+}
+
+export function registerNotificationsWebSocketAt(
+  app: Hono<{ Variables: AppVariables }>,
+  path: string,
+) {
   app.get(
-    `/api/${API_VERSION}/notifications/ws`,
+    path,
     upgradeWebSocket(async (c) => {
       const token = c.req.query("access_token");
       if (!token) {

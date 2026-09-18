@@ -92,7 +92,7 @@ function TicketRow({ ticket }: { ticket: Ticket }) {
     <li className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0">
         <Link
-          href={`/tickets/${ticket.id}`}
+          href={`/dashboard/tickets/${ticket.id}`}
           className="font-medium text-[hsl(var(--foreground))] hover:underline"
         >
           {ticket.title}
@@ -106,7 +106,7 @@ function TicketRow({ ticket }: { ticket: Ticket }) {
       <div className="flex shrink-0 items-center gap-2">
         {linkedConversation ? (
           <Link
-            href={`/inbox?c=${linkedConversation}`}
+            href={`/dashboard/inbox?c=${linkedConversation}`}
             className="text-xs text-[hsl(var(--primary))] hover:underline"
           >
             View conversation

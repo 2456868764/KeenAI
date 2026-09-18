@@ -15,6 +15,7 @@ type ChatViewProps = {
   messages: WidgetMessagePayload[];
   answerState: WidgetAnswerState;
   handoffRequested: boolean;
+  allowHandoff?: boolean;
   onSend: (input: SendWidgetMessageInput) => Promise<void>;
   onRequestHandoff: () => Promise<void>;
   onSubmitWorkflowTicketForm: (input: WidgetWorkflowTicketFormSubmission) => Promise<void>;
@@ -29,6 +30,7 @@ export function ChatView({
   messages,
   answerState,
   handoffRequested,
+  allowHandoff = true,
   onSend,
   onRequestHandoff,
   onSubmitWorkflowTicketForm,
@@ -79,6 +81,7 @@ export function ChatView({
         <AnswerStatus
           state={answerState}
           handoffRequested={handoffRequested}
+          allowHandoff={allowHandoff}
           onRequestHandoff={onRequestHandoff}
         />
       ) : null}
@@ -89,10 +92,12 @@ export function ChatView({
 function AnswerStatus({
   state,
   handoffRequested,
+  allowHandoff,
   onRequestHandoff,
 }: {
   state: WidgetAnswerState;
   handoffRequested: boolean;
+  allowHandoff: boolean;
   onRequestHandoff: () => Promise<void>;
 }) {
   const title =
@@ -118,14 +123,16 @@ function AnswerStatus({
           ))}
         </div>
       ) : null}
-      <button
-        className="keenai-answer-handoff"
-        disabled={handoffRequested}
-        type="button"
-        onClick={() => void onRequestHandoff()}
-      >
-        {handoffRequested ? "Team notified" : "Contact support"}
-      </button>
+      {allowHandoff ? (
+        <button
+          className="keenai-answer-handoff"
+          disabled={handoffRequested}
+          type="button"
+          onClick={() => void onRequestHandoff()}
+        >
+          {handoffRequested ? "Team notified" : "Contact support"}
+        </button>
+      ) : null}
     </section>
   );
 }

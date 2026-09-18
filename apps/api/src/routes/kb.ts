@@ -14,7 +14,7 @@ import {
   setKbQueryLogFeedback,
 } from "@keenai/kb";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   kbEvalMetricsQuerySchema,
   kbEvalRunSchema,
   kbGoldenPromoteSchema,
@@ -164,7 +164,7 @@ async function deleteKbSourceTree(db: Store["db"], input: { orgId: string; sourc
 
 export function kbRoutes(_ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/kb`;
+  const prefix = `${DASHBOARD_API_PREFIX}/kb`;
 
   r.post(`${prefix}/sources/:sourceId/webhook/:provider`, async (c) => {
     const sourceId = c.req.param("sourceId");

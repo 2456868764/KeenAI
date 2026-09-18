@@ -1,12 +1,25 @@
 import { zValidator } from "@hono/zod-validator";
+import { buildStructuredAgentPlan } from "@keenai/agent";
 import { parseAgentResponse } from "@keenai/channels-core";
-import { createLlmRegistry } from "@keenai/llm";
 import type { AgentResponseParseResult } from "@keenai/shared";
-import { API_VERSION, copilotDraftBodySchema, copilotEventBodySchema } from "@keenai/shared";
+import {
+  DASHBOARD_API_PREFIX,
+  copilotDraftBodySchema,
+  copilotEventBodySchema,
+} from "@keenai/shared";
 import { attachments, copilotEvents } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import {
+  createAgentRun,
+  loadAgentToolPolicyRules,
+  persistAgentContext,
+  persistAgentPlan,
+  transitionAgentRun,
+} from "../lib/agent-audit-store.js";
+import { executeAuditedAgentDraft } from "../lib/agent-runtime.js";
+import { createAppLlmRegistry } from "../lib/app-llm-registry.js";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
 import { buildCopilotDraftRequest } from "../lib/copilot-context.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -14,26 +27,8 @@ import type { AppContext, AppVariables } from "../types.js";
 
 export function copilotRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/copilot`;
-  const llm = createLlmRegistry({
-    provider: ctx.env.LLM_PROVIDER,
-    openaiApiKey: ctx.env.OPENAI_API_KEY,
-    openaiModel: ctx.env.OPENAI_MODEL,
-    anthropicApiKey: ctx.env.ANTHROPIC_API_KEY,
-    anthropicModel: ctx.env.ANTHROPIC_MODEL,
-    deepseekApiKey: ctx.env.DEEPSEEK_API_KEY,
-    deepseekModel: ctx.env.DEEPSEEK_MODEL,
-    kimiApiKey: ctx.env.KIMI_API_KEY,
-    kimiModel: ctx.env.KIMI_MODEL,
-    qwenApiKey: ctx.env.QWEN_API_KEY,
-    qwenModel: ctx.env.QWEN_MODEL,
-    zhipuApiKey: ctx.env.ZHIPU_API_KEY,
-    zhipuModel: ctx.env.ZHIPU_MODEL,
-    geminiApiKey: ctx.env.GEMINI_API_KEY,
-    geminiModel: ctx.env.GEMINI_MODEL,
-    ollamaBaseUrl: ctx.env.OLLAMA_BASE_URL,
-    ollamaModel: ctx.env.OLLAMA_MODEL,
-  });
+  const prefix = `${DASHBOARD_API_PREFIX}/copilot`;
+  const llm = createAppLlmRegistry(ctx.env);
 
   r.post(
     `${prefix}/draft`,
@@ -54,11 +49,41 @@ export function copilotRoutes(ctx: AppContext) {
         return c.json({ error: "forbidden" }, 403);
       }
 
+      const provider =
+        body.providerId != null
+          ? (llm.getProvider(body.providerId) ?? llm.resolveDraftProvider())
+          : llm.resolveDraftProvider();
+      const db = c.get("store").db;
+      const run = await createAgentRun(db, {
+        orgId: auth.orgId,
+        brandId: conversation.brandId,
+        conversationId: conversation.id,
+        trigger: "copilot_draft",
+        actorType: "member",
+        actorId: auth.memberId,
+        providerId: provider.id,
+        inputSnapshot: {
+          source: "copilot",
+          conversationId: conversation.id,
+          subject: conversation.subject,
+          instruction: body.instruction,
+          providerId: provider.id,
+        },
+      });
+      await transitionAgentRun(db, {
+        runId: run.id,
+        orgId: auth.orgId,
+        status: "planning",
+        phase: "plan",
+        eventType: "plan.started",
+      });
+
       const {
         request: draftRequest,
         memoryScope,
         toolNames,
-      } = await buildCopilotDraftRequest(c.get("store").db, ctx.env, {
+        auditContext,
+      } = await buildCopilotDraftRequest(db, ctx.env, {
         conversationId: conversation.id,
         orgId: auth.orgId,
         brandId: conversation.brandId,
@@ -66,26 +91,64 @@ export function copilotRoutes(ctx: AppContext) {
         subject: conversation.subject ?? undefined,
         instruction: body.instruction,
       });
-
-      const provider =
-        body.providerId != null
-          ? (llm.getProvider(body.providerId) ?? llm.resolveDraftProvider())
-          : llm.resolveDraftProvider();
+      const plan = buildStructuredAgentPlan({
+        intent: auditContext.intent,
+        instruction: body.instruction,
+        subject: conversation.subject ?? undefined,
+        tools: draftRequest.tools,
+      });
+      await persistAgentPlan(db, { runId: run.id, orgId: auth.orgId, plan });
+      const context = await persistAgentContext(db, {
+        runId: run.id,
+        orgId: auth.orgId,
+        memoryScope,
+        intent: auditContext.intent,
+        weights: auditContext.weights,
+        sections: auditContext.sections,
+        text: auditContext.text,
+      });
+      const policyRules = await loadAgentToolPolicyRules(db, {
+        orgId: auth.orgId,
+        brandId: conversation.brandId,
+      });
 
       return streamSSE(c, async (stream) => {
         await stream.writeSSE({
           event: "meta",
-          data: JSON.stringify({ providerId: provider.id, memoryScope, toolNames }),
+          data: JSON.stringify({ providerId: provider.id, memoryScope, toolNames, runId: run.id }),
         });
 
-        let rawText = "";
-        for await (const chunk of provider.streamDraft(draftRequest)) {
-          if (chunk.type === "text-delta") {
-            rawText += chunk.text;
-          }
+        const result = await executeAuditedAgentDraft({
+          db,
+          identity: {
+            runId: run.id,
+            orgId: auth.orgId,
+            conversationId: conversation.id,
+            actorId: auth.memberId,
+            actorRole: auth.role,
+            channel: conversation.channelType,
+            toolBudget: run.toolBudget,
+          },
+          provider,
+          request: draftRequest,
+          plan,
+          evidenceCount: context.evidenceCount,
+          policyRules,
+        });
+        if (result.status === "awaiting_approval") {
+          await stream.writeSSE({
+            event: "approval.required",
+            data: JSON.stringify({
+              runId: run.id,
+              approvalId: result.approvalId,
+              status: result.status,
+            }),
+          });
+          await stream.writeSSE({ event: "done", data: JSON.stringify({ runId: run.id }) });
+          return;
         }
 
-        const parsed = parseAgentResponse(rawText);
+        const parsed = parseAgentResponse(result.replyText);
         for (let i = 0; i < parsed.plainText.length; i += 12) {
           await stream.writeSSE({
             data: JSON.stringify({ text: parsed.plainText.slice(i, i + 12) }),
@@ -104,7 +167,10 @@ export function copilotRoutes(ctx: AppContext) {
           });
         }
 
-        await stream.writeSSE({ event: "done", data: "{}" });
+        await stream.writeSSE({
+          event: "done",
+          data: JSON.stringify({ runId: run.id, status: result.status }),
+        });
       });
     },
   );

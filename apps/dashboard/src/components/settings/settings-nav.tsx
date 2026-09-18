@@ -4,14 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/settings/profile", label: "Profile" },
-  { href: "/settings/notifications", label: "Notifications" },
-  { href: "/settings/brands", label: "Brands" },
-  { href: "/settings/branding", label: "Branding" },
-  { href: "/settings/personality", label: "Personality" },
-  { href: "/settings/emails", label: "Emails" },
-  { href: "/settings/channels", label: "Channels" },
-  { href: "/settings/sla", label: "SLA" },
+  { href: "/dashboard/settings/profile", label: "Profile" },
+  { href: "/dashboard/settings/notifications", label: "Notifications" },
+  { href: "/dashboard/settings/brands", label: "Brands" },
+  { href: "/dashboard/settings/branding", label: "Branding" },
+  { href: "/dashboard/settings/emails", label: "Emails" },
+  { href: "/dashboard/settings/sla", label: "SLA" },
 ] as const;
 
 export function SettingsNav() {

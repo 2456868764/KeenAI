@@ -1,17 +1,28 @@
 import type { AuthConfig } from "@keenai/auth";
 import type { ApiEnv } from "@keenai/shared";
 import type { createLibsqlStore } from "@keenai/storage";
-import { conversations, workflowRuns, workflows } from "@keenai/storage/schema";
+import { agentRuns, conversations, workflowRuns, workflows } from "@keenai/storage/schema";
 import {
   WORKFLOW_INNGEST_EVENTS,
   type WorkflowDefinition,
   type WorkflowStepResult,
+  type WorkflowSuspendedState,
   nextBlockAfter,
+  resolveLetKeeniAnswerNext,
   resolveReplyButtonsNext,
   runWorkflow,
   workflowAutoCloseMsFromMinutes,
+  workflowDefinitionSchema,
 } from "@keenai/workflow";
 import { and, desc, eq } from "drizzle-orm";
+import type { AuditedAgentDraftResult } from "./agent-runtime.js";
+import { getOrCreateAgentOtherSettings } from "./agent-settings.js";
+import {
+  cancelPendingConversationAutoCloseJobs,
+  scheduleResolvedConversationAutoClose,
+  scheduleWorkflowAbandonedAutoClose,
+} from "./conversation-auto-close.js";
+import { buildMessageContent, insertMessage } from "./conversations.js";
 import {
   applyTicketFormSubmission,
   createWorkflowActionHandlers,
@@ -25,6 +36,45 @@ import {
 } from "./workflow-handlers.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
+
+function resolveRunDefinition(
+  run: typeof workflowRuns.$inferSelect,
+  workflow: typeof workflows.$inferSelect,
+): WorkflowDefinition {
+  return run.definitionSnapshot
+    ? workflowDefinitionSchema.parse(run.definitionSnapshot)
+    : resolveActiveWorkflowDefinition(workflow);
+}
+
+export async function failWorkflowAfterAgentRejection(
+  db: Db,
+  input: { orgId: string; agentRunId: string; reason: string },
+): Promise<{ updated: boolean }> {
+  const [agentRun] = await db
+    .select({ workflowRunId: agentRuns.workflowRunId })
+    .from(agentRuns)
+    .where(and(eq(agentRuns.id, input.agentRunId), eq(agentRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!agentRun?.workflowRunId) return { updated: false };
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, agentRun.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run || run.status !== "awaiting_approval") return { updated: false };
+  const steps = (run.steps as WorkflowStepResult[]).map((step) =>
+    step.output?.agentRunId === input.agentRunId
+      ? {
+          ...step,
+          status: "error" as const,
+          error: "approval_rejected",
+          output: { ...step.output, awaitingApproval: false, rejectionReason: input.reason },
+        }
+      : step,
+  );
+  await db.update(workflowRuns).set({ status: "failed", steps }).where(eq(workflowRuns.id, run.id));
+  return { updated: true };
+}
 
 async function emitWorkflowAwaitingInput(payload: {
   workflowRunId: string;
@@ -69,7 +119,8 @@ async function emitWorkflowInputEvent(payload: {
   }
 }
 
-function resolveRunStatus(steps: WorkflowStepResult[], suspended?: boolean): string {
+function resolveRunStatus(steps: WorkflowStepResult[], suspended?: WorkflowSuspendedState): string {
+  if (suspended?.type === "tool_approval") return "awaiting_approval";
   if (suspended) return "awaiting_input";
   if (steps.some((step) => step.status === "error")) return "failed";
   return "completed";
@@ -128,25 +179,19 @@ async function finalizeResumedRun(
     conversationId: string;
     orgId: string;
     brandId: string;
+    workflowTrigger: string;
     steps: WorkflowStepResult[];
-    suspended?: {
-      blockId: string;
-      type:
-        | "collect_data"
-        | "send_ticket_form"
-        | "collect_customer_reply"
-        | "reply_buttons"
-        | "csat";
-    };
+    suspended?: WorkflowSuspendedState;
   },
 ): Promise<string> {
-  const status = resolveRunStatus(input.steps, Boolean(input.suspended));
+  const status = resolveRunStatus(input.steps, input.suspended);
   await db
     .update(workflowRuns)
     .set({ status, steps: input.steps })
     .where(eq(workflowRuns.id, input.runId));
 
   if (input.suspended) {
+    if (input.suspended.type === "tool_approval") return status;
     const block = input.definition.blocks.find((item) => item.id === input.suspended?.blockId);
     if (input.suspended.type === "csat" && block?.type === "csat" && block.waitForRatingMinutes) {
       await emitCsatRequest({
@@ -159,29 +204,243 @@ async function finalizeResumedRun(
         waitForRatingMs: block.waitForRatingMinutes * 60_000,
       });
     } else {
-      const autoCloseMs = autoCloseMsForBlock(input.definition, input.suspended.blockId);
-      if (autoCloseMs > 0) {
-        await emitWorkflowAwaitingInput({
-          workflowRunId: input.runId,
-          conversationId: input.conversationId,
-          orgId: input.orgId,
-          brandId: input.brandId,
-          autoCloseMs,
-          blockId: input.suspended.blockId,
-          awaitEvent:
-            input.suspended.type === "collect_data"
-              ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-              : input.suspended.type === "send_ticket_form"
-                ? WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED
-                : input.suspended.type === "collect_customer_reply"
-                  ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
-                  : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
-        });
-      }
+      await scheduleWorkflowAbandonedAutoClose(db, {
+        workflowRunId: input.runId,
+        conversationId: input.conversationId,
+        orgId: input.orgId,
+        brandId: input.brandId,
+        workflowBlockId: input.suspended.blockId,
+        workflowTrigger: input.workflowTrigger,
+        definition: input.definition,
+      });
     }
   }
 
   return status;
+}
+
+export async function resumeWorkflowToolApproval(
+  db: Db,
+  input: { orgId: string; agentRunId: string; actorId: string },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string }> {
+  const [agentRun] = await db
+    .select()
+    .from(agentRuns)
+    .where(and(eq(agentRuns.id, input.agentRunId), eq(agentRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!agentRun?.workflowRunId || agentRun.trigger !== "workflow_tool") {
+    return { resumed: false, reason: "workflow_tool_run_not_found" };
+  }
+
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, agentRun.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "workflow_run_not_found" };
+  if (!["awaiting_approval", "failed", "running"].includes(run.status)) {
+    return { resumed: false, reason: "workflow_run_not_resumable" };
+  }
+
+  const steps = run.steps as WorkflowStepResult[];
+  const suspendedStep = steps.find((step) => step.output?.agentRunId === agentRun.id);
+  const snapshotBlockId = agentRun.inputSnapshot.blockId;
+  const blockId =
+    suspendedStep?.blockId ?? (typeof snapshotBlockId === "string" ? snapshotBlockId : null);
+  if (!blockId) return { resumed: false, reason: "workflow_step_not_found" };
+
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, run.conversationId), eq(conversations.orgId, input.orgId)))
+    .limit(1);
+  if (!conversation) return { resumed: false, reason: "conversation_not_found" };
+
+  const definition = resolveRunDefinition(run, workflow);
+  const handlers = createWorkflowActionHandlers(
+    db,
+    workflow,
+    conversation,
+    env,
+    authConfig,
+    run.id,
+    {
+      resumeTool: { blockId, agentRunId: agentRun.id, actorId: input.actorId },
+    },
+  );
+  const context = createWorkflowRunContext(workflow, conversation, run.id, definition);
+  const result = await runWorkflow(definition, handlers, context, {
+    startBlockId: blockId,
+    initialSteps: suspendedStep ? steps.filter((step) => step !== suspendedStep) : steps,
+  });
+  const status = await finalizeResumedRun(db, {
+    runId: run.id,
+    definition,
+    conversationId: conversation.id,
+    orgId: workflow.orgId,
+    brandId: conversation.brandId,
+    workflowTrigger: workflow.trigger,
+    steps: result.steps,
+    suspended: result.suspended,
+  });
+  return { resumed: true, status };
+}
+
+export async function resumeWorkflowAgentApproval(
+  db: Db,
+  input: {
+    orgId: string;
+    agentRunId: string;
+    result: AuditedAgentDraftResult;
+  },
+  env: ApiEnv,
+  authConfig?: AuthConfig,
+): Promise<{ resumed: boolean; status?: string; reason?: string }> {
+  const [agentRun] = await db
+    .select()
+    .from(agentRuns)
+    .where(and(eq(agentRuns.id, input.agentRunId), eq(agentRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!agentRun?.workflowRunId || agentRun.trigger !== "workflow_let_keeni_answer") {
+    return { resumed: false, reason: "workflow_agent_run_not_found" };
+  }
+  const [run] = await db
+    .select()
+    .from(workflowRuns)
+    .where(and(eq(workflowRuns.id, agentRun.workflowRunId), eq(workflowRuns.orgId, input.orgId)))
+    .limit(1);
+  if (!run) return { resumed: false, reason: "workflow_run_not_found" };
+  if (run.status !== "awaiting_approval") {
+    return { resumed: false, reason: "workflow_run_not_awaiting_approval" };
+  }
+
+  const steps = run.steps as WorkflowStepResult[];
+  const suspendedStep = steps.find(
+    (step) => step.output?.agentRunId === agentRun.id && step.output.awaitingApproval,
+  );
+  if (!suspendedStep) return { resumed: false, reason: "workflow_step_not_found" };
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(and(eq(workflows.id, run.workflowId), eq(workflows.orgId, input.orgId)))
+    .limit(1);
+  if (!workflow) return { resumed: false, reason: "workflow_not_found" };
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, run.conversationId), eq(conversations.orgId, input.orgId)))
+    .limit(1);
+  if (!conversation) return { resumed: false, reason: "conversation_not_found" };
+  const definition = resolveRunDefinition(run, workflow);
+  const block = definition.blocks.find((candidate) => candidate.id === suspendedStep.blockId);
+  if (!block || block.type !== "let_keeni_answer") {
+    return { resumed: false, reason: "workflow_agent_block_not_found" };
+  }
+
+  if (input.result.status === "awaiting_approval") {
+    const nextSteps = steps.map((step) =>
+      step === suspendedStep
+        ? {
+            ...step,
+            output: {
+              ...step.output,
+              approvalId: input.result.approvalId,
+              agentRunStatus: input.result.status,
+              awaitingApproval: true,
+            },
+          }
+        : step,
+    );
+    await db
+      .update(workflowRuns)
+      .set({ status: "awaiting_approval", steps: nextSteps })
+      .where(eq(workflowRuns.id, run.id));
+    return { resumed: true, status: "awaiting_approval" };
+  }
+
+  const resolution =
+    input.result.resolution ??
+    ({
+      type: input.result.status === "escalated" ? "escalated" : "unresolved",
+      confidence: 0,
+      evidence: input.result.status,
+    } as const);
+  const agentSettings = await getOrCreateAgentOtherSettings(db, {
+    orgId: input.orgId,
+    brandId: conversation.brandId,
+  });
+  const nextBlockId =
+    resolution.type === "escalated" && !agentSettings.allowHandoff
+      ? (block.outcomeRouting?.unresolvedNext ?? null)
+      : resolveLetKeeniAnswerNext(resolution.type, block.outcomeRouting);
+  const patchedSteps = steps.map((step) =>
+    step === suspendedStep
+      ? {
+          ...step,
+          output: {
+            ...step.output,
+            replyText: input.result.replyText,
+            resolutionType: resolution.type,
+            nextBlockId,
+            agentRunStatus: input.result.status,
+            awaitingApproval: false,
+          },
+        }
+      : step,
+  );
+
+  if (input.result.replyText.trim()) {
+    await insertMessage(db, {
+      orgId: input.orgId,
+      conversationId: conversation.id,
+      senderType: "agent",
+      plainText: input.result.replyText,
+      content: buildMessageContent(input.result.replyText),
+      isInternal: false,
+      sentVia: "workflow",
+      isAgentReply: true,
+    });
+    await scheduleResolvedConversationAutoClose(db, {
+      orgId: input.orgId,
+      brandId: conversation.brandId,
+      conversationId: conversation.id,
+      agentRunId: input.result.runId,
+      resolutionType: resolution.type,
+    });
+  }
+
+  const handlers = createWorkflowActionHandlers(
+    db,
+    workflow,
+    conversation,
+    env,
+    authConfig,
+    run.id,
+  );
+  const context = createWorkflowRunContext(workflow, conversation, run.id, definition);
+  const continued = await runWorkflow(definition, handlers, context, {
+    startBlockId: nextBlockId,
+    initialSteps: patchedSteps,
+  });
+  const status = await finalizeResumedRun(db, {
+    runId: run.id,
+    definition,
+    conversationId: conversation.id,
+    orgId: workflow.orgId,
+    brandId: conversation.brandId,
+    workflowTrigger: workflow.trigger,
+    steps: continued.steps,
+    suspended: continued.suspended,
+  });
+  return { resumed: true, status };
 }
 
 async function resumeFromSuspendedBlock(
@@ -233,7 +492,14 @@ async function resumeFromSuspendedBlock(
     .limit(1);
   if (!conversation) return { resumed: false, reason: "conversation_not_found" };
 
-  const definition = resolveActiveWorkflowDefinition(workflow);
+  const definition = resolveRunDefinition(run, workflow);
+  await cancelPendingConversationAutoCloseJobs(db, {
+    orgId: input.orgId,
+    conversationId: conversation.id,
+    reason: "workflow_resumed",
+    kinds: ["workflow_abandoned"],
+    workflowRunId: run.id,
+  });
   const handlers = createWorkflowActionHandlers(
     db,
     workflow,
@@ -242,7 +508,7 @@ async function resumeFromSuspendedBlock(
     authConfig,
     run.id,
   );
-  const context = createWorkflowRunContext(workflow, conversation, run.id);
+  const context = createWorkflowRunContext(workflow, conversation, run.id, definition);
 
   const result = await runWorkflow(definition, handlers, context, {
     startBlockId: input.resumeFrom,
@@ -255,6 +521,7 @@ async function resumeFromSuspendedBlock(
     conversationId: conversation.id,
     orgId: workflow.orgId,
     brandId: conversation.brandId,
+    workflowTrigger: workflow.trigger,
     steps: result.steps,
     suspended: result.suspended,
   });
@@ -294,7 +561,7 @@ export async function resumeCollectCustomerReplyForMessage(
       .limit(1);
     if (!workflow) continue;
 
-    const definition = resolveActiveWorkflowDefinition(workflow);
+    const definition = resolveRunDefinition(run, workflow);
     const steps = run.steps as WorkflowStepResult[];
     const step = steps.find(
       (item) => item.type === "collect_customer_reply" && item.output?.awaitingInput,
@@ -362,7 +629,7 @@ export async function resumeCollectDataWorkflow(
     .limit(1);
   if (!workflow) return { resumed: false, reason: "workflow_not_found" };
 
-  const definition = resolveActiveWorkflowDefinition(workflow);
+  const definition = resolveRunDefinition(run, workflow);
   const patchedSteps = patchCollectDataStep(run.steps as WorkflowStepResult[], input.blockId, {
     attributes: input.attributes,
     freeText: input.freeText,
@@ -409,7 +676,7 @@ export async function resumeTicketFormWorkflow(
     .limit(1);
   if (!workflow) return { resumed: false, reason: "workflow_not_found" };
 
-  const definition = resolveActiveWorkflowDefinition(workflow);
+  const definition = resolveRunDefinition(run, workflow);
   const block = definition.blocks.find((item) => item.id === input.blockId);
   if (!block || block.type !== "send_ticket_form") {
     return { resumed: false, reason: "block_not_send_ticket_form" };
@@ -477,7 +744,7 @@ export async function resumeReplyButtonsWorkflow(
     .limit(1);
   if (!workflow) return { resumed: false, reason: "workflow_not_found" };
 
-  const definition = resolveActiveWorkflowDefinition(workflow);
+  const definition = resolveRunDefinition(run, workflow);
   const block = definition.blocks.find((item) => item.id === input.blockId);
   if (!block || block.type !== "reply_buttons") {
     return { resumed: false, reason: "block_not_reply_buttons" };
@@ -533,7 +800,7 @@ export async function resumeCsatWorkflow(
     .limit(1);
   if (!workflow) return { resumed: false, reason: "workflow_not_found" };
 
-  const definition = resolveActiveWorkflowDefinition(workflow);
+  const definition = resolveRunDefinition(run, workflow);
   const patchedSteps = patchCsatStep(run.steps as WorkflowStepResult[], input.blockId, {
     rating: input.rating,
     ratingComment: input.ratingComment,

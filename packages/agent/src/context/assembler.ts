@@ -34,6 +34,14 @@ export type UnifiedContextSection = {
   source: "kb" | "memory";
   score?: number;
   reason?: string;
+  evidence?: Array<{
+    sourceType: string;
+    sourceId: string;
+    sourceVersion?: string;
+    scope?: string;
+    score?: number;
+    metadata?: Record<string, unknown>;
+  }>;
 };
 
 export type AssembleUnifiedContextResult = {
@@ -131,6 +139,19 @@ function kbHitToSection(hit: KbSearchHit): UnifiedContextSection {
     body: `${prefix}${hit.content}`,
     source: "kb",
     score,
+    evidence: [
+      {
+        sourceType: "kb_chunk",
+        sourceId: hit.chunkId,
+        scope: "brand",
+        score,
+        metadata: {
+          documentId: hit.documentId,
+          sourceId: hit.sourceId,
+          retrievalSources: hit.sources,
+        },
+      },
+    ],
   };
 }
 
@@ -147,6 +168,7 @@ export async function assembleUnifiedAgentContext(
     title: section.title,
     body: section.body,
     source: section.title.toLowerCase().includes("kb") ? "kb" : "memory",
+    evidence: section.evidence,
   }));
 
   const query = input.instruction?.trim() ?? "";

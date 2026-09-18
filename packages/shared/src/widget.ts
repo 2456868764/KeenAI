@@ -70,13 +70,6 @@ export const widgetCreateTicketSchema = z.object({
   attachmentIds: z.array(z.string().min(1)).max(5).optional(),
 });
 
-export const widgetAnswerSchema = z.object({
-  conversationId: z.string().min(1).max(64),
-  query: z.string().min(1).max(500),
-  limit: z.coerce.number().int().min(1).max(10).default(5),
-  rerank: z.coerce.boolean().optional(),
-});
-
 export const widgetHandoffSchema = z.object({
   message: z.string().min(1).max(5000).default("I need help from the team."),
 });

@@ -40,6 +40,7 @@ async function executeBlock(
   suspended?: WorkflowSuspendedState;
 }> {
   let nextId: string | null = defaultNextId(definition, block.id);
+  const toolExecutionMode = definition.toolExecutionMode ?? "governed";
   const blockIds = new Set(definition.blocks.map((b) => b.id));
 
   switch (block.type) {
@@ -142,77 +143,161 @@ async function executeBlock(
     case "http_request": {
       if (!handlers.httpRequest) throw new Error("http_request_handler_missing");
       const result = await handlers.httpRequest({
+        blockId: block.id,
+        executionMode: toolExecutionMode,
         method: block.method,
         url: block.url,
         body: block.body,
       });
+      const governance = result.governance;
+      const toolFailed = governance?.status === "failed" || governance?.status === "escalated";
       return {
         step: {
           blockId: block.id,
           type: block.type,
-          status: "ok",
-          output: { httpStatus: result.status },
+          status: toolFailed ? "error" : "ok",
+          error: toolFailed ? `tool_${governance?.status}` : undefined,
+          output: {
+            httpStatus: result.status,
+            agentRunId: governance?.agentRunId,
+            agentRunStatus: governance?.status,
+            approvalId: governance?.approvalId,
+            awaitingApproval: governance?.status === "awaiting_approval",
+            toolExecutionMode,
+          },
         },
-        nextId,
+        nextId: governance?.status === "awaiting_approval" || toolFailed ? null : nextId,
+        suspended:
+          governance?.status === "awaiting_approval"
+            ? {
+                blockId: block.id,
+                type: "tool_approval" as const,
+                agentRunId: governance.agentRunId,
+                approvalId: governance.approvalId,
+              }
+            : undefined,
       };
     }
     case "webhook_emit": {
       if (!handlers.webhookEmit) throw new Error("webhook_emit_handler_missing");
       const result = await handlers.webhookEmit({
         blockId: block.id,
+        executionMode: toolExecutionMode,
         url: block.url,
         eventName: block.eventName,
         payload: block.payload,
         headers: block.headers,
       });
+      const governance = result.governance;
+      const toolFailed = governance?.status === "failed" || governance?.status === "escalated";
       return {
         step: {
           blockId: block.id,
           type: block.type,
-          status: "ok",
-          output: { httpStatus: result.status, webhookEventName: result.eventName },
+          status: toolFailed ? "error" : "ok",
+          error: toolFailed ? `tool_${governance?.status}` : undefined,
+          output: {
+            httpStatus: result.status,
+            webhookEventName: result.eventName,
+            agentRunId: governance?.agentRunId,
+            agentRunStatus: governance?.status,
+            approvalId: governance?.approvalId,
+            awaitingApproval: governance?.status === "awaiting_approval",
+            toolExecutionMode,
+          },
         },
-        nextId,
+        nextId: governance?.status === "awaiting_approval" || toolFailed ? null : nextId,
+        suspended:
+          governance?.status === "awaiting_approval"
+            ? {
+                blockId: block.id,
+                type: "tool_approval" as const,
+                agentRunId: governance.agentRunId,
+                approvalId: governance.approvalId,
+              }
+            : undefined,
       };
     }
     case "mcp_call": {
       if (!handlers.mcpCall) throw new Error("mcp_call_handler_missing");
       const result = await handlers.mcpCall({
+        blockId: block.id,
+        executionMode: toolExecutionMode,
         serverId: block.serverId,
         toolName: block.toolName,
         arguments: block.arguments,
       });
+      const governance = result.governance;
+      const toolFailed = governance?.status === "failed" || governance?.status === "escalated";
       return {
         step: {
           blockId: block.id,
           type: block.type,
-          status: "ok",
+          status: toolFailed ? "error" : "ok",
+          error: toolFailed ? `tool_${governance?.status}` : undefined,
           output: {
             mcpServerId: result.serverId,
             mcpToolName: result.toolName,
             mcpResultPreview: previewUnknown(result.result),
+            agentRunId: governance?.agentRunId,
+            agentRunStatus: governance?.status,
+            approvalId: governance?.approvalId,
+            awaitingApproval: governance?.status === "awaiting_approval",
+            toolExecutionMode,
           },
         },
-        nextId,
+        nextId: governance?.status === "awaiting_approval" || toolFailed ? null : nextId,
+        suspended:
+          governance?.status === "awaiting_approval"
+            ? {
+                blockId: block.id,
+                type: "tool_approval" as const,
+                agentRunId: governance.agentRunId,
+                approvalId: governance.approvalId,
+              }
+            : undefined,
       };
     }
     case "script": {
       if (!handlers.script) throw new Error("script_handler_missing");
       const result = await handlers.script({
+        blockId: block.id,
+        executionMode: toolExecutionMode,
         code: block.code,
         timeoutMs: block.timeoutMs,
         memoryMb: block.memoryMb,
         context,
         facts,
       });
+      const governance = result.governance;
+      const awaitingApproval = governance?.status === "awaiting_approval";
       return {
         step: {
           blockId: block.id,
           type: block.type,
-          status: "ok",
-          output: { scriptResultPreview: previewUnknown(result.result) },
+          status:
+            governance?.status === "failed" || governance?.status === "escalated" ? "error" : "ok",
+          output: {
+            scriptResultPreview: previewUnknown(result.result),
+            agentRunId: governance?.agentRunId,
+            approvalId: governance?.approvalId,
+            awaitingApproval,
+            toolExecutionMode,
+          },
         },
-        nextId,
+        nextId:
+          awaitingApproval || governance?.status === "failed" || governance?.status === "escalated"
+            ? null
+            : nextId,
+        suspended:
+          awaitingApproval && governance
+            ? {
+                blockId: block.id,
+                type: "tool_approval" as const,
+                agentRunId: governance.agentRunId,
+                approvalId: governance.approvalId,
+              }
+            : undefined,
       };
     }
     case "branches": {
@@ -518,13 +603,17 @@ async function executeBlock(
           conversationId: context.conversationId,
           targetCustomerId: context.targetCustomerId,
           subject: context.subject,
+          channelType: context.channelType,
           isShadowRun: context.isShadowRun,
+          workflowRunId: context.workflowRunId,
+          toolExecutionMode: context.toolExecutionMode ?? toolExecutionMode,
         },
       });
       nextId = result.nextBlockId;
       if (!nextId && block.outcomeRouting) {
         nextId = resolveLetKeeniAnswerNext(result.resolution.type, block.outcomeRouting);
       }
+      const awaitingApproval = result.agentRunStatus === "awaiting_approval";
       return {
         step: {
           blockId: block.id,
@@ -534,9 +623,23 @@ async function executeBlock(
             replyText: result.replyText,
             resolutionType: result.resolution.type,
             nextBlockId: nextId,
+            agentRunId: result.agentRunId,
+            agentRunStatus: result.agentRunStatus,
+            approvalId: result.approvalId,
+            awaitingApproval,
+            toolExecutionMode,
           },
         },
-        nextId,
+        nextId: awaitingApproval ? null : nextId,
+        suspended:
+          awaitingApproval && result.agentRunId
+            ? {
+                blockId: block.id,
+                type: "tool_approval" as const,
+                agentRunId: result.agentRunId,
+                approvalId: result.approvalId,
+              }
+            : undefined,
       };
     }
     default: {

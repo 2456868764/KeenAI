@@ -1,5 +1,5 @@
 import { verifyAccessToken } from "@keenai/auth";
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import type { Hono } from "hono";
 import { upgradeWebSocket } from "hono/bun";
 import { subscribeConversation } from "../lib/conversation-bus.js";
@@ -8,8 +8,13 @@ import type { AppVariables } from "../types.js";
 
 /** Bun-only WebSocket route; register from `index.ts` when `Bun` is available. */
 export function registerConversationWebSocket(app: Hono<{ Variables: AppVariables }>) {
-  const prefix = `/api/${API_VERSION}/conversations`;
+  return registerConversationWebSocketAt(app, `${DASHBOARD_API_PREFIX}/conversations`);
+}
 
+export function registerConversationWebSocketAt(
+  app: Hono<{ Variables: AppVariables }>,
+  prefix: string,
+) {
   app.get(
     `${prefix}/:id/ws`,
     upgradeWebSocket(async (c) => {

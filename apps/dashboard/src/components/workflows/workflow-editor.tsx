@@ -77,6 +77,24 @@ const TRIGGER_OPTIONS: { value: WorkflowDefinition["trigger"]; label: string }[]
   { value: "event_match", label: "Custom event" },
 ];
 
+const TOOL_EXECUTION_MODE_OPTIONS = [
+  {
+    value: "governed",
+    label: "Governed",
+    description: "Policy may require approval for each tool call.",
+  },
+  {
+    value: "pre_authorized",
+    label: "Pre-authorized",
+    description: "Publishing authorizes this workflow; policy denials still apply.",
+  },
+  {
+    value: "read_only",
+    label: "Read-only",
+    description: "Only R0 query tools can execute.",
+  },
+] as const;
+
 function workflowAddMenuTitle(anchor: WorkflowCanvasInsertAnchor): string {
   switch (anchor.kind) {
     case "trigger":
@@ -294,7 +312,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
     onSuccess: (result) => {
       setManageOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
-      router.push(`/workflows/${result.workflow.id}`);
+      router.push(`/dashboard/agent/workflows/${result.workflow.id}`);
     },
   });
 
@@ -304,7 +322,7 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
       setManageOpen(false);
       setDeleteDialogOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
-      router.replace("/workflows");
+      router.replace("/dashboard/agent/workflows");
     },
   });
 
@@ -531,6 +549,44 @@ export function WorkflowEditorShell({ workflowId }: { workflowId: string }) {
             </option>
           ))}
         </select>
+      </section>
+
+      <section className="space-y-2">
+        <div>
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Tool execution</p>
+          <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+            Applies to every tool call in this workflow.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-1 rounded-md bg-[hsl(var(--surface-2))] p-1">
+          {TOOL_EXECUTION_MODE_OPTIONS.map((option) => {
+            const active = (definition.toolExecutionMode ?? "governed") === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                title={option.description}
+                aria-pressed={active}
+                className={cn(
+                  "min-w-0 rounded px-2 py-1.5 text-[11px] font-medium",
+                  active
+                    ? "bg-[hsl(var(--surface-0))] text-[hsl(var(--foreground))] shadow-sm"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+                onClick={() => commitDefinition({ ...definition, toolExecutionMode: option.value })}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+          {
+            TOOL_EXECUTION_MODE_OPTIONS.find(
+              (option) => option.value === (definition.toolExecutionMode ?? "governed"),
+            )?.description
+          }
+        </p>
       </section>
 
       {definition.trigger === "page_view" ? (
@@ -1025,7 +1081,7 @@ function CanvasToolbar({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Link
-              href="/workflows"
+              href="/dashboard/agent/workflows"
               className="flex size-8 shrink-0 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition-colors hover:bg-slate-100 hover:text-[hsl(var(--foreground))]"
               aria-label="Back to workflows"
             >

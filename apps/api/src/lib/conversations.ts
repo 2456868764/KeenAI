@@ -21,6 +21,11 @@ import {
   loadAttachmentsForMessages,
   loadPendingAttachments,
 } from "./attachments.js";
+import {
+  cancelPendingConversationAutoCloseJobs,
+  clearConversationAutoCloseMarker,
+  wasConversationAutoClosed,
+} from "./conversation-auto-close.js";
 import { publishConversation } from "./conversation-bus.js";
 
 type ContentInput = z.infer<typeof messageContentSchema>;
@@ -224,6 +229,12 @@ export async function insertMessage(
 
   if (!current) throw new Error("conversation not found");
 
+  const isCustomerMessage = input.senderType === "user" && !input.isInternal;
+  let autoReopen =
+    isCustomerMessage &&
+    current.status === "closed" &&
+    wasConversationAutoClosed(current.attributes ?? {});
+
   const [existingUserMessage] =
     input.senderType === "user" && !input.isInternal
       ? await db
@@ -281,7 +292,7 @@ export async function insertMessage(
     unreadCount += 1;
   }
 
-  const [updated] = await db
+  let [updated] = await db
     .update(conversations)
     .set({
       lastMessageAt: now,
@@ -289,9 +300,61 @@ export async function insertMessage(
       messageCount: current.messageCount + 1,
       unreadCount,
       firstResponseAt,
+      ...(autoReopen
+        ? {
+            status: "open",
+            closedAt: null,
+            snoozedUntil: null,
+            attributes: clearConversationAutoCloseMarker(current.attributes ?? {}),
+          }
+        : {}),
     })
     .where(eq(conversations.id, input.conversationId))
     .returning();
+
+  // A due auto-close can win after the initial conversation read but before this
+  // message updates lastMessageAt. Re-check the returned row so a customer reply
+  // always wins that race and reopens only system-auto-closed conversations.
+  if (
+    isCustomerMessage &&
+    updated?.status === "closed" &&
+    wasConversationAutoClosed(updated.attributes ?? {})
+  ) {
+    const [reopened] = await db
+      .update(conversations)
+      .set({
+        status: "open",
+        closedAt: null,
+        snoozedUntil: null,
+        attributes: clearConversationAutoCloseMarker(updated.attributes ?? {}),
+        updatedAt: now,
+      })
+      .where(and(eq(conversations.id, input.conversationId), eq(conversations.status, "closed")))
+      .returning();
+    if (reopened) {
+      updated = reopened;
+      autoReopen = true;
+    }
+  }
+
+  if (isCustomerMessage) {
+    await cancelPendingConversationAutoCloseJobs(db, {
+      orgId: input.orgId,
+      conversationId: input.conversationId,
+      reason: "customer_replied",
+      now,
+    });
+    if (autoReopen) {
+      await recordConversationEvent(db, {
+        orgId: input.orgId,
+        conversationId: input.conversationId,
+        eventType: "conversation.auto_reopened",
+        actorType: "user",
+        actorId: input.senderId,
+        payload: { messageId: message.id },
+      });
+    }
+  }
 
   if (input.isAgentReply && !input.isInternal) {
     try {
@@ -354,11 +417,11 @@ export async function insertMessage(
     });
   }
 
-  const isCustomerMessage = input.senderType === "user" && !input.isInternal;
+  const isAutomatedAgentMessage = input.sentVia === "workflow" || input.sentVia === "basic-agent";
   const isTeammateMessage =
-    input.senderType === "agent" && !input.isInternal && input.sentVia !== "workflow";
+    input.senderType === "agent" && !input.isInternal && !isAutomatedAgentMessage;
   const isTeammateNote =
-    input.senderType === "agent" && input.isInternal && input.sentVia !== "workflow";
+    input.senderType === "agent" && input.isInternal && !isAutomatedAgentMessage;
 
   if (isCustomerMessage && triggerFirstMessage) {
     const { getWorkflowDispatch } = await import("./workflow-dispatch.js");
@@ -380,6 +443,23 @@ export async function insertMessage(
         channelType: current.channelType,
         priority: current.priority ?? "normal",
         conversationStatus: updated?.status ?? current.status,
+        sourceMessageId: message.id,
+        messageSource: input.sentVia ?? "web",
+      },
+    });
+  }
+
+  if (autoReopen && updated) {
+    const { getWorkflowDispatch } = await import("./workflow-dispatch.js");
+    await getWorkflowDispatch().dispatchConversationTrigger({
+      orgId: input.orgId,
+      brandId: current.brandId,
+      conversationId: input.conversationId,
+      trigger: "conversation_state_changed",
+      facts: {
+        channelType: current.channelType,
+        priority: current.priority ?? "normal",
+        conversationStatus: "open",
       },
     });
   }

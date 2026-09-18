@@ -15,84 +15,84 @@ test.describe("Dashboard @smoke", () => {
 
   test("sla settings page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/settings/sla");
+    await page.goto("/dashboard/settings/sla");
     await expect(page.getByRole("heading", { name: "Policies" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Office hours" })).toBeVisible();
   });
 
   test("workflows page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/workflows");
+    await page.goto("/dashboard/agent/workflows");
     await expectPageTitle(page, "Workflows");
     await expect(page.getByRole("button", { name: /new workflow/i })).toBeVisible();
   });
 
   test("tickets page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/tickets");
+    await page.goto("/dashboard/tickets");
     await expectPageTitle(page, "Tickets");
     await expect(page.getByRole("heading", { name: "Ticket types" })).toBeVisible();
   });
 
   test("analytics page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/analytics");
+    await page.goto("/dashboard/analytics");
     await expectPageTitle(page, "Analytics");
     await expect(page.getByText("Support")).toBeVisible();
   });
 
   test("feedback page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/feedback");
+    await page.goto("/dashboard/feedback");
     await expectPageTitle(page, "Feedback");
   });
 
   test("roadmap page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/roadmap");
+    await page.goto("/dashboard/roadmap");
     await expectPageTitle(page, "Roadmap");
     await expect(page.getByRole("button", { name: /add item/i })).toBeVisible();
   });
 
   test("changelog page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/changelog");
+    await page.goto("/dashboard/changelog");
     await expectPageTitle(page, "Changelog");
     await expect(page.getByRole("button", { name: /new entry/i })).toBeVisible();
   });
 
   test("help center page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/help-center");
+    await page.goto("/dashboard/help-center");
     await expectPageTitle(page, "Help Center");
   });
 
   test("brands settings page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/settings/brands");
+    await page.goto("/dashboard/settings/brands");
     await expectPageTitle(page, "Settings");
     await expect(page.getByRole("button", { name: /add brand/i })).toBeVisible();
   });
 
   test("personality settings page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/settings/personality");
+    await page.goto("/dashboard/agent/personality");
     await expectPageTitle(page, "Settings");
     await expect(page.getByRole("heading", { name: "Agent identity" })).toBeVisible();
     await expect(page.getByRole("button", { name: /save personality/i })).toBeVisible();
   });
 
-  test("channels settings page loads after login", async ({ page }) => {
+  test("integrations settings page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/settings/channels");
+    await page.goto("/dashboard/settings/integrations");
     await expectPageTitle(page, "Settings");
     await expect(page.getByRole("heading", { name: "Telegram" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Feishu / Lark" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Feishu" })).toBeVisible();
   });
 
   test("custom actions page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/custom-actions");
+    await page.goto("/dashboard/agent/custom-actions");
     await expectPageTitle(page, "Custom Actions");
     await expect(page.getByRole("button", { name: /new action/i })).toBeVisible();
     await expect(
@@ -102,7 +102,7 @@ test.describe("Dashboard @smoke", () => {
 
   test("memory explorer page loads after login", async ({ page }) => {
     await loginAsDemo(page);
-    await page.goto("/memory");
+    await page.goto("/dashboard/agent/memory");
     await expectPageTitle(page, "Memory Explorer");
     await expect(page.getByRole("heading", { name: "Hot topics" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Summary tree" })).toBeVisible();

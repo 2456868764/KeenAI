@@ -9,7 +9,7 @@ import {
   refreshSession,
   sendMagicLinkEmail,
 } from "@keenai/auth";
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppVariables } from "../types.js";
@@ -47,7 +47,7 @@ function sessionResponse(session: Awaited<ReturnType<typeof loginWithPassword>>)
 export function authRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
 
-  const prefix = `/api/${API_VERSION}/auth`;
+  const prefix = `${DASHBOARD_API_PREFIX}/auth`;
 
   r.post(`${prefix}/login`, zValidator("json", loginSchema), async (c) => {
     const body = c.req.valid("json");

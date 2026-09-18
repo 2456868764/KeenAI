@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createChangelogEntrySchema,
   listChangelogEntriesSchema,
   updateChangelogEntrySchema,
@@ -20,7 +20,7 @@ import type { AppVariables } from "../types.js";
 
 export function changelogRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/changelog`;
+  const prefix = `${DASHBOARD_API_PREFIX}/changelog`;
 
   r.get(
     `${prefix}/entries`,

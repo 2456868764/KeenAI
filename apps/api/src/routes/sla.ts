@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createSlaPolicySchema,
   updateSlaPolicySchema,
   upsertOfficeHoursSchema,
@@ -21,7 +21,7 @@ import type { AppVariables } from "../types.js";
 
 export function slaRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/sla`;
+  const prefix = `${DASHBOARD_API_PREFIX}/sla`;
 
   r.get(`${prefix}/policies`, requireAuth(), async (c) => {
     const auth = c.get("auth");

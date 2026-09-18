@@ -66,6 +66,7 @@ export type WidgetConfig = {
     greetingTitle: string;
     greetingBody: string;
     avatarUrl?: string | null;
+    allowHandoff?: boolean;
   };
   modules: Record<WidgetModuleKey, boolean>;
   menuItems: {

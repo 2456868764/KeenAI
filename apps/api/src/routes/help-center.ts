@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { indexKbDocument } from "@keenai/kb";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createHelpArticleSchema,
   createHelpCollectionSchema,
   listHelpArticlesSchema,
@@ -25,7 +25,7 @@ import type { AppVariables } from "../types.js";
 
 export function helpCenterRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/help-center`;
+  const prefix = `${DASHBOARD_API_PREFIX}/help-center`;
 
   r.get(`${prefix}/collections`, requireAuth(), async (c) => {
     const auth = c.get("auth");

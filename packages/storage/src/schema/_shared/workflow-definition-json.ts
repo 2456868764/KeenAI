@@ -6,6 +6,7 @@
 export type WorkflowDefinitionJson = {
   description?: string;
   trigger: "first_message" | "customer_unresponsive" | (string & {});
+  toolExecutionMode?: "governed" | "pre_authorized" | "read_only";
   inactivityMinutes?: number;
   pageRules?: Array<{ urlOp: "contains" | "eq" | "matches"; url: string; timeOnPageSec?: number }>;
   eventName?: string;

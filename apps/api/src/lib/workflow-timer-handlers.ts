@@ -9,6 +9,7 @@ import type {
   WorkflowTimerHandlers,
 } from "@keenai/workflow";
 import { and, eq } from "drizzle-orm";
+import { markConversationAutoClosedAttributes } from "./conversation-auto-close.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
 
@@ -34,7 +35,16 @@ export function createWorkflowTimerHandlers(db: Db, _env: ApiEnv): WorkflowTimer
 
       await db
         .update(conversations)
-        .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
+        .set({
+          status: "closed",
+          closedAt: new Date(),
+          attributes: markConversationAutoClosedAttributes(conversation.attributes ?? {}, {
+            jobId: `legacy-workflow:${payload.workflowRunId}:${payload.blockId ?? "unknown"}`,
+            kind: "workflow_abandoned",
+            closedAt: new Date().toISOString(),
+          }),
+          updatedAt: new Date(),
+        })
         .where(eq(conversations.id, conversation.id));
 
       try {

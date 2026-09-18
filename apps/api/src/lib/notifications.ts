@@ -81,7 +81,7 @@ export async function notifyAssignee(
     eventType: "conversation.assigned",
     title: "Conversation assigned to you",
     body: input.subject ?? "New assignment",
-    link: `/inbox?conversation=${input.conversationId}`,
+    link: `/dashboard/inbox?conversation=${input.conversationId}`,
     payload: { conversationId: input.conversationId },
   });
 }

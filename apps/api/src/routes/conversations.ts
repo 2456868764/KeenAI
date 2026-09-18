@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createConversationSchema,
   createMessageSchema,
   createTicketFromConversationSchema,
@@ -13,6 +13,10 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { buildAgentOutboundPayload } from "../lib/agent-outbound.js";
+import {
+  cancelPendingConversationAutoCloseJobs,
+  clearConversationAutoCloseMarker,
+} from "../lib/conversation-auto-close.js";
 import { publishConversation, subscribeConversation } from "../lib/conversation-bus.js";
 import {
   assertBrandInOrg,
@@ -39,7 +43,7 @@ import type { AppContext, AppVariables } from "../types.js";
 
 export function conversationRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/conversations`;
+  const prefix = `${DASHBOARD_API_PREFIX}/conversations`;
 
   r.get(prefix, requireAuth(), zValidator("query", listConversationsSchema), async (c) => {
     const auth = c.get("auth");
@@ -183,6 +187,7 @@ export function conversationRoutes(ctx: AppContext) {
       if (body.status !== undefined) {
         patch.status = body.status;
         patch.closedAt = body.status === "closed" ? now : body.status === "open" ? null : undefined;
+        patch.attributes = clearConversationAutoCloseMarker(conversation.attributes ?? {});
       }
       if (body.assigneeId !== undefined) patch.assigneeId = body.assigneeId;
       if (body.teamId !== undefined) patch.teamId = body.teamId;
@@ -210,6 +215,15 @@ export function conversationRoutes(ctx: AppContext) {
         .returning();
 
       if (!updated) return c.json({ error: "update_failed" }, 500);
+
+      if (body.status !== undefined && body.status !== conversation.status) {
+        await cancelPendingConversationAutoCloseJobs(c.get("store").db, {
+          orgId: auth.orgId,
+          conversationId: conversation.id,
+          reason: "conversation_state_changed",
+          now,
+        });
+      }
 
       const serialized = serializeConversation(updated);
 

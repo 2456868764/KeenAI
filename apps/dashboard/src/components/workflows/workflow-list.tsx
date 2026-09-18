@@ -145,7 +145,7 @@ export function WorkflowListShell() {
     mutationFn: (input: { name: string; definition: WorkflowDefinition }) => createWorkflow(input),
     onSuccess: ({ workflow }) => {
       void queryClient.invalidateQueries({ queryKey: ["workflows"] });
-      router.push(`/workflows/${workflow.id}`);
+      router.push(`/dashboard/agent/workflows/${workflow.id}`);
     },
   });
 
@@ -515,7 +515,7 @@ function WorkflowRow({
 }) {
   return (
     <Link
-      href={`/workflows/${workflow.id}`}
+      href={`/dashboard/agent/workflows/${workflow.id}`}
       draggable={canReorder}
       onDragStart={onDragStart}
       onDragOver={onDragOver}

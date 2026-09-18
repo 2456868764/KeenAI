@@ -7,11 +7,30 @@ import {
   runWorkflowScriptBlock,
 } from "./workflow-handlers.js";
 
-const callTool = vi.fn();
+const { callTool, executeWorkflowToolCall } = vi.hoisted(() => ({
+  callTool: vi.fn(),
+  executeWorkflowToolCall: vi.fn(async (_db, input) => ({
+    runId: "agent-run-1",
+    status: "completed" as const,
+    result: await input.tool.execute(input.arguments),
+  })),
+}));
 
 vi.mock("./mcp-tools.js", () => ({
-  getSharedMcpHost: vi.fn(async () => ({ callTool })),
+  getSharedMcpHost: vi.fn(async () => ({
+    callTool,
+    listTools: vi.fn(async () => [
+      {
+        name: "echo",
+        qualifiedName: "mcp__stub__echo",
+        description: "Echo a value",
+        inputSchema: { type: "object" },
+      },
+    ]),
+  })),
 }));
+
+vi.mock("./workflow-tool-runtime.js", () => ({ executeWorkflowToolCall }));
 
 describe("workflow action handlers", () => {
   it("calls configured MCP server tools from mcp_call blocks", async () => {
@@ -37,6 +56,7 @@ describe("workflow action handlers", () => {
       serverId: "stub",
       toolName: "echo",
       result: { echoed: "hello-mcp" },
+      governance: { agentRunId: "agent-run-1", status: "completed" },
     });
   });
 

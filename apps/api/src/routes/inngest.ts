@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { serve } from "inngest/hono";
+import { createAgentInngestFunctions } from "../lib/agent-inngest.js";
 import { createEmailInngestFunctions } from "../lib/email-inngest.js";
 import { createKbInngestFunctions } from "../lib/kb-inngest.js";
 import { createMediaInngestFunctions } from "../lib/media-inngest.js";
@@ -16,6 +17,7 @@ export function inngestRoutes(ctx: AppContext) {
 
   const functions = [
     ...(workflowFunctions ?? []),
+    ...createAgentInngestFunctions(client, ctx),
     ...createEmailInngestFunctions(client, ctx),
     ...createMediaInngestFunctions(client, ctx),
     ...createMemoryInngestFunctions(client, ctx),

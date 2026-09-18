@@ -269,4 +269,128 @@ describe("custom actions integration", () => {
     vi.unstubAllEnvs();
     await store.close();
   });
+
+  it("requires approval before executing a high-risk API custom action", async () => {
+    const store = createLibsqlStore({ url: ":memory:" });
+    const db = store.db;
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(db, { migrationsFolder });
+
+    const [orgRow] = await db
+      .insert(organizations)
+      .values({ slug: "acme-approval", name: "Acme Approval" })
+      .returning();
+    const org = requireRow(orgRow, "org");
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    const passwordHash = await hashPassword("password12345");
+    const [requesterAccountRow] = await db
+      .insert(accounts)
+      .values({ email: "requester@acme.test", name: "Requester", passwordHash })
+      .returning();
+    const requesterAccount = requireRow(requesterAccountRow, "requesterAccount");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: requesterAccount.id,
+      role: "admin",
+      status: "active",
+    });
+    const [approverAccountRow] = await db
+      .insert(accounts)
+      .values({ email: "approver@acme.test", name: "Approver", passwordHash })
+      .returning();
+    const approverAccount = requireRow(approverAccountRow, "approverAccount");
+    await db.insert(members).values({
+      orgId: org.id,
+      accountId: approverAccount.id,
+      role: "admin",
+      status: "active",
+    });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig,
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+    const login = async (email: string) => {
+      const response = await app.request("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password: "password12345",
+          orgSlug: "acme-approval",
+        }),
+      });
+      const body = (await response.json()) as { accessToken: string };
+      return { Authorization: `Bearer ${body.accessToken}` };
+    };
+    const requesterAuth = await login("requester@acme.test");
+    const approverAuth = await login("approver@acme.test");
+
+    const createRes = await app.request("/api/v1/custom-actions", {
+      method: "POST",
+      headers: { ...requesterAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandId: brand.id,
+        name: "delete_customer_export",
+        endpoint: "https://api.example.com/exports/{{export_id}}",
+        method: "DELETE",
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const { action } = (await createRes.json()) as { action: { id: string } };
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ deleted: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const executeRes = await app.request(`/api/v1/custom-actions/${action.id}/execute`, {
+      method: "POST",
+      headers: {
+        ...requesterAuth,
+        "Content-Type": "application/json",
+        "Idempotency-Key": "delete-export-1",
+      },
+      body: JSON.stringify({ parameters: { export_id: "export-1" } }),
+    });
+    expect(executeRes.status).toBe(202);
+    const executeBody = (await executeRes.json()) as {
+      result: { runId: string; status: string; approvalId: string };
+    };
+    expect(executeBody.result.status).toBe("awaiting_approval");
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    const approvalRes = await app.request(
+      `/api/v1/agent-approvals/${executeBody.result.approvalId}/decision`,
+      {
+        method: "POST",
+        headers: { ...approverAuth, "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "approved", resume: true }),
+      },
+    );
+    expect(approvalRes.status).toBe(200);
+    const approvalBody = (await approvalRes.json()) as {
+      result: { runId: string; status: string; result: { ok: boolean } };
+    };
+    expect(approvalBody.result.runId).toBe(executeBody.result.runId);
+    expect(approvalBody.result.status).toBe("completed");
+    expect(approvalBody.result.result.ok).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    fetchSpy.mockRestore();
+    await store.close();
+  });
 });

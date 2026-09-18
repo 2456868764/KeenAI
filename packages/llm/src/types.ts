@@ -41,6 +41,12 @@ export type DraftToolDefinition = {
   name: string;
   description: string;
   parametersSchema: Record<string, unknown>;
+  audit?: {
+    source: "custom_action" | "mcp" | "workflow" | "builtin";
+    sourceId?: string;
+    riskLevel?: "r0" | "r1" | "r2" | "r3" | "r4";
+    idempotent?: boolean;
+  };
 };
 
 export type DraftToolRuntime = DraftToolDefinition & {

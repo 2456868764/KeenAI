@@ -1,6 +1,8 @@
 "use client";
 
 import type { WorkflowRun } from "@/lib/api";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 export function WorkflowRunTrace({
   runs,
@@ -78,36 +80,48 @@ export function WorkflowRunTrace({
       {selectedRun ? (
         <ol className="mt-4 space-y-2 border-t border-[hsl(var(--border))] pt-4 text-xs">
           {selectedRun.steps.length > 0 ? (
-            selectedRun.steps.map((step, index) => (
-              <li
-                key={`${step.blockId}-${index}`}
-                className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {index + 1}. {step.type.replaceAll("_", " ")}
-                  </span>
-                  <span
-                    className={
-                      step.status === "failed" || step.error
-                        ? "text-red-400"
-                        : "text-[hsl(var(--muted-foreground))]"
-                    }
-                  >
-                    {step.status}
-                  </span>
-                </div>
-                <p className="mt-1 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
-                  block: {step.blockId}
-                </p>
-                {step.error ? <p className="mt-1 text-red-400">{step.error}</p> : null}
-                {step.output && Object.keys(step.output).length > 0 ? (
-                  <pre className="mt-2 max-h-24 overflow-auto rounded bg-[hsl(var(--surface-1))] p-2 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
-                    {JSON.stringify(step.output, null, 2)}
-                  </pre>
-                ) : null}
-              </li>
-            ))
+            selectedRun.steps.map((step, index) => {
+              const agentRunId =
+                typeof step.output?.agentRunId === "string" ? step.output.agentRunId : null;
+              return (
+                <li
+                  key={`${step.blockId}-${index}`}
+                  className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">
+                      {index + 1}. {step.type.replaceAll("_", " ")}
+                    </span>
+                    <span
+                      className={
+                        step.status === "failed" || step.error
+                          ? "text-red-400"
+                          : "text-[hsl(var(--muted-foreground))]"
+                      }
+                    >
+                      {step.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
+                    block: {step.blockId}
+                  </p>
+                  {step.error ? <p className="mt-1 text-red-400">{step.error}</p> : null}
+                  {agentRunId ? (
+                    <Link
+                      href={`/dashboard/agent/agent-runs?runId=${agentRunId}`}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(var(--primary))] hover:underline"
+                    >
+                      Open Agent trace <ExternalLink className="size-3" />
+                    </Link>
+                  ) : null}
+                  {step.output && Object.keys(step.output).length > 0 ? (
+                    <pre className="mt-2 max-h-24 overflow-auto rounded bg-[hsl(var(--surface-1))] p-2 font-mono text-[10px] text-[hsl(var(--muted-foreground))]">
+                      {JSON.stringify(step.output, null, 2)}
+                    </pre>
+                  ) : null}
+                </li>
+              );
+            })
           ) : (
             <li className="rounded border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-3 py-2 text-[hsl(var(--muted-foreground))]">
               No eligible closed conversations were found for sample mode.

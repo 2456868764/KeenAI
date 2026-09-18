@@ -1,5 +1,4 @@
 import type {
-  WidgetAnswerCitation,
   WidgetChangelogEntry,
   WidgetConfig,
   WidgetConversationSummary,
@@ -30,17 +29,6 @@ export type WidgetConversation = {
 
 export type WidgetMessage = WidgetMessagePayload & {
   createdAt: string;
-};
-
-export type WidgetAnswerStreamCallbacks = {
-  onSearching?: (query: string) => void;
-  onMeta?: (meta: {
-    logId?: string;
-    providerId?: string | null;
-    citations: WidgetAnswerCitation[];
-  }) => void;
-  onTextDelta?: (text: string) => void;
-  onDone?: () => void;
 };
 
 function apiBase(apiUrl?: string): string {
@@ -347,110 +335,6 @@ export async function submitWidgetWorkflowTicketForm(input: {
   );
   if (!res.ok) throw new Error(`workflow_ticket_form_failed:${res.status}`);
   return res.json() as Promise<{ ok: boolean; status: string; ticketId: string }>;
-}
-
-export async function streamWidgetAnswer(
-  input: {
-    apiUrl?: string;
-    accessToken: string;
-    conversationId: string;
-    query: string;
-    limit?: number;
-    rerank?: boolean;
-  },
-  callbacks: WidgetAnswerStreamCallbacks,
-): Promise<void> {
-  const res = await fetch(`${apiBase(input.apiUrl)}/api/v1/widget/answer`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${input.accessToken}`,
-    },
-    body: JSON.stringify({
-      conversationId: input.conversationId,
-      query: input.query,
-      limit: input.limit ?? 5,
-      rerank: input.rerank ?? true,
-    }),
-  });
-  if (!res.ok) throw new Error(`answer_failed:${res.status}`);
-  if (!res.body) throw new Error("answer_stream_unavailable");
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
-    const blocks = buffer.split(/\n\n+/);
-    buffer = done ? "" : (blocks.pop() ?? "");
-
-    for (const block of blocks) {
-      handleSseBlock(block, callbacks);
-    }
-
-    if (done) break;
-  }
-
-  if (buffer.trim()) handleSseBlock(buffer, callbacks);
-}
-
-function handleSseBlock(block: string, callbacks: WidgetAnswerStreamCallbacks) {
-  let event = "message";
-  const dataLines: string[] = [];
-
-  for (const line of block.split(/\r?\n/)) {
-    if (!line || line.startsWith(":")) continue;
-    if (line.startsWith("event:")) {
-      event = line.slice("event:".length).trim();
-      continue;
-    }
-    if (line.startsWith("data:")) {
-      dataLines.push(line.slice("data:".length).trimStart());
-    }
-  }
-
-  if (dataLines.length === 0) return;
-  const payload = parseSsePayload(dataLines.join("\n"));
-
-  if (event === "searching") {
-    callbacks.onSearching?.(typeof payload.query === "string" ? payload.query : "");
-    return;
-  }
-  if (event === "meta") {
-    callbacks.onMeta?.({
-      logId: typeof payload.logId === "string" ? payload.logId : undefined,
-      providerId: typeof payload.providerId === "string" ? payload.providerId : null,
-      citations: Array.isArray(payload.citations)
-        ? payload.citations.filter(isWidgetAnswerCitation)
-        : [],
-    });
-    return;
-  }
-  if (event === "text-delta" || event === "message") {
-    if (typeof payload.text === "string") callbacks.onTextDelta?.(payload.text);
-    return;
-  }
-  if (event === "done") callbacks.onDone?.();
-  if (event === "error") {
-    throw new Error(typeof payload.error === "string" ? payload.error : "answer_stream_failed");
-  }
-}
-
-function parseSsePayload(data: string): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(data);
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return { text: data };
-  }
-}
-
-function isWidgetAnswerCitation(value: unknown): value is WidgetAnswerCitation {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return typeof item.chunkId === "string" && typeof item.documentTitle === "string";
 }
 
 export async function fetchWidgetAttachmentBlob(input: {

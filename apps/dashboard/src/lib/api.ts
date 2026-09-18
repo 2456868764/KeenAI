@@ -2,9 +2,12 @@ import { parseApiError } from "./api-errors";
 import { clearAccessToken, getAccessToken } from "./auth-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8090";
+const DASHBOARD_API_PREFIX = "/api/v1/dashboard";
 
 function redirectToLoginOnUnauthorized(path: string, token: string | null) {
-  if (!token || typeof window === "undefined" || path.startsWith("/api/v1/auth/")) return;
+  if (!token || typeof window === "undefined" || path.startsWith(`${DASHBOARD_API_PREFIX}/auth/`)) {
+    return;
+  }
   clearAccessToken();
   const next = `${window.location.pathname}${window.location.search}`;
   const target = next && next !== "/login" ? `/login?next=${encodeURIComponent(next)}` : "/login";
@@ -50,6 +53,161 @@ export type MessageAttachment = {
   metadata?: { transcript?: string; transcribedAt?: string };
 };
 
+export type AgentRunStatus =
+  | "created"
+  | "planning"
+  | "retrieving"
+  | "awaiting_approval"
+  | "acting"
+  | "observing"
+  | "completed"
+  | "escalated"
+  | "failed";
+
+export type AgentRun = {
+  id: string;
+  brandId: string | null;
+  conversationId: string | null;
+  workflowRunId: string | null;
+  trigger: string;
+  actorType: string;
+  actorId: string | null;
+  status: AgentRunStatus;
+  phase: "plan" | "retrieve" | "act" | "observe" | "escalate";
+  providerId: string | null;
+  inputSnapshot: Record<string, unknown>;
+  outputSnapshot: Record<string, unknown> | null;
+  errorCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+};
+
+export type AgentRunTrace = {
+  integrity: { valid: boolean; checked: number; brokenAtSequence?: number };
+  run: AgentRun;
+  events: Array<{
+    id: string;
+    sequence: number;
+    phase: AgentRun["phase"];
+    eventType: string;
+    actorType: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+  }>;
+  plans: Array<{
+    id: string;
+    intent: string;
+    objective: string;
+    riskLevel: string;
+    steps: string[];
+    allowedTools: string[];
+    requiredEvidence: string[];
+    stopConditions: string[];
+    escalationConditions: string[];
+  }>;
+  contexts: Array<{
+    id: string;
+    memoryScope: string;
+    intent: string;
+    contextHash: string;
+    contextPreview: string | null;
+    createdAt: string;
+  }>;
+  evidence: Array<{
+    id: string;
+    sourceType: string;
+    sourceId: string;
+    sourceVersion: string | null;
+    scope: string | null;
+    score: number | null;
+    reason: string | null;
+    metadata: Record<string, unknown>;
+  }>;
+  policyDecisions: Array<{
+    id: string;
+    toolName: string;
+    effect: string;
+    riskLevel: string;
+    reason: string;
+    ruleVersion: number | null;
+  }>;
+  toolCalls: Array<{
+    id: string;
+    toolName: string;
+    toolSource: string;
+    riskLevel: string;
+    status: string;
+    arguments: Record<string, unknown>;
+    result: unknown;
+    errorCode: string | null;
+    durationMs: number | null;
+  }>;
+  approvals: Array<{
+    id: string;
+    toolName: string;
+    status: string;
+    riskLevel: string;
+    argumentsPreview: Record<string, unknown>;
+    requiredApprovals: number;
+    approvalCount: number;
+    reason: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+  }>;
+  escalations: Array<{
+    id: string;
+    reasonCode: string;
+    severity: string;
+    status: string;
+    recommendedNextAction: string | null;
+    slaDeadline: string | null;
+  }>;
+  evaluations: Array<{
+    id: string;
+    planComplete: boolean;
+    actionVerified: boolean;
+    evidenceCoverage: number;
+    citationCoverage: number;
+    toolSuccessRate: number;
+    score: number;
+    outcome: string;
+    issues: string[];
+  }>;
+};
+
+export async function listAgentRuns(params?: {
+  status?: AgentRunStatus;
+  conversationId?: string;
+  limit?: number;
+}): Promise<{ items: AgentRun[] }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set("status", params.status);
+  if (params?.conversationId) query.set("conversationId", params.conversationId);
+  if (params?.limit) query.set("limit", String(params.limit));
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiFetch(`/api/v1/dashboard/agent-runs${suffix}`);
+}
+
+export async function getAgentRunTrace(runId: string): Promise<AgentRunTrace> {
+  return apiFetch(`/api/v1/dashboard/agent-runs/${runId}`);
+}
+
+export async function decideAgentApproval(
+  approvalId: string,
+  decision: "approved" | "rejected",
+  reason?: string,
+): Promise<{ approval: { id: string; status: string }; result?: unknown }> {
+  return apiFetch(`/api/v1/dashboard/agent-approvals/${approvalId}/decision`, {
+    method: "POST",
+    body: JSON.stringify({ decision, reason, resume: decision === "approved" }),
+  });
+}
+
+export async function resumeAgentRun(runId: string): Promise<{ result: unknown }> {
+  return apiFetch(`/api/v1/dashboard/agent-runs/${runId}/resume`, { method: "POST" });
+}
+
 export type LoginResponse = {
   accessToken: string;
   role: string;
@@ -79,11 +237,11 @@ export function getApiUrl(): string {
 }
 
 export function attachmentContentUrl(attachmentId: string): string {
-  return `${API_URL}/api/v1/attachments/${attachmentId}/content`;
+  return `${API_URL}${DASHBOARD_API_PREFIX}/attachments/${attachmentId}/content`;
 }
 
 export function attachmentThumbnailUrl(attachmentId: string): string {
-  return `${API_URL}/api/v1/attachments/${attachmentId}/thumbnail`;
+  return `${API_URL}${DASHBOARD_API_PREFIX}/attachments/${attachmentId}/thumbnail`;
 }
 
 export async function fetchAttachmentBlob(
@@ -99,7 +257,9 @@ export async function fetchAttachmentBlob(
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) {
-    if (res.status === 401) redirectToLoginOnUnauthorized("/api/v1/attachments", token);
+    if (res.status === 401) {
+      redirectToLoginOnUnauthorized(`${DASHBOARD_API_PREFIX}/attachments`, token);
+    }
     throw new Error(`attachment_fetch_failed:${res.status}`);
   }
   const blob = await res.blob();
@@ -111,7 +271,7 @@ export async function login(
   password: string,
   orgSlug: string,
 ): Promise<LoginResponse> {
-  return apiFetch("/api/v1/auth/login", {
+  return apiFetch("/api/v1/dashboard/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password, orgSlug }),
   });
@@ -123,15 +283,15 @@ export async function listConversations(params?: {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
   const qs = q.toString();
-  return apiFetch(`/api/v1/conversations${qs ? `?${qs}` : ""}`);
+  return apiFetch(`/api/v1/dashboard/conversations${qs ? `?${qs}` : ""}`);
 }
 
 export async function getConversation(id: string): Promise<{ conversation: Conversation }> {
-  return apiFetch(`/api/v1/conversations/${id}`);
+  return apiFetch(`/api/v1/dashboard/conversations/${id}`);
 }
 
 export async function listMessages(id: string): Promise<{ items: Message[] }> {
-  return apiFetch(`/api/v1/conversations/${id}/messages`);
+  return apiFetch(`/api/v1/dashboard/conversations/${id}/messages`);
 }
 
 export async function sendMessage(
@@ -143,7 +303,7 @@ export async function sendMessage(
     attachmentIds?: string[];
   },
 ): Promise<{ message: Message }> {
-  return apiFetch(`/api/v1/conversations/${conversationId}/messages`, {
+  return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/messages`, {
     method: "POST",
     body: JSON.stringify({
       plainText: plainText || undefined,
@@ -157,13 +317,13 @@ export async function sendMessage(
 export type Member = { id: string; name: string; email: string; role: string };
 
 export async function listMembers(): Promise<{ items: Member[] }> {
-  return apiFetch("/api/v1/members");
+  return apiFetch("/api/v1/dashboard/members");
 }
 
 export type Macro = { slug: string; name: string; body: string };
 
 export async function listMacros(): Promise<{ items: Macro[] }> {
-  return apiFetch("/api/v1/macros");
+  return apiFetch("/api/v1/dashboard/macros");
 }
 
 export async function createMacro(input: {
@@ -171,7 +331,7 @@ export async function createMacro(input: {
   name: string;
   body: string;
 }): Promise<{ macro: Macro }> {
-  return apiFetch("/api/v1/macros", {
+  return apiFetch("/api/v1/dashboard/macros", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -186,7 +346,7 @@ export async function presignUpload(input: {
   uploadUrl: string;
   storageKey: string;
 }> {
-  return apiFetch("/api/v1/uploads/presign", {
+  return apiFetch("/api/v1/dashboard/uploads/presign", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -233,7 +393,7 @@ export async function uploadFile(
 export function uploadFileUrl(storageKey: string): string | null {
   const token = getAccessToken();
   if (!token) return null;
-  return `${API_URL}/api/v1/uploads/file/${encodeURIComponent(storageKey)}?access_token=${encodeURIComponent(token)}`;
+  return `${API_URL}${DASHBOARD_API_PREFIX}/uploads/file/${encodeURIComponent(storageKey)}?access_token=${encodeURIComponent(token)}`;
 }
 
 export async function recordCopilotEvent(input: {
@@ -242,7 +402,7 @@ export async function recordCopilotEvent(input: {
   draftLength?: number;
   providerId?: string;
 }): Promise<void> {
-  await apiFetch("/api/v1/copilot/events", {
+  await apiFetch("/api/v1/dashboard/copilot/events", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -259,7 +419,7 @@ export async function listCopilotProviders(): Promise<{
   defaultProviderId: string;
   items: CopilotProvider[];
 }> {
-  return apiFetch("/api/v1/copilot/providers");
+  return apiFetch("/api/v1/dashboard/copilot/providers");
 }
 
 /** Stream copilot draft via SSE; calls onChunk for each text delta. */
@@ -272,7 +432,7 @@ export async function streamCopilotDraft(
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const res = await fetch(`${API_URL}/api/v1/copilot/draft`, {
+  const res = await fetch(`${API_URL}${DASHBOARD_API_PREFIX}/copilot/draft`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -334,7 +494,7 @@ export async function updateConversation(
     priority?: string;
   },
 ): Promise<{ conversation: Conversation }> {
-  return apiFetch(`/api/v1/conversations/${id}`, {
+  return apiFetch(`/api/v1/dashboard/conversations/${id}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -343,7 +503,7 @@ export async function updateConversation(
 export function conversationStreamUrl(conversationId: string): string | null {
   const token = getAccessToken();
   if (!token) return null;
-  return `${API_URL}/api/v1/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
+  return `${API_URL}${DASHBOARD_API_PREFIX}/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
 }
 
 export type Notification = {
@@ -360,22 +520,22 @@ export async function listNotifications(): Promise<{
   items: Notification[];
   unreadCount: number;
 }> {
-  return apiFetch("/api/v1/notifications?unreadOnly=false&limit=30");
+  return apiFetch("/api/v1/dashboard/notifications?unreadOnly=false&limit=30");
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
-  await apiFetch(`/api/v1/notifications/${id}/read`, { method: "PATCH" });
+  await apiFetch(`/api/v1/dashboard/notifications/${id}/read`, { method: "PATCH" });
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  await apiFetch("/api/v1/notifications/read-all", { method: "POST" });
+  await apiFetch("/api/v1/dashboard/notifications/read-all", { method: "POST" });
 }
 
 export async function searchConversations(
   q: string,
 ): Promise<{ items: (Conversation & { snippet?: string })[] }> {
   const qs = new URLSearchParams({ q });
-  return apiFetch(`/api/v1/search/conversations?${qs}`);
+  return apiFetch(`/api/v1/dashboard/search/conversations?${qs}`);
 }
 
 export type WorkflowBlock =
@@ -537,6 +697,7 @@ export type WorkflowBlock =
 
 export type WorkflowDefinition = {
   description?: string;
+  toolExecutionMode?: "governed" | "pre_authorized" | "read_only";
   trigger:
     | "page_view"
     | "new_messenger_conversation"
@@ -605,25 +766,25 @@ export type WorkflowVersion = {
 };
 
 export async function listWorkflows(): Promise<{ items: Workflow[] }> {
-  return apiFetch("/api/v1/workflows");
+  return apiFetch("/api/v1/dashboard/workflows");
 }
 
 export async function listWorkflowTemplates(): Promise<{ items: WorkflowTemplate[] }> {
-  return apiFetch("/api/v1/workflows/templates");
+  return apiFetch("/api/v1/dashboard/workflows/templates");
 }
 
 export async function reorderWorkflows(input: {
   trigger: WorkflowDefinition["trigger"];
   workflowIds: string[];
 }): Promise<{ items: Workflow[] }> {
-  return apiFetch("/api/v1/workflows/reorder", {
+  return apiFetch("/api/v1/dashboard/workflows/reorder", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
 
 export async function getWorkflow(id: string): Promise<{ workflow: Workflow }> {
-  return apiFetch(`/api/v1/workflows/${id}`);
+  return apiFetch(`/api/v1/dashboard/workflows/${id}`);
 }
 
 export async function createWorkflow(input: {
@@ -631,7 +792,7 @@ export async function createWorkflow(input: {
   brandId?: string;
   definition: WorkflowDefinition;
 }): Promise<{ workflow: Workflow }> {
-  return apiFetch("/api/v1/workflows", {
+  return apiFetch("/api/v1/dashboard/workflows", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -641,37 +802,37 @@ export async function updateWorkflow(
   id: string,
   input: { name?: string; definition?: WorkflowDefinition },
 ): Promise<{ workflow: Workflow }> {
-  return apiFetch(`/api/v1/workflows/${id}`, {
+  return apiFetch(`/api/v1/dashboard/workflows/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });
 }
 
 export async function publishWorkflow(id: string): Promise<{ workflow: Workflow }> {
-  return apiFetch(`/api/v1/workflows/${id}/publish`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/publish`, { method: "POST" });
 }
 
 export async function unpublishWorkflow(id: string): Promise<{ workflow: Workflow }> {
-  return apiFetch(`/api/v1/workflows/${id}/unpublish`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/unpublish`, { method: "POST" });
 }
 
 export async function duplicateWorkflow(id: string): Promise<{ workflow: Workflow }> {
-  return apiFetch(`/api/v1/workflows/${id}/duplicate`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/duplicate`, { method: "POST" });
 }
 
 export async function archiveWorkflow(id: string): Promise<void> {
-  await apiFetch(`/api/v1/workflows/${id}`, { method: "DELETE" });
+  await apiFetch(`/api/v1/dashboard/workflows/${id}`, { method: "DELETE" });
 }
 
 export async function listWorkflowVersions(id: string): Promise<{ items: WorkflowVersion[] }> {
-  return apiFetch(`/api/v1/workflows/${id}/versions`);
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/versions`);
 }
 
 export async function rollbackWorkflow(
   id: string,
   version: number,
 ): Promise<{ workflow: Workflow; version: WorkflowVersion }> {
-  return apiFetch(`/api/v1/workflows/${id}/rollback/${version}`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/rollback/${version}`, { method: "POST" });
 }
 
 export type WorkflowRunStep = {
@@ -698,7 +859,7 @@ export async function testWorkflow(id: string): Promise<{
     suspended?: unknown;
   };
 }> {
-  return apiFetch(`/api/v1/workflows/${id}/test`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/test`, { method: "POST" });
 }
 
 export async function runWorkflowShadow(
@@ -715,14 +876,14 @@ export async function runWorkflowShadow(
     };
   }>;
 }> {
-  return apiFetch(`/api/v1/workflows/${id}/shadow`, {
+  return apiFetch(`/api/v1/dashboard/workflows/${id}/shadow`, {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
 export async function listWorkflowRuns(workflowId: string): Promise<{ items: WorkflowRun[] }> {
-  return apiFetch(`/api/v1/workflows/${workflowId}/runs`);
+  return apiFetch(`/api/v1/dashboard/workflows/${workflowId}/runs`);
 }
 
 export type Brand = {
@@ -759,7 +920,7 @@ export type BrandPersonality = {
 };
 
 export async function listBrands(): Promise<{ items: Brand[] }> {
-  return apiFetch("/api/v1/brands");
+  return apiFetch("/api/v1/dashboard/brands");
 }
 
 export async function createBrand(input: {
@@ -769,7 +930,7 @@ export async function createBrand(input: {
   locale?: string;
   emailFrom?: string;
 }): Promise<{ brand: Brand }> {
-  return apiFetch("/api/v1/brands", {
+  return apiFetch("/api/v1/dashboard/brands", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -786,7 +947,58 @@ export async function updateBrand(
     personality?: Partial<BrandPersonality>;
   },
 ): Promise<{ brand: Brand }> {
-  return apiFetch(`/api/v1/brands/${id}`, {
+  return apiFetch(`/api/v1/dashboard/brands/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export type AgentAbandonedWorkflowTrigger =
+  | "user_visits_website"
+  | "visitor_visits_page"
+  | "user_opens_conversation"
+  | "visitor_opens_conversation"
+  | "first_message"
+  | "any_message"
+  | "customer_unresponsive"
+  | "teammate_unresponsive"
+  | "conversation_state_changed";
+
+export type AgentOtherSettings = {
+  id: string;
+  orgId: string;
+  brandId: string;
+  simpleDeployEnabled: boolean;
+  allowHandoff: boolean;
+  autoCloseResolvedEnabled: boolean;
+  autoCloseResolvedDelayMinutes: number;
+  abandonedWorkflowTriggers: AgentAbandonedWorkflowTrigger[];
+  abandonedWorkflowDelayMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getAgentOtherSettings(
+  brandId: string,
+): Promise<{ settings: AgentOtherSettings }> {
+  return apiFetch(`/api/v1/dashboard/agent-settings/${brandId}`);
+}
+
+export async function updateAgentOtherSettings(
+  brandId: string,
+  patch: Partial<
+    Pick<
+      AgentOtherSettings,
+      | "simpleDeployEnabled"
+      | "allowHandoff"
+      | "autoCloseResolvedEnabled"
+      | "autoCloseResolvedDelayMinutes"
+      | "abandonedWorkflowTriggers"
+      | "abandonedWorkflowDelayMinutes"
+    >
+  >,
+): Promise<{ settings: AgentOtherSettings }> {
+  return apiFetch(`/api/v1/dashboard/agent-settings/${brandId}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -821,11 +1033,11 @@ export async function listTickets(params?: {
   if (params?.statusId) q.set("statusId", params.statusId);
   if (params?.assigneeId) q.set("assigneeId", params.assigneeId);
   const qs = q.toString();
-  return apiFetch(`/api/v1/tickets${qs ? `?${qs}` : ""}`);
+  return apiFetch(`/api/v1/dashboard/tickets${qs ? `?${qs}` : ""}`);
 }
 
 export async function getTicket(id: string): Promise<{ ticket: Ticket }> {
-  return apiFetch(`/api/v1/tickets/${id}`);
+  return apiFetch(`/api/v1/dashboard/tickets/${id}`);
 }
 
 export async function createTicket(input: {
@@ -833,7 +1045,7 @@ export async function createTicket(input: {
   priority?: string;
   conversationId?: string;
 }): Promise<{ ticket: Ticket }> {
-  return apiFetch("/api/v1/tickets", {
+  return apiFetch("/api/v1/dashboard/tickets", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -848,7 +1060,7 @@ export async function updateTicket(
     assigneeId?: string | null;
   },
 ): Promise<{ ticket: Ticket }> {
-  return apiFetch(`/api/v1/tickets/${id}`, {
+  return apiFetch(`/api/v1/dashboard/tickets/${id}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -858,7 +1070,7 @@ export async function createTicketFromConversation(
   conversationId: string,
   title?: string,
 ): Promise<{ ticket: Ticket }> {
-  return apiFetch(`/api/v1/conversations/${conversationId}/ticket`, {
+  return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/ticket`, {
     method: "POST",
     body: JSON.stringify(title ? { title } : {}),
   });
@@ -883,7 +1095,7 @@ export type TicketEvent = {
 };
 
 export async function listTicketStatuses(): Promise<{ items: TicketStatus[] }> {
-  return apiFetch("/api/v1/tickets/meta/statuses");
+  return apiFetch("/api/v1/dashboard/tickets/meta/statuses");
 }
 
 export type TicketType = {
@@ -895,7 +1107,7 @@ export type TicketType = {
 };
 
 export async function listTicketTypes(): Promise<{ items: TicketType[] }> {
-  return apiFetch("/api/v1/tickets/meta/types");
+  return apiFetch("/api/v1/dashboard/tickets/meta/types");
 }
 
 export type FeedbackBoard = {
@@ -920,23 +1132,26 @@ export type FeedbackPost = {
 export async function ensureDefaultFeedbackBoard(
   brandId: string,
 ): Promise<{ board: FeedbackBoard }> {
-  return apiFetch(`/api/v1/feedback/boards/ensure-default?brandId=${encodeURIComponent(brandId)}`, {
-    method: "POST",
-  });
+  return apiFetch(
+    `/api/v1/dashboard/feedback/boards/ensure-default?brandId=${encodeURIComponent(brandId)}`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export async function listFeedbackPosts(slug: string): Promise<{
   board: FeedbackBoard;
   items: FeedbackPost[];
 }> {
-  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/posts`);
+  return apiFetch(`/api/v1/dashboard/feedback/boards/${encodeURIComponent(slug)}/posts`);
 }
 
 export async function createFeedbackPost(
   slug: string,
   input: { title: string; plainText: string; tags?: string[] },
 ): Promise<{ post: FeedbackPost }> {
-  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/posts`, {
+  return apiFetch(`/api/v1/dashboard/feedback/boards/${encodeURIComponent(slug)}/posts`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -957,7 +1172,9 @@ export async function findFeedbackDuplicates(
     threshold: String(input.threshold ?? 0.75),
   });
   if (input.title.trim()) params.set("title", input.title.trim());
-  return apiFetch(`/api/v1/feedback/boards/${encodeURIComponent(slug)}/dedup?${params.toString()}`);
+  return apiFetch(
+    `/api/v1/dashboard/feedback/boards/${encodeURIComponent(slug)}/dedup?${params.toString()}`,
+  );
 }
 
 export type RoadmapColumn = { id: string; label: string };
@@ -988,15 +1205,18 @@ export type RoadmapItem = {
 };
 
 export async function ensureDefaultRoadmap(brandId: string): Promise<{ roadmap: Roadmap }> {
-  return apiFetch(`/api/v1/roadmaps/ensure-default?brandId=${encodeURIComponent(brandId)}`, {
-    method: "POST",
-  });
+  return apiFetch(
+    `/api/v1/dashboard/roadmaps/ensure-default?brandId=${encodeURIComponent(brandId)}`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export async function listRoadmapBoardItems(
   roadmapId: string,
 ): Promise<{ roadmap: Roadmap; items: RoadmapItem[] }> {
-  return apiFetch(`/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items`);
+  return apiFetch(`/api/v1/dashboard/roadmaps/${encodeURIComponent(roadmapId)}/items`);
 }
 
 export async function createRoadmapItem(
@@ -1008,7 +1228,7 @@ export async function createRoadmapItem(
     eta?: string;
   },
 ): Promise<{ item: RoadmapItem }> {
-  return apiFetch(`/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items`, {
+  return apiFetch(`/api/v1/dashboard/roadmaps/${encodeURIComponent(roadmapId)}/items`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1026,7 +1246,7 @@ export async function updateRoadmapItem(
   },
 ): Promise<{ item: RoadmapItem }> {
   return apiFetch(
-    `/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
+    `/api/v1/dashboard/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
     {
       method: "PATCH",
       body: JSON.stringify(input),
@@ -1036,7 +1256,7 @@ export async function updateRoadmapItem(
 
 export async function deleteRoadmapItem(roadmapId: string, itemId: string): Promise<void> {
   await apiFetch(
-    `/api/v1/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
+    `/api/v1/dashboard/roadmaps/${encodeURIComponent(roadmapId)}/items/${encodeURIComponent(itemId)}`,
     { method: "DELETE" },
   );
 }
@@ -1066,7 +1286,7 @@ export type SlaBreach = {
 };
 
 export async function listSlaPolicies(): Promise<{ items: SlaPolicy[] }> {
-  return apiFetch("/api/v1/sla/policies");
+  return apiFetch("/api/v1/dashboard/sla/policies");
 }
 
 export async function createSlaPolicy(input: {
@@ -1076,7 +1296,7 @@ export async function createSlaPolicy(input: {
   operationalHoursOnly?: boolean;
   enabled?: boolean;
 }): Promise<{ policy: SlaPolicy }> {
-  return apiFetch("/api/v1/sla/policies", {
+  return apiFetch("/api/v1/dashboard/sla/policies", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1092,14 +1312,14 @@ export async function updateSlaPolicy(
     enabled: boolean;
   }>,
 ): Promise<{ policy: SlaPolicy }> {
-  return apiFetch(`/api/v1/sla/policies/${id}`, {
+  return apiFetch(`/api/v1/dashboard/sla/policies/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });
 }
 
 export async function getOfficeHours(): Promise<{ hours: OfficeHours | null }> {
-  return apiFetch("/api/v1/sla/office-hours");
+  return apiFetch("/api/v1/dashboard/sla/office-hours");
 }
 
 export async function upsertOfficeHours(input: {
@@ -1107,7 +1327,7 @@ export async function upsertOfficeHours(input: {
   schedule: Record<string, { start: string; end: string }[]>;
   holidays: string[];
 }): Promise<{ hours: OfficeHours }> {
-  return apiFetch("/api/v1/sla/office-hours", {
+  return apiFetch("/api/v1/dashboard/sla/office-hours", {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -1116,13 +1336,13 @@ export async function upsertOfficeHours(input: {
 export async function listConversationSlaBreaches(
   conversationId: string,
 ): Promise<{ items: SlaBreach[] }> {
-  return apiFetch(`/api/v1/sla/conversations/${conversationId}/breaches`);
+  return apiFetch(`/api/v1/dashboard/sla/conversations/${conversationId}/breaches`);
 }
 
 export async function evaluateConversationSla(
   conversationId: string,
 ): Promise<{ breaches: unknown[] }> {
-  return apiFetch(`/api/v1/sla/conversations/${conversationId}/evaluate`, {
+  return apiFetch(`/api/v1/dashboard/sla/conversations/${conversationId}/evaluate`, {
     method: "POST",
   });
 }
@@ -1158,15 +1378,15 @@ export async function getAnalyticsSummary(): Promise<{
   feedback: { postCount: number; totalUpvotes: number };
   helpCenter: { searchCount: number; publishedArticles: number };
 }> {
-  return apiFetch("/api/v1/analytics/summary");
+  return apiFetch("/api/v1/dashboard/analytics/summary");
 }
 
 export async function getAnalyticsDashboard(): Promise<{ dashboard: AnalyticsDashboard }> {
-  return apiFetch("/api/v1/analytics/dashboard");
+  return apiFetch("/api/v1/dashboard/analytics/dashboard");
 }
 
 export async function listTicketEvents(id: string): Promise<{ items: TicketEvent[] }> {
-  return apiFetch(`/api/v1/tickets/${id}/events`);
+  return apiFetch(`/api/v1/dashboard/tickets/${id}/events`);
 }
 
 export type MeResponse = {
@@ -1178,7 +1398,7 @@ export type MeResponse = {
 };
 
 export async function fetchMe(): Promise<MeResponse> {
-  return apiFetch("/api/v1/me");
+  return apiFetch("/api/v1/dashboard/me");
 }
 
 export type MemoryExplorerStats = {
@@ -1201,7 +1421,7 @@ export async function getMemoryStats(
   brandId: string,
 ): Promise<{ stats: MemoryExplorerStats; hotTopics: MemoryHotTopic[] }> {
   const qs = new URLSearchParams({ brandId });
-  return apiFetch(`/api/v1/memory/stats?${qs}`);
+  return apiFetch(`/api/v1/dashboard/memory/stats?${qs}`);
 }
 
 export type MemoryDigest = {
@@ -1216,7 +1436,7 @@ export async function getMemoryDigest(
   date: string,
 ): Promise<{ digest: MemoryDigest }> {
   const qs = new URLSearchParams({ brandId, date });
-  return apiFetch(`/api/v1/memory/digest?${qs}`);
+  return apiFetch(`/api/v1/dashboard/memory/digest?${qs}`);
 }
 
 export type MemorySearchHit = {
@@ -1263,7 +1483,7 @@ export async function searchMemory(input: {
   });
   const res = await apiFetch<{
     results: { hits: MemorySearchHit[]; summaryHits: MemorySummarySearchHit[] };
-  }>(`/api/v1/memory/search?${qs}`);
+  }>(`/api/v1/dashboard/memory/search?${qs}`);
   return { hits: res.results.hits, summaryHits: res.results.summaryHits };
 }
 
@@ -1328,14 +1548,14 @@ export async function getMemoryTree(input: {
   if (input.brandId) qs.set("brandId", input.brandId);
   if (input.channelType) qs.set("channelType", input.channelType);
   if (input.level != null) qs.set("level", String(input.level));
-  return apiFetch(`/api/v1/memory/tree?${qs}`);
+  return apiFetch(`/api/v1/dashboard/memory/tree?${qs}`);
 }
 
 export async function transitionTicketStatus(
   id: string,
   statusId: string,
 ): Promise<{ ticket: Ticket }> {
-  return apiFetch(`/api/v1/tickets/${id}/status`, {
+  return apiFetch(`/api/v1/dashboard/tickets/${id}/status`, {
     method: "POST",
     body: JSON.stringify({ statusId }),
   });
@@ -1390,7 +1610,7 @@ export type McpExposeToolInfo = {
 
 export async function listCustomActions(brandId: string): Promise<{ items: CustomAction[] }> {
   const qs = new URLSearchParams({ brandId });
-  return apiFetch(`/api/v1/custom-actions?${qs}`);
+  return apiFetch(`/api/v1/dashboard/custom-actions?${qs}`);
 }
 
 export async function createCustomAction(input: {
@@ -1406,7 +1626,7 @@ export async function createCustomAction(input: {
   sandbox?: string;
   enabled?: boolean;
 }): Promise<{ action: CustomAction }> {
-  return apiFetch("/api/v1/custom-actions", {
+  return apiFetch("/api/v1/dashboard/custom-actions", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1427,21 +1647,21 @@ export async function updateCustomAction(
     enabled: boolean;
   }>,
 ): Promise<{ action: CustomAction }> {
-  return apiFetch(`/api/v1/custom-actions/${id}`, {
+  return apiFetch(`/api/v1/dashboard/custom-actions/${id}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
 }
 
 export async function deleteCustomAction(id: string): Promise<void> {
-  await apiFetch(`/api/v1/custom-actions/${id}`, { method: "DELETE" });
+  await apiFetch(`/api/v1/dashboard/custom-actions/${id}`, { method: "DELETE" });
 }
 
 export async function executeCustomAction(
   id: string,
   input: { parameters?: Record<string, unknown> },
 ): Promise<{ result: { ok: boolean; status: number; data: unknown } }> {
-  return apiFetch(`/api/v1/custom-actions/${id}/execute`, {
+  return apiFetch(`/api/v1/dashboard/custom-actions/${id}/execute`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1450,15 +1670,15 @@ export async function executeCustomAction(
 export async function listCustomActionLogs(
   actionId: string,
 ): Promise<{ items: CustomActionLog[] }> {
-  return apiFetch(`/api/v1/custom-actions/${actionId}/logs`);
+  return apiFetch(`/api/v1/dashboard/custom-actions/${actionId}/logs`);
 }
 
 export async function listMcpServers(): Promise<McpServerInfo> {
-  return apiFetch("/api/v1/mcp/servers");
+  return apiFetch("/api/v1/dashboard/mcp/servers");
 }
 
 export async function listMcpHostTools(): Promise<{ items: McpToolInfo[] }> {
-  return apiFetch("/api/v1/mcp/tools");
+  return apiFetch("/api/v1/dashboard/mcp/tools");
 }
 
 export async function listMcpExposeTools(): Promise<{
@@ -1466,7 +1686,7 @@ export async function listMcpExposeTools(): Promise<{
   command: string;
   items: McpExposeToolInfo[];
 }> {
-  return apiFetch("/api/v1/mcp/expose/tools");
+  return apiFetch("/api/v1/dashboard/mcp/expose/tools");
 }
 
 export type KbSearchHit = {
@@ -1488,7 +1708,7 @@ export async function searchKb(input: {
     q: input.q,
     limit: String(input.limit ?? 10),
   });
-  return apiFetch(`/api/v1/kb/search?${qs}`);
+  return apiFetch(`/api/v1/dashboard/kb/search?${qs}`);
 }
 
 export type KbSource = {
@@ -1532,7 +1752,7 @@ export type KbDocument = {
 
 export async function listKbSources(brandId: string): Promise<{ items: KbSource[] }> {
   const qs = new URLSearchParams({ brandId });
-  return apiFetch(`/api/v1/kb/sources?${qs}`);
+  return apiFetch(`/api/v1/dashboard/kb/sources?${qs}`);
 }
 
 export async function createKbFileUploadSource(input: {
@@ -1545,7 +1765,7 @@ export async function createKbFileUploadSource(input: {
     rawContent: string;
   }>;
 }): Promise<{ source: KbSource }> {
-  return apiFetch("/api/v1/kb/sources/file-upload", {
+  return apiFetch("/api/v1/dashboard/kb/sources/file-upload", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1559,7 +1779,7 @@ export async function createKbWebCrawlSource(input: {
   includePaths?: string[];
   excludePaths?: string[];
 }): Promise<{ source: KbSource }> {
-  return apiFetch("/api/v1/kb/sources/web-crawl", {
+  return apiFetch("/api/v1/dashboard/kb/sources/web-crawl", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1571,7 +1791,7 @@ export async function createKbQaSource(input: {
   questions: string[];
   answer: string;
 }): Promise<{ source: KbSource }> {
-  return apiFetch("/api/v1/kb/sources/qa", {
+  return apiFetch("/api/v1/dashboard/kb/sources/qa", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1582,7 +1802,7 @@ export async function upsertKbNativeSource(input: {
   type: "changelog" | "feedback" | "help_center";
   enabled: boolean;
 }): Promise<{ source: KbSource }> {
-  return apiFetch("/api/v1/kb/sources/native", {
+  return apiFetch("/api/v1/dashboard/kb/sources/native", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1591,25 +1811,25 @@ export async function upsertKbNativeSource(input: {
 export async function getKbSource(
   sourceId: string,
 ): Promise<{ source: KbSource; documents: KbDocument[] }> {
-  return apiFetch(`/api/v1/kb/sources/${sourceId}`);
+  return apiFetch(`/api/v1/dashboard/kb/sources/${sourceId}`);
 }
 
 export async function updateKbSourceStatus(
   sourceId: string,
   status: "active" | "disabled",
 ): Promise<{ source: KbSource }> {
-  return apiFetch(`/api/v1/kb/sources/${sourceId}`, {
+  return apiFetch(`/api/v1/dashboard/kb/sources/${sourceId}`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
   });
 }
 
 export async function syncKbSource(sourceId: string): Promise<{ source: KbSource }> {
-  return apiFetch(`/api/v1/kb/sources/${sourceId}/sync`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/kb/sources/${sourceId}/sync`, { method: "POST" });
 }
 
 export async function deleteKbSource(sourceId: string): Promise<{ ok: boolean; sourceId: string }> {
-  return apiFetch(`/api/v1/kb/sources/${sourceId}`, { method: "DELETE" });
+  return apiFetch(`/api/v1/dashboard/kb/sources/${sourceId}`, { method: "DELETE" });
 }
 
 export type HelpCollection = {
@@ -1640,14 +1860,16 @@ export type HelpArticle = {
 
 export async function listHelpCollections(brandId: string): Promise<{ items: HelpCollection[] }> {
   const qs = new URLSearchParams({ brandId });
-  return apiFetch(`/api/v1/help-center/collections?${qs}`);
+  return apiFetch(`/api/v1/dashboard/help-center/collections?${qs}`);
 }
 
 export async function ensureDefaultHelpCollection(
   brandId: string,
 ): Promise<{ collection: HelpCollection }> {
   const qs = new URLSearchParams({ brandId });
-  return apiFetch(`/api/v1/help-center/collections/ensure-default?${qs}`, { method: "POST" });
+  return apiFetch(`/api/v1/dashboard/help-center/collections/ensure-default?${qs}`, {
+    method: "POST",
+  });
 }
 
 export async function createHelpCollection(input: {
@@ -1656,7 +1878,7 @@ export async function createHelpCollection(input: {
   name: string;
   description?: string;
 }): Promise<{ collection: HelpCollection }> {
-  return apiFetch("/api/v1/help-center/collections", {
+  return apiFetch("/api/v1/dashboard/help-center/collections", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1670,11 +1892,11 @@ export async function listHelpArticles(input: {
   const qs = new URLSearchParams({ brandId: input.brandId });
   if (input.collectionId) qs.set("collectionId", input.collectionId);
   if (input.status) qs.set("status", input.status);
-  return apiFetch(`/api/v1/help-center/articles?${qs}`);
+  return apiFetch(`/api/v1/dashboard/help-center/articles?${qs}`);
 }
 
 export async function getHelpArticle(id: string): Promise<{ article: HelpArticle }> {
-  return apiFetch(`/api/v1/help-center/articles/${id}`);
+  return apiFetch(`/api/v1/dashboard/help-center/articles/${id}`);
 }
 
 export async function createHelpArticle(input: {
@@ -1685,7 +1907,7 @@ export async function createHelpArticle(input: {
   plainText?: string;
   content?: Record<string, unknown>;
 }): Promise<{ article: HelpArticle }> {
-  return apiFetch("/api/v1/help-center/articles", {
+  return apiFetch("/api/v1/dashboard/help-center/articles", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1705,7 +1927,7 @@ export async function updateHelpArticle(
     status: HelpArticle["status"];
   }>,
 ): Promise<{ article: HelpArticle }> {
-  return apiFetch(`/api/v1/help-center/articles/${id}`, {
+  return apiFetch(`/api/v1/dashboard/help-center/articles/${id}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -1744,11 +1966,11 @@ export async function listChangelogEntries(input: {
 }): Promise<{ items: ChangelogEntry[] }> {
   const qs = new URLSearchParams({ brandId: input.brandId });
   if (input.status) qs.set("status", input.status);
-  return apiFetch(`/api/v1/changelog/entries?${qs.toString()}`);
+  return apiFetch(`/api/v1/dashboard/changelog/entries?${qs.toString()}`);
 }
 
 export async function getChangelogEntry(id: string): Promise<{ entry: ChangelogEntry }> {
-  return apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`);
+  return apiFetch(`/api/v1/dashboard/changelog/entries/${encodeURIComponent(id)}`);
 }
 
 export async function createChangelogEntry(input: {
@@ -1761,7 +1983,7 @@ export async function createChangelogEntry(input: {
   categoryTags?: ChangelogEntry["categoryTags"];
   audienceFilter?: ChangelogAudienceFilter;
 }): Promise<{ entry: ChangelogEntry }> {
-  return apiFetch("/api/v1/changelog/entries", {
+  return apiFetch("/api/v1/dashboard/changelog/entries", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -1781,12 +2003,14 @@ export async function updateChangelogEntry(
     scheduledAt: string | null;
   }>,
 ): Promise<{ entry: ChangelogEntry }> {
-  return apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/v1/dashboard/changelog/entries/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
 }
 
 export async function deleteChangelogEntry(id: string): Promise<void> {
-  await apiFetch(`/api/v1/changelog/entries/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await apiFetch(`/api/v1/dashboard/changelog/entries/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }

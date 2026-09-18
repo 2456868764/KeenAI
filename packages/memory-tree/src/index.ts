@@ -230,6 +230,7 @@ export {
   type QueryMemoryFactsInput,
   type QueryMemoryFactsResult,
 } from "./query-facts.js";
+export { archiveMemoryFact, correctMemoryFact } from "./govern-facts.js";
 export {
   queryGraphRelated,
   queryRelatedTopics,

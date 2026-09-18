@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createRoadmapItemSchema,
   createRoadmapSchema,
   listRoadmapsQuerySchema,
@@ -24,7 +24,7 @@ import type { AppVariables } from "../types.js";
 
 export function roadmapRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/roadmaps`;
+  const prefix = `${DASHBOARD_API_PREFIX}/roadmaps`;
 
   r.get(prefix, requireAuth(), zValidator("query", listRoadmapsQuerySchema), async (c) => {
     const auth = c.get("auth");

@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import {
   auditLogs,
   conversations,
@@ -70,9 +70,13 @@ const workflowReorderBodySchema = z
 type WorkflowRouteContext = Context<{ Variables: AppVariables }>;
 type WorkflowAuditAuth = { orgId: string; sub: string };
 
+function canPreAuthorizeWorkflow(role: string): boolean {
+  return role === "owner" || role === "admin";
+}
+
 export function workflowRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/workflows`;
+  const prefix = `${DASHBOARD_API_PREFIX}/workflows`;
 
   r.get(prefix, requireAuth(), async (c) => {
     const auth = c.get("auth");
@@ -413,6 +417,10 @@ export function workflowRoutes() {
       .limit(1);
 
     if (!existing) return c.json({ error: "not_found" }, 404);
+    const definition = workflowDefinitionSchema.parse(existing.definition);
+    if (definition.toolExecutionMode === "pre_authorized" && !canPreAuthorizeWorkflow(auth.role)) {
+      return c.json({ error: "pre_authorized_workflow_requires_admin" }, 403);
+    }
 
     const [latestVersion] = await c
       .get("store")

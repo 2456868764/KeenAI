@@ -107,7 +107,7 @@ export function HelpArticleEditor({ articleId }: { articleId: string }) {
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between gap-3">
         <Link
-          href="/help-center"
+          href="/dashboard/help-center"
           className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
         >
           ← Help Center

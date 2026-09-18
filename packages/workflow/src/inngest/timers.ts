@@ -144,7 +144,6 @@ export function createWorkflowTimerInngestFunctions(
       } else {
         await timerStep.sleep("await-customer-input", workflowTimerDuration(data.autoCloseMs));
       }
-      await sleepUntilWorkflowDeadline(timerStep, "auto-close-deadline", data.autoCloseMs);
       return timerStep.run("auto-close", () => handlers.runAutoCloseTimer(data));
     },
   );
@@ -164,9 +163,7 @@ export function createWorkflowTimerInngestFunctions(
           timeoutMs: waitMs,
           blockId: data.stepId,
         });
-        if (!received) {
-          await sleepUntilWorkflowDeadline(timerStep, "csat-rating-deadline", waitMs);
-        }
+        void received;
       }
 
       return timerStep.run("csat-timer", () => handlers.runCsatTimer(data));

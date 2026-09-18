@@ -6,7 +6,7 @@ export async function loginAsDemo(page: Page): Promise<void> {
   await page.getByLabel("Password").fill("keenai-demo-12");
   await page.getByLabel("Organization").fill("demo");
   await page.getByRole("button", { name: /sign in/i }).click();
-  await page.waitForURL(/\/inbox/, { timeout: 30_000 });
+  await page.waitForURL(/\/dashboard\/inbox/, { timeout: 30_000 });
 }
 
 /** App header page title (distinct from nav links). */

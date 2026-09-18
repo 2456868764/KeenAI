@@ -21,7 +21,6 @@ export {
   type SenderType,
 } from "./conversation.js";
 export {
-  widgetAnswerSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
@@ -86,6 +85,12 @@ export {
 } from "./ticket-field.js";
 export { createBrandSchema, updateBrandSchema } from "./brand.js";
 export {
+  AGENT_ABANDONED_WORKFLOW_TRIGGERS,
+  type AgentAbandonedWorkflowTrigger,
+  type UpdateAgentOtherSettingsInput,
+  updateAgentOtherSettingsSchema,
+} from "./agent-settings.js";
+export {
   brandPersonalitySchema,
   buildAgentSystemPrompt,
   DEFAULT_BRAND_PERSONALITY,
@@ -135,7 +140,7 @@ export {
   type HelpCenterSitemapArticle,
   type HelpCenterSitemapEntry,
 } from "./help-center-seo.js";
-export { APP_NAME, API_VERSION } from "./constants.js";
+export { API_PREFIX, API_VERSION, APP_NAME, DASHBOARD_API_PREFIX } from "./constants.js";
 export {
   attachmentMetadataSchema,
   type AttachmentMetadata,

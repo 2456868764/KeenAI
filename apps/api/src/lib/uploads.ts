@@ -32,6 +32,7 @@ export function createPresignedUpload(
     purpose?: "message_attachment";
   },
   apiBaseUrl: string,
+  uploadPath = "/api/v1/uploads",
 ) {
   if (input.sizeBytes > env.UPLOAD_MAX_BYTES) {
     throw new Error("file_too_large");
@@ -56,7 +57,7 @@ export function createPresignedUpload(
   return {
     uploadId,
     storageKey,
-    uploadUrl: `${apiBaseUrl}/api/v1/uploads/${uploadId}`,
+    uploadUrl: `${apiBaseUrl}${uploadPath}/${uploadId}`,
     expiresAt: new Date(expiresAt).toISOString(),
     maxBytes: env.UPLOAD_MAX_BYTES,
     purpose: input.purpose ?? "message_attachment",

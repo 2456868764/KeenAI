@@ -38,7 +38,9 @@ export default function LoginPage() {
               typeof window !== "undefined"
                 ? new URLSearchParams(window.location.search).get("next")
                 : null;
-            router.replace(next?.startsWith("/") && !next.startsWith("//") ? next : "/inbox");
+            router.replace(
+              next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard/inbox",
+            );
           } catch (err) {
             setError(err instanceof Error ? err.message : "Login failed");
           } finally {

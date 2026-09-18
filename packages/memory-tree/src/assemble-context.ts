@@ -18,6 +18,14 @@ const MAX_CONTEXT_CHARS = 4_000;
 export type MemoryContextSection = {
   title: string;
   body: string;
+  evidence?: Array<{
+    sourceType: string;
+    sourceId: string;
+    sourceVersion?: string;
+    scope?: string;
+    score?: number;
+    metadata?: Record<string, unknown>;
+  }>;
 };
 
 export type KbContextSearch = Pick<
@@ -81,6 +89,14 @@ async function loadLatestConversationSummary(
   return {
     title: summary.title ?? "Conversation summary (L1)",
     body: summary.summary,
+    evidence: [
+      {
+        sourceType: "memory_summary",
+        sourceId: summary.id,
+        sourceVersion: summary.sealedAt.toISOString(),
+        scope: "conversation",
+      },
+    ],
   };
 }
 
@@ -108,6 +124,13 @@ async function loadConversationSections(
     sections.push({
       title: "Current conversation buffer (L0)",
       body: leaves.map((leaf) => `- ${leaf.body}`).join("\n"),
+      evidence: leaves.map((leaf) => ({
+        sourceType: "memory_chunk",
+        sourceId: leaf.chunkId,
+        sourceVersion: leaf.createdAt,
+        scope: "conversation",
+        score: leaf.fastScore ?? undefined,
+      })),
     });
   }
 
@@ -138,6 +161,15 @@ async function loadBrandDailySection(
   return {
     title: `Brand daily digest (${input.dateUtc})`,
     body: `${digest.summary}${events}`,
+    evidence: [
+      {
+        sourceType: "memory_summary",
+        sourceId: digest.summaryId,
+        sourceVersion: digest.sealedAt,
+        scope: "brand_daily",
+        metadata: { episodeId: digest.episodeId, dateUtc: input.dateUtc },
+      },
+    ],
   };
 }
 
@@ -164,6 +196,13 @@ async function loadCustomerSections(
     sections.push({
       title: "Customer topic buffer (L0)",
       body: leaves.map((leaf) => `- ${leaf.body}`).join("\n"),
+      evidence: leaves.map((leaf) => ({
+        sourceType: "memory_chunk",
+        sourceId: leaf.chunkId,
+        sourceVersion: leaf.createdAt,
+        scope: "customer",
+        score: leaf.fastScore ?? undefined,
+      })),
     });
   }
 
@@ -186,6 +225,14 @@ async function loadCustomerSections(
     sections.push({
       title: summary.title ?? "Customer summary (L1)",
       body: summary.summary,
+      evidence: [
+        {
+          sourceType: "memory_summary",
+          sourceId: summary.id,
+          sourceVersion: summary.sealedAt.toISOString(),
+          scope: "customer",
+        },
+      ],
     });
   }
 
@@ -194,13 +241,14 @@ async function loadCustomerSections(
 
 async function loadL3Section(
   db: KeenaiDb,
-  input: { orgId: string; brandId: string; scope: string; scopeId: string },
+  input: { orgId: string; brandId: string; scope: string; scopeId: string; query?: string },
 ): Promise<MemoryContextSection | null> {
   const l3 = await queryMemoryFacts(db, {
     orgId: input.orgId,
     brandId: input.brandId,
     scope: input.scope,
     scopeId: input.scopeId,
+    query: input.query,
   });
   return buildMemoryL3Section(l3);
 }
@@ -214,6 +262,17 @@ function buildKbSection(hits: KbSearchHit[]): MemoryContextSection {
   return {
     title: "Knowledge Base",
     body: hits.map(formatKbHit).join("\n\n"),
+    evidence: hits.map((hit) => ({
+      sourceType: "kb_chunk",
+      sourceId: hit.chunkId,
+      scope: "brand",
+      score: hit.rerankScore ?? hit.fusedScore ?? hit.confidence,
+      metadata: {
+        documentId: hit.documentId,
+        sourceId: hit.sourceId,
+        retrievalSources: hit.sources,
+      },
+    })),
   };
 }
 
@@ -282,6 +341,7 @@ export async function assembleMemoryContext(
       brandId: input.brandId,
       scope: "conversation",
       scopeId: input.conversationId,
+      query: input.instruction,
     });
     if (l3) sections.push(l3);
   }
@@ -312,6 +372,7 @@ export async function assembleMemoryContext(
         brandId: input.brandId,
         scope: "customer",
         scopeId: input.userId,
+        query: input.instruction,
       });
       if (l3) sections.push(l3);
     } else {
@@ -328,6 +389,7 @@ export async function assembleMemoryContext(
       brandId: input.brandId,
       scope: "customer",
       scopeId: input.userId,
+      query: input.instruction,
     });
     if (customerL3) sections.push(customerL3);
   }

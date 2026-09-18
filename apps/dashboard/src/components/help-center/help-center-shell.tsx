@@ -96,7 +96,7 @@ export function HelpCenterShell() {
     },
     onSuccess: (article) => {
       void queryClient.invalidateQueries({ queryKey: ["help-articles"] });
-      router.push(`/help-center/articles/${article.id}`);
+      router.push(`/dashboard/help-center/articles/${article.id}`);
     },
   });
 
@@ -189,7 +189,7 @@ export function HelpCenterShell() {
               {articles.map((article) => (
                 <li key={article.id}>
                   <Link
-                    href={`/help-center/articles/${article.id}`}
+                    href={`/dashboard/help-center/articles/${article.id}`}
                     className="block rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] px-4 py-3 hover:bg-[hsl(var(--surface-2))]"
                   >
                     <div className="flex items-center justify-between gap-2">

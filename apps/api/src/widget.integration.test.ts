@@ -378,23 +378,22 @@ describe("widget integration", () => {
     const list = (await listRes.json()) as { items: { plainText: string }[] };
     expect(list.items.length).toBeGreaterThanOrEqual(2);
 
-    const answerRes = await app.request("/api/v1/widget/answer", {
-      method: "POST",
-      headers: { ...auth, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId: convBody.conversation.id,
-        query: "billing invoice",
-        limit: 5,
-        rerank: false,
-      }),
+    const enableSimpleDeployRes = await app.request(`/api/v1/agent-settings/${brand.id}`, {
+      method: "PATCH",
+      headers: { ...adminAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ simpleDeployEnabled: true }),
     });
-    expect(answerRes.status).toBe(200);
-    expect(answerRes.headers.get("content-type")).toContain("text/event-stream");
-    const answerStream = await answerRes.text();
-    expect(answerStream).toContain("event: searching");
-    expect(answerStream).toContain("event: meta");
-    expect(answerStream).toContain("event: text-delta");
-    expect(answerStream).toContain("event: done");
+    expect(enableSimpleDeployRes.status).toBe(200);
+
+    const answerRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
+      {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ plainText: "billing invoice" }),
+      },
+    );
+    expect(answerRes.status).toBe(201);
 
     const answerMessagesRes = await app.request(
       `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
@@ -404,7 +403,7 @@ describe("widget integration", () => {
       items: { plainText: string; senderType: string }[];
     };
     expect(answerMessages.items.some((item) => item.plainText === "billing invoice")).toBe(true);
-    expect(answerMessages.items.some((item) => item.senderType === "ai")).toBe(true);
+    expect(answerMessages.items.some((item) => item.senderType === "agent")).toBe(true);
 
     const handoffRes = await app.request(
       `/api/v1/widget/conversations/${convBody.conversation.id}/handoff`,
@@ -423,6 +422,31 @@ describe("widget integration", () => {
     expect(handoffBody.message).toMatchObject({
       plainText: "I need help from the team.",
       senderType: "user",
+    });
+
+    const disableHandoffRes = await app.request(`/api/v1/agent-settings/${brand.id}`, {
+      method: "PATCH",
+      headers: { ...adminAuth, "Content-Type": "application/json" },
+      body: JSON.stringify({ allowHandoff: false }),
+    });
+    expect(disableHandoffRes.status).toBe(200);
+    const disabledConfigRes = await app.request("/api/v1/widget/config", { headers: auth });
+    expect(disabledConfigRes.status).toBe(200);
+    const disabledConfig = (await disabledConfigRes.json()) as {
+      config: { agent: { allowHandoff: boolean } };
+    };
+    expect(disabledConfig.config.agent.allowHandoff).toBe(false);
+    const disabledHandoffRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/handoff`,
+      {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    expect(disabledHandoffRes.status).toBe(403);
+    await expect(disabledHandoffRes.json()).resolves.toMatchObject({
+      error: "agent_handoff_disabled",
     });
 
     const presignRes = await app.request("/api/v1/widget/uploads/presign", {

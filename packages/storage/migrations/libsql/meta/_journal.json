@@ -295,6 +295,41 @@
       "when": 1779864000000,
       "tag": "0041_widget_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "6",
+      "when": 1789646400000,
+      "tag": "0042_agent_audit_runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1789650000000,
+      "tag": "0043_agent_governance_memory",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "6",
+      "when": 1789736400000,
+      "tag": "0044_agent_other_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "6",
+      "when": 1789740000000,
+      "tag": "0045_conversation_auto_close_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "6",
+      "when": 1789743600000,
+      "tag": "0046_agent_simple_deploy",
+      "breakpoints": true
     }
   ]
 }

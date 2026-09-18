@@ -35,6 +35,8 @@ export type WorkflowFacts = {
   timeOnPageSec?: number;
   eventName?: string;
   eventPayload?: Record<string, unknown>;
+  sourceMessageId?: string;
+  messageSource?: string;
 };
 
 export function evaluateBranchCondition(

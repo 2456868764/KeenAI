@@ -235,6 +235,9 @@ export type WorkflowTrigger = (typeof WORKFLOW_TRIGGERS)[number];
 export const WORKFLOW_STATUSES = ["draft", "published"] as const;
 export type WorkflowStatus = (typeof WORKFLOW_STATUSES)[number];
 
+export const WORKFLOW_TOOL_EXECUTION_MODES = ["governed", "pre_authorized", "read_only"] as const;
+export type WorkflowToolExecutionMode = (typeof WORKFLOW_TOOL_EXECUTION_MODES)[number];
+
 export const WORKFLOW_BLOCK_TYPES = [
   "send_message",
   "assign",
@@ -381,6 +384,8 @@ export const workflowDefinitionSchema = z
     /** Internal builder notes shown in the workflow canvas header. */
     description: z.string().max(2_000).optional(),
     trigger: z.enum(WORKFLOW_TRIGGERS),
+    /** Governance mode inherited by every tool call in this workflow. */
+    toolExecutionMode: z.enum(WORKFLOW_TOOL_EXECUTION_MODES).optional(),
     /** Minutes of customer silence after agent reply (customer_unresponsive only). */
     inactivityMinutes: z.number().int().min(0).max(20_160).optional(),
     /** Page URL rules for page_view workflows. Empty or omitted means every page view. */
@@ -469,7 +474,9 @@ export type WorkflowRunContext = {
   conversationId: string;
   targetCustomerId?: string | null;
   subject?: string;
+  channelType?: string;
   isShadowRun?: boolean;
+  toolExecutionMode?: WorkflowToolExecutionMode;
   facts?: import("./blocks/branches.js").WorkflowFacts;
 };
 
@@ -479,14 +486,23 @@ export type SendMessageInput = {
 };
 
 export type HttpRequestInput = {
+  blockId?: string;
+  executionMode?: WorkflowToolExecutionMode;
   method: "GET" | "POST";
   url: string;
   body?: string;
 };
 
 export type HttpRequestResult = {
-  status: number;
-  body: string;
+  status?: number;
+  body?: string;
+  governance?: WorkflowToolGovernanceResult;
+};
+
+export type WorkflowToolGovernanceResult = {
+  agentRunId: string;
+  status: "completed" | "awaiting_approval" | "escalated" | "failed";
+  approvalId?: string;
 };
 
 export type AssignInput = {
@@ -546,6 +562,11 @@ export type WorkflowStepResult = {
     replyText?: string;
     resolutionType?: string;
     nextBlockId?: string | null;
+    agentRunId?: string;
+    agentRunStatus?: "completed" | "awaiting_approval" | "escalated" | "failed";
+    approvalId?: string;
+    awaitingApproval?: boolean;
+    toolExecutionMode?: WorkflowToolExecutionMode;
     expectedReplyMinutes?: number;
     insideOfficeHours?: boolean;
     policyName?: string;
@@ -597,7 +618,13 @@ export type WorkflowSuspendedState =
   | { blockId: string; type: "send_ticket_form" }
   | { blockId: string; type: "collect_customer_reply" }
   | { blockId: string; type: "reply_buttons" }
-  | { blockId: string; type: "csat" };
+  | { blockId: string; type: "csat" }
+  | {
+      blockId: string;
+      type: "tool_approval";
+      agentRunId: string;
+      approvalId?: string;
+    };
 
 export type WorkflowRunResult = {
   steps: WorkflowStepResult[];

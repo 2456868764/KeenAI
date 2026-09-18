@@ -35,6 +35,8 @@ describe("KeenAI.boot", () => {
   });
 
   it("renders Preact shell and switches from messages to chat", async () => {
+    let configRequests = 0;
+    let messagePosted = false;
     vi.stubGlobal("WebSocket", MockWebSocket);
     vi.stubGlobal(
       "fetch",
@@ -53,6 +55,7 @@ describe("KeenAI.boot", () => {
         }
 
         if (url.endsWith("/api/v1/widget/config")) {
+          configRequests += 1;
           return jsonResponse({
             config: {
               org: { id: "org-1", slug: "demo", name: "Demo" },
@@ -256,19 +259,6 @@ describe("KeenAI.boot", () => {
           });
         }
 
-        if (url.endsWith("/api/v1/widget/answer") && method === "POST") {
-          return new Response(
-            [
-              'event: searching\ndata: {"query":"billing invoice"}',
-              'event: meta\ndata: {"logId":"answer-1","providerId":"kb","citations":[{"chunkId":"chunk-1","documentTitle":"Billing guide"}]}',
-              'event: text-delta\ndata: {"text":"Billing answer"}',
-              "event: done\ndata: {}",
-              "",
-            ].join("\n\n"),
-            { status: 200, headers: { "Content-Type": "text/event-stream" } },
-          );
-        }
-
         if (url.endsWith("/api/v1/widget/conversations/conv-1/handoff") && method === "POST") {
           return jsonResponse({
             message: {
@@ -286,6 +276,18 @@ describe("KeenAI.boot", () => {
           });
         }
 
+        if (url.endsWith("/api/v1/widget/conversations/conv-1/messages") && method === "POST") {
+          messagePosted = true;
+          return jsonResponse({
+            message: {
+              id: "m2",
+              plainText: "billing invoice",
+              senderType: "user",
+              createdAt: "2026-09-15T09:02:00.000Z",
+            },
+          });
+        }
+
         if (url.endsWith("/api/v1/widget/conversations/conv-1/messages")) {
           return jsonResponse({
             items: [
@@ -295,6 +297,22 @@ describe("KeenAI.boot", () => {
                 senderType: "user",
                 createdAt: "2026-09-15T09:00:00.000Z",
               },
+              ...(messagePosted
+                ? [
+                    {
+                      id: "m2",
+                      plainText: "billing invoice",
+                      senderType: "user",
+                      createdAt: "2026-09-15T09:02:00.000Z",
+                    },
+                    {
+                      id: "m3",
+                      plainText: "Billing answer",
+                      senderType: "agent",
+                      createdAt: "2026-09-15T09:02:01.000Z",
+                    },
+                  ]
+                : []),
             ],
           });
         }
@@ -354,13 +372,7 @@ describe("KeenAI.boot", () => {
     const chatForm = root.querySelector(".keenai-compose") as HTMLFormElement;
     chatForm.requestSubmit();
     await waitFor(() => root.textContent?.includes("Billing answer") ?? false);
-    expect(root.textContent).toContain("Billing guide");
-    const handoffButton = Array.from(root.querySelectorAll("button")).find(
-      (button) => button.textContent === "Contact support",
-    ) as HTMLButtonElement;
-    handoffButton.click();
-    await waitFor(() => root.textContent?.includes("A teammate will follow up here.") ?? false);
-    expect(root.textContent).toContain("Team notified");
+    expect(configRequests).toBe(1);
 
     const helpTab = Array.from(root.querySelectorAll(".keenai-bottom-nav__item")).find(
       (button) => button.textContent === "Help",

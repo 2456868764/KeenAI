@@ -550,6 +550,8 @@ describe("runWorkflow", () => {
 
     expect(wait).toHaveBeenCalledWith(2000);
     expect(httpRequest).toHaveBeenCalledWith({
+      blockId: "h1",
+      executionMode: "governed",
       method: "POST",
       url: "https://example.com/hook",
       body: "{}",
@@ -590,6 +592,7 @@ describe("runWorkflow", () => {
 
     expect(webhookEmit).toHaveBeenCalledWith({
       blockId: "hook",
+      executionMode: "governed",
       url: "https://example.com/crm",
       eventName: "crm.customer.updated",
       payload: '{"tier":"enterprise"}',
@@ -631,6 +634,8 @@ describe("runWorkflow", () => {
     );
 
     expect(mcpCall).toHaveBeenCalledWith({
+      blockId: "mcp",
+      executionMode: "governed",
       serverId: "stub",
       toolName: "echo",
       arguments: { message: "hello-mcp" },
@@ -639,6 +644,52 @@ describe("runWorkflow", () => {
       mcpServerId: "stub",
       mcpToolName: "echo",
       mcpResultPreview: "hello-mcp",
+    });
+  });
+
+  it("suspends the whole workflow when a governed tool awaits approval", async () => {
+    const result = await runWorkflow(
+      {
+        trigger: "event_match",
+        eventName: "customer.delete.requested",
+        toolExecutionMode: "governed",
+        blocks: [
+          {
+            id: "mcp",
+            type: "mcp_call",
+            serverId: "crm",
+            toolName: "delete_customer",
+            arguments: { customerId: "customer-1" },
+          },
+          { id: "done", type: "send_message", plainText: "Deleted" },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        mcpCall: vi.fn(async (input) => ({
+          serverId: input.serverId,
+          toolName: input.toolName,
+          governance: {
+            agentRunId: "agent-run-1",
+            status: "awaiting_approval" as const,
+            approvalId: "approval-1",
+          },
+        })),
+      },
+    );
+
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[0]?.output).toMatchObject({
+      awaitingApproval: true,
+      toolExecutionMode: "governed",
+    });
+    expect(result.suspended).toEqual({
+      blockId: "mcp",
+      type: "tool_approval",
+      agentRunId: "agent-run-1",
+      approvalId: "approval-1",
     });
   });
 
@@ -678,6 +729,8 @@ describe("runWorkflow", () => {
     );
 
     expect(script).toHaveBeenCalledWith({
+      blockId: "script",
+      executionMode: "governed",
       code: "return { channel: facts.channelType };",
       timeoutMs: 1000,
       memoryMb: 32,
@@ -693,6 +746,38 @@ describe("runWorkflow", () => {
     });
     expect(result.steps[0]?.output).toMatchObject({
       scriptResultPreview: '{"channel":"email","urgent":false}',
+    });
+  });
+
+  it("suspends a governed script block when approval is required", async () => {
+    const result = await runWorkflow(
+      {
+        trigger: "event_match",
+        eventName: "script.requested",
+        toolExecutionMode: "governed",
+        blocks: [
+          { id: "script", type: "script", code: "return facts;", timeoutMs: 1000, memoryMb: 32 },
+        ],
+      },
+      {
+        sendMessage: vi.fn(),
+        assign: vi.fn(),
+        close: vi.fn(),
+        script: vi.fn(async () => ({
+          governance: {
+            agentRunId: "agent-script-1",
+            status: "awaiting_approval" as const,
+            approvalId: "approval-script-1",
+          },
+        })),
+      },
+    );
+
+    expect(result.suspended).toEqual({
+      blockId: "script",
+      type: "tool_approval",
+      agentRunId: "agent-script-1",
+      approvalId: "approval-script-1",
     });
   });
 

@@ -4,7 +4,6 @@ import {
   API_VERSION,
   presignUploadSchema,
   updateWidgetSettingsSchema,
-  widgetAnswerSchema,
   widgetConversationRatingSchema,
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
@@ -19,7 +18,7 @@ import {
 import { conversations } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
+import { getOrCreateAgentOtherSettings } from "../lib/agent-settings.js";
 import { insertAttachment } from "../lib/attachments.js";
 import { getChangelogEntryBySlug, listPublicChangelogEntries } from "../lib/changelog.js";
 import {
@@ -28,7 +27,6 @@ import {
   recordConversationEvent,
   serializeConversation,
 } from "../lib/conversations.js";
-import { preparePublicKbAnswerStream } from "../lib/kb-answer-stream.js";
 import { getKbDispatch } from "../lib/kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "../lib/kb-dispatch.js";
 import {
@@ -117,8 +115,20 @@ export function widgetRoutes() {
       brandId: auth.brandId,
     });
     if (!config) return c.json({ error: "not_found" }, 404);
+    const agentSettings = await getOrCreateAgentOtherSettings(c.get("store").db, {
+      orgId: auth.orgId,
+      brandId: auth.brandId,
+    });
 
-    return c.json({ config });
+    return c.json({
+      config: {
+        ...config,
+        agent: {
+          ...config.agent,
+          allowHandoff: agentSettings.allowHandoff,
+        },
+      },
+    });
   });
 
   r.get(`${prefix}/home`, requireWidgetAuth(), async (c) => {
@@ -267,91 +277,6 @@ export function widgetRoutes() {
       }
 
       return c.json({ ticket, conversation: result.conversation }, 201);
-    },
-  );
-
-  r.post(
-    `${prefix}/answer`,
-    requireWidgetAuth(),
-    zValidator("json", widgetAnswerSchema),
-    async (c) => {
-      const auth = c.get("widgetAuth");
-      if (!auth) return c.json({ error: "unauthorized" }, 401);
-
-      const body = c.req.valid("json");
-      const conversation = await getConversationForOrg(
-        c.get("store").db,
-        body.conversationId,
-        auth.orgId,
-      );
-      const denied = assertWidgetConversation(conversation, auth);
-      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
-      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
-
-      await insertMessage(c.get("store").db, {
-        orgId: auth.orgId,
-        conversationId: conversation.id,
-        senderType: "user",
-        senderId: auth.sub,
-        plainText: body.query,
-        sentVia: "widget",
-        isInternal: false,
-        isAgentReply: false,
-      });
-
-      const prepared = await preparePublicKbAnswerStream(c.get("store").db, c.get("env"), {
-        orgId: auth.orgId,
-        brandId: auth.brandId,
-        q: body.query,
-        limit: body.limit,
-        rerank: body.rerank !== false,
-      });
-
-      if ("error" in prepared) {
-        return c.json({ error: prepared.error }, 503);
-      }
-
-      return streamSSE(c, async (stream) => {
-        let answerText = "";
-        await stream.writeSSE({
-          event: "searching",
-          data: JSON.stringify({ query: body.query }),
-        });
-        await stream.writeSSE({
-          event: "meta",
-          data: JSON.stringify({
-            logId: prepared.logId,
-            providerId: prepared.providerId,
-            citations: prepared.citations,
-          }),
-        });
-
-        for await (const chunk of prepared.stream) {
-          if (chunk.type === "text-delta") {
-            answerText += chunk.text;
-            await stream.writeSSE({
-              event: "text-delta",
-              data: JSON.stringify({ text: chunk.text }),
-            });
-          }
-        }
-
-        if (answerText.trim()) {
-          await insertMessage(c.get("store").db, {
-            orgId: auth.orgId,
-            conversationId: conversation.id,
-            senderType: "ai",
-            senderId: "kb-answer",
-            plainText: answerText,
-            sentVia: "widget-ai",
-            isInternal: false,
-            isAgentReply: true,
-            metadata: { source: `kb-answer:${prepared.logId}` },
-          });
-        }
-
-        await stream.writeSSE({ event: "done", data: "{}" });
-      });
     },
   );
 
@@ -532,6 +457,13 @@ export function widgetRoutes() {
       const denied = assertWidgetConversation(conversation, auth);
       if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
       if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+      const agentSettings = await getOrCreateAgentOtherSettings(c.get("store").db, {
+        orgId: auth.orgId,
+        brandId: auth.brandId,
+      });
+      if (!agentSettings.allowHandoff) {
+        return c.json({ error: "agent_handoff_disabled" }, 403);
+      }
       if (isCustomerReplyDisabled(conversation.attributes)) {
         return c.json({ error: "customer_reply_disabled" }, 409);
       }

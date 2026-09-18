@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { WorkflowToolExecutionMode, WorkflowToolGovernanceResult } from "../schema.js";
 
 export const webhookEmitHeadersSchema = z
   .record(z.string().min(1).max(128), z.string().max(2048))
@@ -17,6 +18,7 @@ export type WebhookEmitBlock = z.infer<typeof webhookEmitBlockSchema>;
 
 export type WebhookEmitInput = {
   blockId: string;
+  executionMode?: WorkflowToolExecutionMode;
   url: string;
   eventName?: string;
   payload?: string;
@@ -24,7 +26,8 @@ export type WebhookEmitInput = {
 };
 
 export type WebhookEmitResult = {
-  status: number;
-  body: string;
-  eventName: string;
+  status?: number;
+  body?: string;
+  eventName?: string;
+  governance?: WorkflowToolGovernanceResult;
 };

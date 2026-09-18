@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   createFeedbackBoardSchema,
   createFeedbackCommentSchema,
   createFeedbackPostSchema,
@@ -26,7 +26,7 @@ import type { AppVariables } from "../types.js";
 
 export function feedbackRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/feedback`;
+  const prefix = `${DASHBOARD_API_PREFIX}/feedback`;
 
   r.get(`${prefix}/boards`, requireAuth(), async (c) => {
     const auth = c.get("auth");

@@ -118,6 +118,11 @@ export const apiEnvSchema = z.object({
   INNGEST_APP_ID: z.string().default("keenai"),
   /** Inngest cron for customer_unresponsive scan (default every 5 minutes) */
   INNGEST_SCAN_CRON: z.string().default("*/5 * * * *"),
+  INNGEST_AGENT_RECOVERY_CRON: z.string().default("*/5 * * * *"),
+  INNGEST_AGENT_AUTO_CLOSE_CRON: z.string().default("* * * * *"),
+  AGENT_RECOVERY_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(5),
+  AGENT_TOOL_STALE_SECONDS: z.coerce.number().int().min(30).default(300),
+  AGENT_AUTO_CLOSE_SCAN_INTERVAL_SECONDS: z.coerce.number().int().min(0).default(30),
   /** Sync-mode background scan interval in minutes (0 = disabled; ignored when Inngest is enabled) */
   WORKFLOW_SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   /** Redis URL for BullMQ queues (email:send) */

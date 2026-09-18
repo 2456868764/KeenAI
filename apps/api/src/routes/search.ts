@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION, searchConversationsSchema } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX, searchConversationsSchema } from "@keenai/shared";
 import { conversations } from "@keenai/storage/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
@@ -9,7 +9,7 @@ import type { AppContext, AppVariables } from "../types.js";
 
 export function searchRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/search`;
+  const prefix = `${DASHBOARD_API_PREFIX}/search`;
 
   r.get(
     `${prefix}/conversations`,

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { WorkflowRunContext } from "../schema.js";
+import type {
+  WorkflowRunContext,
+  WorkflowToolExecutionMode,
+  WorkflowToolGovernanceResult,
+} from "../schema.js";
 import type { WorkflowFacts } from "./branches.js";
 
 export const scriptBlockSchema = z.object({
@@ -13,6 +17,8 @@ export const scriptBlockSchema = z.object({
 export type ScriptBlock = z.infer<typeof scriptBlockSchema>;
 
 export type ScriptInput = {
+  blockId?: string;
+  executionMode?: WorkflowToolExecutionMode;
   code: string;
   timeoutMs: number;
   memoryMb: number;
@@ -21,5 +27,6 @@ export type ScriptInput = {
 };
 
 export type ScriptResult = {
-  result: unknown;
+  result?: unknown;
+  governance?: WorkflowToolGovernanceResult;
 };

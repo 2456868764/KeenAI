@@ -65,7 +65,7 @@ export function TicketDetailShell({ ticketId }: { ticketId: string }) {
     <div className="flex h-full flex-col bg-[hsl(var(--surface-0))]">
       <AppHeader title="Ticket">
         <Link
-          href="/tickets"
+          href="/dashboard/tickets"
           className="rounded-md px-2 py-1 text-xs text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
         >
           Back to list
@@ -147,7 +147,7 @@ export function TicketDetailShell({ ticketId }: { ticketId: string }) {
                   {ticket.conversationIds.map((conversationId) => (
                     <Link
                       key={conversationId}
-                      href={`/inbox?c=${conversationId}`}
+                      href={`/dashboard/inbox?c=${conversationId}`}
                       className="text-xs text-[hsl(var(--primary))] hover:underline"
                     >
                       View conversation

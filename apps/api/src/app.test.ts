@@ -26,6 +26,35 @@ describe("API health", () => {
     await store.close();
   });
 
+  it("serves dashboard routes under /api/v1/dashboard and keeps the legacy alias", async () => {
+    const env = parseApiEnv({ NODE_ENV: "test" });
+    const store = createLibsqlStore({ url: ":memory:" });
+    const app = createApp({
+      store,
+      fts: null,
+      authConfig: toAuthConfig(env),
+      env,
+      log: createLogger(env),
+      startedAt: new Date(),
+    });
+
+    const dashboard = await app.request("/api/v1/dashboard/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    const legacy = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+
+    expect(dashboard.status).toBe(400);
+    expect(legacy.status).toBe(400);
+
+    await store.close();
+  });
+
   it("GET /api/v1/openapi.json returns OpenAPI document", async () => {
     const env = parseApiEnv({ NODE_ENV: "test" });
     const store = createLibsqlStore({ url: ":memory:" });
@@ -47,10 +76,10 @@ describe("API health", () => {
     };
     expect(body.openapi).toBe("3.1.0");
     expect(body.info.title).toBe("KeenAI API");
-    expect(body.paths).toHaveProperty("/api/v1/kb/search");
-    expect(body.paths).toHaveProperty("/api/v1/kb/search/{id}/feedback");
-    expect(body.paths).toHaveProperty("/api/v1/custom-actions");
-    expect(body.paths).toHaveProperty("/api/v1/mcp/tools");
+    expect(body.paths).toHaveProperty("/api/v1/dashboard/kb/search");
+    expect(body.paths).toHaveProperty("/api/v1/dashboard/kb/search/{id}/feedback");
+    expect(body.paths).toHaveProperty("/api/v1/dashboard/custom-actions");
+    expect(body.paths).toHaveProperty("/api/v1/dashboard/mcp/tools");
 
     await store.close();
   });

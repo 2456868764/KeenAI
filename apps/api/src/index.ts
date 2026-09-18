@@ -1,7 +1,10 @@
+import { API_PREFIX } from "@keenai/shared";
 import { createLibsqlFtsStore, createLibsqlStore, ensureFtsSchema } from "@keenai/storage";
 import { websocket } from "hono/bun";
 import { createApp } from "./app.js";
 import { loadEnv, toAuthConfig } from "./config.js";
+import { startAgentAutoCloseScheduler } from "./lib/agent-auto-close-scheduler.js";
+import { startAgentRecoveryScheduler } from "./lib/agent-recovery-scheduler.js";
 import { startEmailImapPollScheduler } from "./lib/email-imap-scheduler.js";
 import { initEmailSendQueue } from "./lib/email-outbound.js";
 import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
@@ -25,6 +28,32 @@ if (emailQueue) {
 
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
 
+if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.AGENT_RECOVERY_INTERVAL_MINUTES > 0) {
+  startAgentRecoveryScheduler(
+    { store, fts, authConfig, env, log, startedAt },
+    env.AGENT_RECOVERY_INTERVAL_MINUTES,
+  );
+  log.info(
+    { intervalMinutes: env.AGENT_RECOVERY_INTERVAL_MINUTES },
+    "agent recovery scheduler started",
+  );
+}
+
+if (
+  env.NODE_ENV !== "test" &&
+  !env.INNGEST_EVENT_KEY &&
+  env.AGENT_AUTO_CLOSE_SCAN_INTERVAL_SECONDS > 0
+) {
+  startAgentAutoCloseScheduler(
+    { store, fts, authConfig, env, log, startedAt },
+    env.AGENT_AUTO_CLOSE_SCAN_INTERVAL_SECONDS,
+  );
+  log.info(
+    { intervalSeconds: env.AGENT_AUTO_CLOSE_SCAN_INTERVAL_SECONDS },
+    "agent auto-close scheduler started",
+  );
+}
+
 if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.WORKFLOW_SCAN_INTERVAL_MINUTES > 0) {
   startWorkflowScanScheduler({ store, log, env, authConfig }, env.WORKFLOW_SCAN_INTERVAL_MINUTES);
   log.info(
@@ -45,11 +74,17 @@ if (env.NODE_ENV !== "test" && !env.INNGEST_EVENT_KEY && env.EMAIL_IMAP_POLL_INT
 }
 
 if (typeof Bun !== "undefined") {
-  const { registerConversationWebSocket } = await import("./routes/conversations-ws.js");
-  const { registerNotificationsWebSocket } = await import("./routes/notifications-ws.js");
+  const { registerConversationWebSocket, registerConversationWebSocketAt } = await import(
+    "./routes/conversations-ws.js"
+  );
+  const { registerNotificationsWebSocket, registerNotificationsWebSocketAt } = await import(
+    "./routes/notifications-ws.js"
+  );
   const { registerWidgetWebSocket } = await import("./routes/widget-ws.js");
   registerConversationWebSocket(app);
+  registerConversationWebSocketAt(app, `${API_PREFIX}/conversations`);
   registerNotificationsWebSocket(app);
+  registerNotificationsWebSocketAt(app, `${API_PREFIX}/notifications/ws`);
   registerWidgetWebSocket(app);
 }
 

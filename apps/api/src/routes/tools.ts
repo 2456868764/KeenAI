@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION, generateImageSchema, textToSpeechSchema } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX, generateImageSchema, textToSpeechSchema } from "@keenai/shared";
 import { Hono } from "hono";
 import { runGenerateImageTool } from "../lib/agent-tools/generate-image.js";
 import { runTextToSpeechTool } from "../lib/agent-tools/text-to-speech.js";
@@ -8,7 +8,7 @@ import type { AppContext, AppVariables } from "../types.js";
 
 export function toolRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/tools`;
+  const prefix = `${DASHBOARD_API_PREFIX}/tools`;
 
   r.post(
     `${prefix}/text-to-speech`,

@@ -20,7 +20,6 @@ import {
   getOrCreateWidgetConversation,
   postWidgetMessage,
   requestWidgetHandoff,
-  streamWidgetAnswer,
   submitWidgetWorkflowTicketForm,
   uploadWidgetImage,
 } from "../session.js";
@@ -137,54 +136,6 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
   const sendMessage = useCallback(
     async (input: SendWidgetMessageInput) => {
       if (!accessToken || !activeConversationId) return;
-      const query = input.plainText?.trim();
-      if (query && (!input.attachmentIds || input.attachmentIds.length === 0)) {
-        setHandoffRequested(false);
-        setAnswerState({ status: "searching", text: "", citations: [] });
-        try {
-          await streamWidgetAnswer(
-            {
-              apiUrl,
-              accessToken,
-              conversationId: activeConversationId,
-              query,
-            },
-            {
-              onSearching: () => {
-                setAnswerState((current) => ({ ...current, status: "searching" }));
-              },
-              onMeta: (meta) => {
-                setAnswerState((current) => ({
-                  ...current,
-                  citations: meta.citations,
-                }));
-              },
-              onTextDelta: (text) => {
-                setAnswerState((current) => ({
-                  ...current,
-                  status: "streaming",
-                  text: `${current.text}${text}`,
-                }));
-              },
-              onDone: () => {
-                setAnswerState((current) => ({ ...current, status: "done" }));
-              },
-            },
-          );
-        } catch (error) {
-          setAnswerState({
-            status: "error",
-            text: "",
-            citations: [],
-            error: error instanceof Error ? error.message : "answer_failed",
-          });
-        } finally {
-          await loadConversationMessages(accessToken, activeConversationId);
-          await refreshConversations(accessToken);
-        }
-        return;
-      }
-
       setAnswerState({ status: "idle", text: "", citations: [] });
       setHandoffRequested(false);
       const message = await postWidgetMessage({
@@ -195,6 +146,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         attachmentIds: input.attachmentIds,
       });
       appendMessage(activeConversationId, message);
+      await loadConversationMessages(accessToken, activeConversationId);
       await refreshConversations(accessToken);
     },
     [
@@ -448,6 +400,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             messages={activeMessages}
             answerState={answerState}
             handoffRequested={handoffRequested}
+            allowHandoff={config?.agent.allowHandoff !== false}
             onSend={sendMessage}
             onRequestHandoff={requestHandoff}
             onSubmitWorkflowTicketForm={submitWorkflowTicketForm}

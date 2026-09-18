@@ -1,4 +1,4 @@
-import { API_VERSION } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX } from "@keenai/shared";
 import { accounts, members } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -8,7 +8,7 @@ import type { AppVariables } from "../types.js";
 export function memberRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
 
-  r.get(`/api/${API_VERSION}/members`, requireAuth(), async (c) => {
+  r.get(`${DASHBOARD_API_PREFIX}/members`, requireAuth(), async (c) => {
     const auth = c.get("auth");
     if (!auth) return c.json({ error: "unauthorized" }, 401);
 

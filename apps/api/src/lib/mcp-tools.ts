@@ -46,6 +46,12 @@ export async function loadMcpDraftTools(env: ApiEnv): Promise<DraftToolRuntime[]
     name: tool.qualifiedName,
     description: `[MCP:${tool.serverId}] ${tool.description}`,
     parametersSchema: tool.inputSchema,
+    audit: {
+      source: "mcp" as const,
+      sourceId: `${tool.serverId}:${tool.name}`,
+      riskLevel: "r2" as const,
+      idempotent: false,
+    },
     execute: async (args: Record<string, unknown>) => host.callTool(tool.serverId, tool.name, args),
   }));
 }

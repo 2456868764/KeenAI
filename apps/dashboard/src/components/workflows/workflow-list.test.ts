@@ -6,7 +6,7 @@ describe("workflowGroupNotice", () => {
   it("shows the AI Agent deployment notice for Messenger workflow groups", () => {
     expect(workflowGroupNotice("messenger")).toEqual({
       text: "Basic AI Agent deployment is enabled, AI Agent will take priority over any customer-facing workflows that match",
-      href: "/settings/channels",
+      href: "/dashboard/agent/deploy",
       linkLabel: "Manage agent deployment",
     });
   });

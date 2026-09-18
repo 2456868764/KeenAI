@@ -109,6 +109,8 @@ describe("copilot integration", () => {
     const body = await draftRes.text();
     expect(body).toContain('"providerId":"stub"');
     expect(body).toContain('"memoryScope":"conversation"');
+    const runId = body.match(/"runId":"([^"]+)"/)?.[1];
+    expect(runId).toBeTruthy();
     expect(body).toContain("Keeni");
     expect(body).toContain("Guardrails");
     // Stub stream emits ~12-char JSON chunks; user message may split across chunk boundaries.
@@ -139,6 +141,30 @@ describe("copilot integration", () => {
     };
     expect(providerBody.defaultProviderId).toBe("stub");
     expect(providerBody.items.some((p) => p.id === "stub")).toBe(true);
+
+    const traceRes = await app.request(`/api/v1/agent-runs/${runId}`, { headers: auth });
+    expect(traceRes.status).toBe(200);
+    const trace = (await traceRes.json()) as {
+      run: { id: string; conversationId: string };
+      events: { eventType: string }[];
+      plans: { objective: string }[];
+      contexts: { contextHash: string }[];
+      evaluations: { score: number }[];
+    };
+    expect(trace.run.id).toBe(runId);
+    expect(trace.run.conversationId).toBe(conversation.id);
+    expect(trace.plans).toHaveLength(1);
+    expect(trace.contexts[0]?.contextHash).toHaveLength(64);
+    expect(trace.evaluations).toHaveLength(1);
+    expect(trace.events.map((event) => event.eventType)).toEqual(
+      expect.arrayContaining([
+        "run.created",
+        "plan.committed",
+        "context.snapshot",
+        "act.started",
+        "evaluation.completed",
+      ]),
+    );
 
     await store.close();
   });

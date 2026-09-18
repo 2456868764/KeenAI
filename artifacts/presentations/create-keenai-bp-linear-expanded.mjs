@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { Presentation, PresentationFile } from "/private/tmp/keenai-bp-ppt/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
+import { Presentation, PresentationFile } from "/Users/jun/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
 
 const OUT_DIR = "/Users/jun/GolandProjects/ai77/bot/KeenAI/artifacts/presentations";
 const TMP_DIR = "/private/tmp/keenai-bp-linear-expanded";
-const FINAL_PPTX = path.join(OUT_DIR, "keenai-bp-linear-expanded.pptx");
+const FINAL_PPTX = path.join(OUT_DIR, "keenai-bp-linear-memory.pptx");
 
 const W = 1280;
 const H = 720;
@@ -359,20 +359,98 @@ async function main() {
   // 11
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Memory Pipeline", "记忆需要抽取、压缩、冲突处理和遗忘机制", "企业客服里的记忆必须可信、可纠错、可删除，才能符合运营和合规要求。", 11);
-    addStep(slide, "01", "Extract", "从对话、工单和反馈中抽取事实、偏好、实体、关系和待办。", 80, 314, 250, 150);
-    addConnector(slide, 350, 372, 64);
-    addStep(slide, "02", "Consolidate", "合并重复事实，压缩长对话，形成客户级、主题级和全局摘要树。", 434, 314, 250, 150);
-    addConnector(slide, 704, 372, 64);
-    addStep(slide, "03", "Validate", "用置信度、时间衰减和矛盾检测防止错误记忆污染回答。", 788, 314, 250, 150);
-    addText(slide, "合规边界：支持数据导出、删除、审计和租户隔离；敏感信息经过 PII 处理后进入记忆层。", { left: 80, top: 548, width: 1050, height: 38 }, { fontSize: 23, bold: true });
-    addSources(slide, ["docs/10-AGENT-MEMORY.md", "docs/15-MEMORY-TREE.md", "packages/memory/src/processors/pipeline.ts"]);
+    addTitle(slide, "Memory Pipeline", "写入链路先过滤价值与敏感信息，再形成可追溯的长期记忆", "Message、Ticket 和 Tool Result 经过标准化、准入、压缩与冲突处理，避免把全部历史永久塞进 Prompt。", 11);
+    const pipeline = [
+      ["01", "Canonicalize", "统一消息、工单、工具结果和内部备注格式。"],
+      ["02", "Privacy filter", "脱敏信用卡、邮箱、手机号、身份证、API Key 和密码。"],
+      ["03", "Fast Score", "丢弃寒暄，保留订单号、附件和内部备注等高价值内容。"],
+      ["04", "Buffer Seal", "写入 Conversation / Customer Buffer，并在阈值处封存。"],
+      ["05", "Episode + Fact", "生成 Episode Summary，抽取 Fact、Slot、Entity 和 Relation。"],
+      ["06", "Resolve + Decay", "检测冲突，更新置信度，并执行衰减、归档和审计。"],
+    ];
+    pipeline.forEach(([num, title, body], i) => {
+      const row = Math.floor(i / 3);
+      const col = i % 3;
+      const left = 64 + col * 400;
+      const top = 296 + row * 174;
+      addStep(slide, num, title, body, left, top, 344, 126);
+      if (col < 2) addConnector(slide, left + 352, top + 46, 38);
+    });
+    addText(slide, "准入规则和来源链路让 Memory 既能记住，也能解释为什么记住。", { left: 64, top: 624, width: 900, height: 30 }, { fontSize: 20, bold: true });
+    addSources(slide, ["packages/memory-tree/src/privacy-filter.ts:7", "packages/memory-tree/src/fast-score.ts:51", "packages/memory/src/layers.ts:10", "packages/memory-tree/src/decay.ts:1"]);
   }
 
   // 12
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Workflow", "Workflow 把客服处理经验变成可配置、可追踪的自动化流程", "Trigger + Condition + Action，让企业不写代码也能沉淀标准流程。", 12);
+    addTitle(slide, "Memory Model", "四层结构定义记忆深度，四类 Scope 定义业务边界", "同一条信息会随价值从 Observation 提升到 Episode、Fact 或 Skill，不同 Scope 使用的层级重点不同。", 12);
+    const layers = [
+      ["L1", "Observation", "消息、工具结果、内部备注", "短期 · 高容量"],
+      ["L2", "Episode", "Conversation 或事件摘要", "中期"],
+      ["L3", "Fact / Slot", "客户事实、偏好、实体关系", "长期"],
+      ["L4", "Pattern / Skill", "团队模式、SOP、技能", "长期 · 需审核"],
+    ];
+    layers.forEach(([level, title, body, life], i) => {
+      const top = 286 + i * 79;
+      addShape(slide, { left: 66, top, width: 510, height: 62 }, i >= 2 ? C.surface2 : C.surface1, i >= 2 ? C.primary : C.hairline);
+      addText(slide, level, { left: 84, top: top + 17, width: 44, height: 24 }, { fontSize: 16, bold: true, color: C.primaryHover });
+      addText(slide, title, { left: 138, top: top + 13, width: 152, height: 28 }, { fontSize: 19, bold: true });
+      addText(slide, body, { left: 292, top: top + 14, width: 180, height: 34 }, { fontSize: 14, color: C.muted });
+      addText(slide, life, { left: 466, top: top + 17, width: 92, height: 24 }, { fontSize: 12, color: C.subtle, alignment: "right" });
+    });
+    addText(slide, "Scope × Layer", { left: 646, top: 274, width: 240, height: 30 }, { fontSize: 20, bold: true });
+    const scopes = [
+      ["Conversation", "L1 + L2", "当前消息、工具结果、会话摘要"],
+      ["Customer", "L2 + L3", "历次事件、偏好、套餐、未完成事项"],
+      ["Team", "L3 + L4", "规则、升级条件、SOP、Workflow"],
+      ["Product", "L3 + L4", "Feature / Bug 关系、趋势与处理策略"],
+    ];
+    scopes.forEach(([scope, focus, body], i) => {
+      const top = 318 + i * 74;
+      addText(slide, scope, { left: 646, top, width: 154, height: 27 }, { fontSize: 18, bold: true });
+      addText(slide, focus, { left: 808, top: top + 1, width: 92, height: 24 }, { fontSize: 15, bold: true, color: C.primaryHover });
+      addText(slide, body, { left: 908, top: top + 1, width: 286, height: 38 }, { fontSize: 14, color: C.muted });
+      addRule(slide, 646, top + 47, 548, C.hairline);
+    });
+    addText(slide, "Conversation 中有长期价值的内容，会提升到 Customer、Team 或 Product Scope。", { left: 646, top: 628, width: 548, height: 32 }, { fontSize: 17, bold: true });
+    addSources(slide, ["packages/memory/src/layers.ts:10", "docs/10-AGENT-MEMORY.md", "docs/15-MEMORY-TREE.md"]);
+  }
+
+  // 13
+  {
+    const slide = presentation.slides.add();
+    addTitle(slide, "Memory Recall & Forgetting", "Memory Tree 压缩历史，Agent 按意图召回并持续遗忘", "Provenance 保留来源链路；Scope、权重与衰减机制共同控制成本、准确性和合规边界。", 13);
+    addText(slide, "Memory Tree", { left: 66, top: 280, width: 220, height: 30 }, { fontSize: 20, bold: true });
+    const tree = [
+      ["消息 Chunk", 66, 326, 178],
+      ["L0 Buffer", 104, 386, 216],
+      ["L1 Conversation Summary", 142, 446, 282],
+      ["L2 Customer Topic Summary", 180, 506, 344],
+      ["Brand Daily Digest", 218, 566, 382],
+    ];
+    tree.forEach(([label, left, top, width], i) => {
+      addShape(slide, { left, top, width, height: 42 }, i === tree.length - 1 ? C.surface2 : C.surface1, i === tree.length - 1 ? C.primary : C.hairline);
+      addText(slide, label, { left: left + 16, top: top + 10, width: width - 32, height: 22 }, { fontSize: 14, bold: i === tree.length - 1, color: i === tree.length - 1 ? C.primaryHover : C.muted });
+    });
+    addText(slide, "每层 Summary 保留来源 Chunk、Message 和关键事件。", { left: 66, top: 632, width: 470, height: 28 }, { fontSize: 14, color: C.subtle });
+    addText(slide, "Intent-aware recall", { left: 632, top: 280, width: 260, height: 30 }, { fontSize: 20, bold: true });
+    const weights = [["Factual", "KB 0.8   Memory 0.2"], ["Personal", "KB 0.2   Memory 0.8"], ["Troubleshooting", "KB 0.7   Memory 0.5"], ["Procedural", "KB 0.5   Memory 0.5"]];
+    weights.forEach(([intent, weight], i) => {
+      const top = 330 + i * 40;
+      addText(slide, intent, { left: 632, top, width: 150, height: 24 }, { fontSize: 16, bold: true });
+      addText(slide, weight, { left: 790, top, width: 220, height: 24 }, { fontSize: 16, color: C.primaryHover });
+    });
+    addText(slide, "Scope 示例：客户历史用 Customer；刚才尝试用 Conversation；今日问题用 Brand Daily；配置问题只查 KB。", { left: 632, top: 494, width: 562, height: 54 }, { fontSize: 15, color: C.muted });
+    addShape(slide, { left: 632, top: 566, width: 562, height: 82 }, C.surface2, C.primary);
+    addText(slide, "遗忘与合规", { left: 650, top: 582, width: 130, height: 24 }, { fontSize: 17, bold: true });
+    addText(slide, "14 天半衰期 · 置信度 < 0.05 归档 · PII / Secret 脱敏 · 支持导出、删除与全量审计", { left: 650, top: 612, width: 520, height: 24 }, { fontSize: 14, color: C.muted });
+    addSources(slide, ["packages/storage/src/schema/sqlite/memory-tree.ts:72", "packages/agent/src/context/assembler.ts:22", "packages/memory-tree/src/privacy-filter.ts:7", "packages/memory-tree/src/fast-score.ts:51", "packages/memory-tree/src/decay.ts:1"]);
+  }
+
+  // 14
+  {
+    const slide = presentation.slides.add();
+    addTitle(slide, "Workflow", "Workflow 把客服处理经验变成可配置、可追踪的自动化流程", "Trigger + Condition + Action，让企业不写代码也能沉淀标准流程。", 14);
     addCard(slide, { title: "Trigger", body: "客户发起新对话、邮件进入、Discord 提问、Ticket 状态变化、客户/客服超时未回复、定时任务、Webhook。", left: 80, top: 322, width: 300, height: 190, accent: true });
     addConnector(slide, 410, 397, 76);
     addCard(slide, { title: "Condition", body: "客户等级、渠道来源、工作时间、关键词/意图、AI 置信度、是否已有工单、SLA 状态。", left: 516, top: 322, width: 300, height: 190 });
@@ -381,10 +459,10 @@ async function main() {
     addSources(slide, ["docs/13-WORKFLOW.md", "docs/02-FEATURES.md §1.5"]);
   }
 
-  // 13
+  // 15
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Workflow Blocks", "Block 列表覆盖 AI、消息、输入、流程控制、工单和集成", "Block 是可视化 Workflow Builder 的最小执行单元，运营团队可以组合成标准客服流程。", 13);
+    addTitle(slide, "Workflow Blocks", "Block 列表覆盖 AI、消息、输入、流程控制、工单和集成", "Block 是可视化 Workflow Builder 的最小执行单元，运营团队可以组合成标准客服流程。", 15);
     addCard(slide, { title: "AI", body: "let_keeni_answer\n挂载 Keeni Agent，输出 resolution 并进入分支。", left: 64, top: 308, width: 260, height: 130, accent: true });
     addCard(slide, { title: "客户可见消息", body: "send_message\nshow_expected_reply_time", left: 348, top: 308, width: 260, height: 130 });
     addCard(slide, { title: "客户输入", body: "reply_buttons\ncollect_data\ncollect_customer_reply\ndisable_customer_reply\ncsat", left: 632, top: 308, width: 260, height: 130 });
@@ -395,10 +473,10 @@ async function main() {
     addSources(slide, ["docs/13-WORKFLOW.md §4.1 Block overview", "docs/02-FEATURES.md §1.5 Action Blocks"]);
   }
 
-  // 14
+  // 16
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Workflow Demo", "Demo 图：企业客户 Bug 反馈自动转工单并通知进度", "这条流程展示 Trigger、AI Block、条件分支、Ticket Block、SLA 和通知如何组合。", 14);
+    addTitle(slide, "Workflow Demo", "Demo 图：企业客户 Bug 反馈自动转工单并通知进度", "这条流程展示 Trigger、AI Block、条件分支、Ticket Block、SLA 和通知如何组合。", 16);
     addStep(slide, "01", "Trigger", "Enterprise 客户从 Discord 发送 “export failed” 反馈。", 74, 312, 270, 126);
     addConnector(slide, 362, 358, 64);
     addStep(slide, "02", "let_keeni_answer", "Agent 检索 RAG、读取 Memory，判断为 Bug，置信度 0.84。", 444, 312, 270, 126);
@@ -417,10 +495,10 @@ async function main() {
     addSources(slide, ["docs/13-WORKFLOW.md §4 Action Block", "docs/01-PRD.md §3 Scenario B", "docs/02-FEATURES.md §1.5"]);
   }
 
-  // 15
+  // 17
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "AI + RAG + Memory + Workflow", "四个核心能力组合，才是真正的企业级 AI 客服闭环", "RAG 提供事实，Memory 提供上下文，Agent 做判断和执行，Workflow 负责治理和编排。", 15);
+    addTitle(slide, "AI + RAG + Memory + Workflow", "四个核心能力组合，才是真正的企业级 AI 客服闭环", "RAG 提供事实，Memory 提供上下文，Agent 做判断和执行，Workflow 负责治理和编排。", 17);
     addShape(slide, { left: 136, top: 336, width: 190, height: 112 }, C.surface2, C.primary);
     addText(slide, "RAG\n事实与来源", { left: 166, top: 363, width: 130, height: 60 }, { fontSize: 24, bold: true, alignment: "center" });
     addConnector(slide, 342, 375, 70);
@@ -436,10 +514,10 @@ async function main() {
     addSources(slide, ["docs/04-MODULES.md AI Kernel", "docs/09-AGENT-ENGINE.md", "docs/10-AGENT-MEMORY.md", "docs/11-RAG-KNOWLEDGE.md", "docs/13-WORKFLOW.md"]);
   }
 
-  // 16
+  // 18
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Architecture", "技术方案兼顾开箱自托管、企业扩展和 AI 可替换", "TypeScript 全栈降低交付复杂度，双数据库后端覆盖轻量自托管和生产级部署。", 16);
+    addTitle(slide, "Architecture", "技术方案兼顾开箱自托管、企业扩展和 AI 可替换", "TypeScript 全栈降低交付复杂度，双数据库后端覆盖轻量自托管和生产级部署。", 18);
     addCard(slide, { title: "Frontend & Channels", body: "Next.js Dashboard / Portal / Help Center；Preact Widget；WebSocket / SSE 实时体验。", left: 64, top: 300, width: 350, height: 154, accent: true });
     addCard(slide, { title: "Service & Storage", body: "Hono + Bun / Node；Drizzle；PostgreSQL + pgvector 或 SQLite / LibSQL；S3 / MinIO。", left: 466, top: 300, width: 350, height: 154 });
     addCard(slide, { title: "AI & Automation", body: "Vercel AI SDK；Mastra Agent；RAG；Memory；Inngest Workflow；BullMQ 队列。", left: 868, top: 300, width: 350, height: 154 });
@@ -450,10 +528,10 @@ async function main() {
     addSources(slide, ["README.md §3 Tech Stack", "docs/03-ARCHITECTURE.md", "docs/06-TECH-STACK.md", "docs/12-STORAGE-ABSTRACTION.md"]);
   }
 
-  // 17
+  // 19
   {
     const slide = presentation.slides.add();
-    addTitle(slide, "Business", "开源获客，云托管和企业私有化完成商业化", "KeenAI 以开源降低试用门槛，用企业级 AI、私有化和托管服务变现。", 17);
+    addTitle(slide, "Business", "开源获客，云托管和企业私有化完成商业化", "KeenAI 以开源降低试用门槛，用企业级 AI、私有化和托管服务变现。", 19);
     addCard(slide, { title: "商业模式", body: "自托管 AGPL 免费获取社区和企业线索；云托管按 seat / AI 用量收费；企业版提供私有化、SSO、审计和 SLA。", left: 64, top: 294, width: 540, height: 150, accent: true });
     addCard(slide, { title: "GTM", body: "先抓开发者和 Indie Hacker，再进入中小 SaaS 团队，最后用私有化方案切企业内部 IT / DevTool。", left: 676, top: 294, width: 540, height: 150 });
     addRule(slide, 92, 536, 1040, C.hairlineStrong);
@@ -472,7 +550,7 @@ async function main() {
         line: { style: "solid", fill: C.primary, width: 0 },
       });
       addText(slide, date, { left: left - 4, top: 558, width: 80, height: 24 }, { fontSize: 16, bold: true });
-      addText(slide, body, { left: left - 4, top: 590, width: 240, height: 64 }, { fontSize: 14, color: C.subtle });
+      addText(slide, body, { left: left - 4, top: 590, width: i === 3 ? 132 : 240, height: 64 }, { fontSize: 14, color: C.subtle });
     });
     addSources(slide, ["docs/01-PRD.md §4 Commercial goals", "docs/08-ROADMAP.md", "README.md §7 Roadmap Overview"]);
   }

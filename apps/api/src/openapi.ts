@@ -1,4 +1,4 @@
-import { API_VERSION } from "@keenai/shared";
+import { API_VERSION, DASHBOARD_API_PREFIX } from "@keenai/shared";
 
 /** Minimal OpenAPI 3.1 — expanded as routes ship (P0-07). */
 export const openApiDocument = {
@@ -16,7 +16,7 @@ export const openApiDocument = {
     [`/api/${API_VERSION}/health`]: {
       get: { summary: "Health with DB ping", responses: { "200": { description: "OK" } } },
     },
-    [`/api/${API_VERSION}/auth/login`]: {
+    [`${DASHBOARD_API_PREFIX}/auth/login`]: {
       post: {
         summary: "Password login",
         requestBody: { required: true },
@@ -26,14 +26,14 @@ export const openApiDocument = {
         },
       },
     },
-    [`/api/${API_VERSION}/me`]: {
+    [`${DASHBOARD_API_PREFIX}/me`]: {
       get: {
         summary: "Current user",
         security: [{ bearerAuth: [] }],
         responses: { "200": { description: "Profile" } },
       },
     },
-    [`/api/${API_VERSION}/conversations`]: {
+    [`${DASHBOARD_API_PREFIX}/conversations`]: {
       get: {
         summary: "List conversations",
         security: [{ bearerAuth: [] }],
@@ -45,7 +45,7 @@ export const openApiDocument = {
         responses: { "201": { description: "Created" } },
       },
     },
-    [`/api/${API_VERSION}/conversations/{id}`]: {
+    [`${DASHBOARD_API_PREFIX}/conversations/{id}`]: {
       get: {
         summary: "Get conversation",
         security: [{ bearerAuth: [] }],
@@ -89,7 +89,7 @@ export const openApiDocument = {
         responses: { "201": { description: "Message" } },
       },
     },
-    [`/api/${API_VERSION}/conversations/{id}/messages`]: {
+    [`${DASHBOARD_API_PREFIX}/conversations/{id}/messages`]: {
       get: {
         summary: "List messages",
         security: [{ bearerAuth: [] }],
@@ -103,7 +103,7 @@ export const openApiDocument = {
         responses: { "201": { description: "Message" } },
       },
     },
-    [`/api/${API_VERSION}/kb/search`]: {
+    [`${DASHBOARD_API_PREFIX}/kb/search`]: {
       get: {
         summary: "Hybrid KB chunk search (FTS + vector RRF)",
         security: [{ bearerAuth: [] }],
@@ -119,7 +119,7 @@ export const openApiDocument = {
         },
       },
     },
-    [`/api/${API_VERSION}/kb/search/{id}/feedback`]: {
+    [`${DASHBOARD_API_PREFIX}/kb/search/{id}/feedback`]: {
       post: {
         summary: "Submit helpful/not_helpful feedback for a KB search log",
         security: [{ bearerAuth: [] }],
@@ -131,7 +131,7 @@ export const openApiDocument = {
         },
       },
     },
-    [`/api/${API_VERSION}/custom-actions`]: {
+    [`${DASHBOARD_API_PREFIX}/custom-actions`]: {
       get: {
         summary: "List custom actions",
         security: [{ bearerAuth: [] }],
@@ -143,7 +143,7 @@ export const openApiDocument = {
         responses: { "201": { description: "Created" }, "409": { description: "Name conflict" } },
       },
     },
-    [`/api/${API_VERSION}/custom-actions/{id}`]: {
+    [`${DASHBOARD_API_PREFIX}/custom-actions/{id}`]: {
       get: {
         summary: "Get custom action",
         security: [{ bearerAuth: [] }],
@@ -163,7 +163,7 @@ export const openApiDocument = {
         responses: { "204": { description: "Deleted" } },
       },
     },
-    [`/api/${API_VERSION}/custom-actions/{id}/logs`]: {
+    [`${DASHBOARD_API_PREFIX}/custom-actions/{id}/logs`]: {
       get: {
         summary: "List custom action call logs",
         security: [{ bearerAuth: [] }],
@@ -171,7 +171,7 @@ export const openApiDocument = {
         responses: { "200": { description: "Call log list" }, "404": { description: "Not found" } },
       },
     },
-    [`/api/${API_VERSION}/custom-actions/{id}/execute`]: {
+    [`${DASHBOARD_API_PREFIX}/custom-actions/{id}/execute`]: {
       post: {
         summary: "Execute custom action via http_direct sandbox",
         security: [{ bearerAuth: [] }],
@@ -183,14 +183,14 @@ export const openApiDocument = {
         },
       },
     },
-    [`/api/${API_VERSION}/mcp/servers`]: {
+    [`${DASHBOARD_API_PREFIX}/mcp/servers`]: {
       get: {
         summary: "List configured MCP host servers",
         security: [{ bearerAuth: [] }],
         responses: { "200": { description: "MCP server config" } },
       },
     },
-    [`/api/${API_VERSION}/mcp/tools`]: {
+    [`${DASHBOARD_API_PREFIX}/mcp/tools`]: {
       get: {
         summary: "List tools from connected MCP servers",
         security: [{ bearerAuth: [] }],

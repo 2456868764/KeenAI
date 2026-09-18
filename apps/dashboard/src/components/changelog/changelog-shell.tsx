@@ -45,7 +45,7 @@ export function ChangelogShell() {
     },
     onSuccess: ({ entry }) => {
       void queryClient.invalidateQueries({ queryKey: ["changelog-entries"] });
-      router.push(`/changelog/${entry.id}`);
+      router.push(`/dashboard/changelog/${entry.id}`);
     },
   });
 
@@ -81,7 +81,7 @@ export function ChangelogShell() {
             {items.map((entry) => (
               <li key={entry.id}>
                 <Link
-                  href={`/changelog/${entry.id}`}
+                  href={`/dashboard/changelog/${entry.id}`}
                   className="block rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4 transition-colors hover:bg-[hsl(var(--surface-2))]"
                 >
                   <div className="flex items-start justify-between gap-3">

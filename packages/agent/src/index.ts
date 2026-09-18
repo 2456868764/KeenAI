@@ -35,6 +35,24 @@ export {
 } from "./mastra-agent.js";
 export { runKeeniAgentStream, type RunKeeniAgentInput } from "./run.js";
 export {
+  buildStructuredAgentPlan,
+  type BuildStructuredAgentPlanInput,
+  type StructuredAgentPlan,
+} from "./plan.js";
+export {
+  AGENT_TOOL_EXECUTION_MODES,
+  classifyToolRisk,
+  evaluateAgentToolPolicy,
+  isAgentToolExposed,
+  maxRiskLevel,
+  toolPatternMatches,
+  type AgentToolExecutionMode,
+  type AgentToolPolicyContext,
+  type AgentToolPolicyDecision,
+  type AgentToolPolicyRule,
+} from "./policy.js";
+export { evaluateAgentRun, type AgentRunEvaluation } from "./evaluation.js";
+export {
   KEENI_AGENT_INNGEST_EVENTS,
   buildAgentRunCompletedPayload,
   createInngestPostRunDispatcher,

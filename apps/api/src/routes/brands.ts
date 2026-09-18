@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { API_VERSION, createBrandSchema, updateBrandSchema } from "@keenai/shared";
+import { DASHBOARD_API_PREFIX, createBrandSchema, updateBrandSchema } from "@keenai/shared";
 import { brands } from "@keenai/storage/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -9,7 +9,7 @@ import type { AppVariables } from "../types.js";
 
 export function brandRoutes() {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/brands`;
+  const prefix = `${DASHBOARD_API_PREFIX}/brands`;
 
   r.get(prefix, requireAuth(), async (c) => {
     const auth = c.get("auth");

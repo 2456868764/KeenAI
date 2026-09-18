@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { WorkflowToolExecutionMode, WorkflowToolGovernanceResult } from "../schema.js";
 
 export const mcpCallBlockSchema = z.object({
   id: z.string().min(1).max(64),
@@ -15,6 +16,8 @@ export const mcpCallBlockSchema = z.object({
 export type McpCallBlock = z.infer<typeof mcpCallBlockSchema>;
 
 export type McpCallInput = {
+  blockId?: string;
+  executionMode?: WorkflowToolExecutionMode;
   serverId: string;
   toolName: string;
   arguments: Record<string, unknown>;
@@ -23,5 +26,6 @@ export type McpCallInput = {
 export type McpCallResult = {
   serverId: string;
   toolName: string;
-  result: unknown;
+  result?: unknown;
+  governance?: WorkflowToolGovernanceResult;
 };

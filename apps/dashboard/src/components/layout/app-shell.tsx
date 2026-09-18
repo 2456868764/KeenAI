@@ -28,6 +28,7 @@ import {
   Inbox,
   Languages,
   LayoutGrid,
+  ListChecks,
   LogOut,
   Mail,
   Map as MapIcon,
@@ -107,72 +108,76 @@ function applyDashboardTheme(choice: ThemeChoice) {
 }
 
 function isWorkflowEditorRoute(pathname: string): boolean {
-  return /^\/workflows\/[^/]+$/.test(pathname);
+  return /^\/dashboard\/agent\/workflows\/[^/]+$/.test(pathname);
 }
 
 const modules: ProductModule[] = [
   {
     id: "inbox",
     title: "Inbox",
-    href: "/inbox",
+    href: "/dashboard/inbox",
     icon: Inbox,
-    match: (pathname) => hasRoutePrefix(pathname, "/inbox") || hasRoutePrefix(pathname, "/tickets"),
+    match: (pathname) =>
+      hasRoutePrefix(pathname, "/dashboard/inbox") ||
+      hasRoutePrefix(pathname, "/dashboard/tickets"),
     sections: [
       {
         items: [
           {
             label: "My inbox",
-            href: "/inbox?view=mine",
+            href: "/dashboard/inbox?view=mine",
             icon: CirclePlus,
             activeMatch: (pathname, search) =>
-              hasRoutePrefix(pathname, "/inbox") && search.get("view") === "mine",
+              hasRoutePrefix(pathname, "/dashboard/inbox") && search.get("view") === "mine",
           },
           {
             label: "All messages",
-            href: "/inbox?view=all",
+            href: "/dashboard/inbox?view=all",
             icon: Users,
             activeMatch: (pathname, search) =>
-              hasRoutePrefix(pathname, "/inbox") &&
+              hasRoutePrefix(pathname, "/dashboard/inbox") &&
               (!search.get("view") || search.get("view") === "all"),
           },
           {
             label: "Created by me",
-            href: "/inbox?view=created",
+            href: "/dashboard/inbox?view=created",
             icon: PenLine,
             activeMatch: (pathname, search) =>
-              hasRoutePrefix(pathname, "/inbox") && search.get("view") === "created",
+              hasRoutePrefix(pathname, "/dashboard/inbox") && search.get("view") === "created",
           },
           {
             label: "Unassigned",
-            href: "/inbox?view=unassigned",
+            href: "/dashboard/inbox?view=unassigned",
             icon: HelpCircle,
             activeMatch: (pathname, search) =>
-              hasRoutePrefix(pathname, "/inbox") && search.get("view") === "unassigned",
+              hasRoutePrefix(pathname, "/dashboard/inbox") && search.get("view") === "unassigned",
           },
         ],
       },
       {
         title: "Views",
-        actions: [{ icon: CirclePlus, label: "Create view", href: "/inbox?view=all" }],
+        actions: [{ icon: CirclePlus, label: "Create view", href: "/dashboard/inbox?view=all" }],
         items: [],
       },
       {
         title: "Team inboxes",
-        actions: [{ icon: CirclePlus, label: "Create team inbox", href: "/settings/brands" }],
+        actions: [
+          { icon: CirclePlus, label: "Create team inbox", href: "/dashboard/settings/brands" },
+        ],
         items: [],
       },
       {
         title: "AI Agent",
         items: [
-          { label: "Resolved", href: "/inbox?view=resolved", icon: CircleCheck },
-          { label: "Routed to human", href: "/inbox?view=routed", icon: Users },
+          { label: "Resolved", href: "/dashboard/inbox?view=resolved", icon: CircleCheck },
+          { label: "Routed to human", href: "/dashboard/inbox?view=routed", icon: Users },
         ],
       },
       {
         title: "Resources",
         items: [
-          { label: "Tickets", href: "/tickets", icon: WalletCards },
-          { label: "Help Center", href: "/help-center", icon: HelpCircle },
+          { label: "Tickets", href: "/dashboard/tickets", icon: WalletCards },
+          { label: "Help Center", href: "/dashboard/help-center", icon: HelpCircle },
         ],
       },
     ],
@@ -180,40 +185,40 @@ const modules: ProductModule[] = [
   {
     id: "feedback",
     title: "Feedback",
-    href: "/feedback",
+    href: "/dashboard/feedback",
     icon: Box,
-    match: (pathname) => hasRoutePrefix(pathname, "/feedback"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/feedback"),
     sections: [
       {
         title: "Statuses",
         items: [
           {
             label: "Under Review",
-            href: "/feedback?status=under_review",
+            href: "/dashboard/feedback?status=under_review",
             icon: Circle,
             iconClassName: "text-slate-400",
           },
           {
             label: "Planned",
-            href: "/feedback?status=planned",
+            href: "/dashboard/feedback?status=planned",
             icon: Circle,
             iconClassName: "text-purple-300",
           },
           {
             label: "Active",
-            href: "/feedback?status=active",
+            href: "/dashboard/feedback?status=active",
             icon: Circle,
             iconClassName: "text-sky-500",
           },
           {
             label: "Done",
-            href: "/feedback?status=done",
+            href: "/dashboard/feedback?status=done",
             icon: CircleCheck,
             iconClassName: "text-emerald-500",
           },
           {
             label: "Closed",
-            href: "/feedback?status=closed",
+            href: "/dashboard/feedback?status=closed",
             icon: CircleCheck,
             iconClassName: "text-slate-400",
           },
@@ -222,15 +227,20 @@ const modules: ProductModule[] = [
       {
         title: "Quick Filters",
         items: [
-          { label: "Boards", href: "/feedback", icon: Box, expanded: false },
-          { label: "Tags", href: "/feedback", icon: Tag, expanded: false },
+          { label: "Boards", href: "/dashboard/feedback", icon: Box, expanded: false },
+          { label: "Tags", href: "/dashboard/feedback", icon: Tag, expanded: false },
         ],
       },
       {
         title: "More",
         items: [
-          { label: "AI Tools", href: "/custom-actions", icon: Sparkles, expanded: false },
-          { label: "Analytics", href: "/analytics?module=feedback", icon: BarChart3 },
+          {
+            label: "AI Tools",
+            href: "/dashboard/agent/custom-actions",
+            icon: Sparkles,
+            expanded: false,
+          },
+          { label: "Analytics", href: "/dashboard/analytics?module=feedback", icon: BarChart3 },
         ],
       },
     ],
@@ -238,36 +248,36 @@ const modules: ProductModule[] = [
   {
     id: "roadmap",
     title: "Roadmap",
-    href: "/roadmap",
+    href: "/dashboard/roadmap",
     icon: MapIcon,
-    match: (pathname) => hasRoutePrefix(pathname, "/roadmap"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/roadmap"),
     sections: [
-      { title: "Roadmaps", items: [{ label: "Main Roadmap", href: "/roadmap" }] },
+      { title: "Roadmaps", items: [{ label: "Main Roadmap", href: "/dashboard/roadmap" }] },
       {
         title: "More",
-        items: [{ label: "Create & Edit Roadmaps", href: "/roadmap", icon: CirclePlus }],
+        items: [{ label: "Create & Edit Roadmaps", href: "/dashboard/roadmap", icon: CirclePlus }],
       },
     ],
   },
   {
     id: "help",
     title: "Origin",
-    href: "/help-center",
+    href: "/dashboard/help-center",
     icon: BookOpen,
-    match: (pathname) => hasRoutePrefix(pathname, "/help-center"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/help-center"),
     sections: [
       {
         title: "Content",
         items: [
-          { label: "Collections", href: "/help-center", icon: Box },
-          { label: "Articles", href: "/help-center", icon: BookOpen },
+          { label: "Collections", href: "/dashboard/help-center", icon: Box },
+          { label: "Articles", href: "/dashboard/help-center", icon: BookOpen },
         ],
       },
       {
         title: "More",
         items: [
-          { label: "Analytics", href: "/analytics", icon: BarChart3 },
-          { label: "Importers", href: "/help-center", icon: Rocket },
+          { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+          { label: "Importers", href: "/dashboard/help-center", icon: Rocket },
         ],
       },
     ],
@@ -275,57 +285,65 @@ const modules: ProductModule[] = [
   {
     id: "agent",
     title: "Keeni AI Agent",
-    href: "/settings/personality",
+    href: "/dashboard/agent/personality",
     icon: LayoutGrid,
     match: (pathname) =>
-      hasRoutePrefix(pathname, "/workflows") ||
-      hasRoutePrefix(pathname, "/custom-actions") ||
-      hasRoutePrefix(pathname, "/memory") ||
-      hasRoutePrefix(pathname, "/knowledge-base") ||
-      pathname === "/settings/personality",
+      hasRoutePrefix(pathname, "/dashboard/agent/workflows") ||
+      hasRoutePrefix(pathname, "/dashboard/agent/custom-actions") ||
+      hasRoutePrefix(pathname, "/dashboard/agent/memory") ||
+      hasRoutePrefix(pathname, "/dashboard/agent/knowledge-base") ||
+      hasRoutePrefix(pathname, "/dashboard/agent/agent-runs") ||
+      pathname === "/dashboard/agent/personality" ||
+      pathname === "/dashboard/agent/agent-other" ||
+      pathname === "/dashboard/agent/deploy",
     sections: [
       {
         title: "Keeni settings",
         items: [
-          { label: "Personality & Branding", href: "/settings/personality", icon: Palette },
-          { label: "Memory", href: "/memory", icon: Bot },
-          { label: "Knowledge Base", href: "/knowledge-base", icon: BookOpen },
-          { label: "Actions", href: "/custom-actions", icon: Sparkles },
-          { label: "Other", href: "/settings/brands", icon: Settings },
-          { label: "Deploy", href: "/settings/channels", icon: Rocket },
+          {
+            label: "Personality & Branding",
+            href: "/dashboard/agent/personality",
+            icon: Palette,
+          },
+          { label: "Memory", href: "/dashboard/agent/memory", icon: Bot },
+          { label: "Knowledge Base", href: "/dashboard/agent/knowledge-base", icon: BookOpen },
+          { label: "Actions", href: "/dashboard/agent/custom-actions", icon: Sparkles },
+          { label: "Run Trace", href: "/dashboard/agent/agent-runs", icon: ListChecks },
+          { label: "Other", href: "/dashboard/agent/agent-other", icon: Settings },
+          { label: "Deploy", href: "/dashboard/agent/deploy", icon: Rocket },
         ],
       },
       {
         title: "Automations",
-        items: [{ label: "Workflows", href: "/workflows", icon: Network }],
+        items: [{ label: "Workflows", href: "/dashboard/agent/workflows", icon: Network }],
       },
     ],
   },
   {
     id: "directory",
     title: "Directory",
-    href: "/directory",
+    href: "/dashboard/directory",
     icon: Users,
-    match: (pathname) => hasRoutePrefix(pathname, "/directory"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/directory"),
     sections: [
       {
         items: [
           {
             label: "People",
-            href: "/directory",
+            href: "/dashboard/directory",
             icon: Users,
             expanded: true,
             children: [
-              { label: "All users", href: "/directory", count: 0 },
-              { label: "All leads", href: "/directory?view=leads", count: 0 },
+              { label: "All users", href: "/dashboard/directory", count: 0 },
+              { label: "All leads", href: "/dashboard/directory?view=leads", count: 0 },
             ],
           },
           {
             label: "Companies",
-            href: "/directory?view=companies",
+            href: "/dashboard/directory?view=companies",
             icon: Building2,
             expanded: true,
-            children: [{ label: "All", href: "/directory?view=companies", count: 0 }],
+            children: [{ label: "All", href: "/dashboard/directory?view=companies", count: 0 }],
           },
         ],
       },
@@ -334,32 +352,53 @@ const modules: ProductModule[] = [
   {
     id: "outbound",
     title: "Outbound",
-    href: "/changelog",
+    href: "/dashboard/changelog",
     icon: Send,
-    match: (pathname) => hasRoutePrefix(pathname, "/changelog"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/changelog"),
     sections: [
       {
         items: [
-          { label: "Messages", href: "/changelog", icon: Send, count: 0 },
-          { label: "Series", href: "/changelog", icon: Network, badge: "SOON", disabled: true },
+          { label: "Messages", href: "/dashboard/changelog", icon: Send, count: 0 },
+          {
+            label: "Series",
+            href: "/dashboard/changelog",
+            icon: Network,
+            badge: "SOON",
+            disabled: true,
+          },
         ],
       },
       {
         title: "Views",
-        actions: [{ icon: CirclePlus, label: "Create view", href: "/changelog" }],
+        actions: [{ icon: CirclePlus, label: "Create view", href: "/dashboard/changelog" }],
         items: [
-          { label: "Chat", href: "/changelog?channel=chat", icon: MessageCircle, count: 0 },
-          { label: "Banner", href: "/changelog?channel=banner", icon: MessageSquare, count: 0 },
-          { label: "Email", href: "/changelog?channel=email", icon: Mail, count: 0 },
-          { label: "Survey", href: "/changelog?channel=survey", icon: SlidersHorizontal, count: 0 },
-          { label: "Update", href: "/changelog", icon: Megaphone, count: 0 },
+          {
+            label: "Chat",
+            href: "/dashboard/changelog?channel=chat",
+            icon: MessageCircle,
+            count: 0,
+          },
+          {
+            label: "Banner",
+            href: "/dashboard/changelog?channel=banner",
+            icon: MessageSquare,
+            count: 0,
+          },
+          { label: "Email", href: "/dashboard/changelog?channel=email", icon: Mail, count: 0 },
+          {
+            label: "Survey",
+            href: "/dashboard/changelog?channel=survey",
+            icon: SlidersHorizontal,
+            count: 0,
+          },
+          { label: "Update", href: "/dashboard/changelog", icon: Megaphone, count: 0 },
         ],
       },
       {
         title: "More",
         items: [
-          { label: "Subscriptions", href: "/changelog", icon: Mail },
-          { label: "Customization", href: "/settings/brands", icon: SlidersHorizontal },
+          { label: "Subscriptions", href: "/dashboard/changelog", icon: Mail },
+          { label: "Customization", href: "/dashboard/settings/brands", icon: SlidersHorizontal },
         ],
       },
     ],
@@ -367,28 +406,32 @@ const modules: ProductModule[] = [
   {
     id: "analytics",
     title: "Analytics",
-    href: "/analytics",
+    href: "/dashboard/analytics",
     icon: BarChart3,
-    match: (pathname) => hasRoutePrefix(pathname, "/analytics"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/analytics"),
     sections: [
       {
         title: "Modules",
         items: [
-          { label: "All Modules", href: "/analytics", icon: Globe2 },
-          { label: "Support Module", href: "/analytics?module=support", icon: MessageSquare },
-          { label: "Feedback", href: "/analytics?module=feedback", icon: Box },
+          { label: "All Modules", href: "/dashboard/analytics", icon: Globe2 },
+          {
+            label: "Support Module",
+            href: "/dashboard/analytics?module=support",
+            icon: MessageSquare,
+          },
+          { label: "Feedback", href: "/dashboard/analytics?module=feedback", icon: Box },
           {
             label: "Updates",
-            href: "/analytics?module=updates",
+            href: "/dashboard/analytics?module=updates",
             icon: Megaphone,
             expanded: true,
             children: [
-              { label: "Website Analytics", href: "/analytics?module=website" },
-              { label: "Email Analytics", href: "/analytics?module=email" },
+              { label: "Website Analytics", href: "/dashboard/analytics?module=website" },
+              { label: "Email Analytics", href: "/dashboard/analytics?module=email" },
             ],
           },
-          { label: "Surveys", href: "/analytics?module=surveys", icon: FolderArchive },
-          { label: "Help Centers", href: "/analytics?module=help", icon: BookOpen },
+          { label: "Surveys", href: "/dashboard/analytics?module=surveys", icon: FolderArchive },
+          { label: "Help Centers", href: "/dashboard/analytics?module=help", icon: BookOpen },
         ],
       },
     ],
@@ -396,40 +439,45 @@ const modules: ProductModule[] = [
   {
     id: "settings",
     title: "Settings",
-    href: "/settings/profile",
+    href: "/dashboard/settings/profile",
     icon: Settings,
     hideInRail: true,
-    match: (pathname) => hasRoutePrefix(pathname, "/settings"),
+    match: (pathname) => hasRoutePrefix(pathname, "/dashboard/settings"),
     sections: [
       {
         title: "Personal",
         items: [
-          { label: "Profile", href: "/settings/profile", icon: UserCircle },
-          { label: "Notifications", href: "/settings/notifications", icon: Bell },
+          { label: "Profile", href: "/dashboard/settings/profile", icon: UserCircle },
+          { label: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
         ],
       },
       {
         title: "Products",
         items: [
-          { label: "Support", href: "/settings/sla", icon: Inbox, expanded: false },
-          { label: "Feedback & Roadmaps", href: "/feedback", icon: Box, expanded: false },
-          { label: "Help Centers", href: "/help-center", icon: BookOpen, expanded: false },
-          { label: "Outbound", href: "/changelog", icon: Send, expanded: false },
+          { label: "Support", href: "/dashboard/settings/sla", icon: Inbox, expanded: false },
+          { label: "Feedback & Roadmaps", href: "/dashboard/feedback", icon: Box, expanded: false },
+          {
+            label: "Help Centers",
+            href: "/dashboard/help-center",
+            icon: BookOpen,
+            expanded: false,
+          },
+          { label: "Outbound", href: "/dashboard/changelog", icon: Send, expanded: false },
         ],
       },
       {
         title: "Workspace",
         items: [
-          { label: "General", href: "/settings/brands", icon: Wrench },
-          { label: "Branding", href: "/settings/branding", icon: Palette },
-          { label: "Members and teams", href: "/directory", icon: Users },
-          { label: "Billing", href: "/settings/brands", icon: WalletCards },
-          { label: "Emails", href: "/settings/emails", icon: Mail },
-          { label: "Custom Domain", href: "/settings/brands", icon: Globe2 },
-          { label: "Multilingual", href: "/settings/brands", icon: Languages },
-          { label: "Access & Security", href: "/settings/brands", icon: Shield },
-          { label: "MCP", href: "/settings/mcp", icon: Paperclip, badge: "NEW" },
-          { label: "Integrations", href: "/settings/integrations", icon: LayoutGrid },
+          { label: "General", href: "/dashboard/settings/brands", icon: Wrench },
+          { label: "Branding", href: "/dashboard/settings/branding", icon: Palette },
+          { label: "Members and teams", href: "/dashboard/directory", icon: Users },
+          { label: "Billing", href: "/dashboard/settings/brands", icon: WalletCards },
+          { label: "Emails", href: "/dashboard/settings/emails", icon: Mail },
+          { label: "Custom Domain", href: "/dashboard/settings/brands", icon: Globe2 },
+          { label: "Multilingual", href: "/dashboard/settings/brands", icon: Languages },
+          { label: "Access & Security", href: "/dashboard/settings/brands", icon: Shield },
+          { label: "MCP", href: "/dashboard/settings/mcp", icon: Paperclip, badge: "NEW" },
+          { label: "Integrations", href: "/dashboard/settings/integrations", icon: LayoutGrid },
         ],
       },
     ],
@@ -513,7 +561,7 @@ function IconRail({
   return (
     <aside className="relative flex w-[72px] shrink-0 flex-col items-center border-r border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] py-3">
       <Link
-        href="/inbox"
+        href="/dashboard/inbox"
         aria-label="KeenAI home"
         className="group relative mb-5 flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--surface-2))] shadow-sm ring-1 ring-[hsl(var(--border))]"
       >
@@ -555,8 +603,8 @@ function IconRail({
         <RailButton
           icon={Settings}
           label="Settings"
-          href="/settings/profile"
-          active={activeModuleId === "settings" && pathname !== "/settings/notifications"}
+          href="/dashboard/settings/profile"
+          active={activeModuleId === "settings" && pathname !== "/dashboard/settings/notifications"}
         />
         <button
           type="button"
@@ -674,13 +722,13 @@ function AccountMenuPopover({
 
       <div className="p-1.5">
         <AccountMenuLink
-          href="/settings/profile"
+          href="/dashboard/settings/profile"
           icon={UserCircle}
           label="My Profile"
           onNavigate={onNavigate}
         />
         <AccountMenuLink
-          href="/settings/notifications"
+          href="/dashboard/settings/notifications"
           icon={Bell}
           label="Notification preferences"
           onNavigate={onNavigate}
@@ -694,7 +742,7 @@ function AccountMenuPopover({
           <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
         </button>
         <AccountMenuLink
-          href="/settings/brands"
+          href="/dashboard/settings/brands"
           icon={Building2}
           label="My Organizations"
           onNavigate={onNavigate}

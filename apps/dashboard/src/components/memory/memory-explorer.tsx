@@ -375,7 +375,7 @@ function SummaryHitRow({
       {hit.conversationId ? (
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
+            href={`/dashboard/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
             className="text-xs text-[hsl(var(--primary))] hover:underline"
           >
             Open conversation
@@ -417,7 +417,7 @@ function SearchHitRow({
       {hit.conversationId ? (
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
+            href={`/dashboard/inbox?conversation=${encodeURIComponent(hit.conversationId)}`}
             className="text-xs text-[hsl(var(--primary))] hover:underline"
           >
             Open conversation

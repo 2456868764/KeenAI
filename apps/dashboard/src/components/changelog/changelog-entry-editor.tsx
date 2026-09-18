@@ -112,7 +112,7 @@ export function ChangelogEntryEditor({ entryId }: { entryId: string }) {
     mutationFn: () => deleteChangelogEntry(entryId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["changelog-entries"] });
-      router.replace("/changelog");
+      router.replace("/dashboard/changelog");
     },
   });
 
@@ -133,7 +133,7 @@ export function ChangelogEntryEditor({ entryId }: { entryId: string }) {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">
       <div className="flex items-center justify-between gap-3">
         <Link
-          href="/changelog"
+          href="/dashboard/changelog"
           className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
         >
           ← Back to changelog

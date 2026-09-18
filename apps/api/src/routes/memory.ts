@@ -1,6 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import {
+  archiveMemoryFact,
   assembleMemoryContext,
+  correctMemoryFact,
   listHotTopics,
   queryChannelMemoryTree,
   queryGraphRelated,
@@ -11,7 +13,7 @@ import {
   searchMemoryChunks,
 } from "@keenai/memory-tree";
 import {
-  API_VERSION,
+  DASHBOARD_API_PREFIX,
   memoryContextQuerySchema,
   memoryDigestQuerySchema,
   memoryFactsQuerySchema,
@@ -20,7 +22,10 @@ import {
   memoryStatsQuerySchema,
   memoryTreeQuerySchema,
 } from "@keenai/shared";
+import { memoryFacts } from "@keenai/storage/schema";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import { canAccessBrand, getConversationForOrg } from "../lib/conversations.js";
 import { getKbContextSearch } from "../lib/kb-search-config.js";
 import { getMemoryChunkEmbedder } from "../lib/memory-chunk-embed-init.js";
@@ -30,9 +35,32 @@ import { getMemorySummaryFtsStore } from "../lib/memory-summary-fts-init.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
 
+const updateFactSchema = z
+  .object({
+    object: z.unknown().optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    importance: z.number().min(0).max(1).optional(),
+    expiresAt: z.string().datetime().nullable().optional(),
+    reason: z.string().trim().min(1).max(1_000),
+  })
+  .refine(
+    (value) =>
+      value.object !== undefined ||
+      value.confidence !== undefined ||
+      value.importance !== undefined ||
+      value.expiresAt !== undefined,
+    { message: "no_changes" },
+  );
+
+const deleteFactSchema = z.object({ reason: z.string().trim().min(1).max(1_000) });
+
+function canGovernMemory(role: string): boolean {
+  return role === "owner" || role === "admin";
+}
+
 export function memoryRoutes(_ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
-  const prefix = `/api/${API_VERSION}/memory`;
+  const prefix = `${DASHBOARD_API_PREFIX}/memory`;
 
   r.get(`${prefix}/tree`, requireAuth(), zValidator("query", memoryTreeQuerySchema), async (c) => {
     const auth = c.get("auth");
@@ -119,6 +147,70 @@ export function memoryRoutes(_ctx: AppContext) {
         return c.json({ error: "digest_not_found" }, 404);
       }
       return c.json({ digest });
+    },
+  );
+
+  r.patch(`${prefix}/facts/:id`, requireAuth(), zValidator("json", updateFactSchema), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+    if (!canGovernMemory(auth.role)) return c.json({ error: "forbidden" }, 403);
+    const body = c.req.valid("json");
+    const db = c.get("store").db;
+    const [existing] = await db
+      .select({ brandId: memoryFacts.brandId })
+      .from(memoryFacts)
+      .where(and(eq(memoryFacts.id, c.req.param("id")), eq(memoryFacts.orgId, auth.orgId)))
+      .limit(1);
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    if (existing.brandId && !canAccessBrand(auth, existing.brandId)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    const fact = await correctMemoryFact(db, {
+      orgId: auth.orgId,
+      factId: c.req.param("id"),
+      actorId: auth.memberId,
+      reason: body.reason,
+      object: body.object,
+      confidence: body.confidence,
+      importance: body.importance,
+      expiresAt:
+        body.expiresAt === undefined
+          ? undefined
+          : body.expiresAt === null
+            ? null
+            : new Date(body.expiresAt),
+    });
+    if (!fact) return c.json({ error: "not_found" }, 404);
+    return c.json({ fact });
+  });
+
+  r.delete(
+    `${prefix}/facts/:id`,
+    requireAuth(),
+    zValidator("json", deleteFactSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+      if (!canGovernMemory(auth.role)) return c.json({ error: "forbidden" }, 403);
+      const body = c.req.valid("json");
+      const db = c.get("store").db;
+      const [existing] = await db
+        .select({ brandId: memoryFacts.brandId })
+        .from(memoryFacts)
+        .where(and(eq(memoryFacts.id, c.req.param("id")), eq(memoryFacts.orgId, auth.orgId)))
+        .limit(1);
+      if (!existing) return c.json({ error: "not_found" }, 404);
+      if (existing.brandId && !canAccessBrand(auth, existing.brandId)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+      const fact = await archiveMemoryFact(db, {
+        orgId: auth.orgId,
+        factId: c.req.param("id"),
+        actorId: auth.memberId,
+        reason: body.reason,
+      });
+      if (!fact) return c.json({ error: "not_found" }, 404);
+      return c.json({ fact });
     },
   );
 

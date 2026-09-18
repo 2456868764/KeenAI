@@ -208,9 +208,15 @@ export const memoryFacts = sqliteTable(
     scopeId: text("scope_id").notNull(),
     predicate: text("predicate").notNull(),
     object: text("object", { mode: "json" }).$type<unknown>().notNull(),
+    category: text("category").notNull().default("general"),
+    status: text("status").notNull().default("active"),
     confidence: real("confidence").notNull().default(1),
     importance: real("importance").notNull().default(0.5),
     source: text("source"),
+    sourceVersion: text("source_version"),
+    contentHash: text("content_hash"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    conflictCount: integer("conflict_count").notNull().default(0),
     summaryId: text("summary_id").references(() => memorySummaries.id),
     lastAccessAt: integer("last_access_at", { mode: "timestamp_ms" }),
     accessCount: integer("access_count").notNull().default(0),
@@ -225,7 +231,43 @@ export const memoryFacts = sqliteTable(
   }),
 );
 
+export const memoryFactVersions = sqliteTable(
+  "memory_fact_versions",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    factId: text("fact_id").references(() => memoryFacts.id, { onDelete: "set null" }),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id").references(() => brands.id),
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull(),
+    predicate: text("predicate").notNull(),
+    object: text("object", { mode: "json" }).$type<unknown>().notNull(),
+    category: text("category").notNull().default("general"),
+    confidence: real("confidence").notNull(),
+    importance: real("importance").notNull(),
+    source: text("source").notNull(),
+    sourceVersion: text("source_version"),
+    contentHash: text("content_hash").notNull(),
+    decision: text("decision").notNull(),
+    reason: text("reason"),
+    validFrom: integer("valid_from", { mode: "timestamp_ms" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    idxFact: index("idx_memory_fact_versions_fact").on(t.factId, t.createdAt),
+    idxScope: index("idx_memory_fact_versions_scope").on(t.orgId, t.scope, t.scopeId, t.predicate),
+  }),
+);
+
 export type MemoryFactRow = typeof memoryFacts.$inferSelect;
+export type MemoryFactVersionRow = typeof memoryFactVersions.$inferSelect;
 
 export const memorySlots = sqliteTable(
   "memory_slots",

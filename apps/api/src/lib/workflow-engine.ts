@@ -10,7 +10,6 @@ import {
   workflows,
 } from "@keenai/storage/schema";
 import {
-  WORKFLOW_INNGEST_EVENTS,
   type WorkflowConversationTrigger,
   type WorkflowDefinition,
   type WorkflowRunContext,
@@ -18,16 +17,14 @@ import {
   runWorkflow,
 } from "@keenai/workflow";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { getOrCreateAgentOtherSettings } from "./agent-settings.js";
+import { scheduleWorkflowAbandonedAutoClose } from "./conversation-auto-close.js";
 import {
   createWorkflowActionHandlers,
   createWorkflowRunContext,
   resolveActiveWorkflowDefinition,
 } from "./workflow-handlers.js";
-import {
-  autoCloseMsForBlock,
-  emitWorkflowAwaitingInput,
-  resolveRunStatus,
-} from "./workflow-resume.js";
+import { resolveRunStatus } from "./workflow-resume.js";
 
 type Db = ReturnType<typeof createLibsqlStore>["db"];
 
@@ -62,6 +59,10 @@ function workflowMatchesEvent(definition: WorkflowDefinition, facts?: WorkflowRu
   return facts?.eventName === expected;
 }
 
+export function workflowDeploysKeeniAgent(definition: WorkflowDefinition): boolean {
+  return definition.blocks.some((block) => block.type === "let_keeni_answer");
+}
+
 export async function executeWorkflow(
   db: Db,
   workflow: typeof workflows.$inferSelect,
@@ -79,6 +80,13 @@ export async function executeWorkflow(
   if (!conversation) return null;
 
   const definition = resolveActiveWorkflowDefinition(workflow);
+  if (workflowDeploysKeeniAgent(definition)) {
+    const settings = await getOrCreateAgentOtherSettings(db, {
+      orgId: workflow.orgId,
+      brandId: conversation.brandId,
+    });
+    if (settings.simpleDeployEnabled) return null;
+  }
 
   const [run] = await db
     .insert(workflowRuns)
@@ -87,6 +95,7 @@ export async function executeWorkflow(
       workflowId: workflow.id,
       conversationId,
       status: "running",
+      definitionSnapshot: definition,
       steps: [],
     })
     .returning();
@@ -100,14 +109,14 @@ export async function executeWorkflow(
     authConfig,
     run.id,
   );
-  const baseContext = createWorkflowRunContext(workflow, conversation, run.id);
+  const baseContext = createWorkflowRunContext(workflow, conversation, run.id, definition);
   const context: WorkflowRunContext = {
     ...baseContext,
     facts: { ...baseContext.facts, ...options?.facts },
   };
 
   const result = await runWorkflow(definition, handlers, context);
-  const status = resolveRunStatus(result.steps, Boolean(result.suspended));
+  const status = resolveRunStatus(result.steps, result.suspended);
 
   const [updated] = await db
     .update(workflowRuns)
@@ -116,6 +125,7 @@ export async function executeWorkflow(
     .returning();
 
   if (result.suspended) {
+    if (result.suspended.type === "tool_approval") return updated ?? null;
     const block = definition.blocks.find((item) => item.id === result.suspended?.blockId);
     if (result.suspended.type === "csat" && block?.type === "csat" && block.waitForRatingMinutes) {
       const { emitCsatRequest } = await import("./workflow-resume.js");
@@ -129,25 +139,15 @@ export async function executeWorkflow(
         waitForRatingMs: block.waitForRatingMinutes * 60_000,
       });
     } else {
-      const autoCloseMs = autoCloseMsForBlock(definition, result.suspended.blockId);
-      if (autoCloseMs > 0) {
-        await emitWorkflowAwaitingInput({
-          workflowRunId: run.id,
-          conversationId,
-          orgId: workflow.orgId,
-          brandId: conversation.brandId,
-          autoCloseMs,
-          blockId: result.suspended.blockId,
-          awaitEvent:
-            result.suspended.type === "collect_data"
-              ? WORKFLOW_INNGEST_EVENTS.ATTRIBUTE_SUBMITTED
-              : result.suspended.type === "send_ticket_form"
-                ? WORKFLOW_INNGEST_EVENTS.TICKET_FORM_SUBMITTED
-                : result.suspended.type === "collect_customer_reply"
-                  ? WORKFLOW_INNGEST_EVENTS.CUSTOMER_REPLY_RECEIVED
-                  : WORKFLOW_INNGEST_EVENTS.BUTTON_CLICKED,
-        });
-      }
+      await scheduleWorkflowAbandonedAutoClose(db, {
+        workflowRunId: run.id,
+        conversationId,
+        orgId: workflow.orgId,
+        brandId: conversation.brandId,
+        workflowBlockId: result.suspended.blockId,
+        workflowTrigger: workflow.trigger,
+        definition,
+      });
     }
   }
 
@@ -268,6 +268,7 @@ export function serializeWorkflowRun(row: typeof workflowRuns.$inferSelect) {
     workflowId: row.workflowId,
     conversationId: row.conversationId,
     status: row.status,
+    definitionSnapshot: row.definitionSnapshot,
     steps: row.steps,
     createdAt: row.createdAt.toISOString(),
   };

@@ -49,6 +49,9 @@ export const workflowRuns = sqliteTable(
       .notNull()
       .references(() => conversations.id),
     status: text("status").notNull().default("completed"),
+    definitionSnapshot: text("definition_snapshot", {
+      mode: "json",
+    }).$type<WorkflowDefinitionJson>(),
     steps: text("steps", { mode: "json" })
       .$type<Array<{ blockId: string; type: string; status: string; error?: string }>>()
       .notNull()

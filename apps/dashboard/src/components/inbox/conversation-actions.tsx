@@ -51,7 +51,7 @@ export function ConversationActions({
     <div className="flex flex-wrap items-center gap-2">
       {linkedTicketId ? (
         <Link
-          href="/tickets"
+          href="/dashboard/tickets"
           className="rounded-md bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-400"
         >
           Ticket created

@@ -7,11 +7,13 @@ import {
 } from "@keenai/workflow";
 import { Inngest } from "inngest";
 import type { AppContext } from "../types.js";
+import { getOrCreateAgentOtherSettings } from "./agent-settings.js";
 import {
   dispatchConversationTriggerWorkflows,
   dispatchFirstMessageWorkflows,
   dispatchTicketTriggerWorkflows,
 } from "./workflow-engine.js";
+import { runBasicAgentWorkflow } from "./workflow-keeni-answer.js";
 import { resumeCollectDataWorkflow, resumeReplyButtonsWorkflow } from "./workflow-resume.js";
 import { scanScheduledWorkflows } from "./workflow-schedule-scan.js";
 import { createWorkflowTimerHandlers } from "./workflow-timer-handlers.js";
@@ -30,6 +32,22 @@ export function initWorkflowDispatch(ctx: AppContext): WorkflowDispatchAdapter {
     },
     dispatchConversationTrigger: async (input) => {
       await dispatchConversationTriggerWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
+      if (input.trigger !== "any_message" || input.facts?.messageSource === "widget-handoff") {
+        return;
+      }
+
+      const settings = await getOrCreateAgentOtherSettings(ctx.store.db, {
+        orgId: input.orgId,
+        brandId: input.brandId,
+      });
+      if (!settings.simpleDeployEnabled) return;
+
+      await runBasicAgentWorkflow(ctx.store.db, ctx.env, {
+        orgId: input.orgId,
+        brandId: input.brandId,
+        conversationId: input.conversationId,
+        sourceMessageId: input.facts?.sourceMessageId,
+      });
     },
     dispatchTicketTrigger: async (input) => {
       await dispatchTicketTriggerWorkflows(ctx.store.db, input, ctx.env, ctx.authConfig);
