@@ -3,6 +3,7 @@ import { planDiscordOutbound } from "./outbound/discord.js";
 import { planFeishuOutbound } from "./outbound/feishu.js";
 import { planSlackOutbound } from "./outbound/slack.js";
 import { planTelegramOutbound } from "./outbound/telegram.js";
+import { planWeComOutbound } from "./outbound/wecom.js";
 import { planWhatsAppOutbound } from "./outbound/whatsapp.js";
 import type { ImOutboundAction, PlanImOutboundInput } from "./types.js";
 
@@ -12,6 +13,7 @@ export function planImOutbound(input: PlanImOutboundInput): ImOutboundAction[] {
   if (input.platform === "feishu") return planFeishuOutbound(input);
   if (input.platform === "dingtalk") return planDingTalkOutbound(input);
   if (input.platform === "whatsapp") return planWhatsAppOutbound(input);
+  if (input.platform === "wecom") return planWeComOutbound(input);
   return planSlackOutbound(input);
 }
 
@@ -24,7 +26,12 @@ export {
 } from "./inbound/feishu.js";
 export { adaptSlackEvent, slackUrlVerificationChallenge } from "./inbound/slack.js";
 export { adaptTelegramUpdate, type TelegramUpdate } from "./inbound/telegram.js";
-export { adaptWhatsAppWebhook, type WhatsAppWebhookPayload } from "./inbound/whatsapp.js";
+export {
+  adaptWhatsAppWebhook,
+  parseWhatsAppDeliveryReceipts,
+  type WhatsAppWebhookPayload,
+} from "./inbound/whatsapp.js";
+export { adaptWeComMessage, type WeComMessagePayload } from "./inbound/wecom.js";
 export { defaultFileName, extensionForMime, isAllowedImMime } from "./mime.js";
 export { planDingTalkOutbound } from "./outbound/dingtalk.js";
 export { planDiscordOutbound } from "./outbound/discord.js";
@@ -32,6 +39,7 @@ export { planFeishuOutbound } from "./outbound/feishu.js";
 export { planSlackOutbound } from "./outbound/slack.js";
 export { planTelegramOutbound } from "./outbound/telegram.js";
 export { planWhatsAppOutbound } from "./outbound/whatsapp.js";
+export { planWeComOutbound } from "./outbound/wecom.js";
 export type {
   DingTalkOutboundAction,
   FeishuOutboundAction,
@@ -44,4 +52,18 @@ export type {
   SlackOutboundAction,
   TelegramOutboundAction,
   WhatsAppOutboundAction,
+  WeComOutboundAction,
 } from "./types.js";
+export {
+  createDefaultImPlugins,
+  createImChannelPlugin,
+  type ImChannelPluginOptions,
+  type ImOutboundActionExecutor,
+} from "./plugin.js";
+export {
+  decryptWeComPayload,
+  parseWeComMessageXml,
+  readWeComXmlTag,
+  verifyWeComSignature,
+  type WeComCryptoConfig,
+} from "./wecom-crypto.js";

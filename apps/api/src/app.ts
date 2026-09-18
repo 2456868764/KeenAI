@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { initChannelDispatch } from "./lib/channel-dispatch.js";
 import { initFeedbackPostVectorFromStore } from "./lib/feedback-post-vector-init.js";
 import { initKbChunkFtsFromStore } from "./lib/kb-chunk-fts-init.js";
 import { initKbChunkVectorFromStore } from "./lib/kb-chunk-vector-init.js";
@@ -35,6 +36,7 @@ import { attachmentRoutes } from "./routes/attachments.js";
 import { authRoutes } from "./routes/auth.js";
 import { brandRoutes } from "./routes/brands.js";
 import { changelogRoutes } from "./routes/changelog.js";
+import { channelConnectionRoutes } from "./routes/channel-connections.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { customActionRoutes } from "./routes/custom-actions.js";
@@ -76,6 +78,7 @@ const NON_DASHBOARD_API_SEGMENTS = new Set([
 
 export function createApp(ctx: AppContext) {
   initWorkflowDispatch(ctx);
+  initChannelDispatch(ctx);
   initMediaDispatch(ctx);
   initMemoryDispatch(ctx);
   initMemoryKgExtractorFromEnv(ctx.env);
@@ -157,6 +160,7 @@ export function createApp(ctx: AppContext) {
   app.route("/", widgetRoutes());
   app.route("/", emailWebhookRoutes());
   app.route("/", imWebhookRoutes());
+  app.route("/", channelConnectionRoutes());
   app.route("/", notificationRoutes());
   app.route("/", memberRoutes());
   app.route("/", brandRoutes());

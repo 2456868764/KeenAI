@@ -25,6 +25,7 @@ yarn.lock
 integrations/hermes/__pycache__/
 hermes-agent/
 /agentmemory/
+/openclaw/
 openhuman/
 fbapp/
 .next/

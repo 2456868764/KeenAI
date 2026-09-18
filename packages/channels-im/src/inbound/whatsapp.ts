@@ -1,3 +1,4 @@
+import type { ChannelDeliveryReceipt } from "@keenai/channels-core";
 import { type MessagePart, inferMessageKind } from "@keenai/shared";
 import { defaultFileName, isAllowedImMime } from "../mime.js";
 import type { ImPendingAttachment, ParsedInboundImMessage } from "../types.js";
@@ -31,6 +32,12 @@ type WhatsAppValue = {
   };
   contacts?: { wa_id?: string; profile?: { name?: string } }[];
   messages?: WhatsAppMessage[];
+  statuses?: Array<{
+    id?: string;
+    status?: "sent" | "delivered" | "read" | "failed";
+    timestamp?: string;
+    errors?: Array<{ code?: number; title?: string; message?: string }>;
+  }>;
 };
 
 export type WhatsAppWebhookPayload = {
@@ -84,6 +91,29 @@ export function adaptWhatsAppWebhook(
       ...(contact?.profile?.name ? { profileName: contact.profile.name } : {}),
     },
   };
+}
+
+export function parseWhatsAppDeliveryReceipts(
+  payload: WhatsAppWebhookPayload,
+): ChannelDeliveryReceipt[] {
+  const receipts: ChannelDeliveryReceipt[] = [];
+  for (const entry of payload.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      for (const status of change.value?.statuses ?? []) {
+        if (!status.id || !status.status) continue;
+        const error = status.errors?.[0];
+        receipts.push({
+          providerMessageId: status.id,
+          status: status.status,
+          occurredAt: status.timestamp ? new Date(Number(status.timestamp) * 1_000) : new Date(),
+          errorCode: error?.code === undefined ? undefined : String(error.code),
+          errorMessage: error?.message ?? error?.title,
+          payload: status,
+        });
+      }
+    }
+  }
+  return receipts;
 }
 
 function firstMessageValue(payload: WhatsAppWebhookPayload): WhatsAppValue | undefined {

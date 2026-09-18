@@ -90,6 +90,14 @@
 │                     / audit                                   │
 └──────────────────────────────────────────────────────────────┘
 
+┌──────────────── Channel Gateway 已落地表 ────────────────────┐
+│ channel_connections → channel_ingress_events                 │
+│        ├─ channel_identities / channel_conversation_links    │
+│        ├─ channel_session_commands                           │
+│        └─ channel_outbox → channel_delivery_attempts         │
+│                           → channel_delivery_receipts / DLQ   │
+└──────────────────────────────────────────────────────────────┘
+
 ┌──────────────── @keenai/kb 表 ──────────────────────────────┐
 │ kb_sources → kb_documents → kb_chunks (vector + FTS)        │
 │                          ├─ kb_entities → kb_relations      │
@@ -112,6 +120,7 @@ packages/storage/src/schema/
 ├── pg/
 │   ├── core.ts             # organizations / brands / teams / accounts / members
 │   ├── conversation.ts     # conversations / messages / attachments / events
+│   ├── channel.ts          # connections / ingress / mappings / outbox / receipts
 │   ├── ticket.ts
 │   ├── workflow.ts
 │   ├── ai.ts               # ai_agents / ai_actions / ai_usage
@@ -358,7 +367,7 @@ export const conversations = pgTable('conversations', {
   orgId:          text('org_id').notNull(),
   brandId:        text('brand_id').notNull(),
   userId:         text('user_id'),
-  channelType:    text('channel_type').notNull(),             // messenger / email / slack / ...
+  channelType:    text('channel_type').notNull(),             // widget / email / slack / ...
   channelId:      text('channel_id').notNull(),
 
   status:         text('status').notNull().default('open'),   // open / snoozed / pending / closed
@@ -412,7 +421,7 @@ export const messages = pgTable('messages', {
   isInternal:     boolean('is_internal').default(false),       // 内部 Note
   inReplyTo:      text('in_reply_to'),
   sentVia:        text('sent_via'),                            // web / messenger / email / api
-  deliveryStatus: text('delivery_status'),                     // pending/sent/delivered/failed/read
+  deliveryStatus: text('delivery_status'),                     // queued/accepted/delivered/read/failed/unknown（摘要）
 
   metadata:       jsonb('metadata').default({}),               // email headers · messageKind · enrichmentStatus
   editedAt:       timestamp('edited_at',   { withTimezone: true }),
@@ -481,26 +490,233 @@ export const conversationEvents = pgTable('conversation_events', {
 
 ### 4.4 渠道
 
+> 下列概念模型已以 SQLite/LibSQL 实现于 `packages/storage/src/schema/sqlite/channel.ts`，迁移为 `packages/storage/migrations/libsql/0047_channel_runtime.sql`。下方 PG 版仍是大规模部署的目标 DDL 示意。
+
 ```ts
 // packages/storage/src/schema/pg/channel.ts
+export const channelConnections = pgTable('channel_connections', {
+  id:             text('id').primaryKey().$defaultFn(ulid),
+  orgId:          text('org_id').notNull(),
+  brandId:        text('brand_id'),
+  type:           text('type').notNull(),                      // widget/email/slack/discord/...
+  name:           text('name').notNull(),
+  status:         text('status').notNull().default('pending'), // pending/active/degraded/error/disabled
+  transport:      text('transport').notNull(),                 // webhook/socket/poll/imap/ws
+  externalAppId:  text('external_app_id'),
+  externalScopeId:text('external_scope_id'),                   // workspace/guild/corp/tenant/phone_number
+  config:         jsonb('config').notNull().default({}),       // 非敏感、Zod 校验后的插件配置
+  secretRef:      text('secret_ref'),                          // Secret Manager/KMS 引用
+  configVersion:  integer('config_version').notNull().default(1),
+  runtimeOwnerId: text('runtime_owner_id'),
+  leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),
+  heartbeatAt:    timestamp('heartbeat_at', { withTimezone: true }),
+  lastHealthyAt:  timestamp('last_healthy_at', { withTimezone: true }),
+  lastErrorCode:  text('last_error_code'),
+  ...timestamps(),
+}, (t) => ({
+  idxOrgType: index('idx_channel_conn_org_type').on(t.orgId, t.type, t.status),
+  uqScope: uniqueIndex('uq_channel_conn_external_scope')
+    .on(t.orgId, t.type, t.externalAppId, t.externalScopeId),
+}));
+
+export const channelIngressEvents = pgTable('channel_ingress_events', {
+  id:              text('id').primaryKey().$defaultFn(ulid),
+  orgId:           text('org_id').notNull(),
+  connectionId:    text('connection_id').notNull(),
+  providerEventId: text('provider_event_id').notNull(),
+  eventType:       text('event_type'),
+  occurredAt:      timestamp('occurred_at', { withTimezone: true }),
+  receivedAt:      timestamp('received_at', { withTimezone: true }).defaultNow(),
+  payload:         jsonb('payload').notNull(),                 // 原始事件，按保留策略加密/脱敏
+  payloadHash:     text('payload_hash').notNull(),
+  status:          text('status').notNull().default('received'), // received/processing/processed/retry/dead_letter
+  attempts:        integer('attempts').notNull().default(0),
+  nextAttemptAt:   timestamp('next_attempt_at', { withTimezone: true }),
+  processedAt:     timestamp('processed_at', { withTimezone: true }),
+  lastErrorCode:   text('last_error_code'),
+  lastError:       text('last_error'),
+}, (t) => ({
+  uqProviderEvent: uniqueIndex('uq_channel_ingress_provider_event')
+    .on(t.connectionId, t.providerEventId),
+  idxReady: index('idx_channel_ingress_ready').on(t.status, t.nextAttemptAt),
+  idxOrgReceived: index('idx_channel_ingress_org_received').on(t.orgId, t.receivedAt),
+}));
+
+export const channelIdentities = pgTable('channel_identities', {
+  id:             text('id').primaryKey().$defaultFn(ulid),
+  orgId:          text('org_id').notNull(),
+  connectionId:   text('connection_id').notNull(),
+  externalUserId: text('external_user_id').notNull(),
+  userId:         text('user_id'),                             // KeenAI customer/contact
+  displayName:    text('display_name'),
+  metadata:       jsonb('metadata').notNull().default({}),
+  ...timestamps(),
+}, (t) => ({
+  uqExternalIdentity: uniqueIndex('uq_channel_identity_external')
+    .on(t.connectionId, t.externalUserId),
+  idxUser: index('idx_channel_identity_user').on(t.orgId, t.userId),
+}));
+
+export const channelConversationLinks = pgTable('channel_conversation_links', {
+  id:                     text('id').primaryKey().$defaultFn(ulid),
+  orgId:                  text('org_id').notNull(),
+  connectionId:           text('connection_id').notNull(),
+  conversationId:         text('conversation_id').notNull(),
+  externalConversationId: text('external_conversation_id').notNull(),
+  externalThreadId:       text('external_thread_id').notNull().default(''),
+  routingKey:             text('routing_key').notNull(),
+  metadata:               jsonb('metadata').notNull().default({}),
+  ...timestamps(),
+}, (t) => ({
+  uqExternalConversation: uniqueIndex('uq_channel_conversation_external')
+    .on(t.connectionId, t.externalConversationId, t.externalThreadId),
+  uqRouting: uniqueIndex('uq_channel_conversation_routing').on(t.connectionId, t.routingKey),
+  idxConversation: index('idx_channel_conversation_internal').on(t.orgId, t.conversationId),
+}));
+
+export const channelMessageLinks = pgTable('channel_message_links', {
+  id:                text('id').primaryKey().$defaultFn(ulid),
+  orgId:             text('org_id').notNull(),
+  connectionId:      text('connection_id').notNull(),
+  messageId:         text('message_id').notNull(),
+  providerMessageId: text('provider_message_id').notNull(),
+  direction:         text('direction').notNull(),              // inbound/outbound
+  ...timestamps(),
+}, (t) => ({
+  uqProviderMessage: uniqueIndex('uq_channel_message_provider')
+    .on(t.connectionId, t.providerMessageId),
+  uqInternalMessage: uniqueIndex('uq_channel_message_internal')
+    .on(t.connectionId, t.messageId),
+}));
+
+export const channelSessionCommands = pgTable('channel_session_commands', {
+  id:             text('id').primaryKey().$defaultFn(ulid),
+  orgId:          text('org_id').notNull(),
+  brandId:        text('brand_id').notNull(),
+  conversationId:text('conversation_id').notNull(),
+  ingressEventId:text('ingress_event_id'),
+  commandType:    text('command_type').notNull(), // message/steer/followup/collect/interrupt
+  idempotencyKey:text('idempotency_key').notNull(),
+  sequence:       integer('sequence').notNull(),
+  priority:       integer('priority').notNull().default(0),
+  payload:        jsonb('payload').notNull(),
+  status:         text('status').notNull().default('pending'),
+  attempts:       integer('attempts').notNull().default(0),
+  availableAt:    timestamp('available_at', { withTimezone: true }).defaultNow(),
+  claimToken:     text('claim_token'),
+  leaseExpiresAt:timestamp('lease_expires_at', { withTimezone: true }),
+  completedAt:    timestamp('completed_at', { withTimezone: true }),
+  lastError:      text('last_error'),
+  ...timestamps(),
+}, (t) => ({
+  uqIdempotency: uniqueIndex('uq_channel_session_command_idempotency')
+    .on(t.idempotencyKey),
+  uqSequence: uniqueIndex('uq_channel_session_command_sequence')
+    .on(t.conversationId, t.sequence),
+  idxDispatch: index('idx_channel_session_command_dispatch')
+    .on(t.conversationId, t.status, t.priority, t.sequence),
+}));
+
+export const channelOutbox = pgTable('channel_outbox', {
+  id:                text('id').primaryKey().$defaultFn(ulid),
+  orgId:             text('org_id').notNull(),
+  connectionId:      text('connection_id').notNull(),
+  conversationId:    text('conversation_id').notNull(),
+  messageId:         text('message_id').notNull(),
+  idempotencyKey:    text('idempotency_key').notNull(),
+  payload:           jsonb('payload').notNull(),               // 标准 OutboundEnvelope
+  status:            text('status').notNull().default('queued'),
+  attempts:          integer('attempts').notNull().default(0),
+  nextAttemptAt:     timestamp('next_attempt_at', { withTimezone: true }).defaultNow(),
+  lockedBy:          text('locked_by'),
+  lockedAt:          timestamp('locked_at', { withTimezone: true }),
+  providerMessageId: text('provider_message_id'),
+  acceptedAt:        timestamp('accepted_at', { withTimezone: true }),
+  completedAt:       timestamp('completed_at', { withTimezone: true }),
+  lastErrorCode:     text('last_error_code'),
+  lastError:         text('last_error'),
+  ...timestamps(),
+}, (t) => ({
+  uqIdempotency: uniqueIndex('uq_channel_outbox_idempotency')
+    .on(t.connectionId, t.idempotencyKey),
+  idxReady: index('idx_channel_outbox_ready').on(t.status, t.nextAttemptAt),
+  idxMessage: index('idx_channel_outbox_message').on(t.orgId, t.messageId),
+}));
+
+export const channelDeliveryAttempts = pgTable('channel_delivery_attempts', {
+  id:           text('id').primaryKey().$defaultFn(ulid),
+  orgId:        text('org_id').notNull(),
+  outboxId:     text('outbox_id').notNull(),
+  attemptNo:    integer('attempt_no').notNull(),
+  startedAt:    timestamp('started_at', { withTimezone: true }).defaultNow(),
+  finishedAt:   timestamp('finished_at', { withTimezone: true }),
+  result:       text('result').notNull(),                       // accepted/retry/failed/unknown
+  providerCode: text('provider_code'),
+  retryAfterMs: integer('retry_after_ms'),
+  responseMeta: jsonb('response_meta').notNull().default({}),  // 已脱敏摘要
+}, (t) => ({
+  uqAttempt: uniqueIndex('uq_channel_delivery_attempt').on(t.outboxId, t.attemptNo),
+}));
+
+export const channelDeliveryReceipts = pgTable('channel_delivery_receipts', {
+  id:                text('id').primaryKey().$defaultFn(ulid),
+  orgId:             text('org_id').notNull(),
+  connectionId:      text('connection_id').notNull(),
+  providerReceiptId: text('provider_receipt_id').notNull(),
+  providerMessageId: text('provider_message_id').notNull(),
+  status:            text('status').notNull(),                 // delivered/read/bounced/rejected
+  occurredAt:        timestamp('occurred_at', { withTimezone: true }).notNull(),
+  payload:           jsonb('payload').notNull().default({}),
+  createdAt:         timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  uqReceipt: uniqueIndex('uq_channel_delivery_receipt')
+    .on(t.connectionId, t.providerReceiptId),
+  idxProviderMessage: index('idx_channel_receipt_message')
+    .on(t.connectionId, t.providerMessageId, t.occurredAt),
+}));
+
+export const channelDeadLetters = pgTable('channel_dead_letters', {
+  id:           text('id').primaryKey().$defaultFn(ulid),
+  orgId:        text('org_id').notNull(),
+  direction:    text('direction').notNull(),                  // inbound/outbound
+  sourceTable:  text('source_table').notNull(),
+  sourceId:     text('source_id').notNull(),
+  reasonCode:   text('reason_code').notNull(),
+  payload:      jsonb('payload').notNull(),
+  replayedBy:   text('replayed_by'),
+  replayedAt:   timestamp('replayed_at', { withTimezone: true }),
+  createdAt:    timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  idxOrgCreated: index('idx_channel_dlq_org_created').on(t.orgId, t.createdAt),
+  uqSource: uniqueIndex('uq_channel_dlq_source').on(t.direction, t.sourceTable, t.sourceId),
+}));
+```
+
+模型约束：
+
+- 当前 SQLite/LibSQL 的 `channel_connections.credentials` 使用 AES-256-GCM 密文存储，API 只返回已配置的 key 名；集中式 Secret Manager/KMS 部署可在 PG 版改为 `secret_ref`。
+- `messages.delivery_status` 是 UI 查询用的状态摘要；发送尝试、提供方响应和回执的事实记录分别保存在 Delivery 表。
+- `channel_session_commands` 是可恢复的命令事实，不是进程内互斥锁；同一 Conversation 一次只能持有一个有效 lease。
+- 入站原始 Payload 和死信 Payload 必须执行加密、脱敏和保留期限；重放操作写入 `audit_logs`。
+- 当前 Outbox 以 pending Message + 幂等创建 + 恢复扫描实现可恢复接管；未来 PG 版可将 Message 与 Outbox 在同一事务提交。Worker 通过 `FOR UPDATE SKIP LOCKED`（PG）或短事务 claim（SQLite/LibSQL）抢占任务。
+- `channel_ingress_events`、`channel_delivery_attempts`、`channel_delivery_receipts` 按时间归档；PG 大规模部署可按月分区。
+
+旧表迁移来源：
+
+```ts
 export const channels = pgTable('channels', {
-  id:        text('id').primaryKey().$defaultFn(ulid),
-  orgId:     text('org_id').notNull(),
-  brandId:   text('brand_id'),
-  type:      text('type').notNull(),                           // messenger/email/slack/...
-  name:      text('name'),
-  config:    jsonb('config').notNull(),                        // channel-specific settings
-  enabled:   boolean('enabled').default(true),
+  id:      text('id').primaryKey().$defaultFn(ulid),
+  orgId:   text('org_id').notNull(),
+  brandId: text('brand_id'),
+  type:    text('type').notNull(),
+  name:    text('name'),
+  config:  jsonb('config').notNull(),
+  enabled: boolean('enabled').default(true),
   ...timestamps(),
 });
-
-// 邮件渠道配置（config 示例 - Zod-typed via @keenai/shared）：
-// {
-//   smtp_host, smtp_port, smtp_user, smtp_pass_ref,
-//   from_email, from_name,
-//   imap_host, imap_pass_ref
-// }
 ```
+
+迁移脚本将每条旧记录转换为一个 `channel_connection`，把敏感字段移入 Secret Store，并在验证新路径健康后关闭旧直连发送。`integrations` 表继续表示外部业务集成；渠道账号和传输连接不得再写入 `integrations`。
 
 ### 4.5 工单
 
@@ -1383,6 +1599,8 @@ export const secrets = pgTable('secrets', {
 | `audit_logs` | 月分区 | 单表 + 索引 + 归档 |
 | `email_logs` | 月分区 | 单表 + 索引 + 归档 |
 | `webhook_deliveries` | 月分区（可选） | 单表 + 索引 + 30 天归档 |
+| `channel_ingress_events` | 月分区 | 单表 + `status,next_attempt_at` 索引 + 定期归档 |
+| `channel_delivery_attempts/receipts` | 月分区 | 单表 + 提供方消息索引 + 定期归档 |
 
 ### 5.2 复合索引
 
@@ -1391,6 +1609,13 @@ export const secrets = pgTable('secrets', {
 ```ts
 idxOrgStatus: index('idx_conv_org_status').on(t.orgId, t.status, t.lastMessageAt.desc()),
 ```
+
+渠道可靠性表必须保留以下唯一约束：
+
+- `channel_ingress_events(connection_id, provider_event_id)`：消除提供方重复事件。
+- `channel_conversation_links(connection_id, external_conversation_id, external_thread_id)`：稳定映射会话与线程。
+- `channel_outbox(connection_id, idempotency_key)`：消除重复业务发送。
+- `channel_delivery_receipts(connection_id, provider_receipt_id)`：消除重复回执。
 
 ### 5.3 GIN 索引（JSONB / 数组 · PG）
 

@@ -231,161 +231,72 @@ export interface LLMProvider {
 
 ---
 
-## 模块 2：Channels（渠道）· `@keenai/channels`
+## 模块 2：Channels（统一渠道）
 
-### 2.1 抽象
+> 核心模块已落地。完整插件契约、可靠收发、迁移计划和 Widget 专项设计见 [16-Channel.md](16-Channel.md)。
+
+### 2.1 模块组成
+
+| 模块 | 建议位置 | 职责 |
+|---|---|---|
+| Channel SDK | `packages/channels-core` | 标准 Envelope、Plugin 接口、Capabilities、错误分类和 contract tests |
+| Channel Plugins | `packages/channels-widget`, `packages/channels-email`, `packages/channels-im` | Widget、Email 和七种 IM 协议适配 |
+| Gateway | `apps/api/src/routes/im-webhooks.ts`, `email-webhooks.ts` | Webhook/IMAP 接入、签名验证、租户解析、原始事件持久化和快速 ACK |
+| Connection Runtime | `apps/api/src/routes/channel-connections.ts`, `apps/api/src/lib/channel-plugins.ts` | 加密凭据、Token 交换、插件初始化；长连接 supervisor 仍待增强 |
+| Durable Ingress | `packages/channels-runtime/src/ingress.ts` | 去重、lease claim、重试、死信和恢复 |
+| Session Commands | `packages/channels-runtime/src/session-queue.ts` | 按 Conversation 串行的持久化命令、幂等、lease 和死信 |
+| Delivery Runtime | `packages/channels-runtime/src/delivery.ts` | Outbox、发送尝试、重试、回执、死信和 `unknown_after_send` 防重 |
+| Dispatcher | `apps/api/src/lib/channel-dispatch.ts` | Inngest/本地调度、Ingress 转 Session、Session 入库、Outbox 发送与恢复扫描 |
+
+### 2.2 插件边界
 
 ```ts
-// packages/channels/src/types.ts
-import { z } from 'zod';
-
-export const ChannelMessage = z.object({
-  conversationId: z.string(),
-  userId:         z.string(),
-  content:        z.union([
-    z.object({ kind: z.literal('text'),    text: z.string() }),
-    z.object({ kind: z.literal('rich'),    tiptapJson: z.unknown() }),
-    z.object({ kind: z.literal('buttons'), text: z.string(), buttons: z.array(z.object({ label: z.string(), value: z.string() })) }),
-    z.object({ kind: z.literal('card'),    title: z.string(), description: z.string(), imageUrl: z.string().url().optional() }),
-  ]),
-  attachments: z.array(z.object({
-    url: z.string().url(), mime: z.string(), filename: z.string(), bytes: z.number(),
-  })).default([]),
-});
-
-export interface Channel {
-  readonly name: string;
-  send(msg: z.infer<typeof ChannelMessage>): Promise<void>;
-  /** 订阅入站消息 → 路由到 Inngest 事件 `conversation/message.received` */
-  subscribe(): Promise<() => void>;
-  healthCheck(): Promise<boolean>;
+interface ChannelPlugin {
+  id: ChannelType;
+  capabilities: ChannelCapabilities;
+  connection: ConnectionAdapter;
+  inbound: InboundAdapter;       // verify / parse / normalize
+  routing: RoutingAdapter;       // identity / conversation / thread keys
+  outbound: OutboundAdapter;     // validate / send
+  receipts?: ReceiptAdapter;
+  runtime?: ChannelRuntimeFactory;
 }
 ```
 
-### 2.2 Messenger Widget · `apps/widget`
+- 插件只处理提供方协议和能力差异，不直接调用 Agent、Workflow 或修改业务表。
+- 核心层不按渠道名称写业务分支，而是根据 `capabilities` 进行内容适配和降级。
+- 所有凭据通过 Secret 引用加载；插件日志和 Trace 不得输出密钥。
 
-**架构**：
+### 2.3 统一处理流程
 
-```
-                 customer-site.com
-                  ↓ <script>
-        widget.js (Preact + Shadow DOM, < 5KB gzip)
-                  ↓ WSS
-        keenai.com/widget/{site_id}
-                  ↓
-        WidgetGateway (Hono on Bun)
-                  ↓
-        ConversationService
-```
+```text
+Inbound
+  Provider → Gateway → raw event + dedupe → normalize
+  → identity/conversation mapping → Message/Event
+  → Workflow / Agent / Human Inbox
 
-**功能模块**：
-- Home（Cards：Help / Changelog / Contact）
-- Messages（对话历史 · `useChat` from `@ai-sdk/react` 流式 UI）
-- Help（嵌入 Help Center + AI Search）
-- Changelog（最新 N 条）
-- Tickets（提交 + 查看）
-
-**JS SDK API**：
-
-```ts
-// apps/widget/src/sdk.ts
-declare global {
-  interface Window {
-    KeenAI: {
-      boot(opts: BootOpts): void;
-      show(): void;
-      hide(): void;
-      update(attrs: Record<string, unknown>): void;
-      trackEvent(name: string, props?: Record<string, unknown>): void;
-      shutdown(): void;
-    };
-  }
-}
-
-interface BootOpts {
-  appId:    string;
-  user?:    { id: string; email?: string; name?: string };
-  userHash?: string;          // HMAC-SHA256, 服务端生成
-  locale?:  string;
-  position?: 'bottom-right' | 'bottom-left';
-}
+Outbound
+  Message + transactional outbox → Sender Worker
+  → Channel Plugin → Provider → Receipt Worker
+  → delivered/read/bounced，失败则 retry/DLQ
 ```
 
-### 2.3 Email · `@keenai/channels/email`
+入站唯一键为 `(connection_id, provider_event_id)`；出站唯一键为 `(connection_id, idempotency_key)`。Message 上的发送状态用于快速展示，完整尝试、响应和回执保存在 Delivery 表中。
 
-**Inbound 流程**：
+### 2.4 渠道职责
 
-```
-IMAP Poll (Inngest cron 每 30s) / SES/SendGrid/Mailgun Webhook
-    ↓
-Email Ingestor (`apps/api/src/lib/email-ingest.ts` · IMAP via Inngest cron in API)
-    ├─ MIME 解析（mailparser）
-    ├─ 提取 From/To/Subject/Body
-    ├─ Threading（Message-ID/References）
-    ├─ Brand 路由（按收件域名）
-    ├─ 附件上传 S3（@aws-sdk/client-s3）
-    ├─ User 查找/创建（Drizzle）
-    ├─ Conversation 查找/创建
-    └─ Inngest 事件 conversation/message.received
-```
+- **Widget**：Preact + Shadow DOM；HTTP/WS 接入；处理匿名访客、Origin 校验、会话恢复和实时推送。
+- **Email**：Provider Webhook 或 IMAP 入站，Provider API 或 SMTP 出站；处理 MIME、Threading、退信、附件和抑制列表。
+- **Slack / Discord / Telegram**：支持 Webhook、Socket/Gateway 或长轮询；稳定映射 workspace/guild/chat、channel 和 thread。
+- **WhatsApp**：采用 Meta Cloud API；处理模板窗口、号码隔离和消息回执。
+- **微信/企业微信、飞书、钉钉**：采用官方开放接口；处理应用/企业隔离、签名加解密、Token 刷新和 Stream/WebSocket 生命周期。
 
-```ts
-// apps/api/src/lib/email-imap-poll.ts (planned) · packages/workflow Inngest cron
-import { inngest } from '@keenai/workflow/inngest';
-import { ImapFlow } from 'imapflow';
-import { simpleParser } from 'mailparser';
+### 2.5 与其他领域的依赖
 
-export const emailImapPoll = inngest.createFunction(
-  { id: 'email-imap-poll' },
-  { cron: '*/30 * * * * *' },          // 每 30 秒
-  async ({ step }) => {
-    const accounts = await step.run('load-accounts', () => emailAccounts.listEnabled());
-    await Promise.all(accounts.map(async (acc) => {
-      const client = new ImapFlow({ host: acc.host, port: 993, secure: true, auth: { user: acc.user, pass: acc.password } });
-      await client.connect();
-      const lock = await client.getMailboxLock('INBOX');
-      try {
-        for await (const msg of client.fetch('1:*', { source: true, uid: true })) {
-          if (await alreadyProcessed(msg.uid, acc.id)) continue;
-          const parsed = await simpleParser(msg.source!);
-          await step.sendEvent('email-received', { name: 'email/inbound', data: { acc, parsed } });
-        }
-      } finally { lock.release(); await client.logout(); }
-    }));
-  },
-);
-```
-
-**Outbound 流程**：
-
-```
-BullMQ Queue: 'email:send'
-    ├─ 模板渲染（React Email + MJML）
-    ├─ 变量替换（Zod 校验上下文）
-    ├─ Track Pixel（打开率）
-    ├─ Link Rewrite（点击率）
-    ├─ DKIM 签名（nodemailer 内建）
-    └─ SMTP 发送（重试 3 次）
-```
-
-**邮件 Threading 算法**：
-1. 优先匹配 `In-Reply-To` Header
-2. 备用匹配 `References` Header
-3. 兜底匹配 Subject 标准化（去 `Re:`、`Fwd:`）
-
-### 2.4 Slack / Discord / Telegram
-
-**统一适配层**：
-- Bot Token 管理（加密存于 Drizzle）
-- 频道 → Conversation 映射
-- 消息双向同步
-- 反向 @mention（KeenAI Note → Slack）
-
-实现：
-- Slack：[`@slack/bolt`](https://slack.dev/bolt-js/)
-- Discord：`discord.js`
-- Telegram：[`grammy`](https://grammy.dev/)
-- WhatsApp Cloud API：直接 HTTP + Hono webhook
+- Conversation 是消息与会话业务真相；Channel 只维护外部 ID 映射。
+- Workflow 和 Agent 消费标准 `conversation/message.created` 事件，不感知来源协议。
+- Policy、审批、审计和幂等在 Channel Kernel/Tool Gateway 执行，渠道插件不能绕过。
+- Inbox 通过 Conversation/Message 查询，不直接查询提供方。
 
 ---
 

@@ -31,7 +31,6 @@ import {
   serializeMessage,
   serializeMessagesWithAttachments,
 } from "../lib/conversations.js";
-import { buildEmailSendJob, dispatchEmailOutbound } from "../lib/email-outbound.js";
 import { indexConversationForSearch } from "../lib/fts-index.js";
 import { planConversationImOutbound } from "../lib/im-outbound.js";
 import { getKbDispatch } from "../lib/kb-dispatch-init.js";
@@ -453,22 +452,6 @@ export function conversationRoutes(ctx: AppContext) {
           ctx.env,
           ctx.authConfig,
         );
-      }
-
-      if (
-        isAgentReply &&
-        !body.isInternal &&
-        (result.message.plainText.trim() || (attachmentIds?.length ?? 0) > 0)
-      ) {
-        const emailJob = await buildEmailSendJob(c.get("store").db, ctx.env, {
-          orgId: auth.orgId,
-          conversationId: conversation.id,
-          plainText: result.message.plainText,
-          messageId: result.message.id,
-        });
-        if (emailJob) {
-          await dispatchEmailOutbound(c.get("store").db, ctx.env, ctx.authConfig, emailJob);
-        }
       }
 
       if (ctx.fts) {

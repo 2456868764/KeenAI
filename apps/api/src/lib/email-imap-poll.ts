@@ -1,6 +1,6 @@
 import { parseMimeSource, pollImapMailboxes } from "@keenai/channels-email";
 import type { AppContext } from "../types.js";
-import { ingestInboundEmail } from "./email-ingest.js";
+import { admitEmailIngress } from "./channel-dispatch.js";
 import { resolveOrgBrandBySlug } from "./org-brand.js";
 
 export async function runEmailImapPoll(ctx: AppContext) {
@@ -41,11 +41,11 @@ export async function runEmailImapPoll(ctx: AppContext) {
     {
       onMessage: async (message) => {
         const parsed = await parseMimeSource(message.source);
-        await ingestInboundEmail(store.db, {
+        await admitEmailIngress(ctx, {
           orgId: resolved.org.id,
           brandId: resolved.brand.id,
+          provider: `imap:${env.EMAIL_IMAP_USER ?? "default"}`,
           parsed,
-          env,
         });
       },
     },

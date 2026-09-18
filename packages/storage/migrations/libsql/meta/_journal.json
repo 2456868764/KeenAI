@@ -330,6 +330,13 @@
       "when": 1789743600000,
       "tag": "0046_agent_simple_deploy",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1789747200000,
+      "tag": "0047_channel_runtime",
+      "breakpoints": true
     }
   ]
 }

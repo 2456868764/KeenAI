@@ -32,3 +32,4 @@ export {
   type EmailSendJobData,
   type EmailSendQueueDeps,
 } from "./email-send-queue.js";
+export { createEmailChannelPlugin } from "./plugin.js";

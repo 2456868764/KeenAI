@@ -6,7 +6,6 @@ import { loadEnv, toAuthConfig } from "./config.js";
 import { startAgentAutoCloseScheduler } from "./lib/agent-auto-close-scheduler.js";
 import { startAgentRecoveryScheduler } from "./lib/agent-recovery-scheduler.js";
 import { startEmailImapPollScheduler } from "./lib/email-imap-scheduler.js";
-import { initEmailSendQueue } from "./lib/email-outbound.js";
 import { startWorkflowScanScheduler } from "./lib/workflow-scan-scheduler.js";
 import { createLogger } from "./logger.js";
 import { initOtel, initSentry } from "./otel.js";
@@ -21,10 +20,6 @@ const authConfig = toAuthConfig(env);
 
 initSentry(env, log);
 await initOtel(env, log);
-const emailQueue = initEmailSendQueue(env, authConfig);
-if (emailQueue) {
-  log.info({ queue: "email:send" }, "email send worker started");
-}
 
 const app = createApp({ store, fts, authConfig, env, log, startedAt });
 

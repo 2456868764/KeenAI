@@ -32,6 +32,7 @@
 | [07-DATA-MODEL.md](./07-DATA-MODEL.md) | Database schema |
 | [08-ROADMAP.md](./08-ROADMAP.md) | Phased roadmap |
 | [08-ROADMAP-TODO.md](./08-ROADMAP-TODO.md) | Iteration tracker |
+| [00-REFERENCE-REPOS.md](./00-REFERENCE-REPOS.md) | Upstream architecture references and adoption boundaries |
 
 ## AI core
 
@@ -50,6 +51,7 @@
 | [12-STORAGE-ABSTRACTION.md](./12-STORAGE-ABSTRACTION.md) | Store / vector / FTS |
 | [13-WORKFLOW.md](./13-WORKFLOW.md) | Workflows + Inngest |
 | [14-MULTIMODAL.md](./14-MULTIMODAL.md) | Multimodal messages |
+| [16-Channel.md](./16-Channel.md) | Channel Gateway, plugins, connection runtime, durable delivery, and Widget design |
 
 ## CLI & eval
 

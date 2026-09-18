@@ -1401,6 +1401,61 @@ export async function fetchMe(): Promise<MeResponse> {
   return apiFetch("/api/v1/dashboard/me");
 }
 
+export type ChannelType =
+  | "widget"
+  | "email"
+  | "slack"
+  | "discord"
+  | "telegram"
+  | "whatsapp"
+  | "wecom"
+  | "feishu"
+  | "dingtalk";
+
+export type ChannelConnection = {
+  id: string;
+  brandId: string;
+  channelType: ChannelType;
+  name: string;
+  externalAccountId: string;
+  status: "active" | "disabled" | "error";
+  configuredCredentialKeys: string[];
+  settings: Record<string, unknown>;
+  lastError: string | null;
+  lastConnectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listChannelConnections(
+  brandId?: string,
+): Promise<{ items: ChannelConnection[] }> {
+  const query = brandId ? `?brandId=${encodeURIComponent(brandId)}` : "";
+  return apiFetch(`/api/v1/dashboard/channel-connections${query}`);
+}
+
+export async function saveChannelConnection(input: {
+  brandId: string;
+  channelType: ChannelType;
+  name: string;
+  externalAccountId?: string;
+  status?: ChannelConnection["status"];
+  credentials?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+}): Promise<{ connection: ChannelConnection }> {
+  return apiFetch(`/api/v1/dashboard/channel-connections/${input.channelType}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      brandId: input.brandId,
+      name: input.name,
+      externalAccountId: input.externalAccountId ?? "default",
+      status: input.status ?? "active",
+      credentials: input.credentials,
+      settings: input.settings ?? {},
+    }),
+  });
+}
+
 export type MemoryExplorerStats = {
   brandId: string;
   chunkCount: number;

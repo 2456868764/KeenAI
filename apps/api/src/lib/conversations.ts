@@ -271,7 +271,10 @@ export async function insertMessage(
       isInternal: input.isInternal,
       inReplyTo: input.inReplyTo,
       sentVia: input.sentVia ?? "web",
-      deliveryStatus: "sent",
+      deliveryStatus:
+        input.isAgentReply && !input.isInternal && isExternallyDeliveredChannel(current.channelType)
+          ? "pending"
+          : "sent",
       metadata: messageMetadata,
     })
     .returning();
@@ -403,6 +406,23 @@ export async function insertMessage(
     createdAt: message.createdAt,
   });
 
+  if (
+    input.isAgentReply &&
+    !input.isInternal &&
+    isExternallyDeliveredChannel(current.channelType)
+  ) {
+    try {
+      const { enqueueMessageForChannelDelivery } = await import("./channel-dispatch.js");
+      await enqueueMessageForChannelDelivery({
+        orgId: input.orgId,
+        conversationId: input.conversationId,
+        messageId: message.id,
+      });
+    } catch {
+      // Keep the message pending; the durable delivery recovery scan will re-enqueue it.
+    }
+  }
+
   publishConversation({
     type: "message.created",
     conversationId: input.conversationId,
@@ -480,6 +500,21 @@ export async function insertMessage(
   }
 
   return { message, conversation: updated, serialized: serialized ?? serializeMessage(message) };
+}
+
+function isExternallyDeliveredChannel(channelType: string): boolean {
+  return [
+    "messenger",
+    "widget",
+    "email",
+    "telegram",
+    "slack",
+    "discord",
+    "feishu",
+    "dingtalk",
+    "whatsapp",
+    "wecom",
+  ].includes(channelType);
 }
 
 export async function assertBrandInOrg(

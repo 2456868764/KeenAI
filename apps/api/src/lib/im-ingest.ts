@@ -38,90 +38,19 @@ export async function ingestInboundIm(
     brandId: string;
     parsed: ParsedInboundImMessage;
     env: ApiEnv;
+    conversation?: EnsuredImConversation;
   },
 ) {
   const channelType = input.parsed.channelType;
-
-  const [existing] = await db
-    .select({
-      id: conversations.id,
-      channelId: conversations.channelId,
-      subject: conversations.subject,
-    })
-    .from(conversations)
-    .where(
-      and(
-        eq(conversations.orgId, input.orgId),
-        eq(conversations.brandId, input.brandId),
-        eq(conversations.channelType, channelType),
-        eq(conversations.channelId, input.parsed.channelId),
-      ),
-    )
-    .limit(1);
-
-  let conversation = existing;
-  let created = false;
-
-  if (!conversation) {
-    const subject =
-      channelType === "telegram"
-        ? `Telegram ${input.parsed.channelId}`
-        : channelType === "discord"
-          ? `Discord ${input.parsed.channelId}`
-          : channelType === "feishu"
-            ? `Feishu ${input.parsed.channelId}`
-            : channelType === "dingtalk"
-              ? `DingTalk ${input.parsed.channelId}`
-              : channelType === "whatsapp"
-                ? `WhatsApp ${input.parsed.channelId}`
-                : `Slack ${input.parsed.channelId}`;
-
-    const [row] = await db
-      .insert(conversations)
-      .values({
-        orgId: input.orgId,
-        brandId: input.brandId,
-        userId: input.parsed.userId,
-        channelType,
-        channelId: input.parsed.channelId,
-        subject,
-        status: "open",
-        lastMessageAt: new Date(),
-        messageCount: 1,
-        unreadCount: 1,
-        attributes: input.parsed.conversationAttributes ?? {},
-      })
-      .returning({ id: conversations.id, channelId: conversations.channelId });
-
-    if (!row) throw new Error("conversation_create_failed");
-    conversation = { id: row.id, channelId: row.channelId, subject };
-    created = true;
-
-    await recordConversationEvent(db, {
+  const ensured =
+    input.conversation ??
+    (await ensureInboundImConversation(db, {
       orgId: input.orgId,
-      conversationId: row.id,
-      eventType: "conversation.created",
-      actorType: "user",
-      actorId: input.parsed.userId,
-      payload: { channel: channelType },
-    });
-  } else if (input.parsed.conversationAttributes) {
-    const [existingRow] = await db
-      .select({ attributes: conversations.attributes })
-      .from(conversations)
-      .where(eq(conversations.id, conversation.id))
-      .limit(1);
-    await db
-      .update(conversations)
-      .set({
-        attributes: {
-          ...(existingRow?.attributes ?? {}),
-          ...input.parsed.conversationAttributes,
-        },
-        updatedAt: new Date(),
-      })
-      .where(eq(conversations.id, conversation.id));
-  }
+      brandId: input.brandId,
+      parsed: input.parsed,
+    }));
+  const conversation = ensured.conversation;
+  const created = ensured.created;
 
   const attachmentRows = [];
   for (const file of input.parsed.attachments) {
@@ -226,6 +155,100 @@ export async function ingestInboundIm(
     message: serialized,
     platformMessageId: input.parsed.platformMessageId,
   };
+}
+
+export type EnsuredImConversation = {
+  conversation: { id: string; channelId: string; subject: string | null };
+  created: boolean;
+};
+
+export async function ensureInboundImConversation(
+  db: AppVariables["store"]["db"],
+  input: { orgId: string; brandId: string; parsed: ParsedInboundImMessage },
+): Promise<EnsuredImConversation> {
+  const channelType = input.parsed.channelType;
+  const [existing] = await db
+    .select({
+      id: conversations.id,
+      channelId: conversations.channelId,
+      subject: conversations.subject,
+    })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.orgId, input.orgId),
+        eq(conversations.brandId, input.brandId),
+        eq(conversations.channelType, channelType),
+        eq(conversations.channelId, input.parsed.channelId),
+      ),
+    )
+    .limit(1);
+
+  let conversation = existing;
+  let created = false;
+
+  if (!conversation) {
+    const subject =
+      channelType === "telegram"
+        ? `Telegram ${input.parsed.channelId}`
+        : channelType === "discord"
+          ? `Discord ${input.parsed.channelId}`
+          : channelType === "feishu"
+            ? `Feishu ${input.parsed.channelId}`
+            : channelType === "dingtalk"
+              ? `DingTalk ${input.parsed.channelId}`
+              : channelType === "whatsapp"
+                ? `WhatsApp ${input.parsed.channelId}`
+                : `Slack ${input.parsed.channelId}`;
+
+    const [row] = await db
+      .insert(conversations)
+      .values({
+        orgId: input.orgId,
+        brandId: input.brandId,
+        userId: input.parsed.userId,
+        channelType,
+        channelId: input.parsed.channelId,
+        subject,
+        status: "open",
+        lastMessageAt: new Date(),
+        messageCount: 1,
+        unreadCount: 1,
+        attributes: input.parsed.conversationAttributes ?? {},
+      })
+      .returning({ id: conversations.id, channelId: conversations.channelId });
+
+    if (!row) throw new Error("conversation_create_failed");
+    conversation = { id: row.id, channelId: row.channelId, subject };
+    created = true;
+
+    await recordConversationEvent(db, {
+      orgId: input.orgId,
+      conversationId: row.id,
+      eventType: "conversation.created",
+      actorType: "user",
+      actorId: input.parsed.userId,
+      payload: { channel: channelType },
+    });
+  } else if (input.parsed.conversationAttributes) {
+    const [existingRow] = await db
+      .select({ attributes: conversations.attributes })
+      .from(conversations)
+      .where(eq(conversations.id, conversation.id))
+      .limit(1);
+    await db
+      .update(conversations)
+      .set({
+        attributes: {
+          ...(existingRow?.attributes ?? {}),
+          ...input.parsed.conversationAttributes,
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversation.id));
+  }
+
+  return { conversation, created };
 }
 
 async function resolveImReplyContext(

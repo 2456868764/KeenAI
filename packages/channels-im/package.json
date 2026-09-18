@@ -11,6 +11,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
+    "@keenai/channels-core": "workspace:*",
     "@keenai/shared": "workspace:*"
   },
   "devDependencies": {

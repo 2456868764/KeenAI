@@ -36,10 +36,10 @@
 ┌────────────────────────────────────────────────────────────┐
 │                  异步任务层 Async Workers                     │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │ Workflow │ │  Email   │ │   AI     │ │ Crawler  │       │
-│  │ (Inngest │ │  Worker  │ │  Worker  │ │  Worker  │       │
-│  │ +BullMQ) │ │ (imapflow│ │ (RAG /   │ │ (crawlee)│       │
-│  │          │ │  poller) │ │ Memory)  │ │          │       │
+│  │ Workflow │ │ Channel  │ │   AI     │ │ Crawler  │       │
+│  │ (Inngest │ │ Ingress/ │ │  Worker  │ │  Worker  │       │
+│  │ +BullMQ) │ │ Delivery │ │ (RAG /   │ │ (crawlee)│       │
+│  │          │ │ Runtime  │ │ Memory)  │ │          │       │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
 └────────────────────────────────────────────────────────────┘
                               │
@@ -56,7 +56,7 @@
                               │
 ┌────────────────────────────────────────────────────────────┐
 │                  外部依赖 External Services                  │
-│  LLM Providers │ Email │ Slack │ Linear │ Jira │ MCP Servers│
+│ LLM │ Email │ Slack/Discord/IM │ Linear/Jira │ MCP Servers │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -584,6 +584,36 @@ Vector:  pgvector / Turso 向量 / Qdrant Cloud
 
 > 同一份代码无需修改即可同时跑「自托管单机 Bun + LibSQL」与「Vercel + Neon + Inngest Cloud」。
 
+### 2.9 Channel Gateway（统一渠道接入与可靠投递）
+
+> 核心可靠消息链路已落地，长连接 supervisor 和管理端 DLQ 重放仍按连接逐步增强。完整契约、数据流和 Widget 专项设计见 [16-Channel.md](16-Channel.md)。
+
+Widget、Email、Slack、Discord、WhatsApp、微信/企业微信、飞书、钉钉和 Telegram 统一进入 Channel Gateway，不再由各业务模块直接调用提供方 SDK。
+
+```text
+Channels
+  → Gateway（鉴权/签名/租户解析/原始事件持久化/ACK）
+  → Connection Runtime（长连接/轮询/Token 刷新/租约/健康）
+  → Durable Ingress（去重/标准化/身份与会话映射/重放）
+  → Durable Session Commands（每会话 FIFO/幂等/lease/恢复）
+  → Channel Kernel（Contact/Conversation/Message/Policy/Audit）
+  → Workflow / Agent / Human Inbox
+  → Transactional Outbox
+  → Sender Worker → Channel Plugin → Provider
+  → Receipt Worker（delivered/read/bounced/unknown）
+```
+
+架构边界：
+
+- **Channel Plugin** 只适配协议并声明能力，不直接操作 Workflow、Agent 或业务表。
+- **Connection Runtime** 负责凭据、Token 交换和有状态连接生命周期；Webhook 已落地，需要常驻 Socket/Stream 的连接 supervisor 仍待增强。
+- **Durable Ingress** 以 `(connection_id, provider_event_id)` 去重，成功持久化后才向提供方 ACK。
+- **Durable Session Commands** 以 `channel_session_commands` 按 Conversation 串行调度，不依赖进程内队列恢复业务事实。
+- **Durable Delivery** 使用事务 Outbox；业务提交不等于外部送达，最终状态由提供方回执推进。
+- **Channel Kernel** 统一执行租户隔离、Policy、审批、审计、幂等和限流。
+
+当前契约在 `packages/channels-core`，可靠运行时在 `packages/channels-runtime`，插件在 `packages/channels-{widget,email,im}`，API 内的 `channel-dispatch.ts` 通过 Inngest 或本地调度执行 Ingress、Session 和 Delivery worker。
+
 ---
 
 ## 三、核心数据流
@@ -658,6 +688,32 @@ conversation/message.created（及 ticket/email 等 adapter）
   → seal → memory_summaries → 物化 memory_episodes
   → Agent 检索：drill_down / topic / brand_daily + 现有 RRF
 ```
+
+### 3.2.3 统一渠道可靠消息流
+
+> 本流程已用于 Email 和 IM 入站、以及 Widget/Email/IM 出站。Widget 入站 API 直接提交规范 Message，不重复保存 Ingress envelope。
+
+```text
+Inbound
+  Provider → Channel Gateway
+  → verify + persist channel_ingress_event → provider ACK
+  → Ingress Worker → plugin.normalize
+  → identity/conversation mapping
+  → channel_session_command（每 Conversation 串行）
+  → Message + Event
+  → Workflow / Agent / Human Inbox
+
+Outbound
+  Workflow / Agent / Human
+  → pending Message → 幂等 channel_outbox
+  → Recovery Scanner（补齐崩溃窗口）
+  → Sender Worker → capability adaptation → plugin.send
+  → accepted / retry / failed / unknown
+  → Receipt Worker → delivered / read / bounced
+  → DLQ + audited replay（超过重试阈值）
+```
+
+Trace 使用 `provider_event_id → ingress_event_id → message_id → workflow_run/agent_run → outbox_id → provider_message_id → receipt_id` 串联；队列按至少一次投递设计，副作用由各层幂等键消除。
 
 ### 3.3 AI Custom Action 调用
 
@@ -800,6 +856,8 @@ AI 专属
 | 前端 | Next.js 15 + React 19 | SSR · RSC · 生态 |
 | UI 库 | Shadcn/ui | 无依赖 · 可定制 |
 | Widget | Preact + Shadow DOM | 包体小 · 隔离 |
+| 渠道接入 | **Gateway + Channel Plugin + Connection Runtime** | 统一协议边界 · 支持 Webhook/长连接/轮询 |
+| 渠道可靠性 | **Durable Ingress + Transactional Outbox + Receipt/DLQ** | 去重 · 可重试 · 可追踪 · 可重放 |
 | Lint+Format | **Biome** | 单工具 · Rust · 飞快 |
 | 测试 | **Vitest + Playwright** | 现代标准 |
 | 部署 | Docker Compose（Lite/Standard/Full）+ Helm + Edge | 自托管 + K8s + Cloudflare/Vercel |

@@ -43,7 +43,6 @@ import {
   clearConversationAutoCloseMarker,
 } from "./conversation-auto-close.js";
 import { buildMessageContent, insertMessage } from "./conversations.js";
-import { buildEmailSendJob, dispatchEmailOutbound } from "./email-outbound.js";
 import { getKbDispatch } from "./kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "./kb-dispatch.js";
 import { getSharedMcpHost } from "./mcp-tools.js";
@@ -421,7 +420,7 @@ export function createWorkflowActionHandlers(
 
   return {
     sendMessage: async ({ plainText, attachmentIds }) => {
-      const { message } = await insertMessage(db, {
+      await insertMessage(db, {
         orgId: workflow.orgId,
         conversationId,
         senderType: "agent",
@@ -432,18 +431,6 @@ export function createWorkflowActionHandlers(
         sentVia: "workflow",
         isAgentReply: true,
       });
-
-      if (authConfig && (message.plainText.trim() || (attachmentIds?.length ?? 0) > 0)) {
-        const job = await buildEmailSendJob(db, env, {
-          orgId: workflow.orgId,
-          conversationId,
-          plainText: message.plainText,
-          messageId: message.id,
-        });
-        if (job) {
-          await dispatchEmailOutbound(db, env, authConfig, job);
-        }
-      }
     },
     addNote: async ({ plainText }) => {
       await insertMessage(db, {
@@ -510,7 +497,7 @@ export function createWorkflowActionHandlers(
     },
     showExpectedReplyTime: async (input) => {
       const result = await resolveExpectedReplyTimeMessage(db, workflow.orgId, input);
-      const { message } = await insertMessage(db, {
+      await insertMessage(db, {
         orgId: workflow.orgId,
         conversationId,
         senderType: "agent",
@@ -525,18 +512,6 @@ export function createWorkflowActionHandlers(
           workflowRunId,
         },
       });
-
-      if (authConfig && message.plainText.trim()) {
-        const job = await buildEmailSendJob(db, env, {
-          orgId: workflow.orgId,
-          conversationId,
-          plainText: message.plainText,
-          messageId: message.id,
-        });
-        if (job) {
-          await dispatchEmailOutbound(db, env, authConfig, job);
-        }
-      }
 
       return result;
     },

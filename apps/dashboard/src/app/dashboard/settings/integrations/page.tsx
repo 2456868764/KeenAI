@@ -1,17 +1,36 @@
 "use client";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { fetchMe } from "@/lib/api";
+import {
+  type ChannelConnection,
+  type ChannelType,
+  fetchMe,
+  listBrands,
+  listChannelConnections,
+  saveChannelConnection,
+} from "@/lib/api";
 import { Button, Input } from "@keenai/ui";
-import { useQuery } from "@tanstack/react-query";
-import { Bot, Boxes, MessageCircle, MessageSquare, Search, Send, Slack, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Bot,
+  Boxes,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Search,
+  Send,
+  Slack,
+  Smartphone,
+  Webhook,
+  X,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8090";
 
 type Integration = {
-  id: string;
+  id: ChannelType;
   name: string;
   description: string;
   icon: LucideIcon;
@@ -20,6 +39,12 @@ type Integration = {
   webhookPath?: string;
   env?: string[];
   setup?: string;
+  credentialFields: Array<{
+    key: string;
+    label: string;
+    type?: "text" | "password" | "number";
+    placeholder?: string;
+  }>;
 };
 
 const integrations: Integration[] = [
@@ -34,6 +59,10 @@ const integrations: Integration[] = [
     env: ["SLACK_BOT_TOKEN", "SLACK_SIGNING_SECRET"],
     setup:
       "Create a Slack app, subscribe to message events, then paste this webhook URL into Slack.",
+    credentialFields: [
+      { key: "botToken", label: "Bot token", type: "password" },
+      { key: "signingSecret", label: "Signing secret", type: "password" },
+    ],
   },
   {
     id: "discord",
@@ -45,6 +74,10 @@ const integrations: Integration[] = [
     webhookPath: "/api/v1/webhooks/im/discord",
     env: ["DISCORD_BOT_TOKEN"],
     setup: "Connect a Discord bot token and forward message events to this endpoint.",
+    credentialFields: [
+      { key: "botToken", label: "Bot token", type: "password" },
+      { key: "publicKey", label: "Application public key", type: "password" },
+    ],
   },
   {
     id: "feishu",
@@ -56,6 +89,12 @@ const integrations: Integration[] = [
     webhookPath: "/api/v1/webhooks/im/feishu",
     env: ["FEISHU_APP_ID", "FEISHU_APP_SECRET"],
     setup: "Create a Feishu/Lark bot app, enable event subscriptions, then use this request URL.",
+    credentialFields: [
+      { key: "appId", label: "App ID" },
+      { key: "appSecret", label: "App secret", type: "password" },
+      { key: "tenantAccessToken", label: "Tenant access token (optional)", type: "password" },
+      { key: "verificationToken", label: "Verification token", type: "password" },
+    ],
   },
   {
     id: "dingtalk",
@@ -68,6 +107,7 @@ const integrations: Integration[] = [
     webhookPath: "/api/v1/webhooks/im/dingtalk",
     env: ["DINGTALK_APP_KEY", "DINGTALK_APP_SECRET"],
     setup: "Configure a DingTalk custom robot callback and set the app credentials in API env.",
+    credentialFields: [{ key: "signingSecret", label: "Signing secret", type: "password" }],
   },
   {
     id: "telegram",
@@ -79,12 +119,85 @@ const integrations: Integration[] = [
     webhookPath: "/api/v1/webhooks/im/telegram",
     env: ["TELEGRAM_BOT_TOKEN"],
     setup: "Create a Telegram bot with BotFather and register this webhook URL for updates.",
+    credentialFields: [
+      { key: "botToken", label: "Bot token", type: "password" },
+      { key: "webhookSecret", label: "Webhook secret token", type: "password" },
+    ],
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    description: "Connect the official WhatsApp Cloud API for customer messages and replies.",
+    icon: Smartphone,
+    iconTone: "text-emerald-600",
+    action: "Configure",
+    webhookPath: "/api/v1/webhooks/im/whatsapp",
+    env: ["WHATSAPP_VERIFY_TOKEN"],
+    setup: "Configure a Meta WhatsApp Cloud API app and register this webhook URL.",
+    credentialFields: [
+      { key: "accessToken", label: "Access token", type: "password" },
+      { key: "appSecret", label: "App secret", type: "password" },
+      { key: "verifyToken", label: "Webhook verify token", type: "password" },
+      { key: "phoneNumberId", label: "Phone number ID" },
+      { key: "graphApiVersion", label: "Graph API version", placeholder: "v20.0" },
+    ],
+  },
+  {
+    id: "wecom",
+    name: "WeCom",
+    description: "Connect an official WeCom application for enterprise customer messaging.",
+    icon: MessageSquare,
+    iconTone: "text-green-600",
+    action: "Configure",
+    webhookPath: "/api/v1/webhooks/im/wecom",
+    setup: "Configure a WeCom application callback and outbound application credentials.",
+    credentialFields: [
+      { key: "corpId", label: "Corp ID" },
+      { key: "corpSecret", label: "Corp secret", type: "password" },
+      { key: "callbackToken", label: "Callback token", type: "password" },
+      { key: "encodingAesKey", label: "Encoding AES key", type: "password" },
+      { key: "accessToken", label: "Access token (optional)", type: "password" },
+    ],
+  },
+  {
+    id: "email",
+    name: "Email",
+    description: "Receive support email and deliver durable SMTP replies from one channel runtime.",
+    icon: Mail,
+    iconTone: "text-rose-500",
+    action: "Configure",
+    webhookPath: "/api/v1/webhooks/email/inbound",
+    setup: "Configure inbound email forwarding and the SMTP account used for replies.",
+    credentialFields: [
+      { key: "host", label: "SMTP host" },
+      { key: "port", label: "SMTP port", type: "number", placeholder: "587" },
+      { key: "user", label: "SMTP user" },
+      { key: "pass", label: "SMTP password", type: "password" },
+      { key: "from", label: "From address" },
+    ],
+  },
+  {
+    id: "widget",
+    name: "Widget",
+    description: "Use the built-in Messenger widget through the unified channel runtime.",
+    icon: Webhook,
+    iconTone: "text-violet-500",
+    action: "Configure",
+    setup: "Widget delivery uses the authenticated Messenger connection and realtime event bus.",
+    credentialFields: [],
   },
 ];
 
 export default function IntegrationsSettingsPage() {
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: listBrands });
   const orgSlug = me?.organization?.slug ?? "your-org";
+  const brandId = me?.brandIds[0] ?? brands?.items[0]?.id;
+  const { data: connections } = useQuery({
+    queryKey: ["channel-connections", brandId],
+    queryFn: () => listChannelConnections(brandId),
+    enabled: Boolean(brandId),
+  });
   const [query, setQuery] = useState("");
   const [modalIntegration, setModalIntegration] = useState<Integration | null>(null);
 
@@ -165,6 +278,10 @@ export default function IntegrationsSettingsPage() {
         <IntegrationConfigDialog
           integration={modalIntegration}
           orgSlug={orgSlug}
+          brandId={brandId}
+          connection={connections?.items.find(
+            (connection) => connection.channelType === modalIntegration.id,
+          )}
           onClose={() => setModalIntegration(null)}
         />
       ) : null}
@@ -206,13 +323,41 @@ function IntegrationCard({
 function IntegrationConfigDialog({
   integration,
   orgSlug,
+  brandId,
+  connection,
   onClose,
 }: {
   integration: Integration;
   orgSlug: string;
+  brandId?: string;
+  connection?: ChannelConnection;
   onClose: () => void;
 }) {
   const Icon = integration.icon;
+  const queryClient = useQueryClient();
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!brandId) throw new Error("No brand is available for this workspace.");
+      const values = Object.fromEntries(
+        Object.entries(credentials)
+          .filter(([, value]) => value.trim())
+          .map(([key, value]) => [key, key === "port" ? Number(value) : value.trim()]),
+      );
+      return saveChannelConnection({
+        brandId,
+        channelType: integration.id,
+        name: integration.name,
+        credentials: values,
+        settings: connection?.settings ?? {},
+        status: "active",
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["channel-connections", brandId] });
+      onClose();
+    },
+  });
   const webhookUrl = integration.webhookPath
     ? `${API_URL}${integration.webhookPath}?org=${encodeURIComponent(orgSlug)}`
     : null;
@@ -290,6 +435,40 @@ function IntegrationConfigDialog({
                 <code className="rounded bg-[hsl(var(--surface-2))] px-1">WEBHOOK_IM_SECRET</code>{" "}
                 is set.
               </p>
+
+              {integration.credentialFields.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {integration.credentialFields.map((field) => (
+                    <label
+                      key={field.key}
+                      htmlFor={`channel-credential-${field.key}`}
+                      className="space-y-2 text-sm font-medium"
+                    >
+                      <span>{field.label}</span>
+                      <Input
+                        id={`channel-credential-${field.key}`}
+                        type={field.type ?? "text"}
+                        inputMode={field.type === "number" ? "numeric" : undefined}
+                        value={credentials[field.key] ?? ""}
+                        onChange={(event) =>
+                          setCredentials((current) => ({
+                            ...current,
+                            [field.key]: event.target.value,
+                          }))
+                        }
+                        placeholder={
+                          connection?.configuredCredentialKeys.includes(field.key)
+                            ? "Configured - leave blank to keep"
+                            : field.placeholder
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                Status: {connection?.status ?? "Not configured"}
+              </p>
             </div>
           ) : (
             <div className="rounded-lg bg-[hsl(var(--surface-2))] p-4 text-sm text-[hsl(var(--muted-foreground))]">
@@ -302,6 +481,9 @@ function IntegrationConfigDialog({
         <div className="flex justify-end gap-2 border-t border-[hsl(var(--border))] p-4">
           <Button variant="outline" onClick={onClose}>
             Close
+          </Button>
+          <Button disabled={!brandId || save.isPending} onClick={() => save.mutate()}>
+            {save.isPending ? "Saving..." : "Save"}
           </Button>
         </div>
       </section>

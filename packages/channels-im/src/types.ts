@@ -1,6 +1,13 @@
 import type { MessageKind, MessagePart, OutboundDirectives } from "@keenai/shared";
 
-export type ImPlatform = "telegram" | "slack" | "discord" | "feishu" | "dingtalk" | "whatsapp";
+export type ImPlatform =
+  | "telegram"
+  | "slack"
+  | "discord"
+  | "feishu"
+  | "dingtalk"
+  | "whatsapp"
+  | "wecom";
 
 export type ImPendingAttachment = {
   fileName: string;
@@ -129,13 +136,22 @@ export type WhatsAppOutboundAction =
       caption?: string;
     };
 
+export type WeComOutboundAction = {
+  platform: "wecom";
+  method: "message.send";
+  toUser: string;
+  agentId: number;
+  text: string;
+};
+
 export type ImOutboundAction =
   | TelegramOutboundAction
   | SlackOutboundAction
   | DiscordOutboundAction
   | FeishuOutboundAction
   | DingTalkOutboundAction
-  | WhatsAppOutboundAction;
+  | WhatsAppOutboundAction
+  | WeComOutboundAction;
 
 export type PlanImOutboundInput = {
   platform: ImPlatform;
