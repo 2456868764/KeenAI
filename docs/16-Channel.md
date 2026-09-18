@@ -19,7 +19,7 @@
 
 - 不复制 OpenClaw 的单用户设备配对模型。KeenAI 是多租户 SaaS，连接、凭据、路由和审计均以 `org_id`、`brand_id` 为边界。
 - 不让 Channel Plugin 持有业务真相。Conversation、Message、Workflow Run 和 Agent Run 仍由各自领域模块管理。
-- 不用 API 请求线程承担可靠投递。外部发送必须经过事务 Outbox 和异步 Sender Worker。
+- 不用 API 请求线程承担可靠投递。外部发送必须经过可恢复 Outbox 和异步 Sender Worker。
 
 ## 2. 整体架构
 
@@ -39,7 +39,7 @@ Channel Kernel: Contact / Conversation / Message / Policy / Audit / Idempotency
                  Workflow / Agent              Human Inbox
                          └────────────┬────────────┘
                                       ▼
-Durable Delivery: transactional outbox / scheduler / sender / retry / receipt / DLQ
+Durable Delivery: recoverable outbox / scheduler / sender / retry / receipt / DLQ
                                       ▼
                               Channel Plugin.send()
 ```
@@ -258,7 +258,7 @@ WhatsApp 采用官方 Meta Cloud API；微信优先企业微信或官方开放�
 
 ## 12. 参考实现与采用边界
 
-本方案参考 [OpenClaw Gateway 架构](https://github.com/openclaw/openclaw/blob/main/docs/concepts/architecture.md)、[渠道路由](https://github.com/openclaw/openclaw/blob/main/docs/channels/channel-routing.md)、[Channel Plugin SDK](https://github.com/openclaw/openclaw/blob/main/docs/plugins/sdk-channel-plugins.md) 和 [ChannelPlugin 类型](https://github.com/openclaw/openclaw/blob/main/src/channels/plugins/types.plugin.ts)。采用其 Gateway、插件化渠道、连接生命周期和确定性路由思想，同时针对 KeenAI 增加多租户隔离、事务 Outbox、持久化入站、投递回执和企业审计。
+本方案参考 [OpenClaw Gateway 架构](https://github.com/openclaw/openclaw/blob/main/docs/concepts/architecture.md)、[渠道路由](https://github.com/openclaw/openclaw/blob/main/docs/channels/channel-routing.md)、[Channel Plugin SDK](https://github.com/openclaw/openclaw/blob/main/docs/plugins/sdk-channel-plugins.md) 和 [ChannelPlugin 类型](https://github.com/openclaw/openclaw/blob/main/src/channels/plugins/types.plugin.ts)。采用其 Gateway、插件化渠道、连接生命周期和确定性路由思想，同时针对 KeenAI 增加多租户隔离、可恢复 Outbox、持久化入站、投递回执和企业审计。
 
 不直接复制 OpenClaw 的个人设备会话、单 Gateway 信任边界和本地优先配置方式。具体参考路径及版本管理见 [00-REFERENCE-REPOS.md](./00-REFERENCE-REPOS.md)。
 
@@ -334,7 +334,7 @@ KeenAI 保留上述三层分工，但按企业多租户和多实例部署调整�
 
 - Durable Ingress 使用 `channel_ingress_events`，按 `(connection_id, provider_event_id)` 去重；任务通过 claim token、lease、退避和 DLQ 支持崩溃恢复。Webhook 在写入后 ACK，IMAP 在写入后才推进处理边界。
 - Session/Command Queue 不是进程内 Promise 队列，而是 `channel_session_commands` 持久化队列。它按 `conversation_id + sequence` 串行、用 `idempotency_key` 去重，并以 claim token 和 lease 防止多实例重复执行。
-- Durable Delivery 使用 `channel_outbox + channel_delivery_attempts + channel_delivery_receipts`，与 Message 事务提交并保留提供方消息 ID。
+- Durable Delivery 使用 `channel_outbox + channel_delivery_attempts + channel_delivery_receipts`；pending Message 通过幂等 Outbox 和 recovery scan 可恢复接管，并保留提供方消息 ID。
 - `unknown_after_send` 默认停止自动重放；只有插件声明并通过 `reconcileUnknownSend` contract test 后才允许自动对账重试。
 - Email 和七种 IM Webhook 入站走 Durable Ingress/Session Command；Widget 入站 API 先直接写入规范 Message 事实，因此不再复制一份 Ingress 事件。
 - Widget、Email 和 IM 的 Agent/Workflow 可见回复全部通过同一 Outbox 发送，旧 Email 直接 SMTP 发送已从业务路径移除。

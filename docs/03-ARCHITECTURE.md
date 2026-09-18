@@ -598,7 +598,7 @@ Channels
   → Durable Session Commands（每会话 FIFO/幂等/lease/恢复）
   → Channel Kernel（Contact/Conversation/Message/Policy/Audit）
   → Workflow / Agent / Human Inbox
-  → Transactional Outbox
+  → Durable Outbox + Recovery Scanner
   → Sender Worker → Channel Plugin → Provider
   → Receipt Worker（delivered/read/bounced/unknown）
 ```
@@ -609,7 +609,7 @@ Channels
 - **Connection Runtime** 负责凭据、Token 交换和有状态连接生命周期；Webhook 已落地，需要常驻 Socket/Stream 的连接 supervisor 仍待增强。
 - **Durable Ingress** 以 `(connection_id, provider_event_id)` 去重，成功持久化后才向提供方 ACK。
 - **Durable Session Commands** 以 `channel_session_commands` 按 Conversation 串行调度，不依赖进程内队列恢复业务事实。
-- **Durable Delivery** 使用事务 Outbox；业务提交不等于外部送达，最终状态由提供方回执推进。
+- **Durable Delivery** 使用可恢复 Outbox；业务提交不等于外部送达，最终状态由提供方回执推进。
 - **Channel Kernel** 统一执行租户隔离、Policy、审批、审计、幂等和限流。
 
 当前契约在 `packages/channels-core`，可靠运行时在 `packages/channels-runtime`，插件在 `packages/channels-{widget,email,im}`，API 内的 `channel-dispatch.ts` 通过 Inngest 或本地调度执行 Ingress、Session 和 Delivery worker。
@@ -857,7 +857,7 @@ AI 专属
 | UI 库 | Shadcn/ui | 无依赖 · 可定制 |
 | Widget | Preact + Shadow DOM | 包体小 · 隔离 |
 | 渠道接入 | **Gateway + Channel Plugin + Connection Runtime** | 统一协议边界 · 支持 Webhook/长连接/轮询 |
-| 渠道可靠性 | **Durable Ingress + Transactional Outbox + Receipt/DLQ** | 去重 · 可重试 · 可追踪 · 可重放 |
+| 渠道可靠性 | **Durable Ingress + Recoverable Outbox + Receipt/DLQ** | 去重 · 可重试 · 可追踪 · 可重放 |
 | Lint+Format | **Biome** | 单工具 · Rust · 飞快 |
 | 测试 | **Vitest + Playwright** | 现代标准 |
 | 部署 | Docker Compose（Lite/Standard/Full）+ Helm + Edge | 自托管 + K8s + Cloudflare/Vercel |

@@ -276,7 +276,7 @@ Inbound
   → Workflow / Agent / Human Inbox
 
 Outbound
-  Message + transactional outbox → Sender Worker
+  pending Message + recoverable outbox → Sender Worker
   → Channel Plugin → Provider → Receipt Worker
   → delivered/read/bounced，失败则 retry/DLQ
 ```
