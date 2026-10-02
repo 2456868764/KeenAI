@@ -21,14 +21,39 @@ export type WidgetMessagePayload = {
   createdAt?: string;
   messageKind?: string;
   attachments?: WidgetAttachment[];
+  editedAt?: string | null;
+  deletedAt?: string | null;
+  reactions?: Array<{
+    actorType: string;
+    actorId: string;
+    emoji: string;
+    createdAt: string;
+  }>;
 };
 
-export type ConversationRealtimeEvent = {
-  type: string;
-  conversationId?: string;
-  message?: WidgetMessagePayload;
-  conversation?: unknown;
-};
+export type ConversationRealtimeEvent =
+  | { type: "connected"; conversationId: string }
+  | {
+      type: "message.created";
+      conversationId: string;
+      message: WidgetMessagePayload;
+    }
+  | {
+      type: "message.updated";
+      conversationId: string;
+      message: WidgetMessagePayload;
+    }
+  | {
+      type: "conversation.updated";
+      conversationId: string;
+      conversation: unknown;
+    }
+  | {
+      type: "typing";
+      conversationId: string;
+      actorType: "agent";
+      expiresAt: string;
+    };
 
 export type SendWidgetMessageInput = {
   plainText?: string;

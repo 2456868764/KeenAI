@@ -1,8 +1,13 @@
-import { enqueueExtractChunkIfAdmitted, ingestConversationMessage } from "@keenai/memory-tree";
+import {
+  enqueueExtractChunkIfAdmitted,
+  ingestConversationMessage,
+  invalidateConversationMessageMemory,
+} from "@keenai/memory-tree";
 import type { KeenaiDb } from "@keenai/storage";
 import { getMemoryChunkEmbedder } from "./memory-chunk-embed-init.js";
-import { getMemoryChunkFtsIndexer } from "./memory-chunk-fts-init.js";
+import { getMemoryChunkFtsIndexer, getMemoryChunkFtsStore } from "./memory-chunk-fts-init.js";
 import { getMemoryChunkVectorStore } from "./memory-chunk-vector-init.js";
+import { getMemorySummaryFtsStore } from "./memory-summary-fts-init.js";
 
 export async function ingestMemoryTreeForMessage(
   db: KeenaiDb,
@@ -54,4 +59,25 @@ export async function ingestMemoryTreeForMessage(
   }
 
   return result;
+}
+
+export async function invalidateMemoryTreeForMessage(
+  db: KeenaiDb,
+  input: { orgId: string; brandId: string; messageId: string },
+) {
+  return invalidateConversationMessageMemory(db, {
+    ...input,
+    chunkFts: getMemoryChunkFtsStore(),
+    chunkVectorStore: getMemoryChunkVectorStore(),
+    summaryFts: getMemorySummaryFtsStore(),
+  });
+}
+
+export async function refreshMemoryTreeForMessage(
+  db: KeenaiDb,
+  input: Parameters<typeof ingestMemoryTreeForMessage>[1],
+  opts?: Parameters<typeof ingestMemoryTreeForMessage>[2],
+) {
+  await invalidateMemoryTreeForMessage(db, input);
+  return ingestMemoryTreeForMessage(db, input, opts);
 }

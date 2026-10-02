@@ -23,6 +23,7 @@ describe("MessagesPanel", () => {
     panel.renderHistory([{ id: "m1", plainText: "hi", senderType: "user" }]);
     panel.handleRealtime({
       type: "message.created",
+      conversationId: "conversation-1",
       message: { id: "m1", plainText: "hi", senderType: "user" },
     });
 
@@ -37,6 +38,91 @@ describe("MessagesPanel", () => {
     await new Promise((r) => setTimeout(r, 60));
     expect(onSend).toHaveBeenCalledWith({ plainText: "hello" });
     expect(input.disabled).toBe(false);
+  });
+
+  it("shows and hides the agent typing indicator", () => {
+    const container = document.createElement("div");
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
+
+    const typing = container.querySelector(".keenai-typing") as HTMLDivElement;
+    expect(typing.hidden).toBe(true);
+    panel.setAgentTyping(true);
+    expect(typing.hidden).toBe(false);
+    panel.setAgentTyping(false);
+    expect(typing.hidden).toBe(true);
+  });
+
+  it("renders edited, reacted, and deleted message state", () => {
+    const container = document.createElement("div");
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
+
+    panel.renderHistory([
+      {
+        id: "m-edited",
+        plainText: "Updated answer",
+        senderType: "agent",
+        editedAt: "2026-10-01T12:00:00.000Z",
+        reactions: [
+          {
+            actorType: "agent",
+            actorId: "agent-1",
+            emoji: "👍",
+            createdAt: "2026-10-01T12:00:01.000Z",
+          },
+        ],
+      },
+    ]);
+    expect(container.querySelector(".keenai-bubble__edited")?.textContent).toBe("Edited");
+    expect(container.querySelector(".keenai-bubble__reactions")?.textContent).toBe("👍");
+
+    panel.renderHistory([
+      {
+        id: "m-edited",
+        plainText: "Updated answer",
+        senderType: "agent",
+        deletedAt: "2026-10-01T12:01:00.000Z",
+      },
+    ]);
+    expect(container.querySelector(".keenai-bubble")?.textContent).toBe("Message deleted");
+  });
+
+  it("renders agent markdown without executing raw HTML", () => {
+    const container = document.createElement("div");
+    const panel = new MessagesPanel({
+      container,
+      apiUrl: "http://localhost:8090",
+      accessToken: "token",
+      onSend: vi.fn(async () => {}),
+      onUploadImage: vi.fn(async () => "att1"),
+      fetchAttachmentBlob: vi.fn(async () => "blob:mock"),
+    });
+
+    panel.renderHistory([
+      {
+        id: "agent-markdown",
+        plainText: "**Answer** <script>alert(1)</script>",
+        senderType: "agent",
+      },
+    ]);
+
+    const text = container.querySelector(".keenai-bubble__text--markdown") as HTMLElement;
+    expect(text.querySelector("strong")?.textContent).toBe("Answer");
+    expect(text.querySelector("script")).toBeNull();
+    expect(text.textContent).toContain("<script>alert(1)</script>");
   });
 
   it("renders audio attachments with a player", () => {
@@ -178,7 +264,12 @@ describe("MessagesPanel", () => {
             ticketId: "ticket-1",
             fields: [
               { key: "impact", label: "Impact", type: "text", required: true },
-              { key: "affected_users", label: "Affected users", type: "number", required: false },
+              {
+                key: "affected_users",
+                label: "Affected users",
+                type: "number",
+                required: false,
+              },
               {
                 key: "severity",
                 label: "Severity",

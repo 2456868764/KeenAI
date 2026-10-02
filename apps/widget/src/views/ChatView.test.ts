@@ -22,6 +22,7 @@ function renderChat(allowHandoff: boolean) {
       conversation,
       messages: [],
       answerState,
+      agentTyping: false,
       handoffRequested: false,
       allowHandoff,
       onSend: vi.fn(),

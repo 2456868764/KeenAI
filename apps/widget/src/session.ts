@@ -236,6 +236,31 @@ export async function fetchWidgetMessages(input: {
   return body.items;
 }
 
+export async function acknowledgeWidgetMessages(input: {
+  apiUrl?: string;
+  accessToken: string;
+  conversationId: string;
+  messageIds: string[];
+  status?: "delivered" | "read";
+}): Promise<void> {
+  if (input.messageIds.length === 0) return;
+  const res = await fetch(
+    `${apiBase(input.apiUrl)}/api/v1/widget/conversations/${input.conversationId}/receipts`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${input.accessToken}`,
+      },
+      body: JSON.stringify({
+        messageIds: input.messageIds.slice(0, 100),
+        status: input.status ?? "read",
+      }),
+    },
+  );
+  if (!res.ok) throw new Error(`receipt_failed:${res.status}`);
+}
+
 export async function uploadWidgetImage(input: {
   apiUrl?: string;
   accessToken: string;
@@ -273,26 +298,37 @@ export async function postWidgetMessage(input: {
   apiUrl?: string;
   accessToken: string;
   conversationId: string;
+  clientMessageId?: string;
   plainText?: string;
   attachmentIds?: string[];
 }): Promise<WidgetMessage> {
-  const res = await fetch(
-    `${apiBase(input.apiUrl)}/api/v1/widget/conversations/${input.conversationId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${input.accessToken}`,
+  const clientMessageId = input.clientMessageId ?? globalThis.crypto.randomUUID();
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const res = await fetch(
+      `${apiBase(input.apiUrl)}/api/v1/widget/conversations/${input.conversationId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${input.accessToken}`,
+        },
+        body: JSON.stringify({
+          clientMessageId,
+          plainText: input.plainText,
+          attachmentIds: input.attachmentIds,
+        }),
       },
-      body: JSON.stringify({
-        plainText: input.plainText,
-        attachmentIds: input.attachmentIds,
-      }),
-    },
-  );
-  if (!res.ok) throw new Error(`send_failed:${res.status}`);
-  const body = (await res.json()) as { message: WidgetMessage };
-  return body.message;
+    );
+    if (res.status === 202 && attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+      continue;
+    }
+    if (!res.ok) throw new Error(`send_failed:${res.status}`);
+    const body = (await res.json()) as { message?: WidgetMessage };
+    if (!body.message) throw new Error("send_failed:message_pending");
+    return body.message;
+  }
+  throw new Error("send_failed:message_pending");
 }
 
 export async function requestWidgetHandoff(input: {

@@ -1,3 +1,5 @@
+import { renderSafeMarkdownHtml } from "@keenai/shared/markdown";
+
 export type ReplyTemplateVars = {
   agentName: string;
   plainText: string;
@@ -16,6 +18,10 @@ export function renderAgentReplyHtml(vars: ReplyTemplateVars): string {
   const footer = vars.footer ?? "Sent via KeenAI";
   const escaped = escapeHtml(vars.plainText).replace(/\n/g, "<br/>");
   return `<!DOCTYPE html><html><body><p>${escaped}</p><p style="color:#666;font-size:12px">${escapeHtml(footer)}</p></body></html>`;
+}
+
+export function renderAgentMarkdownHtml(markdown: string): string {
+  return `<!DOCTYPE html><html><body>${renderSafeMarkdownHtml(markdown)}</body></html>`;
 }
 
 function escapeHtml(s: string): string {

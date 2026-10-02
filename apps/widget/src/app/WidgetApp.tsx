@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { KeenAIBootOptions } from "../boot.js";
 import { Launcher } from "../components/Launcher.js";
 import { WidgetShell } from "../components/WidgetShell.js";
 import {
   type WidgetConversation,
   type WidgetMessage,
+  acknowledgeWidgetMessages,
   createWidgetSession,
   createWidgetTicket,
   fetchWidgetAttachmentBlob,
@@ -72,6 +73,8 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     citations: [],
   });
   const [handoffRequested, setHandoffRequested] = useState(false);
+  const [agentTyping, setAgentTyping] = useState(false);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeConversationId = activeConversation?.id ?? "";
   const activeMessages = activeConversationId
@@ -86,9 +89,23 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     });
   }, []);
 
+  const updateMessage = useCallback((conversationId: string, message: WidgetMessage) => {
+    setMessagesByConversation((current) => {
+      const messages = current[conversationId] ?? [];
+      const index = messages.findIndex((item) => item.id === message.id);
+      if (index < 0) return { ...current, [conversationId]: [...messages, message] };
+      const next = [...messages];
+      next[index] = message;
+      return { ...current, [conversationId]: next };
+    });
+  }, []);
+
   const refreshConversations = useCallback(
     async (token: string) => {
-      const items = await fetchWidgetConversations({ apiUrl, accessToken: token });
+      const items = await fetchWidgetConversations({
+        apiUrl,
+        accessToken: token,
+      });
       setConversations(items);
     },
     [apiUrl],
@@ -96,8 +113,24 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
 
   const loadConversationMessages = useCallback(
     async (token: string, conversationId: string) => {
-      const items = await fetchWidgetMessages({ apiUrl, accessToken: token, conversationId });
-      setMessagesByConversation((current) => ({ ...current, [conversationId]: items }));
+      const items = await fetchWidgetMessages({
+        apiUrl,
+        accessToken: token,
+        conversationId,
+      });
+      setMessagesByConversation((current) => ({
+        ...current,
+        [conversationId]: items,
+      }));
+      const readableIds = items
+        .filter((message) => message.senderType !== "user")
+        .map((message) => message.id);
+      void acknowledgeWidgetMessages({
+        apiUrl,
+        accessToken: token,
+        conversationId,
+        messageIds: readableIds,
+      }).catch(() => undefined);
     },
     [apiUrl],
   );
@@ -107,7 +140,10 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     setAnswerState({ status: "idle", text: "", citations: [] });
     setHandoffRequested(false);
     setView("chat");
-    const { conversation } = await getOrCreateWidgetConversation({ apiUrl, accessToken });
+    const { conversation } = await getOrCreateWidgetConversation({
+      apiUrl,
+      accessToken,
+    });
     setActiveConversation(conversation);
     await loadConversationMessages(accessToken, conversation.id);
     await refreshConversations(accessToken);
@@ -264,7 +300,10 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
         const [nextConfig, nextHome, conversation] = await Promise.all([
           fetchWidgetConfig({ apiUrl, accessToken: session.accessToken }),
           fetchWidgetHome({ apiUrl, accessToken: session.accessToken }),
-          getOrCreateWidgetConversation({ apiUrl, accessToken: session.accessToken }),
+          getOrCreateWidgetConversation({
+            apiUrl,
+            accessToken: session.accessToken,
+          }),
         ]);
         if (cancelled) return;
 
@@ -283,8 +322,30 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
           conversationId: conversation.conversation.id,
           widgetToken: session.accessToken,
           onEvent: (event: ConversationRealtimeEvent) => {
+            if (event.type === "typing" && event.actorType === "agent") {
+              setAgentTyping(true);
+              if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+              const remaining = Math.max(new Date(event.expiresAt).getTime() - Date.now(), 0);
+              typingTimerRef.current = setTimeout(() => setAgentTyping(false), remaining);
+              return;
+            }
             if (event.type === "message.created" && event.message && event.conversationId) {
+              setAgentTyping(false);
+              if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
               appendMessage(event.conversationId, event.message as WidgetMessage);
+              if (event.message.senderType !== "user") {
+                void acknowledgeWidgetMessages({
+                  apiUrl,
+                  accessToken: session.accessToken,
+                  conversationId: event.conversationId,
+                  messageIds: [event.message.id],
+                }).catch(() => undefined);
+              }
+              void refreshConversations(session.accessToken);
+              return;
+            }
+            if (event.type === "message.updated" && event.message && event.conversationId) {
+              updateMessage(event.conversationId, event.message as WidgetMessage);
               void refreshConversations(session.accessToken);
             }
           },
@@ -308,6 +369,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     return () => {
       cancelled = true;
       disconnectWs?.();
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
   }, [
     apiUrl,
@@ -317,6 +379,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
     options.orgSlug,
     options.user,
     refreshConversations,
+    updateMessage,
   ]);
 
   useEffect(() => {
@@ -346,7 +409,10 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
 
     let cancelled = false;
     async function loadChangelog() {
-      const entries = await fetchWidgetChangelogEntries({ apiUrl, accessToken });
+      const entries = await fetchWidgetChangelogEntries({
+        apiUrl,
+        accessToken,
+      });
       if (!cancelled) setChangelogEntries(entries);
     }
 
@@ -400,6 +466,7 @@ export function WidgetApp({ options, open, onOpenChange }: WidgetAppProps) {
             messages={activeMessages}
             answerState={answerState}
             handoffRequested={handoffRequested}
+            agentTyping={agentTyping}
             allowHandoff={config?.agent.allowHandoff !== false}
             onSend={sendMessage}
             onRequestHandoff={requestHandoff}

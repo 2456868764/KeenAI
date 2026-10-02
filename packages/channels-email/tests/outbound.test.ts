@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { sendOutboundEmail } from "../src/outbound.js";
-import { renderAgentReplyHtml, renderAgentReplyText } from "../src/templates.js";
+import {
+  renderAgentMarkdownHtml,
+  renderAgentReplyHtml,
+  renderAgentReplyText,
+} from "../src/templates.js";
 
 describe("email templates", () => {
   it("renders agent reply text and html", () => {
@@ -11,6 +15,13 @@ describe("email templates", () => {
     };
     expect(renderAgentReplyText(vars)).toContain("refunded");
     expect(renderAgentReplyHtml(vars)).toContain("<p>");
+  });
+
+  it("renders safe markdown email HTML", () => {
+    const html = renderAgentMarkdownHtml("**Answer** <script>alert(1)</script>");
+    expect(html).toContain("<strong>Answer</strong>");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
   });
 
   it("passes MIME attachments to the transport", async () => {

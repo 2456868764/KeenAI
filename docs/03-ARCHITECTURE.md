@@ -588,7 +588,7 @@ Vector:  pgvector / Turso 向量 / Qdrant Cloud
 
 > 核心可靠消息链路已落地，包括 Discord Gateway supervisor、连接租约/cursor、恢复扫描和管理端 DLQ 重放。完整契约、数据流和 Widget 专项设计见 [16-Channel.md](16-Channel.md)。
 
-Widget、Email、Slack、Discord、WhatsApp、微信/企业微信、飞书、钉钉和 Telegram 统一进入 Channel Gateway，不再由各业务模块直接调用提供方 SDK。
+Widget、Email、Slack、Discord、WhatsApp、微信公众号、企业微信、飞书、钉钉和 Telegram 统一进入 Channel Gateway，不再由各业务模块直接调用提供方 SDK。微信公众号使用官方公众号回调与客服消息 API；个人微信非官方协议不在生产边界内。
 
 ```text
 Channels

@@ -5,12 +5,17 @@ export function startEmailImapPollScheduler(ctx: AppContext, intervalMinutes: nu
   if (intervalMinutes <= 0) return () => {};
 
   const intervalMs = intervalMinutes * 60_000;
+  let running = false;
   const run = async () => {
+    if (running) return;
+    running = true;
     try {
       const result = await runEmailImapPoll(ctx);
       ctx.log.info(result, "email imap poll completed");
     } catch (err) {
       ctx.log.error({ err }, "email imap poll failed");
+    } finally {
+      running = false;
     }
   };
 
@@ -22,5 +27,6 @@ export function startEmailImapPollScheduler(ctx: AppContext, intervalMinutes: nu
     timer.unref();
   }
 
+  void run();
   return () => clearInterval(timer);
 }

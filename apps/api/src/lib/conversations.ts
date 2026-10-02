@@ -8,8 +8,14 @@ import {
   inferMessageKind,
   type messageContentSchema,
 } from "@keenai/shared";
-import { brands, conversationEvents, conversations, messages } from "@keenai/storage/schema";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import {
+  brands,
+  conversationEvents,
+  conversations,
+  reactions as messageReactions,
+  messages,
+} from "@keenai/storage/schema";
+import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
 import type { z } from "zod";
 import type { AppVariables } from "../types.js";
 import {
@@ -124,6 +130,8 @@ export function serializeMessage(row: typeof messages.$inferSelect) {
     metadata: row.metadata,
     parts,
     messageKind,
+    editedAt: row.editedAt?.toISOString() ?? null,
+    deletedAt: row.deletedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -136,7 +144,36 @@ export async function serializeMessagesWithAttachments(
     db,
     rows.map((r) => r.id),
   );
-  return enrichSerializedMessages(rows, attachmentMap, serializeMessage);
+  const reactionRows =
+    rows.length > 0
+      ? await db
+          .select()
+          .from(messageReactions)
+          .where(
+            inArray(
+              messageReactions.messageId,
+              rows.map((row) => row.id),
+            ),
+          )
+      : [];
+  const reactionsByMessage = new Map<string, typeof reactionRows>();
+  for (const reaction of reactionRows) {
+    const existing = reactionsByMessage.get(reaction.messageId) ?? [];
+    existing.push(reaction);
+    reactionsByMessage.set(reaction.messageId, existing);
+  }
+  return enrichSerializedMessages(rows, attachmentMap, serializeMessage).map((message, index) => {
+    const messageId = rows[index]?.id ?? "";
+    return {
+      ...message,
+      reactions: (reactionsByMessage.get(messageId) ?? []).map((reaction) => ({
+        actorType: reaction.actorType,
+        actorId: reaction.actorId,
+        emoji: reaction.emoji,
+        createdAt: reaction.createdAt.toISOString(),
+      })),
+    };
+  });
 }
 
 async function resolveMessagePayload(
@@ -437,7 +474,10 @@ export async function insertMessage(
     });
   }
 
-  const isAutomatedAgentMessage = input.sentVia === "workflow" || input.sentVia === "basic-agent";
+  const isAutomatedAgentMessage =
+    input.sentVia === "workflow" ||
+    input.sentVia === "basic-agent" ||
+    input.sentVia === "ticket-status";
   const isTeammateMessage =
     input.senderType === "agent" && !input.isInternal && !isAutomatedAgentMessage;
   const isTeammateNote =
@@ -513,6 +553,7 @@ function isExternallyDeliveredChannel(channelType: string): boolean {
     "feishu",
     "dingtalk",
     "whatsapp",
+    "wechat",
     "wecom",
   ].includes(channelType);
 }

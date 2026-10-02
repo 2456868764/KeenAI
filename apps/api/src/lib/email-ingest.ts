@@ -1,6 +1,9 @@
 import { randomBytes } from "node:crypto";
 import path from "node:path";
-import type { ParsedInboundEmailWithAttachments } from "@keenai/channels-email";
+import type {
+  ParsedEmailAttachment,
+  ParsedInboundEmailWithAttachments,
+} from "@keenai/channels-email";
 import { resolveThreadChannelId } from "@keenai/channels-email";
 import type { ApiEnv } from "@keenai/shared";
 import { conversations } from "@keenai/storage/schema";
@@ -23,6 +26,37 @@ type DurableInboundEmail = Omit<ParsedInboundEmailWithAttachments, "attachments"
     contentBase64: string;
   }>;
 };
+
+export function limitInboundEmailAttachments(
+  parsed: ParsedInboundEmailWithAttachments,
+  maxBytes: number,
+): ParsedInboundEmailWithAttachments {
+  const attachments: ParsedEmailAttachment[] = [];
+  const omitted: string[] = [];
+
+  for (const attachment of parsed.attachments) {
+    const actualSize = attachment.content.byteLength;
+    if (actualSize > maxBytes) {
+      const safeName = attachment.fileName.replace(/[\r\n\[\]]/g, "_").slice(0, 128);
+      omitted.push(`[Attachment omitted: ${safeName} exceeds ${formatByteLimit(maxBytes)}]`);
+      continue;
+    }
+    attachments.push({ ...attachment, sizeBytes: actualSize });
+  }
+
+  if (omitted.length === 0) return { ...parsed, attachments };
+  return {
+    ...parsed,
+    plainText: [parsed.plainText, ...omitted].filter(Boolean).join("\n\n"),
+    attachments,
+  };
+}
+
+function formatByteLimit(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${Math.floor(bytes / (1024 * 1024))} MB`;
+  if (bytes >= 1024) return `${Math.floor(bytes / 1024)} KB`;
+  return `${bytes} bytes`;
+}
 
 export function serializeInboundEmail(
   parsed: ParsedInboundEmailWithAttachments,
@@ -71,18 +105,19 @@ export async function ingestInboundEmail(
     conversation?: EnsuredEmailConversation;
   },
 ) {
+  const parsed = limitInboundEmailAttachments(input.parsed, input.env.UPLOAD_MAX_BYTES);
   const ensured =
     input.conversation ??
     (await ensureInboundEmailConversation(db, {
       orgId: input.orgId,
       brandId: input.brandId,
-      parsed: input.parsed,
+      parsed,
     }));
   const conversation = ensured.conversation;
   const created = ensured.created;
 
   const attachmentRows = [];
-  for (const file of input.parsed.attachments) {
+  for (const file of parsed.attachments) {
     const ext = path.extname(file.fileName).slice(0, 32);
     const storageKey = `${randomBytes(16).toString("hex")}${ext}`;
     await saveUploadFile(input.env, storageKey, file.content);
@@ -99,24 +134,24 @@ export async function ingestInboundEmail(
 
   const parts =
     attachmentRows.length > 0
-      ? buildPartsFromAttachments(attachmentRows, input.parsed.plainText)
+      ? buildPartsFromAttachments(attachmentRows, parsed.plainText)
       : undefined;
 
   const { message, serialized } = await insertMessage(db, {
     orgId: input.orgId,
     conversationId: conversation.id,
     senderType: "user",
-    senderId: input.parsed.from.address,
-    plainText: input.parsed.plainText,
-    content: parts ? undefined : buildMessageContent(input.parsed.plainText),
+    senderId: parsed.from.address,
+    plainText: parsed.plainText,
+    content: parts ? undefined : buildMessageContent(parsed.plainText),
     attachmentIds: attachmentRows.length > 0 ? attachmentRows.map((a) => a.id) : undefined,
     parts,
     isInternal: false,
     sentVia: "email",
     isAgentReply: false,
     metadata: {
-      platformMessageId: input.parsed.messageId,
-      platformMessageIds: [input.parsed.messageId],
+      platformMessageId: parsed.messageId,
+      platformMessageIds: [parsed.messageId],
     },
   });
 

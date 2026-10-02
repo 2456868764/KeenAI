@@ -30,10 +30,15 @@ export {
 export {
   claimOutboxDelivery,
   completeOutboxDelivery,
+  completeOutboxOperation,
   enqueueOutboxDelivery,
+  enqueueOutboxOperation,
   failOutboxDelivery,
   recordDeliveryReceipt,
+  recordOutboxOperationProgress,
   type ClaimedOutboxDelivery,
+  type ChannelOperationLocalMutation,
   type EnqueueOutboxDeliveryInput,
+  type EnqueueOutboxOperationInput,
   type FailOutboxDeliveryInput,
 } from "./delivery.js";

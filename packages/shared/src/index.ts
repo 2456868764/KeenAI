@@ -25,6 +25,7 @@ export {
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
   widgetHandoffSchema,
+  widgetMessageReceiptSchema,
   updateWidgetSettingsSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
@@ -172,6 +173,7 @@ export {
 } from "./message-parts.js";
 export { extractAttachmentIdsFromTiptapDoc } from "./tiptap-attachments.js";
 export { renderTiptapHcToHtml } from "./tiptap-hc-render.js";
+export { renderSafeMarkdownHtml } from "./markdown.js";
 export {
   listPortalTicketsSchema,
   portalMagicLinkRequestSchema,

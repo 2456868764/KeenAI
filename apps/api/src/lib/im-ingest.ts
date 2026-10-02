@@ -53,22 +53,12 @@ export async function ingestInboundIm(
   const conversation = ensured.conversation;
   const created = ensured.created;
 
-  const attachmentRows = [];
-  for (const file of input.parsed.attachments) {
-    const content = await downloadImAttachment(input.env, file, input.channelCredentials);
-    const ext = path.extname(file.fileName).slice(0, 32) || ".bin";
-    const storageKey = `${randomBytes(16).toString("hex")}${ext}`;
-    await saveUploadFile(input.env, storageKey, content);
-    const row = await insertAttachment(db, {
-      orgId: input.orgId,
-      storageKey,
-      fileName: file.fileName,
-      contentType: file.contentType,
-      sizeBytes: content.byteLength,
-      metadata: { source: "im_download", platformRef: file.platformRef },
-    });
-    attachmentRows.push(row);
-  }
+  const attachmentRows = await materializeImAttachments(db, {
+    orgId: input.orgId,
+    attachments: input.parsed.attachments,
+    env: input.env,
+    channelCredentials: input.channelCredentials,
+  });
 
   const captionText = extractInboundCaptionText(input.parsed.parts);
   const parts =
@@ -85,6 +75,7 @@ export async function ingestInboundIm(
     ...(input.parsed.replyToMessageId ? { replyToMessageId: input.parsed.replyToMessageId } : {}),
     ...(replyContext?.plainText ? { replyToPlainText: replyContext.plainText } : {}),
     ...(input.parsed.mediaGroupId ? { mediaGroupId: input.parsed.mediaGroupId } : {}),
+    messageKind: input.parsed.messageKind,
   };
 
   const mergedAlbum =
@@ -158,10 +149,50 @@ export async function ingestInboundIm(
   };
 }
 
+export async function materializeImAttachments(
+  db: AppVariables["store"]["db"],
+  input: {
+    orgId: string;
+    attachments: ParsedInboundImMessage["attachments"];
+    env: ApiEnv;
+    channelCredentials?: Record<string, unknown>;
+  },
+) {
+  const attachmentRows = [];
+  for (const file of input.attachments) {
+    const content = await downloadImAttachment(input.env, file, input.channelCredentials);
+    const ext = path.extname(file.fileName).slice(0, 32) || ".bin";
+    const storageKey = `${randomBytes(16).toString("hex")}${ext}`;
+    await saveUploadFile(input.env, storageKey, content);
+    const row = await insertAttachment(db, {
+      orgId: input.orgId,
+      storageKey,
+      fileName: file.fileName,
+      contentType: file.contentType,
+      sizeBytes: content.byteLength,
+      metadata: { source: "im_download", platformRef: file.platformRef },
+    });
+    attachmentRows.push(row);
+  }
+  return attachmentRows;
+}
+
 export type EnsuredImConversation = {
   conversation: { id: string; channelId: string; subject: string | null };
   created: boolean;
 };
+
+export function imConversationKey(parsed: ParsedInboundImMessage): string {
+  return parsed.conversationKey ?? parsed.channelId;
+}
+
+export function imConversationMetadata(parsed: ParsedInboundImMessage): Record<string, unknown> {
+  return {
+    ...(parsed.conversationAttributes ?? {}),
+    providerTargetId: parsed.channelId,
+    ...(parsed.providerThreadId ? { providerThreadId: parsed.providerThreadId } : {}),
+  };
+}
 
 export async function ensureInboundImConversation(
   db: AppVariables["store"]["db"],
@@ -173,6 +204,8 @@ export async function ensureInboundImConversation(
   },
 ): Promise<EnsuredImConversation> {
   const channelType = input.parsed.channelType;
+  const conversationKey = imConversationKey(input.parsed);
+  const conversationMetadata = imConversationMetadata(input.parsed);
   const [linked] = input.connectionId
     ? await db
         .select({
@@ -185,7 +218,7 @@ export async function ensureInboundImConversation(
         .where(
           and(
             eq(channelConversationLinks.connectionId, input.connectionId),
-            eq(channelConversationLinks.externalThreadId, input.parsed.channelId),
+            eq(channelConversationLinks.externalThreadId, conversationKey),
             eq(conversations.orgId, input.orgId),
           ),
         )
@@ -230,7 +263,7 @@ export async function ensureInboundImConversation(
         lastMessageAt: new Date(),
         messageCount: 1,
         unreadCount: 1,
-        attributes: input.parsed.conversationAttributes ?? {},
+        attributes: conversationMetadata,
       })
       .returning({ id: conversations.id, channelId: conversations.channelId });
 
@@ -246,8 +279,8 @@ export async function ensureInboundImConversation(
           brandId: input.brandId,
           connectionId: input.connectionId,
           conversationId: row.id,
-          externalThreadId: input.parsed.channelId,
-          metadata: input.parsed.conversationAttributes ?? {},
+          externalThreadId: conversationKey,
+          metadata: conversationMetadata,
         })
         .onConflictDoNothing({
           target: [
@@ -269,7 +302,7 @@ export async function ensureInboundImConversation(
           .where(
             and(
               eq(channelConversationLinks.connectionId, input.connectionId),
-              eq(channelConversationLinks.externalThreadId, input.parsed.channelId),
+              eq(channelConversationLinks.externalThreadId, conversationKey),
             ),
           )
           .limit(1);
@@ -289,7 +322,7 @@ export async function ensureInboundImConversation(
         payload: { channel: channelType },
       });
     }
-  } else if (input.parsed.conversationAttributes) {
+  } else if (Object.keys(conversationMetadata).length > 0) {
     const [existingRow] = await db
       .select({ attributes: conversations.attributes })
       .from(conversations)
@@ -300,7 +333,7 @@ export async function ensureInboundImConversation(
       .set({
         attributes: {
           ...(existingRow?.attributes ?? {}),
-          ...input.parsed.conversationAttributes,
+          ...conversationMetadata,
         },
         updatedAt: new Date(),
       })
@@ -311,6 +344,7 @@ export async function ensureInboundImConversation(
 }
 
 function channelDisplayName(channelType: ParsedInboundImMessage["channelType"]): string {
+  if (channelType === "wechat") return "WeChat";
   if (channelType === "wecom") return "WeCom";
   if (channelType === "whatsapp") return "WhatsApp";
   if (channelType === "dingtalk") return "DingTalk";

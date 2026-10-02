@@ -419,14 +419,27 @@ export function createWorkflowActionHandlers(
   }
 
   return {
-    sendMessage: async ({ plainText, attachmentIds }) => {
+    sendMessage: async ({ plainText, attachmentIds, whatsappTemplate }) => {
+      if (whatsappTemplate && conversation.channelType !== "whatsapp") {
+        throw new Error("whatsapp_template_channel_required");
+      }
+      if (whatsappTemplate && (plainText?.trim() || (attachmentIds?.length ?? 0) > 0)) {
+        throw new Error("whatsapp_template_content_conflict");
+      }
+      const persistedText =
+        plainText?.trim() ||
+        (whatsappTemplate ? `[WhatsApp template: ${whatsappTemplate.name}]` : undefined);
+      const content = persistedText ? buildMessageContent(persistedText) : undefined;
+      if (content && whatsappTemplate) {
+        content.outboundDirectives = { whatsappTemplate };
+      }
       await insertMessage(db, {
         orgId: workflow.orgId,
         conversationId,
         senderType: "agent",
-        plainText,
+        plainText: persistedText,
         attachmentIds,
-        content: plainText ? buildMessageContent(plainText) : undefined,
+        content,
         isInternal: false,
         sentVia: "workflow",
         isAgentReply: true,

@@ -207,6 +207,7 @@ export function blockLabel(block: WorkflowBlock): string {
     case "send_message": {
       const text = block.plainText?.trim();
       if (text) return text.length > 48 ? `${text.slice(0, 48)}…` : text;
+      if (block.whatsappTemplate) return `WhatsApp: ${block.whatsappTemplate.name}`;
       const count = block.attachmentIds?.length ?? 0;
       return count > 0 ? `${count} attachment(s)` : "(empty message)";
     }

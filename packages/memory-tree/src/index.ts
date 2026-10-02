@@ -173,6 +173,11 @@ export {
 export { computeFastScore, type FastScoreInput, type FastScoreResult } from "./fast-score.js";
 export { ingestConversationMessage, type IngestConversationMessageInput } from "./ingest.js";
 export {
+  invalidateConversationMessageMemory,
+  type InvalidateConversationMessageMemoryInput,
+  type InvalidateConversationMessageMemoryResult,
+} from "./invalidate-message.js";
+export {
   DEFAULT_PII_PATTERNS,
   redactPii,
   type PiiPattern,

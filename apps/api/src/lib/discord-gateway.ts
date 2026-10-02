@@ -1,5 +1,13 @@
+import { createChannelRuntimeRequestSignal } from "./channel-runtime-request.js";
+
 const DISCORD_GATEWAY_VERSION = 10;
-const DISCORD_GATEWAY_INTENTS = (1 << 9) | (1 << 12) | (1 << 15);
+const DISCORD_GATEWAY_INTENTS =
+  (1 << 9) | // GUILD_MESSAGES
+  (1 << 10) | // GUILD_MESSAGE_REACTIONS
+  (1 << 12) | // DIRECT_MESSAGES
+  (1 << 13) | // DIRECT_MESSAGE_REACTIONS
+  (1 << 15); // MESSAGE_CONTENT
+const DEFAULT_CONTROL_REQUEST_TIMEOUT_MS = 10_000;
 
 type DiscordGatewayFrame = {
   op: number;
@@ -48,10 +56,14 @@ export async function runDiscordGateway(input: {
   fetchFn?: DiscordGatewayFetch;
   createSocket?: (url: string) => DiscordGatewaySocket;
   random?: () => number;
+  requestTimeoutMs?: number;
 }): Promise<Record<string, unknown>> {
   const fetchFn = input.fetchFn ?? fetch;
   const cursor = parseCursor(input.initialCursor);
-  const gateway = cursor.resumeGatewayUrl ?? (await resolveGatewayUrl(fetchFn, input.botToken));
+  const requestTimeoutMs = input.requestTimeoutMs ?? DEFAULT_CONTROL_REQUEST_TIMEOUT_MS;
+  const gateway =
+    cursor.resumeGatewayUrl ??
+    (await resolveGatewayUrl(fetchFn, input.botToken, input.signal, requestTimeoutMs));
   const socketUrl = `${gateway.replace(/\/$/, "")}/?v=${DISCORD_GATEWAY_VERSION}&encoding=json`;
   const createSocket =
     input.createSocket ?? ((url: string) => new WebSocket(url) as unknown as DiscordGatewaySocket);
@@ -167,7 +179,18 @@ export async function runDiscordGateway(input: {
         await input.onHeartbeat(snapshot(), "connected");
         return;
       }
-      if (frame.t === "MESSAGE_CREATE") await input.onMessage(frame);
+      if (frame.t === "INTERACTION_CREATE") {
+        await input.onMessage(frame);
+        await acknowledgeInteraction(fetchFn, frame.d, input.signal, requestTimeoutMs);
+      } else if (
+        frame.t === "MESSAGE_CREATE" ||
+        frame.t === "MESSAGE_UPDATE" ||
+        frame.t === "MESSAGE_DELETE" ||
+        frame.t === "MESSAGE_REACTION_ADD" ||
+        frame.t === "MESSAGE_REACTION_REMOVE"
+      ) {
+        await input.onMessage(frame);
+      }
     };
 
     input.signal.addEventListener("abort", abort, { once: true });
@@ -191,10 +214,54 @@ export async function runDiscordGateway(input: {
   });
 }
 
-async function resolveGatewayUrl(fetchFn: DiscordGatewayFetch, botToken: string): Promise<string> {
-  const response = await fetchFn("https://discord.com/api/v10/gateway/bot", {
-    headers: { Authorization: `Bot ${botToken}` },
-  });
+async function acknowledgeInteraction(
+  fetchFn: DiscordGatewayFetch,
+  value: unknown,
+  runtimeSignal: AbortSignal,
+  timeoutMs: number,
+): Promise<void> {
+  const interaction = asRecord(value);
+  const id = optionalString(interaction.id);
+  const token = optionalString(interaction.token);
+  if (!id || !token) throw new DiscordGatewayError("discord_interaction_ack_fields_missing");
+  const request = createChannelRuntimeRequestSignal(runtimeSignal, timeoutMs);
+  let response: Response;
+  try {
+    response = await fetchFn(
+      `https://discord.com/api/v10/interactions/${encodeURIComponent(id)}/${encodeURIComponent(token)}/callback`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: 6 }),
+        signal: request.signal,
+      },
+    );
+  } catch (error) {
+    if (request.timedOut()) throw new DiscordGatewayError("discord_interaction_ack_timeout");
+    throw error;
+  }
+  if (!response.ok) {
+    throw new DiscordGatewayError(`discord_interaction_ack_${response.status}`);
+  }
+}
+
+async function resolveGatewayUrl(
+  fetchFn: DiscordGatewayFetch,
+  botToken: string,
+  runtimeSignal: AbortSignal,
+  timeoutMs: number,
+): Promise<string> {
+  const request = createChannelRuntimeRequestSignal(runtimeSignal, timeoutMs);
+  let response: Response;
+  try {
+    response = await fetchFn("https://discord.com/api/v10/gateway/bot", {
+      headers: { Authorization: `Bot ${botToken}` },
+      signal: request.signal,
+    });
+  } catch (error) {
+    if (request.timedOut()) throw new DiscordGatewayError("discord_gateway_discovery_timeout");
+    throw error;
+  }
   if (!response.ok) {
     throw new DiscordGatewayError(
       `discord_gateway_discovery_${response.status}`,

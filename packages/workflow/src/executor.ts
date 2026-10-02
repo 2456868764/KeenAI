@@ -48,6 +48,7 @@ async function executeBlock(
       await handlers.sendMessage({
         plainText: block.plainText,
         attachmentIds: block.attachmentIds,
+        ...(block.whatsappTemplate ? { whatsappTemplate: block.whatsappTemplate } : {}),
       });
       return { step: { blockId: block.id, type: block.type, status: "ok" }, nextId };
     case "add_note":

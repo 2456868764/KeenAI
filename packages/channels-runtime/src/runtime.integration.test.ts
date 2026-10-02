@@ -14,6 +14,7 @@ import {
   conversations,
   messages,
   organizations,
+  reactions,
 } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
@@ -26,12 +27,15 @@ import {
   claimSessionCommand,
   completeIngressEvent,
   completeOutboxDelivery,
+  completeOutboxOperation,
   completeSessionCommand,
   enqueueOutboxDelivery,
+  enqueueOutboxOperation,
   enqueueSessionCommand,
   failOutboxDelivery,
   heartbeatChannelConnectionRuntime,
   recordDeliveryReceipt,
+  recordOutboxOperationProgress,
   releaseChannelConnectionRuntime,
   replayChannelDeadLetter,
   resolveChannelDeadLetter,
@@ -69,7 +73,9 @@ describe("durable channel runtime", () => {
       "channel_identities",
       "channel_ingress_events",
       "channel_message_links",
+      "channel_oauth_states",
       "channel_outbox",
+      "channel_provider_app_states",
       "channel_session_commands",
     ]);
     const [org] = await store.db
@@ -280,6 +286,14 @@ describe("durable channel runtime", () => {
         outboxId: second?.delivery.id ?? "",
         claimToken: second?.claimToken ?? "",
         providerMessageIds: ["slack-message-1"],
+        providerMessageRefs: [
+          {
+            providerMessageId: "slack-message-1",
+            providerAction: "chat.postMessage",
+            resourceType: "message",
+            actionIndex: 2,
+          },
+        ],
         providerResponse: { ok: true },
       }),
     ).toBe(true);
@@ -297,7 +311,13 @@ describe("durable channel runtime", () => {
       .from(channelDeliveryReceipts)
       .where(eq(channelDeliveryReceipts.providerMessageId, "slack-message-1"));
     expect(attempts).toHaveLength(2);
-    expect(links).toHaveLength(1);
+    expect(links).toMatchObject([
+      {
+        providerAction: "chat.postMessage",
+        providerResourceType: "message",
+        actionIndex: 2,
+      },
+    ]);
     expect(receipts.map((receipt) => receipt.status)).toEqual(["accepted"]);
 
     expect(
@@ -322,6 +342,25 @@ describe("durable channel runtime", () => {
       .where(eq(channelDeliveryReceipts.providerMessageId, "slack-message-1"));
     expect(updatedMessage?.deliveryStatus).toBe("read");
     expect(updatedReceipts.map((receipt) => receipt.status)).toEqual(["accepted", "read"]);
+
+    for (const status of ["delivered", "failed"] as const) {
+      expect(
+        await recordDeliveryReceipt(store, {
+          orgId: fixture.orgId,
+          connectionId: fixture.connectionId,
+          receipt: {
+            providerMessageId: "slack-message-1",
+            status,
+            occurredAt: new Date("2026-09-18T08:27:00.000Z"),
+          },
+        }),
+      ).toBe(true);
+    }
+    const [afterOutOfOrderReceipts] = await store.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, fixture.messageId));
+    expect(afterOutOfOrderReceipts?.deliveryStatus).toBe("read");
   });
 
   it("does not blindly replay an unknown-after-send result", async () => {
@@ -354,6 +393,183 @@ describe("durable channel runtime", () => {
       .from(channelDeadLetters)
       .where(eq(channelDeadLetters.sourceId, "delivery-unknown"));
     expect(deadLetters).toHaveLength(1);
+  });
+
+  it("completes a durable edit without creating a new delivery link", async () => {
+    await store.db
+      .update(messages)
+      .set({ deliveryStatus: "delivered" })
+      .where(eq(messages.id, fixture.messageId));
+    const input = {
+      deliveryId: "operation-edit-1",
+      idempotencyKey: `message:${fixture.messageId}:edit:1`,
+      operation: {
+        type: "edit" as const,
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        connectionId: fixture.connectionId,
+        conversationId: fixture.conversationId,
+        messageId: fixture.messageId,
+        channelType: "slack" as const,
+        externalThreadId: "thread-1",
+        providerMessageId: "1700.01",
+        parts: [{ type: "text" as const, text: "Updated answer" }],
+      },
+      mutation: {
+        type: "edit" as const,
+        plainText: "Updated answer",
+        content: { type: "text", text: "Updated answer" },
+      },
+    };
+    const first = await enqueueOutboxOperation(store, input);
+    const duplicate = await enqueueOutboxOperation(store, input);
+    expect(first.duplicate).toBe(false);
+    expect(duplicate).toMatchObject({ duplicate: true, delivery: { id: "operation-edit-1" } });
+
+    const claimed = await claimOutboxDelivery(store, { outboxId: "operation-edit-1" });
+    expect(
+      await completeOutboxOperation(store, {
+        outboxId: "operation-edit-1",
+        claimToken: claimed?.claimToken ?? "",
+        mutation: input.mutation,
+        providerResponse: { ok: true },
+        now: new Date("2026-09-22T08:00:00.000Z"),
+      }),
+    ).toBe(true);
+
+    const [message] = await store.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, fixture.messageId));
+    expect(message).toMatchObject({
+      plainText: "Updated answer",
+      content: { type: "text", text: "Updated answer" },
+      deliveryStatus: "delivered",
+    });
+    expect(message?.editedAt?.toISOString()).toBe("2026-09-22T08:00:00.000Z");
+    expect(await store.db.select().from(channelMessageLinks)).toHaveLength(0);
+  });
+
+  it("updates local reactions only after the durable provider operation completes", async () => {
+    const operation = {
+      type: "reaction.add" as const,
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: fixture.connectionId,
+      conversationId: fixture.conversationId,
+      messageId: fixture.messageId,
+      channelType: "slack" as const,
+      externalThreadId: "thread-1",
+      providerMessageId: "1700.01",
+      emoji: "thumbsup",
+    };
+    const mutation = {
+      type: "reaction.add" as const,
+      actorType: "agent",
+      actorId: "member-1",
+      emoji: "thumbsup",
+    };
+    await enqueueOutboxOperation(store, {
+      deliveryId: "operation-reaction-1",
+      idempotencyKey: `message:${fixture.messageId}:reaction:member-1:thumbsup:add`,
+      operation,
+      mutation,
+    });
+    expect(await store.db.select().from(reactions)).toHaveLength(0);
+    const claimed = await claimOutboxDelivery(store, { outboxId: "operation-reaction-1" });
+    await completeOutboxOperation(store, {
+      outboxId: "operation-reaction-1",
+      claimToken: claimed?.claimToken ?? "",
+      mutation,
+    });
+    expect(await store.db.select().from(reactions)).toMatchObject([
+      { messageId: fixture.messageId, actorId: "member-1", emoji: "thumbsup" },
+    ]);
+  });
+
+  it("does not overwrite message delivery status when an operation fails", async () => {
+    await store.db
+      .update(messages)
+      .set({ deliveryStatus: "read" })
+      .where(eq(messages.id, fixture.messageId));
+    await enqueueOutboxOperation(store, {
+      deliveryId: "operation-delete-failure",
+      idempotencyKey: `message:${fixture.messageId}:delete`,
+      operation: {
+        type: "delete",
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        connectionId: fixture.connectionId,
+        conversationId: fixture.conversationId,
+        messageId: fixture.messageId,
+        channelType: "slack",
+        externalThreadId: "thread-1",
+        providerMessageId: "1700.01",
+      },
+      mutation: { type: "delete" },
+    });
+    const claimed = await claimOutboxDelivery(store, { outboxId: "operation-delete-failure" });
+    await failOutboxDelivery(store, {
+      outboxId: "operation-delete-failure",
+      claimToken: claimed?.claimToken ?? "",
+      error: { disposition: "terminal", code: "not_allowed", message: "not allowed" },
+    });
+    const [message] = await store.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, fixture.messageId));
+    expect(message?.deliveryStatus).toBe("read");
+  });
+
+  it("persists batch operation progress across a retry", async () => {
+    const operationBase = {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: fixture.connectionId,
+      conversationId: fixture.conversationId,
+      messageId: fixture.messageId,
+      channelType: "slack" as const,
+      externalThreadId: "thread-1",
+      type: "delete" as const,
+    };
+    await enqueueOutboxOperation(store, {
+      deliveryId: "operation-delete-batch",
+      idempotencyKey: `message:${fixture.messageId}:delete:batch`,
+      operations: [
+        { ...operationBase, providerMessageId: "1700.01" },
+        {
+          ...operationBase,
+          providerMessageId: "F123",
+          providerAction: "files.uploadV2",
+          providerResourceType: "file",
+        },
+      ],
+      mutation: { type: "delete" },
+    });
+    const first = await claimOutboxDelivery(store, { outboxId: "operation-delete-batch" });
+    expect(
+      await recordOutboxOperationProgress(store, {
+        outboxId: "operation-delete-batch",
+        claimToken: first?.claimToken ?? "",
+        completedOperationCount: 1,
+        operationResponses: [{ ok: true }],
+      }),
+    ).toBe(true);
+    const retryAt = new Date(Date.now() + 10_000);
+    await failOutboxDelivery(store, {
+      outboxId: "operation-delete-batch",
+      claimToken: first?.claimToken ?? "",
+      error: { disposition: "retryable", code: "timeout", message: "timeout" },
+      now: retryAt,
+    });
+    const second = await claimOutboxDelivery(store, {
+      outboxId: "operation-delete-batch",
+      now: new Date(retryAt.getTime() + 2_000),
+    });
+    expect(second?.delivery.payload).toMatchObject({
+      completedOperationCount: 1,
+      operationResponses: [{ ok: true }],
+    });
   });
 
   it("replays and resolves a delivery dead letter", async () => {

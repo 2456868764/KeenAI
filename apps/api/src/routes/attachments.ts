@@ -5,6 +5,7 @@ import {
   getAttachmentById,
   loadAttachmentAccessContext,
   serializeAttachment,
+  verifyProviderAttachmentToken,
 } from "../lib/attachments.js";
 import { canAccessBrand } from "../lib/conversations.js";
 import { guessContentType, readUploadFile } from "../lib/uploads.js";
@@ -15,6 +16,40 @@ type AttachmentContext = Context<{ Variables: AppVariables }>;
 
 export function attachmentRoutes(ctx: AppContext, prefix = `${API_PREFIX}/attachments`) {
   const r = new Hono<{ Variables: AppVariables }>();
+
+  r.get(`${prefix}/:id/provider-content`, async (c) => {
+    const attachmentId = c.req.param("id");
+    const orgId = c.req.query("org") ?? "";
+    const expiresAt = c.req.query("expires") ?? "";
+    const signature = c.req.query("signature") ?? "";
+    if (
+      !attachmentId ||
+      !orgId ||
+      !verifyProviderAttachmentToken({
+        attachmentId,
+        orgId,
+        expiresAt,
+        signature,
+        secret: ctx.authConfig.jwtSecret,
+      })
+    ) {
+      return c.json({ error: "invalid_or_expired_attachment_token" }, 403);
+    }
+
+    const row = await getAttachmentById(c.get("store").db, attachmentId, orgId);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const buf = await readUploadFile(ctx.env, row.storageKey);
+    if (!buf) return c.json({ error: "not_found" }, 404);
+
+    return new Response(buf as unknown as BodyInit, {
+      headers: {
+        "Content-Type": row.contentType ?? guessContentType(row.storageKey),
+        "Content-Length": String(buf.byteLength),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  });
 
   r.get(`${prefix}/:id`, async (c) => {
     const denied = await assertAttachmentAccess(c);

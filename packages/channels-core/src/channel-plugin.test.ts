@@ -9,6 +9,12 @@ import {
 const widgetPlugin: ChannelPlugin = {
   type: "widget",
   capabilities: new Set(["text"]),
+  outboundLimits: {
+    maxTextCharacters: 50_000,
+    maxInteractiveTextCharacters: 50_000,
+    maxCaptionCharacters: null,
+    maxAttachmentBytes: null,
+  },
   async send(_envelope: ChannelOutboundEnvelope, _connection: ChannelConnectionConfig) {
     return { providerMessageIds: ["message-1"], acceptedAt: new Date() };
   },

@@ -40,6 +40,9 @@ Checklist for I117 Phase 2 Beta gate. Run after `pnpm test` and `pnpm alpha:acce
 | Alpha smoke | `pnpm alpha:acceptance` | Pass |
 | Playwright e2e (API + Portal + Dashboard) | `pnpm e2e` | 22 tests green |
 | Beta gate (automated) | `pnpm beta:acceptance` | coverage + alpha + e2e |
+| Channel connection gate | `pnpm channels:acceptance` | Every requested active connection is verified by its provider |
+| Real channel roundtrip | `KEENAI_ACCEPTANCE_MODE=roundtrip pnpm channels:acceptance` | Inbound probe observed and outbound reaches sent/delivered/read |
+| Full channel capabilities | `KEENAI_ACCEPTANCE_MODE=full pnpm channels:acceptance` | Roundtrip plus attachment, native thread/reply, interactive Workflow callback, approved templates, delivery/read receipts, typing, edit, reaction add/remove, and delete for every capability declared by the plugin |
 
 ## Manual (P2-ACC)
 

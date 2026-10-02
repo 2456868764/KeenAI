@@ -7,7 +7,14 @@ export function createSmtpTransport(config: SmtpTransportConfig) {
     host: config.host,
     port: config.port,
     secure: config.secure ?? config.port === 465,
-    auth: config.user ? { user: config.user, pass: config.pass } : undefined,
+    auth: config.user
+      ? config.accessToken
+        ? { type: "OAuth2" as const, user: config.user, accessToken: config.accessToken }
+        : { user: config.user, pass: config.pass ?? "" }
+      : undefined,
+    connectionTimeout: 30_000,
+    greetingTimeout: 30_000,
+    socketTimeout: 60_000,
   });
 }
 

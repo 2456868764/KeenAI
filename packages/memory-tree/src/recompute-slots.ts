@@ -15,6 +15,17 @@ export async function recomputeMemorySlots(
   db: KeenaiDb,
   input: RecomputeMemorySlotsInput,
 ): Promise<{ slotCount: number }> {
+  await db
+    .delete(memorySlots)
+    .where(
+      and(
+        eq(memorySlots.orgId, input.orgId),
+        eq(memorySlots.brandId, input.brandId),
+        eq(memorySlots.scope, input.scope),
+        eq(memorySlots.scopeId, input.scopeId),
+      ),
+    );
+
   const facts = await db
     .select()
     .from(memoryFacts)

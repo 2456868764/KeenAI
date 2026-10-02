@@ -51,7 +51,7 @@
 | [12-STORAGE-ABSTRACTION.md](./12-STORAGE-ABSTRACTION.md) | Store / vector / FTS |
 | [13-WORKFLOW.md](./13-WORKFLOW.md) | Workflows + Inngest |
 | [14-MULTIMODAL.md](./14-MULTIMODAL.md) | Multimodal messages |
-| [16-Channel.md](./16-Channel.md) | Channel Gateway, plugins, connection runtime, durable delivery, and Widget design |
+| [16-Channel.md](./16-Channel.md) | Unified Widget, Email, IM and WeChat Channel Gateway, plugins, connection runtime, and durable delivery |
 
 ## CLI & eval
 

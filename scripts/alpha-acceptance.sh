@@ -11,7 +11,8 @@ pnpm verify:p0
 pnpm lint
 pnpm db:migrate
 pnpm exec vitest run apps/api/src/ci-smoke.integration.test.ts
-pnpm exec vitest run apps/api/src/email-outbound.integration.test.ts
+pnpm exec vitest run apps/api/src/lib/ticket-notify.test.ts
+pnpm exec vitest run apps/api/src/channel-runtime.integration.test.ts
 pnpm exec vitest run apps/api/src/email-imap.integration.test.ts
 pnpm exec vitest run apps/api/src/workflow.integration.test.ts
 pnpm kb:eval

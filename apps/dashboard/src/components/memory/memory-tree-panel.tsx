@@ -13,7 +13,15 @@ import { useEffect, useState } from "react";
 
 type TreeScope = "conversation" | "customer" | "channel";
 type TreeMode = "latest" | "drill_down";
-type ChannelType = "slack" | "telegram" | "feishu" | "dingtalk";
+type ChannelType =
+  | "slack"
+  | "discord"
+  | "telegram"
+  | "feishu"
+  | "dingtalk"
+  | "whatsapp"
+  | "wechat"
+  | "wecom";
 
 export type MemoryTreeSelection = {
   scope: TreeScope;
@@ -108,9 +116,13 @@ export function MemoryTreePanel({ brandId, selection, onClearSelection }: Memory
             className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-2 text-xs"
           >
             <option value="slack">Slack</option>
+            <option value="discord">Discord</option>
             <option value="telegram">Telegram</option>
             <option value="feishu">Feishu</option>
             <option value="dingtalk">DingTalk</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="wechat">WeChat</option>
+            <option value="wecom">WeCom</option>
           </select>
         ) : null}
         <select

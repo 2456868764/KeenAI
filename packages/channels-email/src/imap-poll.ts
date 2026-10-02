@@ -1,17 +1,21 @@
-import { ImapFlow } from "imapflow";
+import { ImapFlow, type MessageEnvelopeObject } from "imapflow";
 
 export type ImapPollConfig = {
   host?: string;
   port?: number;
   user?: string;
   password?: string;
+  accessToken?: string;
+  secure?: boolean;
   mailbox?: string;
   orgId?: string;
+  maxSourceBytes?: number;
 };
 
 export type ImapPollResult = {
   polled: number;
   ingested: number;
+  oversized: number;
   skipped: boolean;
   reason?: string;
 };
@@ -19,6 +23,8 @@ export type ImapPollResult = {
 export type ImapUnseenMessage = {
   uid: number;
   source: Buffer;
+  sizeBytes?: number;
+  oversized?: boolean;
 };
 
 export type ImapPollClient = {
@@ -33,10 +39,12 @@ export async function createImapPollClient(
   const client = new ImapFlow({
     host: config.host,
     port: config.port ?? 993,
-    secure: (config.port ?? 993) === 993,
+    secure: config.secure ?? (config.port ?? 993) === 993,
     auth: {
       user: config.user,
-      pass: config.password ?? "",
+      ...(config.accessToken
+        ? { accessToken: config.accessToken }
+        : { pass: config.password ?? "" }),
     },
     logger: false,
   });
@@ -53,9 +61,63 @@ export async function createImapPollClient(
         if (uidList.length === 0) return [];
 
         const messages: ImapUnseenMessage[] = [];
-        for await (const msg of client.fetch(uidList, { source: true, uid: true }, { uid: true })) {
+        const maxSourceBytes = config.maxSourceBytes;
+        const envelopes = new Map<
+          number,
+          { envelope?: MessageEnvelopeObject; sizeBytes?: number }
+        >();
+        const sourceUids: number[] = [];
+        for await (const msg of client.fetch(
+          uidList,
+          { envelope: true, size: true, uid: true },
+          { uid: true },
+        )) {
+          envelopes.set(msg.uid, { envelope: msg.envelope, sizeBytes: msg.size });
+          if (maxSourceBytes && msg.size && msg.size > maxSourceBytes) {
+            messages.push({
+              uid: msg.uid,
+              source: createOversizedImapPlaceholder(
+                msg.uid,
+                msg.size,
+                maxSourceBytes,
+                msg.envelope,
+              ),
+              sizeBytes: msg.size,
+              oversized: true,
+            });
+          } else {
+            sourceUids.push(msg.uid);
+          }
+        }
+
+        const sourceQuery = maxSourceBytes ? { start: 0, maxLength: maxSourceBytes + 1 } : true;
+        for await (const msg of client.fetch(
+          sourceUids,
+          { source: sourceQuery, uid: true },
+          { uid: true },
+        )) {
           if (msg.source && msg.uid) {
-            messages.push({ uid: msg.uid, source: Buffer.from(msg.source) });
+            const metadata = envelopes.get(msg.uid);
+            const source = Buffer.from(msg.source);
+            if (maxSourceBytes && source.byteLength > maxSourceBytes) {
+              messages.push({
+                uid: msg.uid,
+                source: createOversizedImapPlaceholder(
+                  msg.uid,
+                  metadata?.sizeBytes ?? source.byteLength,
+                  maxSourceBytes,
+                  metadata?.envelope,
+                ),
+                sizeBytes: metadata?.sizeBytes ?? source.byteLength,
+                oversized: true,
+              });
+            } else {
+              messages.push({
+                uid: msg.uid,
+                source,
+                sizeBytes: metadata?.sizeBytes ?? source.byteLength,
+              });
+            }
           }
         }
         return messages;
@@ -97,6 +159,7 @@ export async function pollImapMailboxes(
     return {
       polled: 0,
       ingested: 0,
+      oversized: 0,
       skipped: true,
       reason: "imap_not_configured",
     };
@@ -112,6 +175,7 @@ export async function pollImapMailboxes(
   const markSeenAfterIngest = handlers?.markSeen !== false;
   const seenUids: number[] = [];
   let ingested = 0;
+  let oversized = 0;
 
   try {
     const messages = await client.fetchUnseen(config.mailbox ?? "INBOX");
@@ -121,6 +185,7 @@ export async function pollImapMailboxes(
       try {
         await handlers.onMessage(message);
         ingested += 1;
+        if (message.oversized) oversized += 1;
         if (markSeenAfterIngest) seenUids.push(message.uid);
       } catch {
         // Leave unseen so a later poll can retry.
@@ -131,8 +196,50 @@ export async function pollImapMailboxes(
       await client.markSeen(seenUids);
     }
 
-    return { polled: messages.length, ingested, skipped: false };
+    return { polled: messages.length, ingested, oversized, skipped: false };
   } finally {
     await client.close();
   }
+}
+
+export function createOversizedImapPlaceholder(
+  uid: number,
+  sizeBytes: number,
+  maxBytes: number,
+  envelope?: MessageEnvelopeObject,
+): Buffer {
+  const from = formatAddress(envelope?.from?.[0]) || "unknown@invalid.local";
+  const to = (envelope?.to ?? []).map(formatAddress).filter(Boolean).join(", ");
+  const messageId = safeMessageId(envelope?.messageId, uid);
+  const lines = [
+    `Message-ID: ${messageId}`,
+    `From: ${from}`,
+    ...(to ? [`To: ${to}`] : []),
+    `Subject: ${sanitizeHeader(envelope?.subject) || "(oversized message)"}`,
+    ...(envelope?.date ? [`Date: ${envelope.date.toUTCString()}`] : []),
+    ...(envelope?.inReplyTo ? [`In-Reply-To: ${sanitizeHeader(envelope.inReplyTo)}`] : []),
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: 8bit",
+    "X-KeenAI-Oversized: true",
+    "",
+    `[Message content omitted: raw email is ${sizeBytes} bytes and exceeds the ${maxBytes} byte ingestion limit.]`,
+  ];
+  return Buffer.from(lines.join("\r\n"), "utf8");
+}
+
+function formatAddress(address: { name?: string; address?: string } | undefined): string {
+  const email = sanitizeHeader(address?.address);
+  if (!email) return "";
+  const name = sanitizeHeader(address?.name);
+  return name ? `"${name.replaceAll('"', "'")}" <${email}>` : email;
+}
+
+function safeMessageId(value: string | undefined, uid: number): string {
+  const messageId = sanitizeHeader(value);
+  if (!messageId) return `<imap-oversized-${uid}@keenai.local>`;
+  return messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
+}
+
+function sanitizeHeader(value: string | undefined): string {
+  return (value ?? "").replace(/[\r\n]+/g, " ").trim();
 }

@@ -5,12 +5,31 @@ import type {
 } from "@keenai/channels-core";
 import { adaptRawMimeBody } from "./inbound-webhooks.js";
 import { createSmtpTransport, sendOutboundEmail } from "./outbound.js";
+import { parseEmailDeliveryReceipts, verifyEmailReceiptWebhook } from "./receipts.js";
+import { renderAgentMarkdownHtml } from "./templates.js";
 import type { OutboundEmailAttachment, SmtpTransportConfig } from "./types.js";
 
 export function createEmailChannelPlugin(): ChannelPlugin {
   return {
     type: "email",
-    capabilities: new Set(["text", "markdown", "attachments", "threads"]),
+    capabilities: new Set([
+      "text",
+      "markdown",
+      "attachments",
+      "threads",
+      "read_receipts",
+      "delivery_receipts",
+    ]),
+    outboundLimits: {
+      maxTextCharacters: null,
+      maxInteractiveTextCharacters: null,
+      maxCaptionCharacters: null,
+      maxAttachmentBytes: null,
+    },
+    async verifyWebhook(request, connection) {
+      if (!request.query.receiptProvider) return { accepted: true };
+      return verifyEmailReceiptWebhook(request, connection);
+    },
     async parseWebhook(request) {
       const parsed = await adaptRawMimeBody(Buffer.from(request.rawBody));
       return [
@@ -64,7 +83,7 @@ export function createEmailChannelPlugin(): ChannelPlugin {
           to,
           subject,
           plainText,
-          html: optionalString(envelope.metadata, "html"),
+          html: optionalString(envelope.metadata, "html") ?? renderAgentMarkdownHtml(plainText),
           inReplyTo: envelope.replyToProviderMessageId,
           references: optionalStringArray(envelope.metadata, "references"),
           attachments: emailAttachments(envelope.metadata),
@@ -73,6 +92,9 @@ export function createEmailChannelPlugin(): ChannelPlugin {
       } finally {
         transport.close();
       }
+    },
+    async parseDeliveryReceipts(request) {
+      return parseEmailDeliveryReceipts(request.rawBody, request.receivedAt);
     },
     classifyError: classifyEmailError,
   };
@@ -90,6 +112,7 @@ function smtpConfig(connection: ChannelConnectionConfig): SmtpTransportConfig {
     secure: typeof value.secure === "boolean" ? value.secure : undefined,
     user: optionalString(value, "user"),
     pass: optionalString(value, "pass"),
+    accessToken: optionalString(value, "accessToken"),
     from: requiredString(value, "from"),
   };
 }
@@ -136,12 +159,19 @@ function classifyEmailError(error: unknown): ChannelClassifiedError {
   const candidate = error as { responseCode?: unknown; code?: unknown };
   const responseCode =
     typeof candidate?.responseCode === "number" ? candidate.responseCode : undefined;
+  const errorCode = typeof candidate?.code === "string" ? candidate.code.toUpperCase() : undefined;
   const message = error instanceof Error ? error.message : String(error);
   if (responseCode !== undefined && responseCode >= 500) {
-    return { disposition: "retryable", code: `smtp_${responseCode}`, message };
+    return { disposition: "terminal", code: `smtp_${responseCode}`, message };
   }
   if (responseCode !== undefined && responseCode >= 400) {
-    return { disposition: "terminal", code: `smtp_${responseCode}`, message };
+    return { disposition: "retryable", code: `smtp_${responseCode}`, message };
+  }
+  if (errorCode && ["EAUTH", "EENVELOPE", "EMESSAGE"].includes(errorCode)) {
+    return { disposition: "terminal", code: errorCode.toLowerCase(), message };
+  }
+  if (errorCode && ["ECONNECTION", "ECONNREFUSED", "EDNS"].includes(errorCode)) {
+    return { disposition: "retryable", code: errorCode.toLowerCase(), message };
   }
   if (responseCode === undefined) {
     return {
@@ -152,7 +182,7 @@ function classifyEmailError(error: unknown): ChannelClassifiedError {
   }
   return {
     disposition: "retryable",
-    code: typeof candidate?.code === "string" ? candidate.code : "smtp_unavailable",
+    code: errorCode?.toLowerCase() ?? "smtp_unavailable",
     message,
   };
 }

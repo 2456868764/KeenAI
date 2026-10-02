@@ -17,4 +17,39 @@ describe("planDiscordOutbound", () => {
       content: "Thanks for reaching out!",
     });
   });
+
+  it("plans multipart file messages without dropping the text caption", () => {
+    const actions = planDiscordOutbound({
+      platform: "discord",
+      targetId: "chan-1",
+      parts: [
+        { type: "text", text: "See the screenshot." },
+        { type: "image", attachmentId: "att-1", alt: "Failure screen" },
+      ],
+      attachments: new Map([
+        [
+          "att-1",
+          {
+            attachmentId: "att-1",
+            contentUrl: "https://cdn.example/failure.png",
+            contentType: "image/png",
+            fileName: "failure.png",
+          },
+        ],
+      ]),
+    });
+
+    expect(actions).toEqual([
+      {
+        platform: "discord",
+        method: "createMessageWithFile",
+        channelId: "chan-1",
+        content: "See the screenshot.",
+        fileUrl: "https://cdn.example/failure.png",
+        fileName: "failure.png",
+        contentType: "image/png",
+        description: "Failure screen",
+      },
+    ]);
+  });
 });

@@ -39,7 +39,7 @@ KeenAI is an **open-source, self-hostable, AI-native** platform that unifies cus
 | Module | Featurebase equivalent | Status |
 |--------|------------------------|--------|
 | **Inbox** | Support Inbox | ✅ Alpha |
-| **Channels** | Messenger + Email | ✅ Alpha (Widget + Email) |
+| **Channels** | Unified Channel Gateway | Beta: Widget, Email, Slack, Discord, Telegram, WhatsApp, WeChat Official Account, WeCom, Feishu, DingTalk |
 | **Conversations** | Conversations | ✅ Alpha |
 | **Tickets** | Customer / Back-office / Tracker | 🚧 Planned |
 | **Workflows** | Workflows | ✅ Alpha (MVP) |

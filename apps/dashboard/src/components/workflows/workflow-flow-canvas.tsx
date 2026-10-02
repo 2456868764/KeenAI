@@ -43,6 +43,7 @@ import {
   type PointerEvent,
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -506,6 +507,133 @@ const messageComposerActions: {
   { snippet: "emoji", label: "Emoji", ariaLabel: "Insert Emoji", icon: Smile },
 ];
 
+type SendMessageBlock = Extract<WorkflowBlock, { type: "send_message" }>;
+
+function WhatsAppTemplateEditor({
+  block,
+  onChangeBlock,
+}: {
+  block: SendMessageBlock;
+  onChangeBlock: (block: WorkflowBlock) => void;
+}) {
+  const serializedComponents = JSON.stringify(block.whatsappTemplate?.components ?? [], null, 2);
+  const [componentsDraft, setComponentsDraft] = useState(serializedComponents);
+  const [componentsError, setComponentsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setComponentsDraft(serializedComponents);
+    setComponentsError(null);
+  }, [serializedComponents]);
+
+  const template = block.whatsappTemplate;
+
+  return (
+    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] p-2">
+      <label
+        className="nodrag nopan flex items-center gap-2 text-[11px] font-medium text-[hsl(var(--foreground))]"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={Boolean(template)}
+          onChange={(event) =>
+            onChangeBlock({
+              ...block,
+              whatsappTemplate: event.target.checked
+                ? { name: "", languageCode: "en_US", components: [] }
+                : undefined,
+              plainText: event.target.checked ? undefined : block.plainText,
+              attachmentIds: event.target.checked ? undefined : block.attachmentIds,
+            })
+          }
+        />
+        Send an approved WhatsApp template
+      </label>
+      {template ? (
+        <div className="mt-2 space-y-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_92px] gap-2">
+            <input
+              value={template.name}
+              aria-label="WhatsApp template name"
+              placeholder="Template name"
+              className="nodrag nopan h-8 min-w-0 rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onChange={(event) =>
+                onChangeBlock({
+                  ...block,
+                  whatsappTemplate: { ...template, name: event.target.value },
+                })
+              }
+            />
+            <input
+              value={template.languageCode}
+              aria-label="WhatsApp template language code"
+              placeholder="en_US"
+              className="nodrag nopan h-8 min-w-0 rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onChange={(event) =>
+                onChangeBlock({
+                  ...block,
+                  whatsappTemplate: { ...template, languageCode: event.target.value },
+                })
+              }
+            />
+          </div>
+          <textarea
+            value={componentsDraft}
+            rows={4}
+            aria-label="WhatsApp template components JSON"
+            placeholder='[{"type":"body","parameters":[]}]'
+            className="nodrag nopan min-h-[76px] w-full resize-y rounded-md border border-[hsl(var(--border))] bg-transparent px-2 py-1.5 font-mono text-[10px] text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              const draft = event.target.value;
+              setComponentsDraft(draft);
+              try {
+                const parsed = JSON.parse(draft) as unknown;
+                if (
+                  !Array.isArray(parsed) ||
+                  parsed.some((item) => !item || typeof item !== "object")
+                ) {
+                  throw new Error("Components must be a JSON array of objects.");
+                }
+                if (parsed.length > 16) throw new Error("At most 16 components are allowed.");
+                setComponentsError(null);
+                onChangeBlock({
+                  ...block,
+                  whatsappTemplate: {
+                    ...template,
+                    components: parsed as Array<Record<string, unknown>>,
+                  },
+                });
+              } catch (error) {
+                setComponentsError(
+                  error instanceof Error ? error.message : "Components must be valid JSON.",
+                );
+              }
+            }}
+          />
+          {componentsError ? (
+            <p className="text-[10px] text-red-600">{componentsError}</p>
+          ) : (
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              Components follow the Meta template payload format. Leave [] when none are required.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BlockPreview({
   block,
   allBlocks,
@@ -526,95 +654,102 @@ function BlockPreview({
 
     return (
       <div className="mt-3 space-y-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] p-3">
-        <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))]">
-          <div className="flex items-center gap-1 border-b border-[hsl(var(--border))] px-2 py-1.5">
-            {messageComposerActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.snippet}
-                  type="button"
-                  aria-label={action.ariaLabel}
-                  title={action.ariaLabel}
-                  className="nodrag nopan inline-flex h-7 w-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onChangeBlock({
-                      ...block,
-                      plainText: appendMessageComposerSnippet(block.plainText, action.snippet),
-                    });
-                  }}
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              );
-            })}
-          </div>
-          <textarea
-            value={block.plainText ?? ""}
-            rows={5}
-            aria-label="Message text"
-            placeholder="Write a message for the customer..."
-            className="nodrag nopan min-h-[112px] w-full resize-none border-0 bg-transparent px-3 py-2 text-xs leading-relaxed text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
-          />
-        </div>
-
-        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] p-2">
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-            <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Attachments</span>
-            <span className="ml-auto normal-case tracking-normal">{attachmentIds.length}/10</span>
-          </div>
-          {attachmentIds.length > 0 ? (
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {attachmentIds.map((attachmentId) => (
-                <span
-                  key={attachmentId}
-                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-[10px] text-[hsl(var(--foreground))]"
-                >
-                  <span className="max-w-[150px] truncate">{attachmentId}</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove attachment ${attachmentId}`}
-                    title="Remove attachment"
-                    className="nodrag nopan rounded text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const nextIds = attachmentIds.filter((id) => id !== attachmentId);
-                      onChangeBlock({
-                        ...block,
-                        attachmentIds: nextIds.length > 0 ? nextIds : undefined,
-                      });
-                    }}
-                    onPointerDown={(event) => event.stopPropagation()}
-                  >
-                    <X className="h-3 w-3" aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
+        {!block.whatsappTemplate ? (
+          <>
+            <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))]">
+              <div className="flex items-center gap-1 border-b border-[hsl(var(--border))] px-2 py-1.5">
+                {messageComposerActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.snippet}
+                      type="button"
+                      aria-label={action.ariaLabel}
+                      title={action.ariaLabel}
+                      className="nodrag nopan inline-flex h-7 w-7 items-center justify-center rounded-md text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onChangeBlock({
+                          ...block,
+                          plainText: appendMessageComposerSnippet(block.plainText, action.snippet),
+                        });
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  );
+                })}
+              </div>
+              <textarea
+                value={block.plainText ?? ""}
+                rows={5}
+                aria-label="Message text"
+                placeholder="Write a message for the customer..."
+                className="nodrag nopan min-h-[112px] w-full resize-none border-0 bg-transparent px-3 py-2 text-xs leading-relaxed text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onChange={(event) => onChangeBlock({ ...block, plainText: event.target.value })}
+              />
             </div>
-          ) : null}
-          <input
-            value={formatCommaList(block.attachmentIds)}
-            aria-label="Attachment IDs"
-            placeholder="Paste attachment IDs, comma separated"
-            className="nodrag nopan h-8 w-full rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onChange={(event) =>
-              onChangeBlock({
-                ...block,
-                attachmentIds: parseCommaList(event.target.value),
-              })
-            }
-          />
-        </div>
+
+            <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] p-2">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Attachments</span>
+                <span className="ml-auto normal-case tracking-normal">
+                  {attachmentIds.length}/10
+                </span>
+              </div>
+              {attachmentIds.length > 0 ? (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {attachmentIds.map((attachmentId) => (
+                    <span
+                      key={attachmentId}
+                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] px-2 py-1 text-[10px] text-[hsl(var(--foreground))]"
+                    >
+                      <span className="max-w-[150px] truncate">{attachmentId}</span>
+                      <button
+                        type="button"
+                        aria-label={`Remove attachment ${attachmentId}`}
+                        title="Remove attachment"
+                        className="nodrag nopan rounded text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const nextIds = attachmentIds.filter((id) => id !== attachmentId);
+                          onChangeBlock({
+                            ...block,
+                            attachmentIds: nextIds.length > 0 ? nextIds : undefined,
+                          });
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <X className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <input
+                value={formatCommaList(block.attachmentIds)}
+                aria-label="Attachment IDs"
+                placeholder="Paste attachment IDs, comma separated"
+                className="nodrag nopan h-8 w-full rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-violet-400/70"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onChange={(event) =>
+                  onChangeBlock({
+                    ...block,
+                    attachmentIds: parseCommaList(event.target.value),
+                  })
+                }
+              />
+            </div>
+          </>
+        ) : null}
+        <WhatsAppTemplateEditor block={block} onChangeBlock={onChangeBlock} />
       </div>
     );
   }
@@ -2538,7 +2673,7 @@ function workflowBlockLayoutHeight(block: WorkflowBlock): number {
     case "send_ticket_form":
       return 430 + Math.min(block.fields.length, 16) * 128;
     case "send_message":
-      return 460;
+      return block.whatsappTemplate ? 700 : 520;
     case "assign":
       return 340;
     case "let_keeni_answer":

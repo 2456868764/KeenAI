@@ -3,6 +3,28 @@ import { z } from "zod";
 export const outboundDirectivesSchema = z.object({
   asVoice: z.boolean().optional(),
   asDocument: z.boolean().optional(),
+  interaction: z
+    .object({
+      buttons: z
+        .array(
+          z.object({
+            id: z.string().min(1).max(128),
+            label: z.string().min(1).max(128),
+            url: z.string().url().optional(),
+            callbackUrl: z.string().url().optional(),
+          }),
+        )
+        .min(1)
+        .max(8),
+    })
+    .optional(),
+  whatsappTemplate: z
+    .object({
+      name: z.string().min(1).max(512),
+      languageCode: z.string().min(2).max(32),
+      components: z.array(z.record(z.string(), z.unknown())).max(16).optional(),
+    })
+    .optional(),
 });
 
 export type OutboundDirectives = z.infer<typeof outboundDirectivesSchema>;

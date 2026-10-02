@@ -126,7 +126,7 @@ KeenAI 采用 Gateway、插件注册、能力声明、连接生命周期和确�
 - OpenClaw 面向个人/本地 Gateway 的设备配对与信任模型；KeenAI 使用 `org_id + brand_id + connection_id` 多租户边界。
 - OpenClaw 的渠道配置形态；KeenAI 把连接元数据、Secret 引用、租约和健康状态持久化。
 - 直接发送语义；KeenAI 在插件前增加 Transactional Outbox、发送尝试、回执、死信和审计重放。
-- WhatsApp 非官方客户端路径；KeenAI 默认采用 Meta Cloud API，企业微信/微信采用官方开放接口。
+- WhatsApp 非官方客户端路径；KeenAI 采用 Meta Cloud API、微信公众号官方接口和企业微信官方接口，明确排除个人微信非官方协议。
 
 ---
 

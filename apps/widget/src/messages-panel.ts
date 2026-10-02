@@ -1,3 +1,4 @@
+import { renderSafeMarkdownHtml } from "@keenai/shared/markdown";
 import type {
   ConversationRealtimeEvent,
   SendWidgetMessageInput,
@@ -25,6 +26,7 @@ export class MessagesPanel {
   readonly #fileInput: HTMLInputElement;
   readonly #attachBtn: HTMLButtonElement;
   readonly #sendBtn: HTMLButtonElement;
+  readonly #typingEl: HTMLDivElement;
   #sending = false;
   #customerReplyDisabled = false;
 
@@ -60,7 +62,14 @@ export class MessagesPanel {
     this.#sendBtn.className = "keenai-send";
     this.#sendBtn.textContent = "Send";
 
+    this.#typingEl = document.createElement("div");
+    this.#typingEl.className = "keenai-typing";
+    this.#typingEl.textContent = "Agent is typing…";
+    this.#typingEl.setAttribute("role", "status");
+    this.#typingEl.hidden = true;
+
     this.#form.append(this.#attachBtn, this.#input, this.#sendBtn);
+    this.#listEl.append(this.#typingEl);
     this.opts.container.append(this.#listEl, this.#form, this.#fileInput);
 
     this.#form.addEventListener("submit", (e) => void this.#onSubmit(e));
@@ -70,6 +79,7 @@ export class MessagesPanel {
   renderHistory(items: MessageRow[]) {
     this.#listEl.replaceChildren();
     this.#seenIds.clear();
+    this.#listEl.append(this.#typingEl);
     for (const m of items) this.#append(m);
   }
 
@@ -87,6 +97,11 @@ export class MessagesPanel {
   setCustomerReplyDisabled(disabled: boolean) {
     this.#customerReplyDisabled = disabled;
     this.#updateComposerState();
+  }
+
+  setAgentTyping(active: boolean) {
+    this.#typingEl.hidden = !active;
+    if (active) this.#listEl.scrollTop = this.#listEl.scrollHeight;
   }
 
   #updateComposerState() {
@@ -110,6 +125,15 @@ export class MessagesPanel {
       ? "keenai-bubble keenai-bubble--user"
       : "keenai-bubble keenai-bubble--agent";
 
+    if (msg.deletedAt) {
+      const deleted = document.createElement("p");
+      deleted.className = "keenai-bubble__text keenai-bubble__text--muted";
+      deleted.textContent = "Message deleted";
+      row.append(deleted);
+      this.#listEl.insertBefore(row, this.#typingEl);
+      return;
+    }
+
     if (
       msg.plainText &&
       !msg.plainText.startsWith("[Image:") &&
@@ -117,7 +141,12 @@ export class MessagesPanel {
     ) {
       const text = document.createElement("p");
       text.className = "keenai-bubble__text";
-      text.textContent = msg.plainText;
+      if (isUser) {
+        text.textContent = msg.plainText;
+      } else {
+        text.classList.add("keenai-bubble__text--markdown");
+        text.innerHTML = renderSafeMarkdownHtml(msg.plainText);
+      }
       row.append(text);
     } else if (msg.plainText) {
       const text = document.createElement("p");
@@ -187,7 +216,25 @@ export class MessagesPanel {
       row.append(time);
     }
 
-    this.#listEl.append(row);
+    if (msg.editedAt) {
+      const edited = document.createElement("small");
+      edited.className = "keenai-bubble__edited";
+      edited.textContent = "Edited";
+      row.append(edited);
+    }
+
+    if (msg.reactions?.length) {
+      const reactions = document.createElement("div");
+      reactions.className = "keenai-bubble__reactions";
+      for (const reaction of msg.reactions) {
+        const badge = document.createElement("span");
+        badge.textContent = reaction.emoji;
+        reactions.append(badge);
+      }
+      row.append(reactions);
+    }
+
+    this.#listEl.insertBefore(row, this.#typingEl);
     this.#listEl.scrollTop = this.#listEl.scrollHeight;
   }
 
@@ -283,7 +330,10 @@ function formatAttachmentLabel(fileName: string, sizeBytes: number | null | unde
 
 function formatTime(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    return new Date(iso).toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }

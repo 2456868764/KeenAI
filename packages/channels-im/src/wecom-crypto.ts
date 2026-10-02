@@ -62,6 +62,19 @@ export function parseWeComMessageXml(xml: string): Record<string, string> {
     "MsgId",
     "AgentID",
     "ChatId",
+    "MediaId",
+    "PicUrl",
+    "Format",
+    "Event",
+    "EventKey",
+    "CardType",
+    "ResponseCode",
+    "InfoType",
+    "SuiteId",
+    "SuiteTicket",
+    "AuthCode",
+    "AuthCorpId",
+    "TimeStamp",
   ];
   return Object.fromEntries(
     fields.flatMap((field) => {

@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { randomToken, signWidgetAccessToken, verifyWidgetUserHash } from "@keenai/auth";
+import { recordDeliveryReceipt } from "@keenai/channels-runtime";
 import {
   API_VERSION,
   presignUploadSchema,
@@ -8,6 +9,7 @@ import {
   widgetCreateConversationSchema,
   widgetCreateTicketSchema,
   widgetHandoffSchema,
+  widgetMessageReceiptSchema,
   widgetPageViewSchema,
   widgetPostMessageSchema,
   widgetSessionSchema,
@@ -15,12 +17,18 @@ import {
   widgetWorkflowButtonSchema,
   widgetWorkflowInputSchema,
 } from "@keenai/shared";
-import { conversations } from "@keenai/storage/schema";
-import { eq } from "drizzle-orm";
+import {
+  channelDeliveryReceipts,
+  channelMessageLinks,
+  conversations,
+  messages,
+} from "@keenai/storage/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { getOrCreateAgentOtherSettings } from "../lib/agent-settings.js";
 import { insertAttachment } from "../lib/attachments.js";
 import { getChangelogEntryBySlug, listPublicChangelogEntries } from "../lib/changelog.js";
+import { ingestWidgetMessage, runChannelSerializedTask } from "../lib/channel-dispatch.js";
 import {
   getConversationForOrg,
   insertMessage,
@@ -249,32 +257,35 @@ export function widgetRoutes() {
 
       const body = c.req.valid("json");
       const db = c.get("store").db;
-      const result = await createWidgetConversation(db, {
-        orgId: auth.orgId,
-        brandId: auth.brandId,
-        userId: auth.sub,
-        subject: body.title,
-        initialMessage: { plainText: body.description, attachmentIds: body.attachmentIds },
-      });
-      const existingTicketId = await getConversationTicketId(
-        db,
-        auth.orgId,
-        result.conversation.id,
-      );
-      const ticket = await createTicketFromConversation(db, {
-        orgId: auth.orgId,
-        conversationId: result.conversation.id,
-        title: body.title,
-      });
-
-      if (!existingTicketId) {
-        const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
-        await getWorkflowDispatch().dispatchTicketTrigger({
+      const { result, ticket } = await runChannelSerializedTask(async () => {
+        const result = await createWidgetConversation(db, {
           orgId: auth.orgId,
-          ticketId: ticket.id,
-          trigger: "ticket_created",
+          brandId: auth.brandId,
+          userId: auth.sub,
+          subject: body.title,
+          initialMessage: { plainText: body.description, attachmentIds: body.attachmentIds },
         });
-      }
+        const existingTicketId = await getConversationTicketId(
+          db,
+          auth.orgId,
+          result.conversation.id,
+        );
+        const ticket = await createTicketFromConversation(db, {
+          orgId: auth.orgId,
+          conversationId: result.conversation.id,
+          title: body.title,
+        });
+
+        if (!existingTicketId) {
+          const { getWorkflowDispatch } = await import("../lib/workflow-dispatch.js");
+          await getWorkflowDispatch().dispatchTicketTrigger({
+            orgId: auth.orgId,
+            ticketId: ticket.id,
+            trigger: "ticket_created",
+          });
+        }
+        return { result, ticket };
+      });
 
       return c.json({ ticket, conversation: result.conversation }, 201);
     },
@@ -442,6 +453,80 @@ export function widgetRoutes() {
   });
 
   r.post(
+    `${prefix}/conversations/:id/receipts`,
+    requireWidgetAuth(),
+    zValidator("json", widgetMessageReceiptSchema),
+    async (c) => {
+      const auth = c.get("widgetAuth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      const denied = assertWidgetConversation(conversation, auth);
+      if (denied === "not_found" || !conversation) return c.json({ error: "not_found" }, 404);
+      if (denied === "forbidden") return c.json({ error: "forbidden" }, 403);
+
+      const body = c.req.valid("json");
+      const links = await c
+        .get("store")
+        .db.select({
+          connectionId: channelMessageLinks.connectionId,
+          providerMessageId: channelMessageLinks.providerMessageId,
+        })
+        .from(channelMessageLinks)
+        .innerJoin(messages, eq(messages.id, channelMessageLinks.messageId))
+        .where(
+          and(
+            eq(messages.orgId, auth.orgId),
+            eq(messages.conversationId, conversation.id),
+            eq(channelMessageLinks.direction, "outbound"),
+            inArray(messages.id, body.messageIds),
+          ),
+        );
+
+      const statuses =
+        body.status === "read" ? (["delivered", "read"] as const) : (["delivered"] as const);
+      let recorded = 0;
+      const occurredAt = new Date();
+      for (const link of links) {
+        for (const status of statuses) {
+          const [existing] = await c
+            .get("store")
+            .db.select({ id: channelDeliveryReceipts.id })
+            .from(channelDeliveryReceipts)
+            .where(
+              and(
+                eq(channelDeliveryReceipts.connectionId, link.connectionId),
+                eq(channelDeliveryReceipts.providerMessageId, link.providerMessageId),
+                eq(channelDeliveryReceipts.status, status),
+              ),
+            )
+            .limit(1);
+          if (existing) continue;
+          if (
+            await recordDeliveryReceipt(c.get("store"), {
+              orgId: auth.orgId,
+              connectionId: link.connectionId,
+              receipt: {
+                providerMessageId: link.providerMessageId,
+                status,
+                occurredAt,
+                payload: { source: "widget", userId: auth.sub },
+              },
+            })
+          ) {
+            recorded += 1;
+          }
+        }
+      }
+      return c.json({ accepted: links.length, recorded }, 202);
+    },
+  );
+
+  r.post(
     `${prefix}/conversations/:id/handoff`,
     requireWidgetAuth(),
     zValidator("json", widgetHandoffSchema),
@@ -583,44 +668,34 @@ export function widgetRoutes() {
       }
 
       const body = c.req.valid("json");
-      const result = await insertMessage(c.get("store").db, {
-        orgId: auth.orgId,
-        conversationId: conversation.id,
-        senderType: "user",
-        senderId: auth.sub,
-        plainText: body.plainText,
-        attachmentIds: body.attachmentIds,
-        parts: body.parts,
-        isInternal: false,
-        sentVia: "messenger",
-        isAgentReply: false,
-      });
-
-      const message = result.serialized;
-
-      await recordConversationEvent(c.get("store").db, {
-        orgId: auth.orgId,
-        conversationId: conversation.id,
-        eventType: "message.created",
-        actorType: "user",
-        actorId: auth.sub,
-        payload: { messageId: result.message.id },
-      });
-
-      const { resumeCollectCustomerReplyForMessage } = await import("../lib/workflow-resume.js");
-      await resumeCollectCustomerReplyForMessage(
-        c.get("store").db,
+      const result = await ingestWidgetMessage(
         {
-          orgId: auth.orgId,
-          conversationId: conversation.id,
-          messageId: result.message.id,
-          plainText: result.message.plainText,
+          store: c.get("store"),
+          env: c.get("env"),
+          log: c.get("log"),
+          authConfig: c.get("authConfig"),
         },
-        c.get("env"),
-        c.get("authConfig"),
+        {
+          clientMessageId: body.clientMessageId ?? crypto.randomUUID(),
+          orgId: auth.orgId,
+          brandId: auth.brandId,
+          conversationId: conversation.id,
+          externalUserId: auth.sub,
+          plainText: body.plainText,
+          attachmentIds: body.attachmentIds,
+          parts: body.parts,
+        },
       );
-
-      return c.json({ message }, 201);
+      if ("conflict" in result) {
+        return c.json({ error: result.error, eventId: result.eventId }, 409);
+      }
+      if ("failed" in result) {
+        return c.json({ error: result.error, eventId: result.eventId }, 422);
+      }
+      if (result.pending) {
+        return c.json({ status: "processing", eventId: result.eventId }, 202);
+      }
+      return c.json({ message: result.message, duplicate: result.duplicate }, 201);
     },
   );
 

@@ -61,6 +61,7 @@
     "e2e:install": "playwright install --with-deps chromium",
     "e2e:ui": "playwright test --ui",
     "beta:acceptance": "bash scripts/beta-acceptance.sh",
+    "channels:acceptance": "node scripts/channel-provider-acceptance.mjs",
     "bootstrap:local": "node scripts/bootstrap-local.mjs",
     "storybook": "pnpm --filter @keenai/ui storybook",
     "prepare": "node scripts/install-githooks.mjs"

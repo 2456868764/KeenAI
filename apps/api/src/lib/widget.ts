@@ -513,7 +513,6 @@ export async function createWidgetConversation(
   },
 ) {
   const channelId = `widget:${input.userId}`;
-  const now = new Date();
 
   const [conversation] = await db
     .insert(conversations)
@@ -525,9 +524,6 @@ export async function createWidgetConversation(
       channelId,
       subject: input.subject ?? "Messenger",
       status: "open",
-      lastMessageAt: input.initialMessage ? now : undefined,
-      messageCount: input.initialMessage ? 1 : 0,
-      unreadCount: input.initialMessage ? 1 : 0,
     })
     .returning();
 

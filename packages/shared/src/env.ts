@@ -11,6 +11,8 @@ export const apiEnvSchema = z.object({
   JWT_ACCESS_TTL: z.string().default("2h"),
   JWT_REFRESH_TTL: z.string().default("7d"),
   APP_URL: z.string().url().default("http://localhost:3000"),
+  /** Public HTTPS origin of this API, used to register provider webhooks. */
+  CHANNEL_WEBHOOK_BASE_URL: z.string().url().optional(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   OTEL_ENABLED: z
@@ -59,11 +61,44 @@ export const apiEnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   /** Slack Bot token for IM webhooks and media download */
   SLACK_BOT_TOKEN: z.string().min(1).optional(),
+  SLACK_CLIENT_ID: z.string().min(1).optional(),
+  SLACK_CLIENT_SECRET: z.string().min(1).optional(),
+  SLACK_SIGNING_SECRET: z.string().min(1).optional(),
+  SLACK_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  DISCORD_CLIENT_ID: z.string().min(1).optional(),
+  DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
+  DISCORD_BOT_TOKEN: z.string().min(1).optional(),
+  DISCORD_PUBLIC_KEY: z.string().min(1).optional(),
+  DISCORD_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  DISCORD_BOT_PERMISSIONS: z.string().regex(/^\d+$/).optional(),
+  FEISHU_ISV_APP_ID: z.string().min(1).optional(),
+  FEISHU_ISV_APP_SECRET: z.string().min(1).optional(),
+  FEISHU_ISV_VERIFICATION_TOKEN: z.string().min(1).optional(),
+  FEISHU_ISV_ENCRYPT_KEY: z.string().min(1).optional(),
+  FEISHU_ISV_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  DINGTALK_ISV_SUITE_KEY: z.string().min(1).optional(),
+  DINGTALK_ISV_SUITE_SECRET: z.string().min(1).optional(),
+  DINGTALK_ISV_CALLBACK_TOKEN: z.string().min(1).optional(),
+  DINGTALK_ISV_ENCODING_AES_KEY: z.string().length(43).optional(),
+  DINGTALK_ISV_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  WECOM_SUITE_ID: z.string().min(1).optional(),
+  WECOM_SUITE_SECRET: z.string().min(1).optional(),
+  WECOM_SUITE_TOKEN: z.string().min(1).optional(),
+  WECOM_SUITE_ENCODING_AES_KEY: z.string().length(43).optional(),
+  WECOM_SUITE_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  EMAIL_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  EMAIL_GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  EMAIL_MICROSOFT_CLIENT_ID: z.string().min(1).optional(),
+  EMAIL_MICROSOFT_CLIENT_SECRET: z.string().min(1).optional(),
+  EMAIL_OAUTH_REDIRECT_URI: z.string().url().optional(),
   /** WhatsApp Cloud API bearer token for media download/send adapters */
   WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
   /** WhatsApp Cloud API webhook verification token */
   WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
   WHATSAPP_GRAPH_API_VERSION: z.string().min(1).default("v20.0"),
+  META_APP_ID: z.string().min(1).optional(),
+  META_APP_SECRET: z.string().min(1).optional(),
+  META_EMBEDDED_SIGNUP_CONFIG_ID: z.string().min(1).optional(),
   /** Video/image thumbnail provider: stub | ffmpeg */
   THUMBNAIL_PROVIDER: z.enum(["stub", "ffmpeg"]).optional(),
   /** Copilot provider: stub | openai | anthropic | deepseek | kimi | qwen | zhipu | gemini | ollama (auto if unset) */
@@ -129,14 +164,10 @@ export const apiEnvSchema = z.object({
   WORKFLOW_SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   /** Redis URL for BullMQ queues (email:send) */
   REDIS_URL: z.string().url().optional(),
-  /** IMAP polling via imapflow + Inngest cron or sync scheduler */
-  EMAIL_IMAP_HOST: z.string().optional(),
-  EMAIL_IMAP_PORT: z.coerce.number().int().positive().optional(),
-  EMAIL_IMAP_USER: z.string().optional(),
-  EMAIL_IMAP_PASS: z.string().optional(),
-  EMAIL_IMAP_MAILBOX: z.string().default("INBOX"),
-  /** Sync-mode IMAP poll interval in minutes (0 = disabled; ignored when Inngest is enabled) */
-  EMAIL_IMAP_POLL_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
+  /** Sync-mode connection-level IMAP polling (ignored when Inngest is enabled). */
+  EMAIL_IMAP_POLL_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(5),
+  /** Maximum raw RFC822 bytes downloaded for one IMAP message. */
+  EMAIL_IMAP_MAX_MESSAGE_BYTES: z.coerce.number().int().positive().default(31_457_280),
   /** Inngest cron for IMAP poll (default every 5 minutes) */
   INNGEST_IMAP_POLL_CRON: z.string().default("*/5 * * * *"),
   /** Inngest cron for memory digest_daily (default midnight UTC) */
@@ -156,9 +187,6 @@ export const apiEnvSchema = z.object({
   MEMORY_KG_EXTRACT_ENABLED: z.coerce.boolean().default(false),
   MEMORY_KG_EXTRACT_PROVIDER: z.enum(["stub", "openai"]).default("stub"),
   MEMORY_KG_EXTRACT_MODEL: z.string().default("gpt-4o-mini"),
-  /** Org/brand slugs for IMAP ingest target */
-  EMAIL_IMAP_ORG_SLUG: z.string().optional(),
-  EMAIL_IMAP_BRAND_SLUG: z.string().default("default"),
   /** Allow unauthenticated portal ticket reads (set true in dev via .env) */
   PORTAL_PUBLIC_READ: z.coerce.boolean().default(false),
   /** Customer portal app URL for magic links */

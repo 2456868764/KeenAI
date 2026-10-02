@@ -7,6 +7,7 @@ export const CHANNEL_TYPES = [
   "discord",
   "telegram",
   "whatsapp",
+  "wechat",
   "wecom",
   "feishu",
   "dingtalk",
@@ -21,18 +22,33 @@ export const CHANNEL_CAPABILITIES = [
   "reactions",
   "threads",
   "typing",
+  "message_edit",
+  "message_delete",
   "read_receipts",
   "delivery_receipts",
   "interactive",
+  "templates",
 ] as const;
 
 export type ChannelCapability = (typeof CHANNEL_CAPABILITIES)[number];
+
+/**
+ * Provider-facing outbound limits. A null value means the effective limit is
+ * determined at runtime by the connection, account, or upload configuration.
+ */
+export type ChannelOutboundLimits = {
+  maxTextCharacters: number | null;
+  maxInteractiveTextCharacters: number | null;
+  maxCaptionCharacters: number | null;
+  maxAttachmentBytes: number | null;
+};
 
 export type ChannelConnectionConfig = {
   connectionId: string;
   orgId: string;
   brandId: string;
   channelType: ChannelType;
+  transport?: "webhook" | "gateway" | "polling" | "stream";
   credentials: Record<string, unknown>;
   settings: Record<string, unknown>;
 };
@@ -64,18 +80,45 @@ export type ChannelInboundAttachment = {
   metadata?: Record<string, unknown>;
 };
 
+export type ChannelInboundMutation =
+  | {
+      type: "message.updated" | "message.deleted";
+      targetProviderMessageId: string;
+      replaceAttachments?: boolean;
+    }
+  | {
+      type: "reaction.added" | "reaction.removed";
+      targetProviderMessageId: string;
+      actorId: string;
+      emoji: string;
+    }
+  | {
+      type: "reactions.replaced";
+      targetProviderMessageId: string;
+      actorId: string;
+      oldEmojis: string[];
+      newEmojis: string[];
+    };
+
 export type ChannelInboundEnvelope = {
   providerEventId: string;
   providerMessageId: string;
   channelType: ChannelType;
   externalAccountId?: string;
+  /** Stable provider conversation key. */
   externalThreadId: string;
+  /** Actual provider destination when the conversation key is composite. */
+  externalTargetId?: string;
+  /** Provider thread root used for default replies. */
+  threadRootProviderMessageId?: string;
   externalUserId: string;
   plainText: string;
   parts: MessagePart[];
   attachments: ChannelInboundAttachment[];
   replyToProviderMessageId?: string;
   occurredAt?: Date;
+  /** Provider-side mutation. Absent means a newly created message. */
+  mutation?: ChannelInboundMutation;
   attributes?: Record<string, unknown>;
 };
 
@@ -103,7 +146,55 @@ export type ChannelOutboundEnvelope = {
 
 export type ChannelSendResult = {
   providerMessageIds: string[];
+  providerMessageRefs?: ChannelProviderMessageRef[];
   acceptedAt: Date;
+  providerResponse?: unknown;
+};
+
+export type ChannelProviderMessageRef = {
+  providerMessageId: string;
+  /** Provider operation that created this external resource. */
+  providerAction?: string;
+  resourceType: "message" | "file";
+  actionIndex: number;
+};
+
+type ChannelMessageOperationTarget = {
+  orgId: string;
+  brandId: string;
+  connectionId: string;
+  conversationId: string;
+  messageId?: string;
+  channelType: ChannelType;
+  externalThreadId: string;
+  providerMessageId?: string;
+  providerAction?: string;
+  providerResourceType?: "message" | "file";
+  channelAttributes?: Record<string, unknown>;
+};
+
+export type ChannelMessageOperation =
+  | (ChannelMessageOperationTarget & {
+      type: "typing";
+    })
+  | (ChannelMessageOperationTarget & {
+      type: "reaction.add" | "reaction.remove";
+      providerMessageId: string;
+      emoji: string;
+    })
+  | (ChannelMessageOperationTarget & {
+      type: "edit";
+      providerMessageId: string;
+      parts: MessagePart[];
+      directives?: OutboundDirectives;
+    })
+  | (ChannelMessageOperationTarget & {
+      type: "delete";
+      providerMessageId: string;
+    });
+
+export type ChannelMessageOperationResult = {
+  completedAt: Date;
   providerResponse?: unknown;
 };
 
@@ -132,6 +223,7 @@ export type ChannelClassifiedError = {
 export interface ChannelPlugin {
   readonly type: ChannelType;
   readonly capabilities: ReadonlySet<ChannelCapability>;
+  readonly outboundLimits: Readonly<ChannelOutboundLimits>;
 
   verifyWebhook?(
     request: ChannelWebhookRequest,
@@ -152,6 +244,11 @@ export interface ChannelPlugin {
     envelope: ChannelOutboundEnvelope,
     connection: ChannelConnectionConfig,
   ): Promise<ChannelSendResult>;
+
+  executeMessageOperation?(
+    operation: ChannelMessageOperation,
+    connection: ChannelConnectionConfig,
+  ): Promise<ChannelMessageOperationResult>;
 
   parseDeliveryReceipts?(
     request: ChannelWebhookRequest,

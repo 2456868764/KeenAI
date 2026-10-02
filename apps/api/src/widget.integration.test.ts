@@ -1,3 +1,5 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createWidgetUserHash, hashPassword } from "@keenai/auth";
@@ -8,26 +10,42 @@ import {
   accounts,
   brands,
   changelogEntries,
+  channelDeliveryReceipts,
+  channelIngressEvents,
+  channelMessageLinks,
+  channelSessionCommands,
   kbDocuments,
   kbSources,
   members,
+  messages,
   organizations,
   widgetSettings,
 } from "@keenai/storage/schema";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { toAuthConfig } from "./config.js";
 import { insertAttachment } from "./lib/attachments.js";
+import { drainChannelDispatch } from "./lib/channel-dispatch.js";
 import { getKbChunkFtsStore } from "./lib/kb-chunk-fts-init.js";
 import { widgetHmacSecret } from "./lib/widget.js";
 import { createLogger } from "./logger.js";
 
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((directory) => rm(directory, { recursive: true })));
+});
+
 describe("widget integration", () => {
   it("HMAC session, conversation, and messages", async () => {
     const env = parseApiEnv({ NODE_ENV: "test", LLM_PROVIDER: "stub" });
-    const store = createLibsqlStore({ url: ":memory:" });
+    const directory = await mkdtemp(path.join(tmpdir(), "keenai-widget-e2e-"));
+    tempDirs.push(directory);
+    const store = createLibsqlStore({ url: `file:${path.join(directory, "widget.db")}` });
+    await store.client.execute("PRAGMA journal_mode = WAL");
+    await store.client.execute("PRAGMA busy_timeout = 5000");
     const migrationsFolder = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
       "../../../packages/storage/migrations/libsql",
@@ -328,10 +346,82 @@ describe("widget integration", () => {
       {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ plainText: "Follow-up" }),
+        body: JSON.stringify({
+          clientMessageId: "11111111-1111-4111-8111-111111111111",
+          plainText: "Follow-up",
+        }),
       },
     );
     expect(msgRes.status).toBe(201);
+    const msgBody = (await msgRes.json()) as {
+      message: { id: string; plainText: string };
+      duplicate: boolean;
+    };
+    expect(msgBody).toMatchObject({
+      message: { plainText: "Follow-up" },
+      duplicate: false,
+    });
+
+    const retryRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
+      {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientMessageId: "11111111-1111-4111-8111-111111111111",
+          plainText: "Follow-up",
+        }),
+      },
+    );
+    expect(retryRes.status).toBe(201);
+    const retryBody = (await retryRes.json()) as {
+      message: { id: string };
+      duplicate: boolean;
+    };
+    expect(retryBody).toEqual({
+      message: expect.objectContaining({ id: msgBody.message.id }),
+      duplicate: true,
+    });
+
+    const conflictRes = await app.request(
+      `/api/v1/widget/conversations/${convBody.conversation.id}/messages`,
+      {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientMessageId: "11111111-1111-4111-8111-111111111111",
+          plainText: "Different payload",
+        }),
+      },
+    );
+    expect(conflictRes.status).toBe(409);
+    await expect(conflictRes.json()).resolves.toMatchObject({
+      error: "client_message_id_conflict",
+    });
+
+    const ingress = await db.select().from(channelIngressEvents);
+    expect(ingress).toEqual([
+      expect.objectContaining({
+        providerEventId: "11111111-1111-4111-8111-111111111111",
+        channelType: "widget",
+        status: "completed",
+      }),
+    ]);
+    const sessions = await db.select().from(channelSessionCommands);
+    expect(sessions).toEqual([
+      expect.objectContaining({
+        ingressEventId: ingress[0]?.id,
+        status: "completed",
+      }),
+    ]);
+    const messageLinks = await db.select().from(channelMessageLinks);
+    expect(messageLinks).toEqual([
+      expect.objectContaining({
+        messageId: msgBody.message.id,
+        providerMessageId: "11111111-1111-4111-8111-111111111111",
+        direction: "inbound",
+      }),
+    ]);
 
     const conversationsRes = await app.request("/api/v1/widget/conversations", { headers: auth });
     expect(conversationsRes.status).toBe(200);
@@ -365,7 +455,7 @@ describe("widget integration", () => {
           id: convBody.conversation.id,
           channelType: "messenger",
           userId,
-          messageCount: expect.any(Number),
+          messageCount: 2,
         }),
       ]),
     );
@@ -400,10 +490,48 @@ describe("widget integration", () => {
       { headers: auth },
     );
     const answerMessages = (await answerMessagesRes.json()) as {
-      items: { plainText: string; senderType: string }[];
+      items: { id: string; plainText: string; senderType: string }[];
     };
     expect(answerMessages.items.some((item) => item.plainText === "billing invoice")).toBe(true);
     expect(answerMessages.items.some((item) => item.senderType === "agent")).toBe(true);
+
+    const agentMessage = answerMessages.items.find((item) => item.senderType === "agent");
+    if (!agentMessage) throw new Error("agent message");
+    const receiptPath = `/api/v1/widget/conversations/${convBody.conversation.id}/receipts`;
+    const receiptRes = await app.request(receiptPath, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ messageIds: [agentMessage.id], status: "read" }),
+    });
+    expect(receiptRes.status).toBe(202);
+    await expect(receiptRes.json()).resolves.toMatchObject({ accepted: 1, recorded: 2 });
+
+    const duplicateReceiptRes = await app.request(receiptPath, {
+      method: "POST",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ messageIds: [agentMessage.id], status: "read" }),
+    });
+    await expect(duplicateReceiptRes.json()).resolves.toMatchObject({ accepted: 1, recorded: 0 });
+    const [storedAgentMessage] = await db
+      .select({ deliveryStatus: messages.deliveryStatus })
+      .from(messages)
+      .where(eq(messages.id, agentMessage.id));
+    expect(storedAgentMessage?.deliveryStatus).toBe("read");
+    const [agentMessageLink] = await db
+      .select()
+      .from(channelMessageLinks)
+      .where(eq(channelMessageLinks.messageId, agentMessage.id));
+    const widgetReceipts = agentMessageLink
+      ? await db
+          .select()
+          .from(channelDeliveryReceipts)
+          .where(eq(channelDeliveryReceipts.providerMessageId, agentMessageLink.providerMessageId))
+      : [];
+    expect(widgetReceipts.map((receipt) => receipt.status)).toEqual([
+      "accepted",
+      "delivered",
+      "read",
+    ]);
 
     const handoffRes = await app.request(
       `/api/v1/widget/conversations/${convBody.conversation.id}/handoff`,
@@ -471,6 +599,7 @@ describe("widget integration", () => {
       metadata: { source: "test" },
     });
 
+    await drainChannelDispatch();
     const ticketRes = await app.request("/api/v1/widget/tickets", {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
@@ -515,6 +644,7 @@ describe("widget integration", () => {
     });
     expect(badHash.status).toBe(401);
 
+    await drainChannelDispatch();
     await store.close();
   });
 });

@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 import { sqliteTimestamps } from "../_shared/timestamps";
 import { newUlid } from "../_shared/ulid";
 import { conversations, messages } from "./conversation";
-import { brands, organizations } from "./core";
+import { accounts, brands, organizations } from "./core";
 
 export const CHANNEL_TYPES = [
   "widget",
@@ -11,13 +11,14 @@ export const CHANNEL_TYPES = [
   "discord",
   "telegram",
   "whatsapp",
+  "wechat",
   "wecom",
   "feishu",
   "dingtalk",
 ] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
-export const CHANNEL_CONNECTION_STATUSES = ["active", "disabled", "error"] as const;
+export const CHANNEL_CONNECTION_STATUSES = ["pending", "active", "disabled", "error"] as const;
 export type ChannelConnectionStatus = (typeof CHANNEL_CONNECTION_STATUSES)[number];
 
 export const CHANNEL_CONNECTION_TRANSPORTS = ["webhook", "gateway", "polling", "stream"] as const;
@@ -100,6 +101,10 @@ export const channelConnections = sqliteTable(
       .notNull()
       .default({}),
     reconnectAttempts: integer("reconnect_attempts").notNull().default(0),
+    credentialRefreshLeaseToken: text("credential_refresh_lease_token"),
+    credentialRefreshLeaseExpiresAt: integer("credential_refresh_lease_expires_at", {
+      mode: "timestamp_ms",
+    }),
     ...sqliteTimestamps,
   },
   (table) => ({
@@ -119,6 +124,53 @@ export const channelConnections = sqliteTable(
       table.transport,
       table.runtimeNextAttemptAt,
       table.runtimeLeaseExpiresAt,
+    ),
+  }),
+);
+
+export const channelOAuthStates = sqliteTable(
+  "channel_oauth_states",
+  {
+    stateHash: text("state_hash").primaryKey(),
+    provider: text("provider").$type<ChannelType>().notNull(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => accounts.id),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    consumedAt: integer("consumed_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => ({ idxExpires: index("idx_channel_oauth_states_expires").on(table.expiresAt) }),
+);
+
+export const channelProviderAppStates = sqliteTable(
+  "channel_provider_app_states",
+  {
+    id: text("id").primaryKey().$defaultFn(newUlid),
+    provider: text("provider").$type<ChannelType>().notNull(),
+    appId: text("app_id").notNull(),
+    stateType: text("state_type").notNull(),
+    encryptedPayload: text("encrypted_payload", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    ...sqliteTimestamps,
+  },
+  (table) => ({
+    uqProviderAppState: uniqueIndex("uq_channel_provider_app_states").on(
+      table.provider,
+      table.appId,
+      table.stateType,
+    ),
+    idxProviderStateExpiry: index("idx_channel_provider_app_states_expiry").on(
+      table.provider,
+      table.expiresAt,
     ),
   }),
 );
@@ -253,6 +305,12 @@ export const channelMessageLinks = sqliteTable(
       .notNull()
       .references(() => messages.id),
     providerMessageId: text("provider_message_id").notNull(),
+    providerAction: text("provider_action"),
+    providerResourceType: text("provider_resource_type")
+      .$type<"message" | "file">()
+      .notNull()
+      .default("message"),
+    actionIndex: integer("action_index").notNull().default(0),
     direction: text("direction").$type<"inbound" | "outbound">().notNull(),
     ...sqliteTimestamps,
   },
@@ -445,6 +503,8 @@ export const channelDeadLetters = sqliteTable(
 );
 
 export type ChannelConnectionRow = typeof channelConnections.$inferSelect;
+export type ChannelOAuthStateRow = typeof channelOAuthStates.$inferSelect;
+export type ChannelProviderAppStateRow = typeof channelProviderAppStates.$inferSelect;
 export type ChannelIngressEventRow = typeof channelIngressEvents.$inferSelect;
 export type ChannelIdentityRow = typeof channelIdentities.$inferSelect;
 export type ChannelConversationLinkRow = typeof channelConversationLinks.$inferSelect;

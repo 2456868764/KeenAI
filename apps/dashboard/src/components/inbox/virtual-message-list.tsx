@@ -4,6 +4,8 @@ import type { Message } from "@/lib/api";
 import { fetchAttachmentBlob } from "@/lib/api";
 import { cn } from "@keenai/ui";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Check, Pencil, SmilePlus, Trash2, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
 const ESTIMATE_PX = 76;
@@ -11,9 +13,21 @@ const ESTIMATE_PX = 76;
 export function VirtualMessageList({
   messages,
   isLoading,
+  capabilities,
+  currentActorId,
+  onEditMessage,
+  onDeleteMessage,
+  onAddReaction,
+  onRemoveReaction,
 }: {
   messages: Message[];
   isLoading?: boolean;
+  capabilities?: MessageOperationCapabilities;
+  currentActorId?: string | null;
+  onEditMessage?: (messageId: string, plainText: string) => Promise<unknown>;
+  onDeleteMessage?: (messageId: string) => Promise<unknown>;
+  onAddReaction?: (messageId: string, emoji: string) => Promise<unknown>;
+  onRemoveReaction?: (messageId: string, emoji: string) => Promise<unknown>;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +69,15 @@ export function VirtualMessageList({
                 transform: `translateY(${row.start}px)`,
               }}
             >
-              <MessageBubble message={msg} />
+              <MessageBubble
+                message={msg}
+                capabilities={capabilities}
+                currentActorId={currentActorId}
+                onEditMessage={onEditMessage}
+                onDeleteMessage={onDeleteMessage}
+                onAddReaction={onAddReaction}
+                onRemoveReaction={onRemoveReaction}
+              />
             </div>
           );
         })}
@@ -63,6 +85,24 @@ export function VirtualMessageList({
     </div>
   );
 }
+
+type MessageOperationCapabilities = {
+  edit?: boolean;
+  delete?: boolean;
+  reactions?: boolean;
+};
+
+type MessageBubbleProps = {
+  message: Message;
+  capabilities?: MessageOperationCapabilities;
+  currentActorId?: string | null;
+  onEditMessage?: (messageId: string, plainText: string) => Promise<unknown>;
+  onDeleteMessage?: (messageId: string) => Promise<unknown>;
+  onAddReaction?: (messageId: string, emoji: string) => Promise<unknown>;
+  onRemoveReaction?: (messageId: string, emoji: string) => Promise<unknown>;
+};
+
+const QUICK_REACTIONS = ["👍", "❤️", "🎉", "👀"] as const;
 
 function MessageImage({ attachmentId }: { attachmentId: string }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -244,9 +284,24 @@ function MessageFile({ attachment }: { attachment: NonNullable<Message["attachme
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({
+  message,
+  capabilities,
+  currentActorId,
+  onEditMessage,
+  onDeleteMessage,
+  onAddReaction,
+  onRemoveReaction,
+}: MessageBubbleProps) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(message.plainText);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
   const isAgent = message.senderType === "agent" || message.senderType === "ai";
   const isOptimistic = message.id.startsWith("optimistic-");
+  const isDeleted = Boolean(message.deletedAt);
   const bubbleTone = message.isInternal ? "internal" : isAgent ? "agent" : "customer";
   const subtleTextClass =
     bubbleTone === "agent"
@@ -266,49 +321,275 @@ function MessageBubble({ message }: { message: Message }) {
       return !mime.startsWith("image/") && !mime.startsWith("audio/") && !mime.startsWith("video/");
     }) ?? [];
   const showPlainText = Boolean(
-    message.plainText?.trim() &&
+    !isDeleted &&
+      message.plainText?.trim() &&
       audioAttachments.length === 0 &&
       videoAttachments.length === 0 &&
       !message.plainText.startsWith("[Image:"),
   );
 
+  const canEdit =
+    !message.isInternal && !isOptimistic && !isDeleted && isAgent && capabilities?.edit;
+  const canDelete =
+    !message.isInternal && !isOptimistic && !isDeleted && isAgent && capabilities?.delete;
+  const canReact = !message.isInternal && !isOptimistic && !isDeleted && capabilities?.reactions;
+  const groupedReactions = groupReactions(message, currentActorId);
+
+  async function runOperation(operation: () => Promise<unknown>, after?: () => void) {
+    setPending(true);
+    setOperationError(null);
+    try {
+      await operation();
+      after?.();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "Operation failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
-    <div className={cn("flex pb-3", isAgent ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "max-w-[min(32rem,85%)] rounded-lg px-3 py-2 text-sm",
-          message.isInternal
-            ? "border border-dashed border-amber-500/50 bg-amber-500/10 text-[hsl(var(--foreground))]"
-            : isAgent
-              ? "bg-[hsl(var(--widget-user-bubble))] text-[hsl(var(--primary-foreground))]"
-              : "bg-[hsl(var(--widget-agent-bubble))] text-[hsl(var(--foreground))]",
-          isOptimistic && "opacity-70",
-        )}
-      >
-        {showPlainText ? (
-          <p className="whitespace-pre-wrap">{message.plainText}</p>
-        ) : message.plainText && audioAttachments.length === 0 && videoAttachments.length === 0 ? (
-          <p className={cn("whitespace-pre-wrap", subtleTextClass)}>{message.plainText}</p>
+    <div className={cn("group flex pb-3", isAgent ? "justify-end" : "justify-start")}>
+      <div className="max-w-[min(32rem,85%)]">
+        <div
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm",
+            message.isInternal
+              ? "border border-dashed border-amber-500/50 bg-amber-500/10 text-[hsl(var(--foreground))]"
+              : isAgent
+                ? "bg-[hsl(var(--widget-user-bubble))] text-[hsl(var(--primary-foreground))]"
+                : "bg-[hsl(var(--widget-agent-bubble))] text-[hsl(var(--foreground))]",
+            isOptimistic && "opacity-70",
+          )}
+        >
+          {editing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editText}
+                onChange={(event) => setEditText(event.target.value)}
+                disabled={pending}
+                rows={3}
+                aria-label="Edit message"
+                className="w-full resize-y rounded-md border border-white/30 bg-black/10 px-2 py-1.5 text-sm text-inherit outline-none focus:ring-1 focus:ring-white/70"
+              />
+              <div className="flex justify-end gap-1">
+                <button
+                  type="button"
+                  title="Cancel edit"
+                  aria-label="Cancel edit"
+                  disabled={pending}
+                  onClick={() => {
+                    setEditText(message.plainText);
+                    setEditing(false);
+                  }}
+                  className="rounded p-1 hover:bg-white/15 disabled:opacity-50"
+                >
+                  <X className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Save edit"
+                  aria-label="Save edit"
+                  disabled={pending || !editText.trim() || !onEditMessage}
+                  onClick={() =>
+                    onEditMessage &&
+                    void runOperation(
+                      () => onEditMessage(message.id, editText.trim()),
+                      () => setEditing(false),
+                    )
+                  }
+                  className="rounded p-1 hover:bg-white/15 disabled:opacity-50"
+                >
+                  <Check className="size-4" />
+                </button>
+              </div>
+            </div>
+          ) : isDeleted ? (
+            <p className={cn("italic", subtleTextClass)}>Message deleted</p>
+          ) : showPlainText ? (
+            <p className="whitespace-pre-wrap">{message.plainText}</p>
+          ) : message.plainText &&
+            audioAttachments.length === 0 &&
+            videoAttachments.length === 0 ? (
+            <p className={cn("whitespace-pre-wrap", subtleTextClass)}>{message.plainText}</p>
+          ) : null}
+          {!isDeleted &&
+            imageAttachments.map((att) => <MessageImage key={att.id} attachmentId={att.id} />)}
+          {!isDeleted &&
+            audioAttachments.map((att) => <MessageAudio key={att.id} attachment={att} />)}
+          {!isDeleted &&
+            videoAttachments.map((att) => <MessageVideo key={att.id} attachment={att} />)}
+          {!isDeleted &&
+            fileAttachments.map((att) => <MessageFile key={att.id} attachment={att} />)}
+          <p className={cn("mt-1 text-[10px]", subtleTextClass)}>
+            {message.isInternal ? "internal note" : message.senderType}
+            {message.editedAt && !isDeleted ? " · edited" : ""}
+            {isOptimistic ? " · sending" : ""}
+          </p>
+        </div>
+        {groupedReactions.length > 0 ? (
+          <div className={cn("mt-1 flex flex-wrap gap-1", isAgent && "justify-end")}>
+            {groupedReactions.map((reaction) => (
+              <button
+                key={reaction.emoji}
+                type="button"
+                disabled={pending || !canReact}
+                title={reaction.mine ? "Remove reaction" : "Add reaction"}
+                onClick={() => {
+                  const callback = reaction.mine ? onRemoveReaction : onAddReaction;
+                  if (!callback) return;
+                  void runOperation(() => callback(message.id, reaction.emoji));
+                }}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-xs transition-colors",
+                  reaction.mine
+                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.12)]"
+                    : "border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]",
+                )}
+              >
+                {reaction.emoji} {reaction.count}
+              </button>
+            ))}
+          </div>
         ) : null}
-        {imageAttachments.map((att) => (
-          <MessageImage key={att.id} attachmentId={att.id} />
-        ))}
-        {audioAttachments.map((att) => (
-          <MessageAudio key={att.id} attachment={att} />
-        ))}
-        {videoAttachments.map((att) => (
-          <MessageVideo key={att.id} attachment={att} />
-        ))}
-        {fileAttachments.map((att) => (
-          <MessageFile key={att.id} attachment={att} />
-        ))}
-        <p className={cn("mt-1 text-[10px]", subtleTextClass)}>
-          {message.isInternal ? "internal note" : message.senderType}
-          {isOptimistic ? " · sending" : ""}
-        </p>
+        {confirmingDelete ? (
+          <div
+            className={cn(
+              "mt-1 flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]",
+              isAgent && "justify-end",
+            )}
+          >
+            <span>Delete this message?</span>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded border border-[hsl(var(--border))] px-2 py-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={pending || !onDeleteMessage}
+              onClick={() =>
+                onDeleteMessage &&
+                void runOperation(
+                  () => onDeleteMessage(message.id),
+                  () => setConfirmingDelete(false),
+                )
+              }
+              className="rounded bg-[hsl(var(--danger))] px-2 py-1 text-white disabled:opacity-50"
+            >
+              Delete
+            </button>
+          </div>
+        ) : null}
+        {showReactions ? (
+          <div className={cn("mt-1 flex gap-1", isAgent && "justify-end")}>
+            {QUICK_REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                disabled={pending || !onAddReaction}
+                onClick={() =>
+                  onAddReaction &&
+                  void runOperation(
+                    () => onAddReaction(message.id, emoji),
+                    () => setShowReactions(false),
+                  )
+                }
+                className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-0))] px-2 py-1 text-sm hover:bg-[hsl(var(--surface-2))]"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {operationError ? (
+          <p className={cn("mt-1 text-xs text-[hsl(var(--danger))]", isAgent && "text-right")}>
+            {operationError}
+          </p>
+        ) : null}
+        {(canEdit || canDelete || canReact) && !editing && !confirmingDelete ? (
+          <div
+            className={cn(
+              "mt-1 flex gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+              isAgent && "justify-end",
+            )}
+          >
+            {canReact ? (
+              <MessageActionButton
+                label="Add reaction"
+                onClick={() => setShowReactions((value) => !value)}
+              >
+                <SmilePlus className="size-3.5" />
+              </MessageActionButton>
+            ) : null}
+            {canEdit ? (
+              <MessageActionButton
+                label="Edit message"
+                onClick={() => {
+                  setEditText(message.plainText);
+                  setEditing(true);
+                  setShowReactions(false);
+                }}
+              >
+                <Pencil className="size-3.5" />
+              </MessageActionButton>
+            ) : null}
+            {canDelete ? (
+              <MessageActionButton
+                label="Delete message"
+                onClick={() => {
+                  setConfirmingDelete(true);
+                  setShowReactions(false);
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </MessageActionButton>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
+}
+
+function MessageActionButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className="rounded p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--surface-2))] hover:text-[hsl(var(--foreground))]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function groupReactions(message: Message, currentActorId?: string | null) {
+  const grouped = new Map<string, { emoji: string; count: number; mine: boolean }>();
+  for (const reaction of message.reactions ?? []) {
+    const current = grouped.get(reaction.emoji) ?? {
+      emoji: reaction.emoji,
+      count: 0,
+      mine: false,
+    };
+    current.count += 1;
+    current.mine ||= Boolean(currentActorId && reaction.actorId === currentActorId);
+    grouped.set(reaction.emoji, current);
+  }
+  return [...grouped.values()];
 }
 
 function formatAttachmentLabel(fileName: string, sizeBytes: number | null | undefined): string {

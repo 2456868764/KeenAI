@@ -3,10 +3,17 @@ import { fileURLToPath } from "node:url";
 import { hashPassword } from "@keenai/auth";
 import { parseApiEnv } from "@keenai/shared";
 import { createLibsqlStore } from "@keenai/storage";
-import { accounts, brands, members, organizations } from "@keenai/storage/schema";
+import {
+  accounts,
+  brands,
+  channelConnections,
+  members,
+  organizations,
+} from "@keenai/storage/schema";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
+import { sealChannelCredentials } from "./lib/channel-secrets.js";
 import { createLogger } from "./logger.js";
 import { requireRow } from "./test-helpers.js";
 
@@ -173,6 +180,45 @@ describe("IM multimodal integration", () => {
     expect(replyBody.message.metadata?.replyToMessageId).toBe("101");
     expect(replyBody.message.metadata?.replyToPlainText).toContain("Need help with billing");
 
+    for (const [updateId, messageId] of [
+      [4, 200],
+      [5, 201],
+    ] as const) {
+      const response = await app.request("/api/v1/webhooks/im/telegram?org=im", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          update_id: updateId,
+          business_message: {
+            message_id: messageId,
+            business_connection_id: "business-1",
+            from: { id: 42 },
+            chat: { id: 9100, type: "private" },
+            text: `Business message ${messageId}`,
+          },
+        }),
+      });
+      expect(response.status).toBe(202);
+      await response.json();
+    }
+
+    const deleteResponse = await app.request("/api/v1/webhooks/im/telegram?org=im", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        update_id: 6,
+        deleted_business_messages: {
+          business_connection_id: "business-1",
+          chat: { id: 9100, type: "private" },
+          message_ids: [200, 201],
+        },
+      }),
+    });
+    expect(deleteResponse.status).toBe(202);
+    await expect(deleteResponse.json()).resolves.toMatchObject({
+      accepted: true,
+      acceptedCount: 2,
+    });
     await store.close();
   });
 
@@ -397,7 +443,20 @@ describe("IM multimodal integration", () => {
       .insert(brands)
       .values({ orgId: org.id, slug: "default", name: "Default" })
       .returning();
-    requireRow(brandRow, "brand");
+    const brand = requireRow(brandRow, "brand");
+    await db.insert(channelConnections).values({
+      orgId: org.id,
+      brandId: brand.id,
+      channelType: "whatsapp",
+      externalAccountId: "phone-1",
+      name: "WhatsApp test phone",
+      status: "active",
+      transport: "webhook",
+      credentials: sealChannelCredentials(
+        { phoneNumberId: "phone-1" },
+        "test-secret-at-least-32-characters-long!!",
+      ),
+    });
 
     const env = parseApiEnv({
       NODE_ENV: "test",

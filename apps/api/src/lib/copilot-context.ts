@@ -7,7 +7,7 @@ import type { DraftMessage, DraftRequest } from "@keenai/llm";
 import type { MemoryScope } from "@keenai/memory-tree";
 import { type ApiEnv, attachmentMetadataSchema } from "@keenai/shared";
 import { messages } from "@keenai/storage/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { loadAgentToolPolicyRules } from "./agent-audit-store.js";
 import { loadAttachmentsForMessages } from "./attachments.js";
@@ -62,7 +62,13 @@ export async function buildCopilotDraftRequest(
       metadata: messages.metadata,
     })
     .from(messages)
-    .where(and(eq(messages.conversationId, input.conversationId), eq(messages.orgId, input.orgId)))
+    .where(
+      and(
+        eq(messages.conversationId, input.conversationId),
+        eq(messages.orgId, input.orgId),
+        isNull(messages.deletedAt),
+      ),
+    )
     .orderBy(asc(messages.createdAt))
     .limit(MESSAGE_LIMIT);
 

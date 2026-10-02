@@ -17,6 +17,17 @@ import {
 
 type Db = AppVariables["store"]["db"];
 
+const IM_CHANNEL_TYPES = [
+  "telegram",
+  "slack",
+  "discord",
+  "feishu",
+  "dingtalk",
+  "whatsapp",
+  "wechat",
+  "wecom",
+] as const satisfies readonly ImPlatform[];
+
 export async function planConversationImOutbound(
   db: Db,
   input: {
@@ -35,14 +46,7 @@ export async function planConversationImOutbound(
     .limit(1);
 
   if (!conversation) throw new Error("conversation not found");
-  if (
-    conversation.channelType !== "telegram" &&
-    conversation.channelType !== "slack" &&
-    conversation.channelType !== "discord" &&
-    conversation.channelType !== "feishu" &&
-    conversation.channelType !== "dingtalk" &&
-    conversation.channelType !== "whatsapp"
-  ) {
+  if (!isImPlatform(conversation.channelType)) {
     return null;
   }
 
@@ -95,15 +99,7 @@ export async function planConversationImOutbound(
     });
   }
 
-  const platform =
-    conversation.channelType === "telegram" ||
-    conversation.channelType === "slack" ||
-    conversation.channelType === "discord" ||
-    conversation.channelType === "feishu" ||
-    conversation.channelType === "dingtalk" ||
-    conversation.channelType === "whatsapp"
-      ? conversation.channelType
-      : "slack";
+  const platform = conversation.channelType;
 
   const actions = planImOutbound({
     platform,
@@ -115,10 +111,14 @@ export async function planConversationImOutbound(
   });
 
   return {
-    platform: conversation.channelType,
+    platform,
     targetId: conversation.channelId,
     actions,
   };
+}
+
+function isImPlatform(value: string): value is ImPlatform {
+  return (IM_CHANNEL_TYPES as readonly string[]).includes(value);
 }
 
 function collectAttachmentIds(parts: MessagePart[], linkedIds: string[]): string[] {

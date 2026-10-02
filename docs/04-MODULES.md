@@ -240,7 +240,7 @@ export interface LLMProvider {
 | 模块 | 建议位置 | 职责 |
 |---|---|---|
 | Channel SDK | `packages/channels-core` | 标准 Envelope、Plugin 接口、Capabilities、错误分类和 contract tests |
-| Channel Plugins | `packages/channels-widget`, `packages/channels-email`, `packages/channels-im` | Widget、Email 和七种 IM 协议适配 |
+| Channel Plugins | `packages/channels-widget`, `packages/channels-email`, `packages/channels-im` | Widget、Email 和八种 IM 协议适配 |
 | Gateway | `apps/api/src/routes/im-webhooks.ts`, `email-webhooks.ts` | Webhook/IMAP 接入、签名验证、租户解析、原始事件持久化和快速 ACK |
 | Connection Runtime | `packages/channels-runtime/src/connection-runtime.ts`, `apps/api/src/lib/channel-connection-supervisor.ts`, `discord-gateway.ts` | 加密凭据、租约 fencing、cursor、心跳、退避和 Discord Gateway 生命周期 |
 | Durable Ingress | `packages/channels-runtime/src/ingress.ts` | 去重、lease claim、重试、死信和恢复 |
@@ -290,7 +290,8 @@ Outbound
 - **Email**：Provider Webhook 或 IMAP 入站，Provider API 或 SMTP 出站；处理 MIME、Threading、退信、附件和抑制列表。
 - **Slack / Discord / Telegram**：支持 Webhook、Socket/Gateway 或长轮询；稳定映射 workspace/guild/chat、channel 和 thread。
 - **WhatsApp**：采用 Meta Cloud API；处理模板窗口、号码隔离和消息回执。
-- **微信/企业微信、飞书、钉钉**：采用官方开放接口；处理应用/企业隔离、签名加解密、Token 刷新和 Stream/WebSocket 生命周期。
+- **微信公众号**：采用官方公众号 XML 回调、AES 安全模式、stable token 与客服消息 API；按 AppID/OpenID 隔离。
+- **企业微信、飞书、钉钉**：采用官方开放接口；处理应用/企业隔离、签名加解密、Token 刷新和 Stream/WebSocket 生命周期。
 
 ### 2.5 与其他领域的依赖
 

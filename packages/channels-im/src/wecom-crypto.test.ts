@@ -46,4 +46,12 @@ describe("WeCom callback crypto", () => {
       AgentID: "1001",
     });
   });
+
+  it("extracts media fields from official XML callbacks", () => {
+    expect(
+      parseWeComMessageXml(
+        "<xml><MsgType><![CDATA[voice]]></MsgType><MediaId><![CDATA[media-1]]></MediaId><Format><![CDATA[amr]]></Format></xml>",
+      ),
+    ).toEqual({ MsgType: "voice", MediaId: "media-1", Format: "amr" });
+  });
 });

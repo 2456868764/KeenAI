@@ -8,7 +8,7 @@ export async function adaptRawMimeBody(
   return parseMimeSource(body);
 }
 
-/** AWS SES via SNS notification (simplified JSON; production should verify SNS signature). */
+/** AWS SES SNS payload adapter. The API route verifies the signed envelope before calling this. */
 export async function adaptSesNotification(
   payload: unknown,
 ): Promise<ParsedInboundEmailWithAttachments> {

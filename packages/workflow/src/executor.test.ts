@@ -85,6 +85,48 @@ describe("runWorkflow", () => {
     });
   });
 
+  it("passes WhatsApp templates to the sendMessage handler", async () => {
+    const sendMessage = vi.fn(async () => {});
+    const whatsappTemplate = {
+      name: "support_follow_up",
+      languageCode: "en_US",
+      components: [{ type: "body", parameters: [{ type: "text", text: "Case 42" }] }],
+    };
+
+    const definition = workflowDefinitionSchema.parse({
+      trigger: "first_message",
+      blocks: [{ id: "template", type: "send_message", whatsappTemplate }],
+    });
+
+    await runWorkflow(definition, {
+      sendMessage,
+      assign: vi.fn(),
+      close: vi.fn(),
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      plainText: undefined,
+      attachmentIds: undefined,
+      whatsappTemplate,
+    });
+  });
+
+  it("rejects WhatsApp templates mixed with ordinary workflow content", () => {
+    const parsed = workflowDefinitionSchema.safeParse({
+      trigger: "first_message",
+      blocks: [
+        {
+          id: "template",
+          type: "send_message",
+          plainText: "This would not be sent by Meta",
+          whatsappTemplate: { name: "support_follow_up", languageCode: "en_US" },
+        },
+      ],
+    });
+
+    expect(parsed.success).toBe(false);
+  });
+
   it("runs show_expected_reply_time blocks through the reply time handler", async () => {
     const showExpectedReplyTime = vi.fn(async () => ({
       plainText: "We usually reply within 2 hours.",

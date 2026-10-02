@@ -15,6 +15,7 @@ import {
 } from "./uploads.js";
 
 type Db = AppVariables["store"]["db"];
+const EXTERNAL_ATTACHMENT_TIMEOUT_MS = 30_000;
 
 export async function loadPendingAttachmentsByStorageKeys(
   db: Db,
@@ -84,7 +85,15 @@ async function downloadExternalAttachments(db: Db, env: ApiEnv, orgId: string, u
     const safe = await isSafeExternalHttpUrl(url);
     if (!safe) throw new Error("invalid_attachments");
 
-    const res = await fetch(url, { redirect: "error" });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        redirect: "error",
+        signal: AbortSignal.timeout(EXTERNAL_ATTACHMENT_TIMEOUT_MS),
+      });
+    } catch {
+      throw new Error("invalid_attachments");
+    }
     if (!res.ok) throw new Error("invalid_attachments");
 
     const fileName = fileNameFromUrl(url);
@@ -97,8 +106,7 @@ async function downloadExternalAttachments(db: Db, env: ApiEnv, orgId: string, u
       throw new Error("invalid_attachments");
     }
 
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.byteLength > env.UPLOAD_MAX_BYTES) throw new Error("invalid_attachments");
+    const bytes = await readExternalAttachmentBytes(res, env.UPLOAD_MAX_BYTES);
 
     const storageKey = generateStorageKey(path.extname(fileName) || extensionForMime(contentType));
     await saveUploadFile(env, storageKey, bytes);
@@ -114,6 +122,38 @@ async function downloadExternalAttachments(db: Db, env: ApiEnv, orgId: string, u
     );
   }
   return rows;
+}
+
+export async function readExternalAttachmentBytes(
+  response: Response,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  if (!response.body) return new Uint8Array();
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel("invalid_attachments");
+        throw new Error("invalid_attachments");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }
 
 async function isSafeExternalHttpUrl(raw: string): Promise<boolean> {

@@ -11,7 +11,7 @@
 | Lint | `pnpm lint` |
 | DB migrate | `pnpm db:migrate` |
 | API smoke (in-process) | `ci-smoke.integration.test.ts` |
-| Email IMAP + outbound | `email-imap` / `email-outbound` integration tests |
+| Email IMAP + durable outbound | `email-imap`, `ticket-notify`, and `channel-runtime` integration tests |
 | Workflow triggers | `workflow.integration.test.ts` |
 | KB golden eval | `pnpm kb:eval` |
 | API binary (optional CI) | `pnpm verify:api-binary` |

@@ -15,13 +15,43 @@ type WhatsAppMessage = {
   id?: string;
   from?: string;
   timestamp?: string;
-  type?: "text" | "image" | "audio" | "video" | "document" | "button" | "interactive";
+  type?:
+    | "text"
+    | "image"
+    | "audio"
+    | "video"
+    | "document"
+    | "sticker"
+    | "location"
+    | "contacts"
+    | "reaction"
+    | "button"
+    | "interactive";
   text?: { body?: string };
   image?: WhatsAppMedia;
   audio?: WhatsAppMedia;
   video?: WhatsAppMedia;
   document?: WhatsAppMedia;
+  sticker?: WhatsAppMedia;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    name?: string;
+    address?: string;
+  };
+  contacts?: Array<{
+    name?: { formatted_name?: string };
+    phones?: Array<{ phone?: string; wa_id?: string }>;
+    emails?: Array<{ email?: string }>;
+  }>;
+  reaction?: { message_id?: string; emoji?: string };
   context?: { id?: string };
+  button?: { payload?: string; text?: string };
+  interactive?: {
+    type?: "button_reply" | "list_reply";
+    button_reply?: { id?: string; title?: string };
+    list_reply?: { id?: string; title?: string; description?: string };
+  };
 };
 
 type WhatsAppValue = {
@@ -51,7 +81,37 @@ export type WhatsAppWebhookPayload = {
   }[];
 };
 
-/** Normalize the first WhatsApp Cloud API message into a KeenAI inbound IM message. */
+/** Split a Meta webhook batch so every message receives its own durable ingress identity. */
+export function splitWhatsAppMessageWebhooks(
+  payload: WhatsAppWebhookPayload,
+): WhatsAppWebhookPayload[] {
+  const events: WhatsAppWebhookPayload[] = [];
+  for (const entry of payload.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const value = change.value;
+      if (!value) continue;
+      for (const message of value.messages ?? []) {
+        events.push({
+          object: payload.object,
+          entry: [
+            {
+              id: entry.id,
+              changes: [
+                {
+                  field: change.field,
+                  value: { ...value, messages: [message], statuses: undefined },
+                },
+              ],
+            },
+          ],
+        });
+      }
+    }
+  }
+  return events;
+}
+
+/** Normalize one WhatsApp Cloud API message into a KeenAI inbound IM message. */
 export function adaptWhatsAppWebhook(
   payload: WhatsAppWebhookPayload,
 ): ParsedInboundImMessage | null {
@@ -60,16 +120,47 @@ export function adaptWhatsAppWebhook(
   if (!value || !message?.id || !message.from) return null;
 
   const contact = value.contacts?.find((c) => c.wa_id === message.from) ?? value.contacts?.[0];
+  if (message.type === "reaction" && message.reaction?.message_id) {
+    const emoji = message.reaction.emoji?.trim() ?? "";
+    return {
+      platformMessageId: message.reaction.message_id,
+      channelType: "whatsapp",
+      channelId: message.from,
+      userId: contact?.wa_id ?? message.from,
+      plainText: emoji || "(reaction removed)",
+      parts: emoji ? [{ type: "text", text: emoji }] : [],
+      messageKind: "text",
+      attachments: [],
+      mutation: {
+        type: emoji ? "reaction.added" : "reaction.removed",
+        targetProviderMessageId: message.reaction.message_id,
+        actorId: contact?.wa_id ?? message.from,
+        emoji: emoji || "*",
+      },
+      conversationAttributes: {
+        ...(value.metadata?.phone_number_id
+          ? { whatsappPhoneNumberId: value.metadata.phone_number_id }
+          : {}),
+        ...(value.metadata?.display_phone_number
+          ? { whatsappDisplayPhoneNumber: value.metadata.display_phone_number }
+          : {}),
+        ...(contact?.profile?.name ? { profileName: contact.profile.name } : {}),
+      },
+    };
+  }
   const text = message.text?.body?.trim();
+  const structuredText = whatsAppStructuredText(message);
+  const interaction = whatsAppInteraction(message);
   const media = mediaFromMessage(message);
   const caption = media?.caption?.trim();
   const attachment = media ? whatsAppAttachment(media, message.type) : null;
   const attachments = attachment ? [attachment] : [];
 
-  if (attachments.length === 0 && !text && !caption) return null;
+  if (attachments.length === 0 && !text && !structuredText && !caption && !interaction) return null;
 
-  const parts = buildInboundParts(text, caption, attachments);
-  const plainText = caption || text || summarizeMedia(attachments);
+  const parts = buildInboundParts(text ?? structuredText, caption, attachments);
+  const plainText =
+    interaction?.label || caption || text || structuredText || summarizeMedia(attachments);
 
   return {
     platformMessageId: message.id,
@@ -77,8 +168,8 @@ export function adaptWhatsAppWebhook(
     channelId: message.from,
     userId: contact?.wa_id ?? message.from,
     plainText: plainText.trim() || "(empty)",
-    parts,
-    messageKind: inferMessageKind(parts),
+    parts: interaction ? [{ type: "text", text: interaction.label }] : parts,
+    messageKind: message.type === "sticker" ? "sticker" : inferMessageKind(parts),
     attachments,
     replyToMessageId: message.context?.id,
     conversationAttributes: {
@@ -90,7 +181,20 @@ export function adaptWhatsAppWebhook(
         : {}),
       ...(contact?.profile?.name ? { profileName: contact.profile.name } : {}),
     },
+    interaction: interaction ? { type: "button", id: interaction.id } : undefined,
   };
+}
+
+function whatsAppInteraction(message: WhatsAppMessage): { id: string; label: string } | null {
+  const button = message.interactive?.button_reply ?? message.interactive?.list_reply;
+  if (button?.id) return { id: button.id, label: button.title?.trim() || button.id };
+  if (message.button?.payload) {
+    return {
+      id: message.button.payload,
+      label: message.button.text?.trim() || message.button.payload,
+    };
+  }
+  return null;
 }
 
 export function parseWhatsAppDeliveryReceipts(
@@ -130,7 +234,32 @@ function mediaFromMessage(message: WhatsAppMessage): WhatsAppMedia | null {
   if (message.audio?.id) return message.audio;
   if (message.video?.id) return message.video;
   if (message.document?.id) return message.document;
+  if (message.sticker?.id) return message.sticker;
   return null;
+}
+
+function whatsAppStructuredText(message: WhatsAppMessage): string | undefined {
+  if (message.type === "location" && message.location) {
+    const { latitude, longitude, name, address } = message.location;
+    if (latitude === undefined || longitude === undefined) return undefined;
+    const label = [name, address].filter(Boolean).join(" - ");
+    return `[Location${label ? `: ${label}` : ""} (${latitude}, ${longitude})]`;
+  }
+  if (message.type === "contacts" && message.contacts?.length) {
+    return message.contacts
+      .map((contact) => {
+        const name = contact.name?.formatted_name ?? "Contact";
+        const phones = (contact.phones ?? [])
+          .map((phone) => phone.phone ?? phone.wa_id)
+          .filter((value): value is string => Boolean(value));
+        const emails = (contact.emails ?? [])
+          .map((email) => email.email)
+          .filter((value): value is string => Boolean(value));
+        return `[Contact: ${[name, ...phones, ...emails].join(", ")}]`;
+      })
+      .join("\n");
+  }
+  return undefined;
 }
 
 function whatsAppAttachment(
@@ -153,6 +282,7 @@ function fallbackMime(messageType: WhatsAppMessage["type"]): string {
   if (messageType === "image") return "image/jpeg";
   if (messageType === "audio") return "audio/ogg";
   if (messageType === "video") return "video/mp4";
+  if (messageType === "sticker") return "image/webp";
   return "application/octet-stream";
 }
 

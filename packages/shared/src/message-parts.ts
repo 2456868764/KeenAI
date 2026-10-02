@@ -16,6 +16,10 @@ export const messageKindSchema = z.enum(MESSAGE_KINDS);
 
 export const messageMetadataSchema = z.object({
   source: z.string().optional(),
+  emailHtml: z.string().max(500_000).optional(),
+  ticketId: z.string().optional(),
+  ticketStatus: z.string().optional(),
+  clientMessageId: z.string().uuid().optional(),
   messageKind: messageKindSchema.optional(),
   enrichmentStatus: z.enum(["pending", "ready", "failed"]).optional(),
   imageInputMode: z.enum(["native", "text"]).optional(),

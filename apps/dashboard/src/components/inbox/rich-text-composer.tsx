@@ -47,6 +47,7 @@ export function RichTextComposer({
   macros,
   externalText,
   onExternalTextApplied,
+  onActivity,
   onSubmit,
 }: {
   placeholder: string;
@@ -55,6 +56,7 @@ export function RichTextComposer({
   macros: Macro[];
   externalText?: string;
   onExternalTextApplied?: () => void;
+  onActivity?: () => void;
   onSubmit: (payload: RichTextPayload) => void;
 }) {
   const editorRef = useRef<Editor | null>(null);
@@ -138,6 +140,7 @@ export function RichTextComposer({
         return true;
       },
     },
+    onUpdate: () => onActivity?.(),
   });
 
   useEffect(() => {

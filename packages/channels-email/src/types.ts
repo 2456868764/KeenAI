@@ -31,6 +31,7 @@ export type SmtpTransportConfig = {
   secure?: boolean;
   user?: string;
   pass?: string;
+  accessToken?: string;
   from: string;
 };
 

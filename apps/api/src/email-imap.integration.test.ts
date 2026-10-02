@@ -10,7 +10,7 @@ import { runEmailImapPoll } from "./lib/email-imap-poll.js";
 import { createLogger } from "./logger.js";
 
 describe("email IMAP poll (P1-01)", () => {
-  it("skips when EMAIL_IMAP_ORG_SLUG is unset", async () => {
+  it("skips when no polling email connection is configured", async () => {
     const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
     const store = createLibsqlStore({ url: ":memory:" });
     const migrationsFolder = path.join(
@@ -29,7 +29,7 @@ describe("email IMAP poll (P1-01)", () => {
     });
 
     expect(result.skipped).toBe(true);
-    expect(result.reason).toBe("imap_org_not_configured");
+    expect(result.reason).toBe("imap_connection_not_configured");
     await store.close();
   });
 

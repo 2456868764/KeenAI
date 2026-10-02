@@ -7,7 +7,10 @@ describe("Feishu delivery receipts", () => {
       header: { event_type: "im.message.message_read_v1", event_id: "event-1" },
       event: {
         message_id_list: ["message-1", "message-2"],
-        read_time: "1789720000000",
+        reader: {
+          read_time: "1789720000000",
+          reader_id: { open_id: "ou-reader" },
+        },
       },
     });
 

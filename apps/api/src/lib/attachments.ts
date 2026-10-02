@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MessagePart, SerializedAttachment } from "@keenai/shared";
 import { attachmentMetadataSchema } from "@keenai/shared";
 import { attachments, conversations, messages } from "@keenai/storage/schema";
@@ -34,6 +35,64 @@ export function attachmentContentPath(id: string): string {
 
 export function attachmentThumbnailPath(id: string): string {
   return `/api/v1/attachments/${id}/thumbnail`;
+}
+
+export function providerAttachmentContentPath(id: string): string {
+  return `/api/v1/attachments/${id}/provider-content`;
+}
+
+export function createProviderAttachmentUrl(input: {
+  baseUrl: string;
+  attachmentId: string;
+  orgId: string;
+  secret: string;
+  now?: Date;
+  ttlMs?: number;
+}): string {
+  const expiresAt = (input.now?.getTime() ?? Date.now()) + (input.ttlMs ?? 60 * 60_000);
+  const signature = signProviderAttachment(
+    input.secret,
+    input.attachmentId,
+    input.orgId,
+    expiresAt,
+  );
+  const url = new URL(providerAttachmentContentPath(input.attachmentId), input.baseUrl);
+  url.searchParams.set("org", input.orgId);
+  url.searchParams.set("expires", String(expiresAt));
+  url.searchParams.set("signature", signature);
+  return url.toString();
+}
+
+export function verifyProviderAttachmentToken(input: {
+  attachmentId: string;
+  orgId: string;
+  expiresAt: string;
+  signature: string;
+  secret: string;
+  now?: Date;
+}): boolean {
+  const expiresAt = Number(input.expiresAt);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= (input.now?.getTime() ?? Date.now())) {
+    return false;
+  }
+  const expected = signProviderAttachment(input.secret, input.attachmentId, input.orgId, expiresAt);
+  const expectedBytes = Buffer.from(expected);
+  const actualBytes = Buffer.from(input.signature);
+  return (
+    expectedBytes.byteLength === actualBytes.byteLength &&
+    timingSafeEqual(expectedBytes, actualBytes)
+  );
+}
+
+function signProviderAttachment(
+  secret: string,
+  attachmentId: string,
+  orgId: string,
+  expiresAt: number,
+): string {
+  return createHmac("sha256", secret)
+    .update(`v1:${attachmentId}:${orgId}:${expiresAt}`)
+    .digest("base64url");
 }
 
 export async function insertAttachment(

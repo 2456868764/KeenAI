@@ -69,6 +69,8 @@ export {
   channelIdentities,
   channelIngressEvents,
   channelMessageLinks,
+  channelOAuthStates,
+  channelProviderAppStates,
   channelOutbox,
   channelSessionCommands,
   type ChannelConnectionRow,
@@ -84,6 +86,8 @@ export {
   type ChannelIngressEventRow,
   type ChannelJobStatus,
   type ChannelMessageLinkRow,
+  type ChannelOAuthStateRow,
+  type ChannelProviderAppStateRow,
   type ChannelOutboxRow,
   type ChannelSessionCommandRow,
   type ChannelSessionCommandType,
@@ -162,6 +166,7 @@ export {
 } from "./kb";
 export { macros } from "./macros";
 export {
+  memoryChunkVectors,
   memoryChunks,
   memoryEntities,
   memoryEpisodes,
@@ -172,6 +177,7 @@ export {
   memorySlots,
   memorySummaries,
   memoryTreeBuffers,
+  type MemoryChunkVectorRow,
   type MemoryChunkRow,
   type MemoryEntityRow,
   type MemoryEpisodeRow,

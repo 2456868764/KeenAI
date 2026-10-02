@@ -1,6 +1,9 @@
 import type {
+  ChannelCapability,
   ChannelClassifiedError,
   ChannelConnectionConfig,
+  ChannelMessageOperation,
+  ChannelMessageOperationResult,
   ChannelOutboundEnvelope,
   ChannelPlugin,
   ChannelSendResult,
@@ -11,19 +14,40 @@ export type WidgetDeliveryExecutor = (
   connection: ChannelConnectionConfig,
 ) => Promise<ChannelSendResult>;
 
-export function createWidgetChannelPlugin(execute: WidgetDeliveryExecutor): ChannelPlugin {
+export type WidgetMessageOperationExecutor = (
+  operation: ChannelMessageOperation,
+  connection: ChannelConnectionConfig,
+) => Promise<ChannelMessageOperationResult>;
+
+export function createWidgetChannelPlugin(
+  execute: WidgetDeliveryExecutor,
+  executeMessageOperation?: WidgetMessageOperationExecutor,
+): ChannelPlugin {
+  const capabilities = new Set<ChannelCapability>([
+    "text",
+    "markdown",
+    "attachments",
+    "read_receipts",
+    "delivery_receipts",
+    "interactive",
+  ]);
+  if (executeMessageOperation) {
+    capabilities.add("typing");
+    capabilities.add("reactions");
+    capabilities.add("message_edit");
+    capabilities.add("message_delete");
+  }
   return {
     type: "widget",
-    capabilities: new Set([
-      "text",
-      "markdown",
-      "attachments",
-      "typing",
-      "read_receipts",
-      "delivery_receipts",
-      "interactive",
-    ]),
+    capabilities,
+    outboundLimits: {
+      maxTextCharacters: 50_000,
+      maxInteractiveTextCharacters: 50_000,
+      maxCaptionCharacters: null,
+      maxAttachmentBytes: null,
+    },
     send: execute,
+    executeMessageOperation,
     classifyError: classifyWidgetError,
   };
 }

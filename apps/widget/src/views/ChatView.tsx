@@ -15,6 +15,7 @@ type ChatViewProps = {
   messages: WidgetMessagePayload[];
   answerState: WidgetAnswerState;
   handoffRequested: boolean;
+  agentTyping: boolean;
   allowHandoff?: boolean;
   onSend: (input: SendWidgetMessageInput) => Promise<void>;
   onRequestHandoff: () => Promise<void>;
@@ -30,6 +31,7 @@ export function ChatView({
   messages,
   answerState,
   handoffRequested,
+  agentTyping,
   allowHandoff = true,
   onSend,
   onRequestHandoff,
@@ -64,6 +66,10 @@ export function ChatView({
   useEffect(() => {
     panelRef.current?.setCustomerReplyDisabled(conversation?.customerReplyDisabled ?? false);
   }, [conversation?.customerReplyDisabled]);
+
+  useEffect(() => {
+    panelRef.current?.setAgentTyping(agentTyping);
+  }, [agentTyping]);
 
   if (!conversation) {
     return (

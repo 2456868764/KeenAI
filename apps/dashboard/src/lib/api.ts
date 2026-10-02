@@ -19,6 +19,13 @@ export type Conversation = {
   subject: string | null;
   status: string;
   channelType: string;
+  channelCapabilities?: string[];
+  channelOutboundLimits?: {
+    maxTextCharacters: number | null;
+    maxInteractiveTextCharacters: number | null;
+    maxCaptionCharacters: number | null;
+    maxAttachmentBytes: number | null;
+  } | null;
   assigneeId?: string | null;
   teamId?: string | null;
   tags?: string[];
@@ -37,10 +44,21 @@ export type Message = {
   senderId: string | null;
   plainText: string;
   isInternal: boolean;
+  deliveryStatus?: "pending" | "sent" | "delivered" | "read" | "failed" | null;
   createdAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
+  reactions?: MessageReaction[];
   messageKind?: string;
   attachments?: MessageAttachment[];
   parts?: { type: string; attachmentId?: string; text?: string; fileName?: string }[];
+};
+
+export type MessageReaction = {
+  actorType: string;
+  actorId: string;
+  emoji: string;
+  createdAt: string;
 };
 
 export type MessageAttachment = {
@@ -301,16 +319,101 @@ export async function sendMessage(
     isInternal?: boolean;
     content?: { type: "tiptap"; doc: Record<string, unknown> };
     attachmentIds?: string[];
+    directives?: OutboundDirectives;
   },
 ): Promise<{ message: Message }> {
   return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/messages`, {
     method: "POST",
     body: JSON.stringify({
-      plainText: plainText || undefined,
+      plainText: opts?.directives?.whatsappTemplate ? undefined : plainText || undefined,
       isInternal: opts?.isInternal ?? false,
       content: opts?.content ? { type: "tiptap", doc: opts.content.doc } : undefined,
       attachmentIds: opts?.attachmentIds,
+      directives: opts?.directives,
     }),
+  });
+}
+
+export type OutboundDirectives = {
+  interaction?: {
+    buttons: Array<{ id: string; label: string; url?: string; callbackUrl?: string }>;
+  };
+  whatsappTemplate?: {
+    name: string;
+    languageCode: string;
+    components?: Array<Record<string, unknown>>;
+  };
+};
+
+type MessageOperationResponse = {
+  enqueued?: true;
+  outboxId?: string;
+  duplicate?: boolean;
+  applied?: boolean;
+};
+
+function messageOperationId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `dashboard-${Date.now()}-${Math.random()}`;
+}
+
+export async function editMessage(
+  conversationId: string,
+  messageId: string,
+  plainText: string,
+): Promise<MessageOperationResponse> {
+  const operationId = messageOperationId();
+  return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/messages/${messageId}`, {
+    method: "PATCH",
+    headers: { "Idempotency-Key": operationId },
+    body: JSON.stringify({ plainText, operationId }),
+  });
+}
+
+export async function deleteMessage(
+  conversationId: string,
+  messageId: string,
+): Promise<MessageOperationResponse> {
+  return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/messages/${messageId}`, {
+    method: "DELETE",
+    headers: { "Idempotency-Key": messageOperationId() },
+  });
+}
+
+export async function addMessageReaction(
+  conversationId: string,
+  messageId: string,
+  emoji: string,
+): Promise<MessageOperationResponse> {
+  const operationId = messageOperationId();
+  return apiFetch(
+    `/api/v1/dashboard/conversations/${conversationId}/messages/${messageId}/reactions`,
+    {
+      method: "PUT",
+      headers: { "Idempotency-Key": operationId },
+      body: JSON.stringify({ emoji, operationId }),
+    },
+  );
+}
+
+export async function removeMessageReaction(
+  conversationId: string,
+  messageId: string,
+  emoji: string,
+): Promise<MessageOperationResponse> {
+  const operationId = messageOperationId();
+  return apiFetch(
+    `/api/v1/dashboard/conversations/${conversationId}/messages/${messageId}/reactions`,
+    {
+      method: "DELETE",
+      headers: { "Idempotency-Key": operationId },
+      body: JSON.stringify({ emoji, operationId }),
+    },
+  );
+}
+
+export async function sendTyping(conversationId: string): Promise<{ executed: true }> {
+  return apiFetch(`/api/v1/dashboard/conversations/${conversationId}/typing`, {
+    method: "POST",
   });
 }
 
@@ -539,7 +642,17 @@ export async function searchConversations(
 }
 
 export type WorkflowBlock =
-  | { id: string; type: "send_message"; plainText?: string; attachmentIds?: string[] }
+  | {
+      id: string;
+      type: "send_message";
+      plainText?: string;
+      attachmentIds?: string[];
+      whatsappTemplate?: {
+        name: string;
+        languageCode: string;
+        components?: Array<Record<string, unknown>>;
+      };
+    }
   | {
       id: string;
       type: "show_expected_reply_time";
@@ -1408,6 +1521,7 @@ export type ChannelType =
   | "discord"
   | "telegram"
   | "whatsapp"
+  | "wechat"
   | "wecom"
   | "feishu"
   | "dingtalk";
@@ -1418,7 +1532,7 @@ export type ChannelConnection = {
   channelType: ChannelType;
   name: string;
   externalAccountId: string;
-  status: "active" | "disabled" | "error";
+  status: "pending" | "active" | "disabled" | "error";
   transport: "webhook" | "gateway" | "polling" | "stream";
   configuredCredentialKeys: string[];
   settings: Record<string, unknown>;
@@ -1439,6 +1553,149 @@ export async function listChannelConnections(
   return apiFetch(`/api/v1/dashboard/channel-connections${query}`);
 }
 
+export async function startSlackOAuth(brandId: string): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/slack/oauth/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId }),
+  });
+}
+
+export async function startDiscordOAuth(brandId: string): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/discord/oauth/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId }),
+  });
+}
+
+export async function startFeishuOAuth(brandId: string): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/feishu/oauth/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId }),
+  });
+}
+
+export async function startDingTalkOAuth(
+  brandId: string,
+  corpId: string,
+): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/dingtalk/oauth/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId, corpId }),
+  });
+}
+
+export async function startWeComOAuth(brandId: string): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/wecom/oauth/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId }),
+  });
+}
+
+export async function startWhatsAppSignup(brandId: string): Promise<{
+  state: string;
+  appId: string;
+  configId: string;
+  graphApiVersion: string;
+}> {
+  return apiFetch("/api/v1/dashboard/channel-connections/whatsapp/signup/start", {
+    method: "POST",
+    body: JSON.stringify({ brandId }),
+  });
+}
+
+export async function completeWhatsAppSignup(input: {
+  state: string;
+  code: string;
+  wabaId: string;
+  phoneNumberId: string;
+  pin?: string;
+}): Promise<{ connection: ChannelConnection }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/whatsapp/signup/complete", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export type WhatsAppTemplateComponent = Record<string, unknown>;
+
+export type WhatsAppTemplate = {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category: string;
+  components: WhatsAppTemplateComponent[];
+  qualityScore?: Record<string, unknown>;
+  rejectedReason?: string;
+};
+
+export type WhatsAppTemplateInput = {
+  name: string;
+  language: string;
+  category: "AUTHENTICATION" | "MARKETING" | "UTILITY";
+  components: WhatsAppTemplateComponent[];
+  allowCategoryChange?: boolean;
+};
+
+export async function listConversationChannelTemplates(
+  conversationId: string,
+): Promise<{ connectionId: string; items: WhatsAppTemplate[] }> {
+  return apiFetch(
+    `/api/v1/dashboard/conversations/${encodeURIComponent(conversationId)}/channel-templates`,
+  );
+}
+
+export async function listWhatsAppTemplates(
+  connectionId: string,
+): Promise<{ items: WhatsAppTemplate[] }> {
+  return apiFetch(
+    `/api/v1/dashboard/channel-connections/${encodeURIComponent(connectionId)}/whatsapp/templates`,
+  );
+}
+
+export async function createWhatsAppTemplate(
+  connectionId: string,
+  input: WhatsAppTemplateInput,
+): Promise<{ template: { id: string; status: string; category: string } }> {
+  return apiFetch(
+    `/api/v1/dashboard/channel-connections/${encodeURIComponent(connectionId)}/whatsapp/templates`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateWhatsAppTemplate(
+  connectionId: string,
+  templateId: string,
+  input: Partial<Omit<WhatsAppTemplateInput, "allowCategoryChange">>,
+): Promise<{ success: true }> {
+  return apiFetch(
+    `/api/v1/dashboard/channel-connections/${encodeURIComponent(connectionId)}/whatsapp/templates/${encodeURIComponent(templateId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+}
+
+export async function deleteWhatsAppTemplate(
+  connectionId: string,
+  template: Pick<WhatsAppTemplate, "id" | "name">,
+): Promise<void> {
+  const query = new URLSearchParams({ name: template.name });
+  await apiFetch(
+    `/api/v1/dashboard/channel-connections/${encodeURIComponent(connectionId)}/whatsapp/templates/${encodeURIComponent(template.id)}?${query}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function startEmailOAuth(input: {
+  brandId: string;
+  provider: "google" | "microsoft";
+  email: string;
+}): Promise<{ authorizeUrl: string }> {
+  return apiFetch("/api/v1/dashboard/channel-connections/email/oauth/start", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function saveChannelConnection(input: {
   brandId: string;
   channelType: ChannelType;
@@ -1455,11 +1712,35 @@ export async function saveChannelConnection(input: {
       brandId: input.brandId,
       name: input.name,
       externalAccountId: input.externalAccountId ?? "default",
-      status: input.status ?? "active",
+      status: input.status ?? "pending",
       transport: input.transport ?? "webhook",
       credentials: input.credentials,
       settings: input.settings ?? {},
     }),
+  });
+}
+
+export async function testChannelConnection(id: string): Promise<{
+  result: {
+    ok: true;
+    verification: "provider" | "local" | "configuration_only";
+    providerAccountId?: string;
+    displayName?: string;
+    lifecycle?: {
+      providerAction: "setWebhook" | "deleteWebhook";
+      webhookUrl: string | null;
+      pendingUpdateCount: number;
+    };
+  };
+}> {
+  return apiFetch(`/api/v1/dashboard/channel-connections/${encodeURIComponent(id)}/test`, {
+    method: "POST",
+  });
+}
+
+export async function disableChannelConnection(id: string): Promise<void> {
+  await apiFetch(`/api/v1/dashboard/channel-connections/${encodeURIComponent(id)}`, {
+    method: "DELETE",
   });
 }
 
@@ -1639,7 +1920,15 @@ export async function getMemoryTree(input: {
   scope: "conversation" | "customer" | "channel";
   id: string;
   brandId?: string;
-  channelType?: "slack" | "telegram" | "feishu" | "dingtalk";
+  channelType?:
+    | "slack"
+    | "discord"
+    | "telegram"
+    | "feishu"
+    | "dingtalk"
+    | "whatsapp"
+    | "wechat"
+    | "wecom";
   mode?: "latest" | "drill_down";
   level?: number;
 }): Promise<{ tree: MemoryTreeResult }> {

@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { zValidator } from "@hono/zod-validator";
+import { CHANNEL_TYPES, type ChannelType } from "@keenai/channels-core";
 import {
   DASHBOARD_API_PREFIX,
   createConversationSchema,
@@ -8,11 +10,23 @@ import {
   listMessagesSchema,
   updateConversationSchema,
 } from "@keenai/shared";
-import { conversations, messages } from "@keenai/storage/schema";
+import {
+  channelConnections,
+  channelConversationLinks,
+  conversations,
+  messages,
+} from "@keenai/storage/schema";
 import { and, desc, eq, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { z } from "zod";
 import { buildAgentOutboundPayload } from "../lib/agent-outbound.js";
+import {
+  enqueueConversationMessageOperation,
+  executeConversationTyping,
+} from "../lib/channel-dispatch.js";
+import { getChannelPluginRegistry } from "../lib/channel-plugins.js";
+import { openChannelCredentials } from "../lib/channel-secrets.js";
 import {
   cancelPendingConversationAutoCloseJobs,
   clearConversationAutoCloseMarker,
@@ -37,8 +51,19 @@ import { getKbDispatch } from "../lib/kb-dispatch-init.js";
 import { dispatchKbConversationClosed } from "../lib/kb-dispatch.js";
 import { notifyAssignee } from "../lib/notifications.js";
 import { createTicketFromConversation } from "../lib/tickets.js";
+import { listWhatsAppTemplates, whatsappTemplateCredentials } from "../lib/whatsapp-templates.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AppContext, AppVariables } from "../types.js";
+
+const editMessageSchema = z.object({
+  plainText: z.string().trim().min(1).max(50_000),
+  operationId: z.string().min(1).max(160).optional(),
+});
+
+const reactionSchema = z.object({
+  emoji: z.string().trim().min(1).max(128),
+  operationId: z.string().min(1).max(160).optional(),
+});
 
 export function conversationRoutes(ctx: AppContext) {
   const r = new Hono<{ Variables: AppVariables }>();
@@ -157,7 +182,64 @@ export function conversationRoutes(ctx: AppContext) {
       return c.json({ error: "forbidden" }, 403);
     }
 
-    return c.json({ conversation: serializeConversation(conversation) });
+    return c.json({
+      conversation: {
+        ...serializeConversation(conversation),
+        channelCapabilities: channelCapabilities(conversation.channelType),
+        channelOutboundLimits: channelOutboundLimits(conversation.channelType),
+      },
+    });
+  });
+
+  r.get(`${prefix}/:id/channel-templates`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+    const conversation = await getConversationForOrg(
+      c.get("store").db,
+      c.req.param("id"),
+      auth.orgId,
+    );
+    if (!conversation) return c.json({ error: "not_found" }, 404);
+    if (!canAccessBrand(auth, conversation.brandId)) return c.json({ error: "forbidden" }, 403);
+    if (conversation.channelType !== "whatsapp") {
+      return c.json({ error: "channel_templates_not_supported" }, 422);
+    }
+
+    const [connection] = await c
+      .get("store")
+      .db.select({ id: channelConnections.id, credentials: channelConnections.credentials })
+      .from(channelConversationLinks)
+      .innerJoin(
+        channelConnections,
+        eq(channelConnections.id, channelConversationLinks.connectionId),
+      )
+      .where(
+        and(
+          eq(channelConversationLinks.conversationId, conversation.id),
+          eq(channelConnections.orgId, auth.orgId),
+          eq(channelConnections.channelType, "whatsapp"),
+          eq(channelConnections.status, "active"),
+        ),
+      )
+      .limit(1);
+    if (!connection) return c.json({ error: "channel_connection_not_found" }, 404);
+
+    try {
+      const credentials = whatsappTemplateCredentials(
+        openChannelCredentials(connection.credentials, c.get("authConfig").jwtSecret),
+        c.get("env").WHATSAPP_GRAPH_API_VERSION,
+      );
+      const items = (await listWhatsAppTemplates(credentials)).filter(
+        (template) => template.status === "APPROVED",
+      );
+      return c.json({ connectionId: connection.id, items });
+    } catch (error) {
+      c.get("log").warn(
+        { err: error, connectionId: connection.id },
+        "conversation templates failed",
+      );
+      return c.json({ error: "channel_templates_provider_failed" }, 502);
+    }
   });
 
   r.patch(
@@ -393,9 +475,19 @@ export function conversationRoutes(ctx: AppContext) {
       const body = c.req.valid("json");
       const senderType = body.senderType ?? "agent";
       const isAgentReply = senderType === "agent" || senderType === "ai";
+      if (body.directives && (body.isInternal || !isAgentReply)) {
+        return c.json({ error: "outbound_directives_require_external_agent_message" }, 422);
+      }
+      if (body.directives?.whatsappTemplate && conversation.channelType !== "whatsapp") {
+        return c.json({ error: "whatsapp_template_channel_required" }, 422);
+      }
 
       let plainText = body.plainText;
       let attachmentIds = body.attachmentIds;
+
+      if (!plainText?.trim() && body.directives?.whatsappTemplate) {
+        plainText = `[WhatsApp template: ${body.directives.whatsappTemplate.name}]`;
+      }
 
       if (body.agentOutboundText?.trim()) {
         try {
@@ -415,13 +507,16 @@ export function conversationRoutes(ctx: AppContext) {
         }
       }
 
+      const content = plainText ? buildMessageContent(plainText, body.content) : undefined;
+      if (content && body.directives) content.outboundDirectives = body.directives;
+
       const result = await insertMessage(c.get("store").db, {
         orgId: auth.orgId,
         conversationId: conversation.id,
         senderType,
         senderId: auth.memberId,
         plainText,
-        content: plainText ? buildMessageContent(plainText, body.content) : undefined,
+        content,
         attachmentIds,
         parts: body.parts,
         isInternal: body.isInternal,
@@ -461,6 +556,116 @@ export function conversationRoutes(ctx: AppContext) {
       return c.json({ message: result.serialized }, 201);
     },
   );
+
+  r.patch(
+    `${prefix}/:id/messages/:messageId`,
+    requireAuth(),
+    zValidator("json", editMessageSchema),
+    async (c) => {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "unauthorized" }, 401);
+      const conversation = await getConversationForOrg(
+        c.get("store").db,
+        c.req.param("id"),
+        auth.orgId,
+      );
+      if (!conversation) return c.json({ error: "not_found" }, 404);
+      if (!canAccessBrand(auth, conversation.brandId)) return c.json({ error: "forbidden" }, 403);
+      const body = c.req.valid("json");
+      const result = await enqueueConversationMessageOperation({
+        orgId: auth.orgId,
+        conversationId: conversation.id,
+        messageId: c.req.param("messageId"),
+        operationId: operationId(c.req.header("Idempotency-Key"), body.operationId),
+        type: "edit",
+        actorId: auth.memberId,
+        plainText: body.plainText,
+      });
+      const response = operationResponse(result);
+      return c.json(response.body, response.status);
+    },
+  );
+
+  r.delete(`${prefix}/:id/messages/:messageId`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+    const conversation = await getConversationForOrg(
+      c.get("store").db,
+      c.req.param("id"),
+      auth.orgId,
+    );
+    if (!conversation) return c.json({ error: "not_found" }, 404);
+    if (!canAccessBrand(auth, conversation.brandId)) return c.json({ error: "forbidden" }, 403);
+    const result = await enqueueConversationMessageOperation({
+      orgId: auth.orgId,
+      conversationId: conversation.id,
+      messageId: c.req.param("messageId"),
+      operationId: operationId(c.req.header("Idempotency-Key")),
+      type: "delete",
+      actorId: auth.memberId,
+    });
+    const response = operationResponse(result);
+    return c.json(response.body, response.status);
+  });
+
+  for (const [method, type] of [
+    ["put", "reaction.add"],
+    ["delete", "reaction.remove"],
+  ] as const) {
+    r[method](
+      `${prefix}/:id/messages/:messageId/reactions`,
+      requireAuth(),
+      zValidator("json", reactionSchema),
+      async (c) => {
+        const auth = c.get("auth");
+        if (!auth) return c.json({ error: "unauthorized" }, 401);
+        const conversation = await getConversationForOrg(
+          c.get("store").db,
+          c.req.param("id"),
+          auth.orgId,
+        );
+        if (!conversation) return c.json({ error: "not_found" }, 404);
+        if (!canAccessBrand(auth, conversation.brandId)) {
+          return c.json({ error: "forbidden" }, 403);
+        }
+        const body = c.req.valid("json");
+        const result = await enqueueConversationMessageOperation({
+          orgId: auth.orgId,
+          conversationId: conversation.id,
+          messageId: c.req.param("messageId"),
+          operationId: operationId(c.req.header("Idempotency-Key"), body.operationId),
+          type,
+          actorId: auth.memberId,
+          emoji: body.emoji,
+        });
+        const response = operationResponse(result);
+        return c.json(response.body, response.status);
+      },
+    );
+  }
+
+  r.post(`${prefix}/:id/typing`, requireAuth(), async (c) => {
+    const auth = c.get("auth");
+    if (!auth) return c.json({ error: "unauthorized" }, 401);
+    const conversation = await getConversationForOrg(
+      c.get("store").db,
+      c.req.param("id"),
+      auth.orgId,
+    );
+    if (!conversation) return c.json({ error: "not_found" }, 404);
+    if (!canAccessBrand(auth, conversation.brandId)) return c.json({ error: "forbidden" }, 403);
+    const result = await executeConversationTyping({
+      orgId: auth.orgId,
+      conversationId: conversation.id,
+    });
+    if (!result.executed) {
+      return c.json(
+        { error: result.reason },
+        result.reason === "operation_not_supported" ? 422 : 409,
+      );
+    }
+    return c.json({ executed: true });
+  });
 
   r.get(`${prefix}/:id/messages/:messageId/im-outbound`, requireAuth(), async (c) => {
     const auth = c.get("auth");
@@ -564,4 +769,43 @@ export function conversationRoutes(ctx: AppContext) {
   });
 
   return r;
+}
+
+function operationId(headerValue?: string, bodyValue?: string): string {
+  const value = headerValue?.trim() || bodyValue?.trim();
+  return value && value.length <= 160 ? value : randomUUID();
+}
+
+function channelCapabilities(channelType: string): string[] {
+  if (!CHANNEL_TYPES.includes(channelType as ChannelType)) return [];
+  return [...getChannelPluginRegistry().get(channelType as ChannelType).capabilities];
+}
+
+function channelOutboundLimits(channelType: string) {
+  if (!CHANNEL_TYPES.includes(channelType as ChannelType)) return null;
+  return getChannelPluginRegistry().get(channelType as ChannelType).outboundLimits;
+}
+
+function operationResponse(
+  result: Awaited<ReturnType<typeof enqueueConversationMessageOperation>>,
+) {
+  if (result.enqueued) return { body: result, status: 202 as const };
+  if (result.reason === "message_not_found" || result.reason === "provider_message_not_found") {
+    return { body: { error: result.reason }, status: 404 as const };
+  }
+  if (result.reason === "message_not_owned") {
+    return { body: { error: result.reason }, status: 403 as const };
+  }
+  if (result.reason === "already_applied") {
+    return { body: { applied: true, duplicate: true }, status: 200 as const };
+  }
+  if (
+    result.reason === "operation_not_supported" ||
+    result.reason === "provider_message_operation_target_not_found" ||
+    result.reason === "plain_text_required" ||
+    result.reason === "emoji_required"
+  ) {
+    return { body: { error: result.reason }, status: 422 as const };
+  }
+  return { body: { error: result.reason }, status: 409 as const };
 }

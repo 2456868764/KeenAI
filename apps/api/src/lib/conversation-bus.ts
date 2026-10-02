@@ -1,7 +1,13 @@
 export type ConversationRealtimeEvent =
   | { type: "message.created"; conversationId: string; message: unknown }
   | { type: "message.updated"; conversationId: string; message: unknown }
-  | { type: "conversation.updated"; conversationId: string; conversation: unknown };
+  | { type: "conversation.updated"; conversationId: string; conversation: unknown }
+  | {
+      type: "typing";
+      conversationId: string;
+      actorType: "agent";
+      expiresAt: string;
+    };
 
 type Listener = (event: ConversationRealtimeEvent) => void;
 

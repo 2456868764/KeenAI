@@ -294,7 +294,7 @@ function SearchPanel({
           <option value="all">All scopes</option>
           <option value="conversation">Conversation</option>
           <option value="customer">Customer topic</option>
-          <option value="channel">Channel (Slack/Telegram)</option>
+          <option value="channel">Channel</option>
         </select>
       </div>
 

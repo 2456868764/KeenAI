@@ -6,6 +6,7 @@ import { createLibsqlStore } from "@keenai/storage";
 import {
   accounts,
   brands,
+  channelConnections,
   members,
   organizations,
   ticketStatuses,
@@ -46,21 +47,26 @@ describe("email imap poll", () => {
     };
   }
 
-  it("skips when org slug is not configured", async () => {
+  it("skips when no polling email connection is configured", async () => {
     const store = createLibsqlStore({ url: ":memory:" });
+    const migrationsFolder = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../../packages/storage/migrations/libsql",
+    );
+    await migrate(store.db, { migrationsFolder });
     const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
     const { runEmailImapPoll } = await import("./lib/email-imap-poll.js");
 
     const result = await runEmailImapPoll(testCtx(store, env));
     expect(result.skipped).toBe(true);
-    expect(result.reason).toBe("imap_org_not_configured");
+    expect(result.reason).toBe("imap_connection_not_configured");
     await store.close();
   });
 
-  it("calls pollImapMailboxes when org slug is configured", async () => {
+  it("polls each configured email connection", async () => {
     const { pollImapMailboxes } = await import("@keenai/channels-email");
     const pollMock = vi.mocked(pollImapMailboxes);
-    pollMock.mockResolvedValue({ polled: 1, ingested: 1, skipped: false });
+    pollMock.mockResolvedValue({ polled: 1, ingested: 1, oversized: 0, skipped: false });
 
     const store = createLibsqlStore({ url: ":memory:" });
     const db = store.db;
@@ -75,20 +81,32 @@ describe("email imap poll", () => {
       .values({ slug: "demo", name: "Demo" })
       .returning();
     const org = requireRow(orgRow, "org");
-    await db.insert(brands).values({ orgId: org.id, slug: "default", name: "Default" });
-
-    const env = parseApiEnv({
-      NODE_ENV: "test",
-      DATABASE_URL: ":memory:",
-      EMAIL_IMAP_ORG_SLUG: "demo",
-      EMAIL_IMAP_HOST: "imap.example.com",
-      EMAIL_IMAP_USER: "inbox@example.com",
+    const [brandRow] = await db
+      .insert(brands)
+      .values({ orgId: org.id, slug: "default", name: "Default" })
+      .returning();
+    const brand = requireRow(brandRow, "brand");
+    await db.insert(channelConnections).values({
+      orgId: org.id,
+      brandId: brand.id,
+      channelType: "email",
+      transport: "polling",
+      name: "Support mailbox",
+      externalAccountId: "support@example.com",
+      credentials: {
+        imapHost: "imap.example.com",
+        imapUser: "inbox@example.com",
+        imapPass: "secret",
+      },
     });
+
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
 
     const { runEmailImapPoll } = await import("./lib/email-imap-poll.js");
     const result = await runEmailImapPoll(testCtx(store, env));
 
     expect(result.ingested).toBe(1);
+    expect(result.connections).toBe(1);
     expect(pollMock).toHaveBeenCalledWith(
       expect.objectContaining({ host: "imap.example.com", user: "inbox@example.com" }),
       undefined,

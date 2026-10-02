@@ -1,3 +1,5 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AuthConfig, createWidgetUserHash, hashPassword } from "@keenai/auth";
@@ -31,8 +33,11 @@ const authConfig: AuthConfig = {
   appUrl: "http://localhost:3000",
 };
 
-afterEach(() => {
+const tempDirs: string[] = [];
+
+afterEach(async () => {
   vi.restoreAllMocks();
+  await Promise.all(tempDirs.splice(0).map((directory) => rm(directory, { recursive: true })));
 });
 
 async function loginToken(app: ReturnType<typeof createApp>) {
@@ -1945,7 +1950,12 @@ describe("workflow integration", () => {
   });
 
   it("collect_customer_reply resumes when the next widget customer message arrives", async () => {
-    const store = createLibsqlStore({ url: ":memory:" });
+    const directory = await mkdtemp(path.join(tmpdir(), "keenai-workflow-reply-"));
+    tempDirs.push(directory);
+    const databaseUrl = `file:${path.join(directory, "workflow.db")}`;
+    const store = createLibsqlStore({ url: databaseUrl });
+    await store.client.execute("PRAGMA journal_mode = WAL");
+    await store.client.execute("PRAGMA busy_timeout = 5000");
     const db = store.db;
     const migrationsFolder = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -1979,7 +1989,7 @@ describe("workflow integration", () => {
       status: "active",
     });
 
-    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: ":memory:" });
+    const env = parseApiEnv({ NODE_ENV: "test", DATABASE_URL: databaseUrl });
     const app = createApp({
       store,
       fts: null,

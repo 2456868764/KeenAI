@@ -273,17 +273,37 @@ export const WORKFLOW_BLOCK_TYPES = [
 ] as const;
 export type WorkflowBlockType = (typeof WORKFLOW_BLOCK_TYPES)[number];
 
+const whatsappTemplateSchema = z.object({
+  name: z.string().min(1).max(512),
+  languageCode: z.string().min(2).max(32),
+  components: z.array(z.record(z.string(), z.unknown())).max(16).optional(),
+});
+
 const sendMessageBlockObjectSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("send_message"),
   plainText: z.string().max(10_000).optional(),
   attachmentIds: z.array(z.string().min(1)).max(10).optional(),
+  whatsappTemplate: whatsappTemplateSchema.optional(),
 });
 
-export const sendMessageBlockSchema = sendMessageBlockObjectSchema.refine(
-  (val) => (val.plainText?.trim() ?? "").length > 0 || (val.attachmentIds?.length ?? 0) > 0,
-  { message: "plainText_or_attachmentIds_required", path: ["plainText"] },
-);
+export const sendMessageBlockSchema = sendMessageBlockObjectSchema
+  .refine(
+    (val) =>
+      (val.plainText?.trim() ?? "").length > 0 ||
+      (val.attachmentIds?.length ?? 0) > 0 ||
+      val.whatsappTemplate !== undefined,
+    { message: "plainText_attachmentIds_or_whatsappTemplate_required", path: ["plainText"] },
+  )
+  .refine(
+    (val) =>
+      !val.whatsappTemplate ||
+      (!(val.plainText?.trim() ?? "") && (val.attachmentIds?.length ?? 0) === 0),
+    {
+      message: "whatsappTemplate_cannot_be_combined_with_message_content_or_attachments",
+      path: ["whatsappTemplate"],
+    },
+  );
 
 export const assignBlockSchema = z.object({
   id: z.string().min(1).max(64),
@@ -438,10 +458,17 @@ export const workflowDefinitionSchema = z
       if (block.type !== "send_message") return;
       const text = block.plainText?.trim() ?? "";
       const attachments = block.attachmentIds?.length ?? 0;
-      if (!text && attachments === 0) {
+      if (block.whatsappTemplate && (text || attachments > 0)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "plainText_or_attachmentIds_required",
+          message: "whatsappTemplate_cannot_be_combined_with_message_content_or_attachments",
+          path: ["blocks", index, "whatsappTemplate"],
+        });
+      }
+      if (!text && attachments === 0 && !block.whatsappTemplate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "plainText_attachmentIds_or_whatsappTemplate_required",
           path: ["blocks", index, "plainText"],
         });
       }
@@ -483,6 +510,11 @@ export type WorkflowRunContext = {
 export type SendMessageInput = {
   plainText?: string;
   attachmentIds?: string[];
+  whatsappTemplate?: {
+    name: string;
+    languageCode: string;
+    components?: Array<Record<string, unknown>>;
+  };
 };
 
 export type HttpRequestInput = {

@@ -64,4 +64,17 @@ describe("uploads", () => {
     await saveUploadFile(env, key, new TextEncoder().encode("png-bytes"));
     expect(resolveUploadDir(env)).toContain("test-uploads");
   });
+
+  it("enforces the byte limit at the final storage boundary", async () => {
+    const env = parseApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: ":memory:",
+      UPLOAD_DIR: "./data/test-uploads",
+      UPLOAD_MAX_BYTES: "3",
+    });
+
+    await expect(
+      saveUploadFile(env, `${"b".repeat(32)}.txt`, new TextEncoder().encode("four")),
+    ).rejects.toThrow("file_too_large");
+  });
 });

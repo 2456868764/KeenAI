@@ -57,7 +57,7 @@ describe("Discord Gateway runtime", () => {
     await waitFor(() => socket.sent.length === 1);
     expect(socket.sent[0]).toMatchObject({
       op: 2,
-      d: { token: "discord-token", intents: 37_376 },
+      d: { token: "discord-token", intents: 46_592 },
     });
 
     socket.emit("message", {
@@ -122,6 +122,63 @@ describe("Discord Gateway runtime", () => {
     });
     abort.abort();
     await runtime;
+  });
+
+  it("durably handles interactions before acknowledging Discord", async () => {
+    const socket = new FakeSocket();
+    const abort = new AbortController();
+    const order: string[] = [];
+    const runtime = runDiscordGateway({
+      botToken: "discord-token",
+      signal: abort.signal,
+      fetchFn: async (url) => {
+        if (url.includes("/gateway/bot")) {
+          return new Response(JSON.stringify({ url: "wss://gateway.discord.test" }), {
+            status: 200,
+          });
+        }
+        order.push("ack");
+        return new Response(null, { status: 204 });
+      },
+      createSocket: () => socket,
+      onMessage: async () => {
+        order.push("durable");
+      },
+      onHeartbeat: async () => true,
+    });
+    await waitFor(() => socket.listeners.has("message"));
+
+    socket.emit("message", {
+      data: JSON.stringify({
+        op: 0,
+        s: 1,
+        t: "INTERACTION_CREATE",
+        d: { id: "interaction-1", token: "interaction-token" },
+      }),
+    });
+    await waitFor(() => order.length === 2);
+    expect(order).toEqual(["durable", "ack"]);
+
+    abort.abort();
+    await runtime;
+  });
+
+  it("times out gateway discovery instead of holding the runtime lease forever", async () => {
+    await expect(
+      runDiscordGateway({
+        botToken: "discord-token",
+        signal: new AbortController().signal,
+        requestTimeoutMs: 1,
+        fetchFn: async (_url, init) =>
+          await new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), {
+              once: true,
+            });
+          }),
+        onMessage: async () => undefined,
+        onHeartbeat: async () => true,
+      }),
+    ).rejects.toThrow("discord_gateway_discovery_timeout");
   });
 });
 

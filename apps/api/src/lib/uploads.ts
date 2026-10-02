@@ -80,6 +80,9 @@ export async function saveUploadFile(
   storageKey: string,
   body: Uint8Array,
 ): Promise<string> {
+  if (body.byteLength > env.UPLOAD_MAX_BYTES) {
+    throw new Error("file_too_large");
+  }
   if (!isValidStorageKey(storageKey)) {
     throw new Error("invalid_storage_key");
   }

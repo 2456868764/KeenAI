@@ -32,6 +32,7 @@ export const widgetPageViewSchema = z.object({
 
 export const widgetPostMessageSchema = z
   .object({
+    clientMessageId: z.string().uuid().optional(),
     plainText: z.string().max(20_000).optional(),
     attachmentIds: z.array(z.string().min(1)).max(5).optional(),
     parts: z.array(messagePartSchema).optional(),
@@ -72,6 +73,11 @@ export const widgetCreateTicketSchema = z.object({
 
 export const widgetHandoffSchema = z.object({
   message: z.string().min(1).max(5000).default("I need help from the team."),
+});
+
+export const widgetMessageReceiptSchema = z.object({
+  messageIds: z.array(z.string().min(1).max(64)).min(1).max(100),
+  status: z.enum(["delivered", "read"]),
 });
 
 const widgetModuleKeySchema = z.enum(["home", "messages", "help", "changelog", "tickets"]);
