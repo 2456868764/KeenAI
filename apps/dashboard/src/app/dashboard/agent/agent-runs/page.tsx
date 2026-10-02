@@ -3,7 +3,7 @@
 import { AgentRunTraceShell } from "@/components/agent-runs/agent-run-trace-shell";
 import { getAccessToken } from "@/lib/auth-store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 export default function AgentRunsPage() {
   const router = useRouter();
@@ -12,5 +12,13 @@ export default function AgentRunsPage() {
     if (!getAccessToken()) router.replace("/login");
   }, [router]);
 
-  return <AgentRunTraceShell />;
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-[hsl(var(--text-muted))]">Loading agent runs...</div>
+      }
+    >
+      <AgentRunTraceShell />
+    </Suspense>
+  );
 }

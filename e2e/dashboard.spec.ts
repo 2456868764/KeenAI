@@ -23,7 +23,7 @@ test.describe("Dashboard @smoke", () => {
   test("workflows page loads after login", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/dashboard/agent/workflows");
-    await expectPageTitle(page, "Workflows");
+    await expect(page.getByRole("heading", { name: "Workflows", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /new workflow/i })).toBeVisible();
   });
 
@@ -44,7 +44,7 @@ test.describe("Dashboard @smoke", () => {
   test("feedback page loads after login", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/dashboard/feedback");
-    await expectPageTitle(page, "Feedback");
+    await expect(page.getByRole("heading", { name: "Feedback", exact: true })).toBeVisible();
   });
 
   test("roadmap page loads after login", async ({ page }) => {
@@ -77,7 +77,7 @@ test.describe("Dashboard @smoke", () => {
   test("personality settings page loads after login", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/dashboard/agent/personality");
-    await expectPageTitle(page, "Settings");
+    await expect(page.getByText("Personality", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Agent identity" })).toBeVisible();
     await expect(page.getByRole("button", { name: /save personality/i })).toBeVisible();
   });
