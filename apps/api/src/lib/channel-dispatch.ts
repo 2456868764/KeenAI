@@ -331,18 +331,13 @@ export async function enqueueMessageForChannelDelivery(input: {
     }
   }
 
-  const [replyLink] = message.inReplyTo
-    ? await ctx.store.db
-        .select()
-        .from(channelMessageLinks)
-        .where(
-          and(
-            eq(channelMessageLinks.connectionId, connection.id),
-            eq(channelMessageLinks.messageId, message.inReplyTo),
-          ),
-        )
-        .limit(1)
-    : [];
+  const replyContext = await resolveOutboundReplyContext(ctx.store.db, {
+    channelType,
+    connectionId: connection.id,
+    conversationId: conversation.id,
+    conversationProviderMessageId: conversation.channelId,
+    inReplyToMessageId: message.inReplyTo,
+  });
   const providerTarget = resolveProviderConversationTarget(conversation.channelId, link);
   const delivery = await enqueueOutboxDelivery(ctx.store, {
     deliveryId: randomUUID(),
@@ -355,8 +350,8 @@ export async function enqueueMessageForChannelDelivery(input: {
     externalThreadId: providerTarget.targetId,
     replyToProviderMessageId:
       channelType === "slack" || channelType === "feishu"
-        ? (providerTarget.threadId ?? replyLink?.providerMessageId)
-        : replyLink?.providerMessageId,
+        ? (providerTarget.threadId ?? replyContext.replyToProviderMessageId)
+        : replyContext.replyToProviderMessageId,
     parts,
     directives,
     idempotencyKey: `message:${message.id}:channel:${connection.id}`,
@@ -370,7 +365,7 @@ export async function enqueueMessageForChannelDelivery(input: {
         ? {
             to: conversation.userId,
             subject: conversation.subject ?? "Support",
-            references: conversation.channelId ? [conversation.channelId] : [],
+            references: replyContext.references,
             ...(typeof message.metadata.emailHtml === "string"
               ? { html: message.metadata.emailHtml }
               : {}),
@@ -399,6 +394,60 @@ export async function enqueueMessageForChannelDelivery(input: {
     outboxId: delivery.delivery.id,
     duplicate: delivery.duplicate,
   };
+}
+
+export async function resolveOutboundReplyContext(
+  db: AppContext["store"]["db"],
+  input: {
+    channelType: ChannelType;
+    connectionId: string;
+    conversationId: string;
+    conversationProviderMessageId?: string | null;
+    inReplyToMessageId?: string | null;
+  },
+): Promise<{ replyToProviderMessageId?: string; references: string[] }> {
+  const [explicitReplyLink] = input.inReplyToMessageId
+    ? await db
+        .select({ providerMessageId: channelMessageLinks.providerMessageId })
+        .from(channelMessageLinks)
+        .where(
+          and(
+            eq(channelMessageLinks.connectionId, input.connectionId),
+            eq(channelMessageLinks.conversationId, input.conversationId),
+            eq(channelMessageLinks.messageId, input.inReplyToMessageId),
+          ),
+        )
+        .limit(1)
+    : [];
+
+  let replyToProviderMessageId = explicitReplyLink?.providerMessageId;
+  if (input.channelType === "email" && !replyToProviderMessageId) {
+    const [latestInbound] = await db
+      .select({ providerMessageId: channelMessageLinks.providerMessageId })
+      .from(channelMessageLinks)
+      .where(
+        and(
+          eq(channelMessageLinks.connectionId, input.connectionId),
+          eq(channelMessageLinks.conversationId, input.conversationId),
+          eq(channelMessageLinks.direction, "inbound"),
+        ),
+      )
+      .orderBy(desc(channelMessageLinks.createdAt), desc(channelMessageLinks.id))
+      .limit(1);
+    replyToProviderMessageId = latestInbound?.providerMessageId;
+  }
+
+  const references =
+    input.channelType === "email"
+      ? [
+          ...new Set(
+            [input.conversationProviderMessageId, replyToProviderMessageId].filter(
+              (value): value is string => typeof value === "string" && value.length > 0,
+            ),
+          ),
+        ]
+      : [];
+  return { replyToProviderMessageId, references };
 }
 
 export async function enqueueConversationMessageOperation(input: {
@@ -1008,6 +1057,7 @@ async function processClaimedEmailIngress(
   const ensured = await ensureInboundEmailConversation(ctx.store.db, {
     orgId: claimed.event.orgId,
     brandId: claimed.event.brandId,
+    connectionId: claimed.event.connectionId,
     parsed,
   });
   const now = new Date();

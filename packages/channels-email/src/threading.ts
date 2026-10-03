@@ -34,11 +34,6 @@ export function resolveThreadChannelId(
         matchReason: "in-reply-to",
       };
     }
-    return {
-      channelId: email.inReplyTo,
-      subject: normalizeSubject(email.subject),
-      matchReason: "in-reply-to",
-    };
   }
 
   for (const ref of email.references) {
@@ -56,6 +51,14 @@ export function resolveThreadChannelId(
       channelId: email.references[0],
       subject: normalizeSubject(email.subject),
       matchReason: "references",
+    };
+  }
+
+  if (email.inReplyTo) {
+    return {
+      channelId: email.inReplyTo,
+      subject: normalizeSubject(email.subject),
+      matchReason: "in-reply-to",
     };
   }
 

@@ -43,9 +43,11 @@ import {
   executeConversationTyping,
   processChannelIngress,
   processChannelOutbox,
+  resolveOutboundReplyContext,
 } from "./lib/channel-dispatch.js";
 import { sealChannelCredentials } from "./lib/channel-secrets.js";
 import { insertMessage } from "./lib/conversations.js";
+import { ensureInboundEmailConversation, serializeInboundEmail } from "./lib/email-ingest.js";
 import { ensureInboundImConversation } from "./lib/im-ingest.js";
 import { generateStorageKey, saveUploadFile } from "./lib/uploads.js";
 import { createLogger } from "./logger.js";
@@ -64,6 +66,242 @@ afterEach(async () => {
 });
 
 describe("durable channel runtime", () => {
+  it("threads automatic Email replies to the latest inbound provider message", async () => {
+    const fixture = await createFixture();
+    await fixture.store.db
+      .update(channelConnections)
+      .set({ channelType: "email" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const [conversation] = await fixture.store.db
+      .insert(conversations)
+      .values({
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        channelType: "email",
+        channelId: "<root@example.com>",
+        userId: "customer@example.com",
+        subject: "Support request",
+        status: "open",
+      })
+      .returning();
+    if (!conversation) throw new Error("missing_conversation");
+
+    const inboundMessages = [];
+    for (const [index, providerMessageId] of [
+      "<root@example.com>",
+      "<latest-inbound@example.com>",
+    ].entries()) {
+      const [message] = await fixture.store.db
+        .insert(messages)
+        .values({
+          orgId: fixture.orgId,
+          conversationId: conversation.id,
+          senderType: "user",
+          senderId: "customer@example.com",
+          content: { type: "text", text: `Inbound ${index}` },
+          plainText: `Inbound ${index}`,
+          createdAt: new Date(Date.UTC(2026, 9, 2, 8, index)),
+        })
+        .returning();
+      if (!message) throw new Error("missing_message");
+      inboundMessages.push(message);
+      await fixture.store.db.insert(channelMessageLinks).values({
+        orgId: fixture.orgId,
+        connectionId: fixture.connectionId,
+        conversationId: conversation.id,
+        messageId: message.id,
+        providerMessageId,
+        direction: "inbound",
+        createdAt: new Date(Date.UTC(2026, 9, 2, 8, index)),
+      });
+    }
+
+    const automatic = await resolveOutboundReplyContext(fixture.store.db, {
+      channelType: "email",
+      connectionId: fixture.connectionId,
+      conversationId: conversation.id,
+      conversationProviderMessageId: conversation.channelId,
+    });
+    expect(automatic).toEqual({
+      replyToProviderMessageId: "<latest-inbound@example.com>",
+      references: ["<root@example.com>", "<latest-inbound@example.com>"],
+    });
+
+    const explicit = await resolveOutboundReplyContext(fixture.store.db, {
+      channelType: "email",
+      connectionId: fixture.connectionId,
+      conversationId: conversation.id,
+      conversationProviderMessageId: conversation.channelId,
+      inReplyToMessageId: inboundMessages[0]?.id,
+    });
+    expect(explicit).toEqual({
+      replyToProviderMessageId: "<root@example.com>",
+      references: ["<root@example.com>"],
+    });
+    await fixture.store.close();
+  });
+
+  it("routes an Email reply to the conversation linked to an outbound SMTP Message-ID", async () => {
+    const fixture = await createFixture();
+    await fixture.store.db
+      .update(channelConnections)
+      .set({ channelType: "email" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const [conversation] = await fixture.store.db
+      .insert(conversations)
+      .values({
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        channelType: "email",
+        channelId: "<root@example.com>",
+        userId: "customer@example.com",
+        subject: "Support request",
+        status: "open",
+      })
+      .returning();
+    if (!conversation) throw new Error("missing_conversation");
+    const [outbound] = await fixture.store.db
+      .insert(messages)
+      .values({
+        orgId: fixture.orgId,
+        conversationId: conversation.id,
+        senderType: "agent",
+        content: { type: "text", text: "Agent response" },
+        plainText: "Agent response",
+        deliveryStatus: "delivered",
+      })
+      .returning();
+    if (!outbound) throw new Error("missing_message");
+    await fixture.store.db.insert(channelMessageLinks).values({
+      orgId: fixture.orgId,
+      connectionId: fixture.connectionId,
+      conversationId: conversation.id,
+      messageId: outbound.id,
+      providerMessageId: "<smtp-agent-reply@example.com>",
+      direction: "outbound",
+    });
+    const admission = await admitIngressEvent(fixture.store, {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: fixture.connectionId,
+      channelType: "email",
+      providerEventId: "<customer-reply@example.com>",
+      eventType: "message",
+      rawPayload: serializeInboundEmail({
+        messageId: "<customer-reply@example.com>",
+        inReplyTo: "<smtp-agent-reply@example.com>",
+        references: ["<root@example.com>", "<smtp-agent-reply@example.com>"],
+        from: { address: "customer@example.com" },
+        to: [{ address: "support@example.com" }],
+        subject: "Re: Support request",
+        plainText: "The issue is still happening.",
+        attachments: [],
+      }),
+    });
+
+    await expect(
+      processChannelIngress(fixture.context, admission.event.id, { dispatchSession: false }),
+    ).resolves.toMatchObject({ processed: true, conversationId: conversation.id });
+    expect(await fixture.store.db.select().from(conversations)).toHaveLength(1);
+    await fixture.store.close();
+  });
+
+  it("isolates Email subject fallback between channel connections", async () => {
+    const fixture = await createFixture();
+    await fixture.store.db
+      .update(channelConnections)
+      .set({ channelType: "email", externalAccountId: "support-one@example.com" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const [secondConnection] = await fixture.store.db
+      .insert(channelConnections)
+      .values({
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        channelType: "email",
+        name: "Second mailbox",
+        externalAccountId: "support-two@example.com",
+      })
+      .returning();
+    if (!secondConnection) throw new Error("missing_connection");
+    const [firstConversation] = await fixture.store.db
+      .insert(conversations)
+      .values({
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        channelType: "email",
+        channelId: "<first-mailbox-root@example.com>",
+        userId: "customer@example.com",
+        subject: "Shared subject",
+        status: "open",
+      })
+      .returning();
+    if (!firstConversation) throw new Error("missing_conversation");
+    await fixture.store.db.insert(channelConversationLinks).values({
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: fixture.connectionId,
+      conversationId: firstConversation.id,
+      externalThreadId: firstConversation.channelId,
+    });
+
+    const ensured = await ensureInboundEmailConversation(fixture.store.db, {
+      orgId: fixture.orgId,
+      brandId: fixture.brandId,
+      connectionId: secondConnection.id,
+      parsed: {
+        messageId: "<second-mailbox-root@example.com>",
+        references: [],
+        from: { address: "customer@example.com" },
+        to: [{ address: "support-two@example.com" }],
+        subject: "Shared subject",
+        plainText: "This belongs to the second mailbox.",
+        attachments: [],
+      },
+    });
+
+    expect(ensured.created).toBe(true);
+    expect(ensured.conversation.id).not.toBe(firstConversation.id);
+    await fixture.store.close();
+  });
+
+  it("converges concurrent first Email messages onto one linked conversation", async () => {
+    const fixture = await createFixture();
+    await fixture.store.db
+      .update(channelConnections)
+      .set({ channelType: "email" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const parsed = {
+      messageId: "<concurrent-root@example.com>",
+      references: [],
+      from: { address: "customer@example.com" },
+      to: [{ address: "support@example.com" }],
+      subject: "Concurrent request",
+      plainText: "Please help.",
+      attachments: [],
+    };
+
+    const ensured = await Promise.all([
+      ensureInboundEmailConversation(fixture.store.db, {
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        connectionId: fixture.connectionId,
+        parsed,
+      }),
+      ensureInboundEmailConversation(fixture.store.db, {
+        orgId: fixture.orgId,
+        brandId: fixture.brandId,
+        connectionId: fixture.connectionId,
+        parsed,
+      }),
+    ]);
+
+    expect(new Set(ensured.map((result) => result.conversation.id)).size).toBe(1);
+    expect(ensured.filter((result) => result.created)).toHaveLength(1);
+    expect(await fixture.store.db.select().from(conversations)).toHaveLength(1);
+    expect(await fixture.store.db.select().from(channelConversationLinks)).toHaveLength(1);
+    await fixture.store.close();
+  });
+
   it("uses the latest inbound WhatsApp message for the official typing indicator", async () => {
     const fixture = await createFixture();
     await fixture.store.db

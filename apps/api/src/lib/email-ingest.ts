@@ -6,8 +6,12 @@ import type {
 } from "@keenai/channels-email";
 import { resolveThreadChannelId } from "@keenai/channels-email";
 import type { ApiEnv } from "@keenai/shared";
-import { conversations } from "@keenai/storage/schema";
-import { and, eq } from "drizzle-orm";
+import {
+  channelConversationLinks,
+  channelMessageLinks,
+  conversations,
+} from "@keenai/storage/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import type { AppVariables } from "../types.js";
 import { buildPartsFromAttachments, insertAttachment } from "./attachments.js";
 import {
@@ -196,23 +200,87 @@ export async function ensureInboundEmailConversation(
   input: {
     orgId: string;
     brandId: string;
+    connectionId?: string;
     parsed: ParsedInboundEmailWithAttachments;
   },
 ): Promise<EnsuredEmailConversation> {
-  const existing = await db
-    .select({
-      id: conversations.id,
-      channelId: conversations.channelId,
-      subject: conversations.subject,
-    })
-    .from(conversations)
-    .where(
-      and(
-        eq(conversations.orgId, input.orgId),
-        eq(conversations.brandId, input.brandId),
-        eq(conversations.channelType, "email"),
-      ),
+  const providerMessageIds = [
+    input.parsed.inReplyTo,
+    ...input.parsed.references.slice().reverse(),
+  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  if (input.connectionId && providerMessageIds.length > 0) {
+    const linked = await db
+      .select({
+        providerMessageId: channelMessageLinks.providerMessageId,
+        id: conversations.id,
+        channelId: conversations.channelId,
+        subject: conversations.subject,
+      })
+      .from(channelMessageLinks)
+      .innerJoin(conversations, eq(conversations.id, channelMessageLinks.conversationId))
+      .where(
+        and(
+          eq(channelMessageLinks.connectionId, input.connectionId),
+          inArray(channelMessageLinks.providerMessageId, providerMessageIds),
+          eq(conversations.orgId, input.orgId),
+          eq(conversations.brandId, input.brandId),
+          eq(conversations.channelType, "email"),
+        ),
+      );
+    const linksByProviderMessageId = new Map(
+      linked.map((row) => [row.providerMessageId, row] as const),
     );
+    const matchedProviderMessageId = providerMessageIds.find((id) =>
+      linksByProviderMessageId.has(id),
+    );
+    const matched = matchedProviderMessageId
+      ? linksByProviderMessageId.get(matchedProviderMessageId)
+      : undefined;
+    if (matched) {
+      return {
+        created: false,
+        conversation: {
+          id: matched.id,
+          channelId: matched.channelId,
+          subject: matched.subject,
+        },
+        matchReason:
+          matchedProviderMessageId === input.parsed.inReplyTo ? "in-reply-to" : "references",
+      };
+    }
+  }
+
+  const existing = input.connectionId
+    ? await db
+        .select({
+          id: conversations.id,
+          channelId: conversations.channelId,
+          subject: conversations.subject,
+        })
+        .from(channelConversationLinks)
+        .innerJoin(conversations, eq(conversations.id, channelConversationLinks.conversationId))
+        .where(
+          and(
+            eq(channelConversationLinks.connectionId, input.connectionId),
+            eq(conversations.orgId, input.orgId),
+            eq(conversations.brandId, input.brandId),
+            eq(conversations.channelType, "email"),
+          ),
+        )
+    : await db
+        .select({
+          id: conversations.id,
+          channelId: conversations.channelId,
+          subject: conversations.subject,
+        })
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.orgId, input.orgId),
+            eq(conversations.brandId, input.brandId),
+            eq(conversations.channelType, "email"),
+          ),
+        );
 
   const thread = resolveThreadChannelId(input.parsed, existing);
 
@@ -240,14 +308,57 @@ export async function ensureInboundEmailConversation(
     conversation = { id: row.id, channelId: row.channelId, subject: thread.subject };
     created = true;
 
-    await recordConversationEvent(db, {
-      orgId: input.orgId,
-      conversationId: row.id,
-      eventType: "conversation.created",
-      actorType: "user",
-      actorId: input.parsed.from.address,
-      payload: { channel: "email" },
-    });
+    if (input.connectionId) {
+      const [insertedLink] = await db
+        .insert(channelConversationLinks)
+        .values({
+          orgId: input.orgId,
+          brandId: input.brandId,
+          connectionId: input.connectionId,
+          conversationId: row.id,
+          externalThreadId: thread.channelId,
+          metadata: { subject: input.parsed.subject },
+        })
+        .onConflictDoNothing({
+          target: [
+            channelConversationLinks.connectionId,
+            channelConversationLinks.externalThreadId,
+          ],
+        })
+        .returning({ id: channelConversationLinks.id });
+      if (!insertedLink) {
+        await db.delete(conversations).where(eq(conversations.id, row.id));
+        const [winner] = await db
+          .select({
+            id: conversations.id,
+            channelId: conversations.channelId,
+            subject: conversations.subject,
+          })
+          .from(channelConversationLinks)
+          .innerJoin(conversations, eq(conversations.id, channelConversationLinks.conversationId))
+          .where(
+            and(
+              eq(channelConversationLinks.connectionId, input.connectionId),
+              eq(channelConversationLinks.externalThreadId, thread.channelId),
+            ),
+          )
+          .limit(1);
+        if (!winner) throw new Error("email_conversation_link_race_failed");
+        conversation = winner;
+        created = false;
+      }
+    }
+
+    if (created) {
+      await recordConversationEvent(db, {
+        orgId: input.orgId,
+        conversationId: conversation.id,
+        eventType: "conversation.created",
+        actorType: "user",
+        actorId: input.parsed.from.address,
+        payload: { channel: "email" },
+      });
+    }
   }
 
   return {

@@ -32,4 +32,21 @@ describe("email threading", () => {
     expect(thread.channelId).toBe("<root@x>");
     expect(thread.matchReason).toBe("subject");
   });
+
+  it("uses a known reference when In-Reply-To is not a conversation root", () => {
+    const thread = resolveThreadChannelId(
+      {
+        messageId: "<customer-reply@x>",
+        inReplyTo: "<outbound-agent-message@x>",
+        references: ["<root@x>", "<outbound-agent-message@x>"],
+        subject: "Re: Help",
+      },
+      [{ channelId: "<root@x>", subject: "Help" }],
+    );
+    expect(thread).toEqual({
+      channelId: "<root@x>",
+      subject: "Help",
+      matchReason: "references",
+    });
+  });
 });
