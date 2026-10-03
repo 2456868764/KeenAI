@@ -112,11 +112,29 @@ describe("channel provider disconnect", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/deleteWebhook");
   });
 
-  it("requires administrator uninstall for a DingTalk marketplace app", async () => {
+  it.each([
+    {
+      channelType: "feishu" as const,
+      credentials: { appType: "isv", appId: "app-1", tenantKey: "tenant-1" },
+    },
+    {
+      channelType: "dingtalk" as const,
+      credentials: { appType: "isv", suiteKey: "suite-key", corpId: "corp-1" },
+    },
+    {
+      channelType: "wecom" as const,
+      credentials: {
+        appType: "isv",
+        suiteId: "suite-1",
+        corpId: "corp-1",
+        permanentCode: "permanent-code",
+      },
+    },
+  ])("requires administrator uninstall for a $channelType marketplace app", async (entry) => {
     await expect(
       disconnectChannelProvider(
-        { ...base, channelType: "dingtalk", externalAccountId: "corp-1" },
-        { appType: "isv", suiteKey: "suite-key", corpId: "corp-1" },
+        { ...base, channelType: entry.channelType, externalAccountId: "corp-1" },
+        entry.credentials,
         {} as ApiEnv,
       ),
     ).resolves.toEqual({

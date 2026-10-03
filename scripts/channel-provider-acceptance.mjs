@@ -166,6 +166,7 @@ async function verifyChannel(input) {
 }
 
 async function verifyRoundtrip(input) {
+  const roundtripStartedAt = Date.now();
   const probe = input.config.probes[input.channel];
   validateProbe(input.channel, probe);
 
@@ -283,7 +284,7 @@ async function verifyRoundtrip(input) {
       featureResults.push({ feature: "read_receipts", passed: true });
     }
     if (capabilities.has("interactive")) {
-      await verifyInteractiveCapability({ ...input, probe });
+      await verifyInteractiveCapability({ ...input, probe, roundtripStartedAt });
       featureResults.push({ feature: "interactive", passed: true });
     }
     if (capabilities.has("templates")) {
@@ -328,7 +329,7 @@ async function verifyRoundtrip(input) {
 }
 
 async function verifyInteractiveCapability(input) {
-  await waitForMessage({
+  const prompt = await waitForMessage({
     config: input.config,
     fetchImpl: input.fetchImpl,
     sleep: input.sleep,
@@ -342,6 +343,11 @@ async function verifyInteractiveCapability(input) {
       isRecent(message.createdAt, input.config.inboundMaxAgeMinutes),
     timeoutError: "interactive_prompt_not_observed",
   });
+  const promptCreatedAt = Date.parse(prompt.createdAt);
+  const completionNotBefore = Math.max(
+    input.roundtripStartedAt,
+    Number.isFinite(promptCreatedAt) ? promptCreatedAt : input.roundtripStartedAt,
+  );
   await waitForMessage({
     config: input.config,
     fetchImpl: input.fetchImpl,
@@ -352,6 +358,7 @@ async function verifyInteractiveCapability(input) {
       message.senderType === "agent" &&
       !message.deletedAt &&
       message.plainText?.includes(input.probe.interactiveCompletionToken) &&
+      isAtOrAfter(message.createdAt, completionNotBefore) &&
       isRecent(message.createdAt, input.config.inboundMaxAgeMinutes),
     timeoutError: "interactive_callback_not_observed",
   });

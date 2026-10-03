@@ -124,6 +124,31 @@ describe("Discord Gateway runtime", () => {
     await runtime;
   });
 
+  it("stops a resumed session when its runtime lease is lost", async () => {
+    const socket = new FakeSocket();
+    const runtime = runDiscordGateway({
+      botToken: "discord-token",
+      initialCursor: {
+        sequence: 42,
+        sessionId: "session-42",
+        resumeGatewayUrl: "wss://resume.discord.test",
+      },
+      signal: new AbortController().signal,
+      fetchFn: async () => {
+        throw new Error("gateway discovery should not run for a resumable cursor");
+      },
+      createSocket: () => socket,
+      onMessage: async () => undefined,
+      onHeartbeat: async () => false,
+    });
+    await waitFor(() => socket.listeners.has("message"));
+    socket.emit("message", {
+      data: JSON.stringify({ op: 0, s: 43, t: "RESUMED", d: {} }),
+    });
+    await expect(runtime).rejects.toThrow("channel_runtime_lease_lost");
+    expect(socket.closed).toBe(true);
+  });
+
   it("durably handles interactions before acknowledging Discord", async () => {
     const socket = new FakeSocket();
     const abort = new AbortController();

@@ -19,17 +19,36 @@ export type FeishuWebSocketOptions = {
   appSecret: string;
   signal: AbortSignal;
   onEnvelope: (payload: Record<string, unknown>) => Promise<void>;
-  onHeartbeat?: (state: "connected" | "reconnecting") => Promise<unknown> | unknown;
+  onHeartbeat?: (state: "connected" | "reconnecting") => Promise<boolean> | boolean;
 };
 
 export async function runFeishuWebSocket(options: FeishuWebSocketOptions): Promise<void> {
   let ready = false;
+  let leaseFailure: Error | undefined;
+  let rejectLease: ((error: Error) => void) | undefined;
   let resolveReady: (() => void) | undefined;
   let rejectReady: ((error: Error) => void) | undefined;
+  const leasePromise = new Promise<never>((_resolve, reject) => {
+    rejectLease = reject;
+  });
   const readyPromise = new Promise<void>((resolve, reject) => {
     resolveReady = resolve;
     rejectReady = reject;
   });
+  const readyOrLeaseFailure = Promise.race([readyPromise, leasePromise]);
+  const heartbeat = async (state: "connected" | "reconnecting") => {
+    if (leaseFailure) return;
+    try {
+      const held = (await options.onHeartbeat?.(state)) ?? true;
+      if (held) return;
+      leaseFailure = new FeishuWebSocketError("channel_runtime_lease_lost", 0);
+    } catch (error) {
+      leaseFailure = new FeishuWebSocketError(
+        error instanceof Error ? error.message : "channel_runtime_heartbeat_failed",
+      );
+    }
+    rejectLease?.(leaseFailure);
+  };
   const forwardEvent = (eventType: string) => async (data: unknown) => {
     await options.onEnvelope(toFeishuWebhookEnvelope(eventType, data));
   };
@@ -55,18 +74,18 @@ export async function runFeishuWebSocket(options: FeishuWebSocketOptions): Promi
     onReady: () => {
       ready = true;
       resolveReady?.();
-      void options.onHeartbeat?.("connected");
+      void heartbeat("connected");
     },
     onError: (error) => {
       if (!ready) rejectReady?.(error);
     },
     onReconnecting: () => {
       ready = false;
-      void options.onHeartbeat?.("reconnecting");
+      void heartbeat("reconnecting");
     },
     onReconnected: () => {
       ready = true;
-      void options.onHeartbeat?.("connected");
+      void heartbeat("connected");
     },
   });
   await client.start({ eventDispatcher: dispatcher });
@@ -76,15 +95,15 @@ export async function runFeishuWebSocket(options: FeishuWebSocketOptions): Promi
   );
 
   try {
-    await readyPromise;
-    const heartbeat = setInterval(() => {
-      void options.onHeartbeat?.(ready ? "connected" : "reconnecting");
+    await readyOrLeaseFailure;
+    const heartbeatTimer = setInterval(() => {
+      void heartbeat(ready ? "connected" : "reconnecting");
     }, HEARTBEAT_INTERVAL_MS);
-    heartbeat.unref?.();
+    heartbeatTimer.unref?.();
     try {
-      await waitForAbort(options.signal);
+      await Promise.race([waitForAbort(options.signal), leasePromise]);
     } finally {
-      clearInterval(heartbeat);
+      clearInterval(heartbeatTimer);
     }
   } catch (error) {
     throw new FeishuWebSocketError(error instanceof Error ? error.message : String(error));

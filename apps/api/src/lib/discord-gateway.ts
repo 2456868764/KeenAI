@@ -176,7 +176,10 @@ export async function runDiscordGateway(input: {
       }
       if (frame.t === "RESUMED") {
         connected = true;
-        await input.onHeartbeat(snapshot(), "connected");
+        if (!(await input.onHeartbeat(snapshot(), "connected"))) {
+          socket.close(4000, "runtime lease lost");
+          finish(new DiscordGatewayError("channel_runtime_lease_lost", 0));
+        }
         return;
       }
       if (frame.t === "INTERACTION_CREATE") {

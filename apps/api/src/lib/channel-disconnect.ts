@@ -30,10 +30,12 @@ export async function disconnectChannelProvider(
     await reconcileTelegramTransport({ botToken, transport: "polling" });
     return { mode: "remote", providerAction: "deleteWebhook" };
   }
-  if (connection.channelType === "feishu" && credentials.appType === "isv") {
-    return { mode: "local_only", providerAction: "provider_admin_uninstall_required" };
-  }
-  if (connection.channelType === "dingtalk" && credentials.appType === "isv") {
+  if (
+    (connection.channelType === "feishu" ||
+      connection.channelType === "dingtalk" ||
+      connection.channelType === "wecom") &&
+    credentials.appType === "isv"
+  ) {
     return { mode: "local_only", providerAction: "provider_admin_uninstall_required" };
   }
   return { mode: "local_only" };

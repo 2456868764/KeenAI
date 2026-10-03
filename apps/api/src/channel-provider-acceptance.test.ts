@@ -211,6 +211,13 @@ describe("channel provider acceptance", () => {
               deletedAt: null,
             },
             {
+              id: "stale-interactive-complete",
+              senderType: "agent",
+              plainText: "Acceptance branch completed",
+              createdAt: new Date(Date.now() - 30_000).toISOString(),
+              deletedAt: null,
+            },
+            {
               id: "interactive-complete-1",
               senderType: "agent",
               plainText: "Acceptance branch completed",

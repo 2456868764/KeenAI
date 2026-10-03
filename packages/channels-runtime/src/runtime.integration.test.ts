@@ -219,6 +219,31 @@ describe("durable channel runtime", () => {
     ).toBe(true);
   });
 
+  it("revokes a long-lived runtime lease when its connection is disabled", async () => {
+    await store.db
+      .update(channelConnections)
+      .set({ transport: "stream" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+    const claimed = await claimChannelConnectionRuntime(store, {
+      connectionId: fixture.connectionId,
+      ownerId: "runtime-a",
+    });
+    expect(claimed).not.toBeNull();
+
+    await store.db
+      .update(channelConnections)
+      .set({ status: "disabled", runtimeState: "stopped" })
+      .where(eq(channelConnections.id, fixture.connectionId));
+
+    await expect(
+      heartbeatChannelConnectionRuntime(store, {
+        connectionId: fixture.connectionId,
+        ownerId: "runtime-a",
+        leaseToken: claimed?.leaseToken ?? "",
+      }),
+    ).resolves.toBe(false);
+  });
+
   it("serializes commands within one conversation", async () => {
     for (const id of ["command-1", "command-2"]) {
       await enqueueSessionCommand(store, {

@@ -18,7 +18,7 @@ export type DingTalkStreamOptions = {
   clientSecret: string;
   signal: AbortSignal;
   onEnvelope: (payload: Record<string, unknown>) => Promise<void>;
-  onHeartbeat?: (state: "connected" | "reconnecting") => Promise<unknown> | unknown;
+  onHeartbeat?: (state: "connected" | "reconnecting") => Promise<boolean> | boolean;
 };
 
 export async function runDingTalkStream(options: DingTalkStreamOptions): Promise<void> {
@@ -32,14 +32,38 @@ export async function runDingTalkStream(options: DingTalkStreamOptions): Promise
     void processFrame(client, frame, options.onEnvelope);
   });
   await client.connect();
-  await options.onHeartbeat?.(client.connected ? "connected" : "reconnecting");
+  const initialLeaseHeld =
+    (await options.onHeartbeat?.(client.connected ? "connected" : "reconnecting")) ?? true;
+  if (!initialLeaseHeld) {
+    client.disconnect();
+    throw new DingTalkStreamError("channel_runtime_lease_lost", 0);
+  }
+  let heartbeatFailure: Error | undefined;
+  let resolveHeartbeatFailure: (() => void) | undefined;
+  const heartbeatFailurePromise = new Promise<void>((resolve) => {
+    resolveHeartbeatFailure = resolve;
+  });
   const heartbeat = setInterval(() => {
-    void options.onHeartbeat?.(client.connected ? "connected" : "reconnecting");
+    void (async () => {
+      if (heartbeatFailure) return;
+      try {
+        const held =
+          (await options.onHeartbeat?.(client.connected ? "connected" : "reconnecting")) ?? true;
+        if (held) return;
+        heartbeatFailure = new DingTalkStreamError("channel_runtime_lease_lost", 0);
+      } catch (error) {
+        heartbeatFailure = new DingTalkStreamError(
+          error instanceof Error ? error.message : "channel_runtime_heartbeat_failed",
+        );
+      }
+      resolveHeartbeatFailure?.();
+    })();
   }, HEARTBEAT_INTERVAL_MS);
   heartbeat.unref?.();
 
   try {
-    await waitForAbort(options.signal);
+    await Promise.race([waitForAbort(options.signal), heartbeatFailurePromise]);
+    if (heartbeatFailure) throw heartbeatFailure;
   } finally {
     clearInterval(heartbeat);
     client.disconnect();

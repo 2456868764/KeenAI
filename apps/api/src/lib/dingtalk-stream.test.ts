@@ -71,4 +71,17 @@ describe("runDingTalkStream", () => {
     abort.abort();
     await running;
   });
+
+  it("disconnects when its runtime lease is lost", async () => {
+    await expect(
+      runDingTalkStream({
+        clientId: "app-key",
+        clientSecret: "app-secret",
+        signal: new AbortController().signal,
+        onEnvelope: async () => undefined,
+        onHeartbeat: async () => false,
+      }),
+    ).rejects.toThrow("channel_runtime_lease_lost");
+    expect(disconnectMock).toHaveBeenCalled();
+  });
 });

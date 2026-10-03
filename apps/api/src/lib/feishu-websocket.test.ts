@@ -76,4 +76,17 @@ describe("runFeishuWebSocket", () => {
     await running;
     expect(closeMock).toHaveBeenCalledWith({ force: true });
   });
+
+  it("closes the SDK connection when its runtime lease is lost", async () => {
+    await expect(
+      runFeishuWebSocket({
+        appId: "cli_0123456789abcdef",
+        appSecret: "secret",
+        signal: new AbortController().signal,
+        onEnvelope: async () => undefined,
+        onHeartbeat: async () => false,
+      }),
+    ).rejects.toThrow("channel_runtime_lease_lost");
+    expect(closeMock).toHaveBeenCalledWith({ force: true });
+  });
 });
