@@ -97,6 +97,18 @@ describe("validateChannelConnection", () => {
     ).rejects.toThrow("feishu_bot_identity_missing");
   });
 
+  it("rejects a Feishu response without an explicit provider success code", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(jsonResponse({ bot: { open_id: "ou-1", bot_name: "KeenAI" } })),
+    );
+    await expect(
+      validateChannelConnection(connection("feishu", { tenantAccessToken: "token" })),
+    ).rejects.toThrow("feishu_auth_failed");
+  });
+
   it("verifies DingTalk application credentials", async () => {
     vi.stubGlobal(
       "fetch",
@@ -171,6 +183,32 @@ describe("validateChannelConnection", () => {
     ).rejects.toThrow("wecom_agent_id_required");
   });
 
+  it("rejects a WeCom response without an explicit provider success code", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ agentid: 1001, name: "KeenAI" })),
+    );
+    await expect(
+      validateChannelConnection(
+        connection("wecom", { accessToken: "token" }, { wecomAgentId: 1001 }),
+      ),
+    ).rejects.toThrow("wecom_agent_lookup_failed");
+  });
+
+  it("rejects a WeCom response for a different agent", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(jsonResponse({ errcode: 0, agentid: 2002, name: "Other" })),
+    );
+    await expect(
+      validateChannelConnection(
+        connection("wecom", { accessToken: "token" }, { wecomAgentId: 1001 }),
+      ),
+    ).rejects.toThrow("wecom_agent_identity_mismatch");
+  });
+
   it("verifies a WeChat Official Account with a stable token", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -191,6 +229,24 @@ describe("validateChannelConnection", () => {
       providerAccountId: "wx-app-1",
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects a WeChat verification response without the expected account data", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "wechat-token", expires_in: 7200 }))
+      .mockResolvedValueOnce(jsonResponse({}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      validateChannelConnection(
+        connection("wechat", {
+          appId: "wx-app-1",
+          appSecret: "secret",
+          callbackToken: "callback-token",
+        }),
+      ),
+    ).rejects.toThrow("wechat_account_verification_failed");
   });
 
   it("rejects provider authentication failures without leaking credentials", async () => {

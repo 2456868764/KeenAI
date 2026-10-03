@@ -51,6 +51,9 @@ async function validateWeChat(connection: ChannelConnectionConfig) {
   if (errorCode !== undefined && errorCode !== 0) {
     throw new Error(`wechat_${stringValue(payload.errmsg) ?? "auth_failed"}`);
   }
+  if (!Array.isArray(payload.ip_list)) {
+    throw new Error("wechat_account_verification_failed");
+  }
   return {
     ok: true as const,
     verification: "provider" as const,
@@ -232,7 +235,11 @@ async function validateWeCom(connection: ChannelConnectionConfig) {
   const payload = await providerJson(
     `https://qyapi.weixin.qq.com/cgi-bin/agent/get?access_token=${encodeURIComponent(token)}&agentid=${agentId}`,
   );
-  assertWeComOk(payload, "wecom_agent_lookup_failed");
+  assertWeComOk(payload, "wecom_agent_lookup_failed", true);
+  const providerAgentId = numberValue(payload.agentid);
+  if (!Number.isInteger(providerAgentId) || providerAgentId !== agentId) {
+    throw new Error("wecom_agent_identity_mismatch");
+  }
   return {
     ok: true as const,
     verification: "provider" as const,
@@ -318,11 +325,20 @@ function numberValue(value: unknown): number | undefined {
 }
 
 function assertZeroCode(payload: Record<string, unknown>, fallback: string): void {
-  if (typeof payload.code === "number" && payload.code !== 0) throw new Error(fallback);
+  if (payload.code !== 0) throw new Error(fallback);
 }
 
-function assertWeComOk(payload: Record<string, unknown>, fallback: string): void {
-  if (typeof payload.errcode === "number" && payload.errcode !== 0) throw new Error(fallback);
+function assertWeComOk(
+  payload: Record<string, unknown>,
+  fallback: string,
+  requireExplicitSuccess = false,
+): void {
+  if (
+    (requireExplicitSuccess && payload.errcode !== 0) ||
+    (typeof payload.errcode === "number" && payload.errcode !== 0)
+  ) {
+    throw new Error(fallback);
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
